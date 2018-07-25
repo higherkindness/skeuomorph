@@ -20,13 +20,13 @@ object util {
     avroF.aliases.asScala.toList,
     Option(avroF.doc),
     Option(order2Order(avroF.order)),
-    fromAvroAvroSchema(avroF.schema)
+    fromAvro(avroF.schema)
   )
 
   /**
    * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.AvroSchema]]
    */
-  def fromAvroAvroSchema: Coalgebra[Schema, AvroSchema] = { sch =>
+  def fromAvro: Coalgebra[Schema, AvroSchema] = { sch =>
     sch.getType match {
       case AvroType.STRING  => Schema.TString()
       case AvroType.BOOLEAN => Schema.TBoolean()
