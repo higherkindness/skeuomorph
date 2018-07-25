@@ -44,7 +44,7 @@ lazy val commonSettings = Seq(
     "org.typelevel"              %% "alleycats-core"            % catsV,
     "org.typelevel"              %% "mouse"                     % mouseV,
     "org.typelevel"              %% "cats-effect"               % catsEffectV,
-    "io.higherkindness"          %% "droste-core"               % "0.3.0",
+    "org.technomadic"            %% "turtles-core"              % "0.1.0",
     "com.chuusai"                %% "shapeless"                 % shapelessV,
     "co.fs2"                     %% "fs2-core"                  % fs2V,
     "co.fs2"                     %% "fs2-io"                    % fs2V,
