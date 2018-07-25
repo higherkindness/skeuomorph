@@ -53,7 +53,8 @@ object Schema {
       extends Schema[A]
   case class TUnion[A](options: NonEmptyList[A], unionLookup: Int => Option[A])                       extends Schema[A]
   case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int) extends Schema[A]
-  implicit val typeFunctor: Functor[Schema] = new Functor[Schema] {
+
+  implicit val schemaFunctor: Functor[Schema] = new Functor[Schema] {
     def map[A, B](fa: Schema[A])(fn: A => B): Schema[B] = fa match {
       case Schema.TNull()          => Schema.TNull()
       case Schema.TBoolean()       => Schema.TBoolean()
