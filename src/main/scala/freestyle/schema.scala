@@ -2,11 +2,13 @@ package skeuomorph
 package freestyle
 
 import cats.Functor
+import cats.data.NonEmptyList
 
 sealed trait Schema[A]
 object Schema {
   case class Field[A](name: String, tpe: A)
 
+  case class TNull[A]()                                        extends Schema[A]
   case class TDouble[A]()                                      extends Schema[A]
   case class TFloat[A]()                                       extends Schema[A]
   case class TInt[A]()                                         extends Schema[A]
@@ -17,12 +19,15 @@ object Schema {
   case class TNamedType[A](name: String)                       extends Schema[A]
   case class TOption[A](value: A)                              extends Schema[A]
   case class TList[A](value: A)                                extends Schema[A]
+  case class TMap[A](value: A)                                 extends Schema[A]
   case class TRequired[A](value: A)                            extends Schema[A]
+  case class TCoproduct[A](invariants: NonEmptyList[A])        extends Schema[A]
   case class TSum[A](name: String, fields: List[String])       extends Schema[A]
   case class TProduct[A](name: String, fields: List[Field[A]]) extends Schema[A]
 
   implicit val schemaFunctor: Functor[Schema] = new Functor[Schema] {
     def map[A, B](fa: Schema[A])(f: A => B): Schema[B] = fa match {
+      case TNull()                => TNull()
       case TDouble()              => TDouble()
       case TFloat()               => TFloat()
       case TInt()                 => TInt()
@@ -33,7 +38,9 @@ object Schema {
       case TNamedType(name)       => TNamedType(name)
       case TOption(value)         => TOption(f(value))
       case TList(value)           => TList(f(value))
+      case TMap(value)            => TMap(f(value))
       case TRequired(value)       => TRequired(f(value))
+      case TCoproduct(invariants) => TCoproduct(invariants.map(f))
       case TSum(name, fields)     => TSum(name, fields)
       case TProduct(name, fields) => TProduct(name, fields.map(field => field.copy(tpe = f(field.tpe))))
     }

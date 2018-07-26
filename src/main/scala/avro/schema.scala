@@ -24,7 +24,6 @@ object Schema {
 
   type TypeName = String
 
-  /* primitive types */
   case class TNull[A]()                    extends Schema[A]
   case class TBoolean[A]()                 extends Schema[A]
   case class TInt[A]()                     extends Schema[A]
@@ -48,10 +47,9 @@ object Schema {
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
-      symbols: List[String],
-      symbolLookup: Int => Option[String])
+      symbols: List[String])
       extends Schema[A]
-  case class TUnion[A](options: NonEmptyList[A], unionLookup: Int => Option[A])                       extends Schema[A]
+  case class TUnion[A](options: NonEmptyList[A])                                                      extends Schema[A]
   case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int) extends Schema[A]
 
   implicit val schemaFunctor: Functor[Schema] = new Functor[Schema] {
@@ -69,9 +67,9 @@ object Schema {
       case Schema.TMap(values)     => Schema.TMap(f(values))
       case Schema.TRecord(name, namespace, aliases, doc, fields) =>
         Schema.TRecord(name, namespace, aliases, doc, fields.map(field => field.copy(tpe = f(field.tpe))))
-      case Schema.TEnum(name, namespace, aliases, doc, symbols, symbolLookup) =>
-        Schema.TEnum(name, namespace, aliases, doc, symbols, symbolLookup)
-      case Schema.TUnion(options, unionLookup)           => Schema.TUnion(options.map(f), unionLookup.andThen(x => x.map(f)))
+      case Schema.TEnum(name, namespace, aliases, doc, symbols) =>
+        Schema.TEnum(name, namespace, aliases, doc, symbols)
+      case Schema.TUnion(options)                        => Schema.TUnion(options.map(f))
       case Schema.TFixed(name, namespace, aliases, size) => Schema.TFixed(name, namespace, aliases, size)
     }
   }

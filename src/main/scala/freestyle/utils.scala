@@ -2,6 +2,7 @@ package skeuomorph
 package freestyle
 
 import protobuf.{Schema => ProtoSchema}
+import avro.{Schema => AvroSchema}
 import turtles._
 import turtles.implicits._
 
@@ -9,6 +10,9 @@ object utils {
 
   import Schema._
 
+  /**
+   * transform Protobuf schema into Freestyle schema
+   */
   def transformProto[A]: ProtoSchema[A] => Schema[A] = {
     case ProtoSchema.TDouble()                  => TDouble()
     case ProtoSchema.TFloat()                   => TFloat()
@@ -31,6 +35,26 @@ object utils {
     case ProtoSchema.TRequired(value)           => TRequired(value)
     case ProtoSchema.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
     case ProtoSchema.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+  }
+
+  def transformAvro[A]: AvroSchema[A] => Schema[A] = {
+    case AvroSchema.TNull()          => TNull()
+    case AvroSchema.TBoolean()       => TBoolean()
+    case AvroSchema.TInt()           => TInt()
+    case AvroSchema.TLong()          => TLong()
+    case AvroSchema.TFloat()         => TFloat()
+    case AvroSchema.TDouble()        => TDouble()
+    case AvroSchema.TBytes()         => TByteArray()
+    case AvroSchema.TString()        => TString()
+    case AvroSchema.TNamedType(name) => TNamedType(name)
+    case AvroSchema.TArray(item)     => TList(item)
+    case AvroSchema.TMap(values)     => TMap(values)
+    case AvroSchema.TRecord(name, _, _, _, fields) =>
+      TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+    case AvroSchema.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
+    case AvroSchema.TUnion(options)               => TCoproduct(options)
+    case AvroSchema.TFixed(_, _, _, _) =>
+      ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   }
 
   /**
@@ -67,6 +91,7 @@ object utils {
     }
 
   def render: Algebra[Schema, String] = {
+    case TNull()          => "Null"
     case TDouble()        => "Double"
     case TFloat()         => "Float"
     case TInt()           => "Int"
@@ -76,8 +101,11 @@ object utils {
     case TByteArray()     => "Array[Byte]"
     case TNamedType(name) => name
     case TOption(value)   => s"Option[$value]"
+    case TMap(value)      => s"Map[String, $value]"
     case TList(value)     => s"List[$value]"
     case TRequired(value) => value
+    case TCoproduct(invariants) =>
+      invariants.toList.mkString("Cop[", " :: ", ":: Tnil]")
     case TSum(name, fields) =>
       val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
       s"""

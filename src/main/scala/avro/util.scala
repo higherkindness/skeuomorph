@@ -20,7 +20,7 @@ object util {
     avroF.aliases.asScala.toList,
     Option(avroF.doc),
     Option(order2Order(avroF.order)),
-    fromAvro(avroF.schema)
+    avroF.schema
   )
 
   /**
@@ -53,14 +53,12 @@ object util {
           Option(sch.getNamespace),
           sch.getAliases.asScala.toList,
           Option(sch.getDoc),
-          symbols,
-          i => symbols.map(sch.getEnumOrdinal).zip(symbols).toMap.get(i)
+          symbols
         )
       case AvroType.UNION =>
         val types = sch.getTypes.asScala.toList
         Schema.TUnion(
-          NonEmptyList.fromListUnsafe(types),
-          i => types.map(x => sch.getIndexNamed(x.getName)).zip(types).toMap.get(i)
+          NonEmptyList.fromListUnsafe(types)
         )
       case AvroType.FIXED =>
         Schema.TFixed(
