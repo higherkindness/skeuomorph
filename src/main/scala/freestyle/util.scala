@@ -6,7 +6,7 @@ import avro.{Schema => AvroSchema}
 import turtles._
 import turtles.implicits._
 
-object utils {
+object util {
 
   import Schema._
 
@@ -105,7 +105,7 @@ object utils {
     case TList(value)     => s"List[$value]"
     case TRequired(value) => value
     case TCoproduct(invariants) =>
-      invariants.toList.mkString("Cop[", " :: ", ":: Tnil]")
+      invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
     case TSum(name, fields) =>
       val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
       s"""
