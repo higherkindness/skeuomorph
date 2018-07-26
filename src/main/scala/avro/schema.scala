@@ -4,23 +4,23 @@ package avro
 import cats.Functor
 import cats.data.NonEmptyList
 
-sealed trait Order
-object Order {
-  case object Ascending  extends Order
-  case object Descending extends Order
-  case object Ignore     extends Order
-}
-
-case class Field[A](
-    name: String,
-    aliases: List[String],
-    doc: Option[String],
-    order: Option[Order],
-    tpe: A
-)
-
 sealed trait Schema[A]
 object Schema {
+
+  sealed trait Order
+  object Order {
+    case object Ascending  extends Order
+    case object Descending extends Order
+    case object Ignore     extends Order
+  }
+
+  case class Field[A](
+      name: String,
+      aliases: List[String],
+      doc: Option[String],
+      order: Option[Order],
+      tpe: A
+  )
 
   type TypeName = String
 

@@ -9,6 +9,8 @@ import org.apache.avro.Schema.{Type => AvroType}
 
 object util {
 
+  import Schema._
+
   def order2Order(avroO: AvroSchema.Field.Order): Order = avroO match {
     case AvroSchema.Field.Order.ASCENDING  => Order.Ascending
     case AvroSchema.Field.Order.DESCENDING => Order.Descending
