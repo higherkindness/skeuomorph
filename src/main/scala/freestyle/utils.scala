@@ -79,18 +79,18 @@ object utils {
     case TList(value)     => s"List[$value]"
     case TRequired(value) => value
     case TSum(name, fields) =>
-      val printFields = fields.map(f => s"case object $f extends $name").mkString("\n")
+      val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
       s"""
-      sealed trait $name
-      object $name {
-        $printFields
-      }
-      """
+sealed trait $name
+object $name {
+  $printFields
+}
+"""
     case TProduct(name, fields) =>
       val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
       s"""
-      @message case class $name($printFields)
-      """
+@message case class $name($printFields)
+"""
   }
 
   /**
