@@ -55,14 +55,15 @@ object utils {
       case TProduct(name, fields) =>
         TProduct[T](
           name,
-          fields.map(f =>
+          fields.map { f: Field[T] =>
             f.copy(tpe = f.tpe.transCataT(_.project match {
               case TProduct(name, _) => TNamedType[T](name).embed
               case TSum(name, _)     => TNamedType[T](name).embed
-              case other             => T.embed(other)
-            })))
+              case other             => other.embed
+            }))
+          }
         ).embed
-      case other => T.embed(other)
+      case other => other.embed
     }
 
   def render: Algebra[Schema, String] = {
