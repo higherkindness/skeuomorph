@@ -2,7 +2,6 @@ package skeuomorph
 package protobuf
 
 import turtles._
-import turtles.data.Fix
 import turtles.implicits._
 
 object util {
@@ -11,7 +10,7 @@ object util {
 
   def printOption(o: Option): String = s"${o.name} = ${o.value}"
 
-  def printType: Algebra[Schema, String] = {
+  def render: Algebra[Schema, String] = {
     case TDouble()        => "double"
     case TFloat()         => "float"
     case TInt32()         => "int32"
@@ -39,14 +38,14 @@ object util {
       val printAliases = aliases.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
 
       s"""
-      enum $name {
-        $printOptions
-        $printSymbols
-        $printAliases
-      }
-      """
+enum $name {
+  $printOptions
+  $printSymbols
+  $printAliases
+}
+"""
     case TMessage(name, fields, reserved) =>
-      val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n")
+      val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
       def printOptions(options: List[Option]) =
         if (options.isEmpty) {
           ""
@@ -57,22 +56,38 @@ object util {
       val printFields =
         fields
           .map(f => s"""${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};""")
-          .mkString("\n")
+          .mkString("\n  ")
       s"""
-      message $name {
-        $printReserved
-        $printFields
-      }
-      """
+message $name {
+  $printReserved
+  $printFields
+}
+"""
   }
 
-  /*
-message SearchRequest {
-  required string query = 1;
-  optional int32 page_number = 2;
-  optional int32 result_per_page = 3 [default = 10];
-  optional Corpus corpus = 4 [default = UNIVERSAL];
-}
+  /**
+   * {{{
+   * scala> import skeuomorph._
+   * import skeuomorph._
+   *
+   * scala> import turtles.data.Mu
+   * import turtles.data.Mu
+   *
+   * scala> import turtles.implicits._
+   * import turtles.implicits._
+   *
+   * scala> protobuf.util.searchRequest[Mu[protobuf.Schema]].cata(protobuf.util.render)
+   * res0: String =
+   * "
+   * message SearchRequest {
+   *
+   *   required string query = 1;
+   *   optional int32 page_number = 2;
+   *   optional int32 results_per_page = 3 [default = 10];
+   *   optional Corpus corpus = 3 [default = UNIVERSAL];
+   * }
+   * "
+   * }}}
    */
   def searchRequest[T](implicit T: Corecursive.Aux[T, Schema]): T =
     TMessage[T](
@@ -81,11 +96,8 @@ message SearchRequest {
         Field("query", TRequired[T](TString[T]().embed).embed, 1, Nil),
         Field("page_number", TOptional[T](TInt32[T]().embed).embed, 2, Nil),
         Field("results_per_page", TOptional[T](TInt32[T]().embed).embed, 3, List(Option("default", "10"))),
-        Field("corpus", TOptional[T](TNamedType[T]("Corpus").embed).embed, 3, List(Option("default", "UNIVERSAL")))
+        Field("corpus", TOptional[T](TNamedType[T]("Corpus").embed).embed, 4, List(Option("default", "UNIVERSAL")))
       ),
       Nil
     ).embed
-
-  val a = searchRequest[Fix[Schema]].cata(printType)
-
 }
