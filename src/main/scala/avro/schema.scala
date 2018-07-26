@@ -7,6 +7,14 @@ import cats.data.NonEmptyList
 sealed trait Schema[A]
 object Schema {
 
+  case class Message[A](name: String, request: A, response: A)
+  case class Protocol[A](
+      name: String,
+      namespace: Option[String],
+      types: List[A],
+      messages: List[Message[A]]
+  )
+
   sealed trait Order
   object Order {
     case object Ascending  extends Order

@@ -122,12 +122,21 @@ object $name {
   }
 
   /**
-   * convert between protobuf & freestyle schemas
+   * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
    */
-  def fromProtoRender[T, U](t: T)(
-      implicit
-      T: Birecursive.Aux[T, ProtoSchema],
-      U: Birecursive.Aux[U, Schema]): String =
-    t.transCata[U](transformProto).transCataT(namedTypes).cata(render)
-
+  def fromAvroProtocol[T, U](proto: AvroSchema.Protocol[T])(
+      implicit T: Recursive.Aux[T, avro.Schema],
+      U: Corecursive.Aux[U, Schema]): Service[U] =
+    Service(
+      proto.namespace.fold("")(identity),
+      proto.name,
+      proto.types.map(t => t.transCata[U](transformAvro)),
+      proto.messages.map(
+        msg =>
+          Service.Operation(
+            msg.name,
+            msg.request.transCata[U](transformAvro),
+            msg.response.transCata[U](transformAvro)
+        ))
+    )
 }

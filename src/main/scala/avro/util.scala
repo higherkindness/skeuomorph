@@ -1,11 +1,14 @@
 package skeuomorph
 package avro
 
+import org.apache.avro.{Schema => AvroSchema, Protocol => AvroProtocol}
+import org.apache.avro.Schema.{Type => AvroType}
+
 import scala.collection.JavaConverters._
+
 import cats.data.NonEmptyList
 import turtles._
-import org.apache.avro.{Schema => AvroSchema}
-import org.apache.avro.Schema.{Type => AvroType}
+import turtles.implicits._
 
 object util {
 
@@ -24,6 +27,20 @@ object util {
     Option(order2Order(avroF.order)),
     avroF.schema
   )
+
+  def fromProto[T](proto: AvroProtocol)(implicit C: Corecursive.Aux[T, Schema]): Protocol[T] = {
+    Protocol(
+      proto.getName,
+      Option(proto.getNamespace),
+      proto.getTypes.asScala.toList.map(_.ana[T](fromAvro)),
+      proto.getMessages.asScala
+        .map({
+          case (_, message) =>
+            Message[T](message.getName, message.getRequest.ana[T](fromAvro), message.getResponse.ana[T](fromAvro))
+        })
+        .toList
+    )
+  }
 
   /**
    * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.AvroSchema]]
