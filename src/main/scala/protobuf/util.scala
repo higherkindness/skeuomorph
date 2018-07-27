@@ -17,8 +17,7 @@
 package skeuomorph
 package protobuf
 
-import turtles._
-import turtles.implicits._
+import qq.droste._
 
 object util {
 
@@ -26,7 +25,7 @@ object util {
 
   def printOption(o: Option): String = s"${o.name} = ${o.value}"
 
-  def render: Algebra[Schema, String] = {
+  def render: Algebra[Schema, String] = Algebra {
     case TDouble()        => "double"
     case TFloat()         => "float"
     case TInt32()         => "int32"
@@ -105,15 +104,18 @@ message $name {
    * "
    * }}}
    */
-  def searchRequest[T](implicit T: Corecursive.Aux[T, Schema]): T =
-    TMessage[T](
-      "SearchRequest",
-      List(
-        Field("query", TRequired[T](TString[T]().embed).embed, 1, Nil),
-        Field("page_number", TOptional[T](TInt32[T]().embed).embed, 2, Nil),
-        Field("results_per_page", TOptional[T](TInt32[T]().embed).embed, 3, List(Option("default", "10"))),
-        Field("corpus", TOptional[T](TNamedType[T]("Corpus").embed).embed, 4, List(Option("default", "UNIVERSAL")))
-      ),
-      Nil
-    ).embed
+  def searchRequest[T](implicit T: Embed[Schema, T]): T = {
+    val embed: Schema[T] => T = T.algebra.run
+    embed(
+      TMessage[T](
+        "SearchRequest",
+        List(
+          Field("query", embed(TRequired[T](embed(TString[T]()))), 1, Nil),
+          Field("page_number", embed(TOptional[T](embed(TInt32[T]()))), 2, Nil),
+          Field("results_per_page", embed(TOptional[T](embed(TInt32[T]()))), 3, List(Option("default", "10"))),
+          Field("corpus", embed(TOptional[T](embed(TNamedType[T]("Corpus")))), 4, List(Option("default", "UNIVERSAL")))
+        ),
+        Nil
+      ))
+  }
 }
