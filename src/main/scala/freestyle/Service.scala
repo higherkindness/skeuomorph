@@ -17,54 +17,42 @@
 package skeuomorph
 package freestyle
 
-import turtles._
-import turtles.implicits._
+//import qq.droste._
 
-/**
- * [[Service]] describes a service representation in freestyle-rpc.
- *
- * @see http://frees.io/docs/rpc/idl-generation
- */
 case class Service[T](pkg: String, name: String, declarations: List[T], operations: List[Service.Operation[T]])
 
 object Service {
 
-  /**
-   * Each one of the endpoints of the service
-   */
   case class Operation[T](name: String, request: T, response: T)
 
-  /**
-   * Optimization to kill recursion in nested product/sum types while
-   * rendering.
-   */
-  def namedTypes[T](t: T)(implicit T: Birecursive.Aux[T, Schema]): T = t.project match {
-    case Schema.TProduct(name, _) => Schema.TNamedType[T](name).embed
-    case Schema.TSum(name, _)     => Schema.TNamedType[T](name).embed
-    case other                    => other.embed
-  }
+  // private def trans[T: Project[Schema, ?]]: Trans[Schema, Schema, T] = Trans { fa =>
+  //   fa match {
+  //     case Schema.TProduct(name, _) => Schema.TNamedType[T](name)
+  //     case Schema.TSum(name, _)     => Schema.TNamedType[T](name)
+  //     case other                    => other
+  //   }
+  // }
 
-  /**
-   * Render a [[Service]] to its String representation
-   */
-  def render[T](service: Service[T])(implicit T: Birecursive.Aux[T, Schema]): String = {
-    val printDeclarations = service.declarations.map(_.cata(util.render)).mkString("\n")
-    val printOperations = service.operations.map { op =>
-      val printRequest  = op.request.transCataT(namedTypes).cata(util.render)
-      val printResponse = op.response.transCataT(namedTypes).cata(util.render)
+//  private def _namedTypes[T: Basis[Schema, ?]]: T => T = scheme.cata(trans[T].algebra)
 
-      s"def ${op.name}(req: $printRequest): F[$printResponse]"
-    } mkString ("\n  ")
-    val printService = s"""
-@service trait ${service.name}[F[_]] {
-  $printOperations
-}
-"""
-    s"""
-package ${service.pkg}
-$printDeclarations
-$printService
-"""
-  }
+//   def renderService[T](service: Service[T])(implicit T: Basis[Schema, T]): String = {
+//     val printDeclarations = service.declarations.map(scheme.cata(render)).mkString("\n")
+//     val printOperations = service.operations.map { op =>
+//       val printRequest  = Simplify.namedTypes(op.request).cata(render)
+//       val printResponse = Simplify.namedTypes(op.response).cata(render)
+
+//       s"def ${op.name}(req: $printRequest): F[$printResponse]"
+//     } mkString ("\n  ")
+//     val printService = s"""
+// @service trait ${service.name}[F[_]] {
+//   $printOperations
+// }
+// """
+//     s"""
+// package ${service.pkg}
+// $printDeclarations
+// $printService
+// """
+//   }
 
 }

@@ -19,8 +19,8 @@ package freestyle
 
 import protobuf.{Schema => ProtoSchema}
 import avro.{Schema => AvroSchema}
-import turtles._
-import turtles.implicits._
+
+import qq.droste._
 
 object util {
 
@@ -29,7 +29,7 @@ object util {
   /**
    * transform Protobuf schema into Freestyle schema
    */
-  def transformProto[A]: ProtoSchema[A] => Schema[A] = {
+  def transformProto[A]: Trans[ProtoSchema, Schema, A] = Trans {
     case ProtoSchema.TDouble()                  => TDouble()
     case ProtoSchema.TFloat()                   => TFloat()
     case ProtoSchema.TInt32()                   => TInt()
@@ -53,7 +53,7 @@ object util {
     case ProtoSchema.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
   }
 
-  def transformAvro[A]: AvroSchema[A] => Schema[A] = {
+  def transformAvro[A]: Trans[AvroSchema, Schema, A] = Trans {
     case AvroSchema.TNull()          => TNull()
     case AvroSchema.TBoolean()       => TBoolean()
     case AvroSchema.TInt()           => TInt()
@@ -90,21 +90,20 @@ object util {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def namedTypes[T](t: T)(implicit T: Birecursive.Aux[T, Schema]): T =
-    t.project match {
-      case TProduct(name, fields) =>
-        TProduct[T](
-          name,
-          fields.map { f: Field[T] =>
-            f.copy(tpe = f.tpe.transCataT(_.project match {
-              case TProduct(name, _) => TNamedType[T](name).embed
-              case TSum(name, _)     => TNamedType[T](name).embed
-              case other             => other.embed
-            }))
-          }
-        ).embed
-      case other => other.embed
-    }
+  def namedTypes[T]: Trans[Schema, Schema, T] = Trans {
+    case TProduct(name, fields) =>
+      TProduct[T](
+        name,
+        fields.map { f: Field[T] =>
+          f.copy(tpe = f.tpe.transCataT(_.project match {
+            case TProduct(name, _) => TNamedType[T](name)
+            case TSum(name, _)     => TNamedType[T](name)
+            case other             => other
+          }))
+        }
+      )
+    case other => other
+  }
 
   def render: Algebra[Schema, String] = {
     case TNull()          => "Null"
