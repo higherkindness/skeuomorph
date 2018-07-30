@@ -1,9 +1,44 @@
+import microsites._
+
 lazy val core = project
   .in(file("."))
   .settings(commonSettings)
   .settings(
     name := "skeuomorph"
   )
+
+lazy val docs = project
+  .in(file("docs"))
+  .dependsOn(core)
+  .settings(moduleName := "skeuomorph-docs")
+  .settings(commonSettings)
+  .settings(compilerPlugins)
+  .settings(noPublishSettings)
+  .settings(
+    micrositeName := "Skeuomorph",
+    micrositeDescription := "IDL schema transformations",
+    micrositeBaseUrl := "frees.io/skeuomorph",
+    micrositeGithubOwner := "frees-io",
+    micrositeGithubRepo := "skeuomorph",
+    micrositeHighlightTheme := "tomorrow",
+    micrositePushSiteWith := GitHub4s,
+    micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
+    micrositeExtraMdFiles := Map(
+      file("README.md") -> ExtraMdFileConfig(
+        "index.md",
+        "home",
+        Map("title" -> "Home", "section" -> "home", "position" -> "0")
+      ),
+      file("CHANGELOG.md") -> ExtraMdFileConfig(
+        "changelog.md",
+        "home",
+        Map("title" -> "changelog", "section" -> "changelog", "position" -> "99")
+      )
+    ),
+    scalacOptions in Tut ~= filterConsoleScalacOptions,
+    scalacOptions in Tut += "-language:postfixOps"
+  )
+  .enablePlugins(MicrositesPlugin)
 
 val catsV       = "1.1.0"
 val kittensV    = "1.1.0"
@@ -30,14 +65,21 @@ onLoad in Global := { s =>
   "dependencyUpdates" :: s
 }
 
+
+lazy val compilerPlugins = Seq(
+  libraryDependencies ++= Seq(
+    compilerPlugin("org.spire-math" % "kind-projector"      % "0.9.7" cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
+  )
+)
+
+
 // General Settings
 lazy val commonSettings = Seq(
   organization := "com.pepegar",
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   scalafmtOnCompile in ThisBuild := true,
-  addCompilerPlugin("org.spire-math" % "kind-projector"      % "0.9.7" cross CrossVersion.binary),
-  addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
   libraryDependencies ++= Seq(
     "org.typelevel"              %% "cats-core"                 % catsV,
     "org.typelevel"              %% "kittens"                   % kittensV,
@@ -46,13 +88,12 @@ lazy val commonSettings = Seq(
     "org.typelevel"              %% "cats-effect"               % catsEffectV,
     "org.technomadic"            %% "turtles-core"              % "0.1.0",
     "org.apache.avro"            %  "avro"                      % "1.8.2",
-
     "org.specs2"                 %% "specs2-core"               % specs2V % Test,
     "org.specs2"                 %% "specs2-scalacheck"         % specs2V % Test,
     "org.typelevel"              %% "discipline"                % disciplineV % Test,
     "io.chrisdavenport"          %% "cats-scalacheck"           % "0.1.0" % Test
   )
-)
+) ++ compilerPlugins
 
 lazy val releaseSettings = {
   import ReleaseTransformations._
@@ -172,7 +213,7 @@ lazy val mimaSettings = {
   )
 }
 
-lazy val skipOnPublishSettings = Seq(
+lazy val noPublishSettings = Seq(
   skip in publish := true,
   publish := (()),
   publishLocal := (()),
