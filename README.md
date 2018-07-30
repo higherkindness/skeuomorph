@@ -9,8 +9,9 @@ Currently skeuomorph supports 3 schemas:
 - Protobuf
 - Freestyle
 
-and has conversions between them.
-
+And provides conversions between them.  This means that you can get a
+`org.apache.avro.Schema` value, and convert it to protobuf, for
+example.  Or to a freestyle service description.
 
 ## Examples
 
