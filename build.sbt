@@ -40,11 +40,6 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
-val catsV       = "1.1.0"
-val specs2V      = "4.2.0"
-val disciplineV  = "0.8"
-val scShapelessV = "1.1.6"
-
 lazy val contributors = Seq(
   "pepegar" -> "Pepe Garcia"
 )
@@ -54,21 +49,20 @@ onLoad in Global := { s =>
   "dependencyUpdates" :: s
 }
 
-
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "com.pepegar",
+  organization := "io.frees",
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
-  scalafmtOnCompile in ThisBuild := true,
+  ThisBuild / scalafmtOnCompile := true,
+  ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
-    "org.typelevel"              %% "cats-core"                 % catsV,
-    "org.technomadic"            %% "turtles-core"              % "0.1.0",
-    "org.apache.avro"            %  "avro"                      % "1.8.2",
-    "org.specs2"                 %% "specs2-core"               % specs2V % Test,
-    "org.specs2"                 %% "specs2-scalacheck"         % specs2V % Test,
-    "org.typelevel"              %% "discipline"                % disciplineV % Test,
-    "io.chrisdavenport"          %% "cats-scalacheck"           % "0.1.0" % Test
+    %%("cats-core"),
+    %%("specs2-core"),
+    %%("specs2-scalacheck"),
+    "org.technomadic"   %% "turtles-core"    % "0.1.0",
+    "org.apache.avro"   % "avro"             % "1.8.2",
+    "io.chrisdavenport" %% "cats-scalacheck" % "0.1.0" % Test
   )
 ) ++ compilerPlugins
 
@@ -76,6 +70,7 @@ lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
     compilerPlugin("org.spire-math" % "kind-projector"      % "0.9.7" cross CrossVersion.binary),
     compilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
+    compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
   )
 )
 
@@ -120,11 +115,11 @@ lazy val releaseSettings = {
     releasePublishArtifactsAction := PgpKeys.publishSigned.value,
     scmInfo := Some(
       ScmInfo(
-        url("https://github.com/pepegar/skeuomorph"),
-        "git@github.com:pepegar/skeuomorph.git"
+        url("https://github.com/frees-io/skeuomorph"),
+        "git@github.com:frees-io/skeuomorph.git"
       )
     ),
-    homepage := Some(url("https://github.com/pepegar/skeuomorph")),
+    homepage := Some(url("https://github.com/frees-io/skeuomorph")),
     licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
     publishMavenStyle := true,
     pomIncludeRepository := { _ =>
