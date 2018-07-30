@@ -47,29 +47,10 @@ lazy val commonSettings = Seq(
     "org.technomadic"            %% "turtles-core"              % "0.1.0",
     "org.apache.avro"            %  "avro"                      % "1.8.2",
 
-
-    "com.chuusai"                %% "shapeless"                 % shapelessV,
-    "co.fs2"                     %% "fs2-core"                  % fs2V,
-    "co.fs2"                     %% "fs2-io"                    % fs2V,
-    "org.http4s"                 %% "http4s-dsl"                % http4sV,
-    "org.http4s"                 %% "http4s-blaze-server"       % http4sV,
-    "org.http4s"                 %% "http4s-blaze-client"       % http4sV,
-    "org.http4s"                 %% "http4s-circe"              % http4sV,
-    "io.circe"                   %% "circe-core"                % circeV,
-    "io.circe"                   %% "circe-generic"             % circeV,
-    "io.circe"                   %% "circe-parser"              % circeV,
-    "org.tpolecat"               %% "doobie-core"               % doobieV,
-    "org.tpolecat"               %% "doobie-h2"                 % doobieV,
-    "org.tpolecat"               %% "doobie-hikari"             % doobieV,
-    "org.tpolecat"               %% "doobie-postgres"           % doobieV,
-    "org.tpolecat"               %% "doobie-specs2"             % doobieV % Test,
-    "com.github.pureconfig"      %% "pureconfig"                % pureConfigV,
-    "eu.timepit"                 %% "refined"                   % refinedV,
-    "eu.timepit"                 %% "refined-scalacheck"        % refinedV % Test,
     "org.specs2"                 %% "specs2-core"               % specs2V % Test,
     "org.specs2"                 %% "specs2-scalacheck"         % specs2V % Test,
     "org.typelevel"              %% "discipline"                % disciplineV % Test,
-    "com.github.alexarchambault" %% "scalacheck-shapeless_1.13" % scShapelessV % Test
+    "io.chrisdavenport"          %% "cats-scalacheck"           % "0.1.0" % Test
   )
 )
 
