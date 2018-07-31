@@ -1,6 +1,10 @@
 import microsites._
+import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
+import sbtorgpolicies.templates.badges._
+import sbtorgpolicies.templates._
 
-lazy val core = project
+
+lazy val root = project
   .in(file("."))
   .settings(commonSettings)
   .settings(
@@ -9,14 +13,14 @@ lazy val core = project
 
 lazy val docs = project
   .in(file("docs"))
-  .dependsOn(core)
+  .dependsOn(root)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
   .settings(compilerPlugins)
   .settings(noPublishSettings)
   .settings(
     micrositeName := "Skeuomorph",
-    micrositeDescription := "IDL schema transformations",
+    micrositeDescription := "Schema transformations",
     micrositeBaseUrl := "frees.io/skeuomorph",
     micrositeGithubOwner := "frees-io",
     micrositeGithubRepo := "skeuomorph",
@@ -64,6 +68,16 @@ lazy val commonSettings = Seq(
     %%("specs2-core") % Test,
     %%("specs2-scalacheck") % Test,
     "io.chrisdavenport" %% "cats-scalacheck" % "0.1.0" % Test
+  ),
+  orgProjectName := "Skeuomorph",
+  orgBadgeListSetting := List(
+    TravisBadge.apply,
+    CodecovBadge.apply,
+    { info => MavenCentralBadge.apply(info.copy(libName = "skeuomorph")) },
+    ScalaLangBadge.apply,
+    LicenseBadge.apply,
+    { info => GitterBadge.apply(info.copy(owner = "frees-io", repo = "skeuomorph")) },
+    GitHubIssuesBadge.apply
   )
 ) ++ compilerPlugins
 
