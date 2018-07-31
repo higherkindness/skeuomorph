@@ -17,7 +17,11 @@
 package skeuomorph
 package freestyle
 
-//import qq.droste._
+import util.Optimize.namedTypes
+
+import cats.instances.function._
+import cats.syntax.compose._
+import qq.droste._
 
 case class Service[T](pkg: String, name: String, declarations: List[T], operations: List[Service.Operation[T]])
 
@@ -25,34 +29,27 @@ object Service {
 
   case class Operation[T](name: String, request: T, response: T)
 
-  // private def trans[T: Project[Schema, ?]]: Trans[Schema, Schema, T] = Trans { fa =>
-  //   fa match {
-  //     case Schema.TProduct(name, _) => Schema.TNamedType[T](name)
-  //     case Schema.TSum(name, _)     => Schema.TNamedType[T](name)
-  //     case other                    => other
-  //   }
-  // }
+  def render[T](service: Service[T])(implicit T: Basis[Schema, T]): String = {
+    val renderSchema: T => String = scheme.cata(util.render)
+    val optimizeAndPrint          = namedTypes >>> renderSchema
 
-//  private def _namedTypes[T: Basis[Schema, ?]]: T => T = scheme.cata(trans[T].algebra)
+    val printDeclarations = service.declarations.map(renderSchema).mkString("\n")
+    val printOperations = service.operations.map { op =>
+      val printRequest  = optimizeAndPrint(op.request)
+      val printResponse = optimizeAndPrint(op.response)
 
-//   def renderService[T](service: Service[T])(implicit T: Basis[Schema, T]): String = {
-//     val printDeclarations = service.declarations.map(scheme.cata(render)).mkString("\n")
-//     val printOperations = service.operations.map { op =>
-//       val printRequest  = Simplify.namedTypes(op.request).cata(render)
-//       val printResponse = Simplify.namedTypes(op.response).cata(render)
-
-//       s"def ${op.name}(req: $printRequest): F[$printResponse]"
-//     } mkString ("\n  ")
-//     val printService = s"""
-// @service trait ${service.name}[F[_]] {
-//   $printOperations
-// }
-// """
-//     s"""
-// package ${service.pkg}
-// $printDeclarations
-// $printService
-// """
-//   }
+      s"def ${op.name}(req: $printRequest): F[$printResponse]"
+    } mkString ("\n  ")
+    val printService = s"""
+@service trait ${service.name}[F[_]] {
+  $printOperations
+}
+"""
+    s"""
+package ${service.pkg}
+$printDeclarations
+$printService
+"""
+  }
 
 }
