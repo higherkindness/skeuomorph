@@ -38,7 +38,7 @@ val definition = """
 
 val schema: Schema = new Schema.Parser().parse(definition)
 
-schema.ana[Mu[avro.Schema]](avro.util.fromAvro) // org.apache.avro.Schema => skeuomorph.avro.Schema
-      .transCata[Mu[freestyle.Schema]](freestyle.util.transformAvro) // skeuomorph.avro.Schema => skeuomorph.freestyle.Schema
-      .cata(freestyle.util.render) // skeuomorph.freestyle.Schema => String
+schema.ana[Mu[avro.Schema]](avro.util.fromAvro). // org.apache.avro.Schema => skeuomorph.avro.Schema
+      transCata[Mu[freestyle.Schema]](freestyle.util.transformAvro). // skeuomorph.avro.Schema => skeuomorph.freestyle.Schema
+      cata(freestyle.util.render) // skeuomorph.freestyle.Schema => String
 ```

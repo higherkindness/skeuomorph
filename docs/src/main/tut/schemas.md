@@ -6,8 +6,8 @@ position: 1
 
 # Schemas
 
-The following table expects you to have the following imports in
-place:
+> Examples in this page expects you to have the following imports in
+> place:
 
 ```tut:silent
 import turtles.data._
@@ -15,8 +15,7 @@ import turtles.implicits._
 import skeuomorph._
 ```
 
-Currently in skeuomorph there are some schemas defined for different
-cases:
+Currently in skeuomorph there are schemas defined for different cases:
 
 - [Avro][]
 - [Protobuf][]
@@ -31,10 +30,6 @@ cases:
 | **Protobuf**      |                                  |                                  | `protobuf.transCata(fromProtobuf)` |
 | **freestyle-rpc** | `frees.transCata(fromFreestyle)` | `frees.transCata(fromFreestyle)` |                                    |
 
-
-```tut
-val asdf = 2
-```
 
 [Avro]: https://avro.apache.org/
 [Protobuf]: https://developers.google.com/protocol-buffers/
