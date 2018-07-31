@@ -59,10 +59,10 @@ lazy val commonSettings = Seq(
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
     %%("cats-core"),
-    %%("specs2-core"),
-    %%("specs2-scalacheck"),
     "org.technomadic"   %% "turtles-core"    % "0.1.0",
     "org.apache.avro"   % "avro"             % "1.8.2",
+    %%("specs2-core") % Test,
+    %%("specs2-scalacheck") % Test,
     "io.chrisdavenport" %% "cats-scalacheck" % "0.1.0" % Test
   )
 ) ++ compilerPlugins
