@@ -74,38 +74,49 @@ object util {
   }
 
   /**
-   * micro-optimization to convert types from fields in a product to
-   * NamedTypes.
-   *
-   * Without this optimization, printing a product containing fields
-   * of other products would end up with something like:
-   *
-   * {{{
-   * case class Product(field1: String, field2: case class OtherField())
-   * }}}
-   *
-   * With it, we cut recursion in messages, to leave only type names:
-   *
-   * {{{
-   * case class Product(field1: String, field2: OtherField)
-   * }}}
+   * Optimize object contains same schema transformations
    */
-  def namedTypes[T]: Trans[Schema, Schema, T] = Trans {
-    case TProduct(name, fields) =>
-      TProduct[T](
-        name,
-        fields.map { f: Field[T] =>
-          f.copy(tpe = f.tpe.transCataT(_.project match {
-            case TProduct(name, _) => TNamedType[T](name)
-            case TSum(name, _)     => TNamedType[T](name)
-            case other             => other
-          }))
-        }
-      )
-    case other => other
+  object Optimize {
+
+    /**
+     * micro-optimization to convert types from fields in a product to
+     * NamedTypes.
+     *
+     * Without this optimization, printing a product containing fields
+     * of other products would end up with something like:
+     *
+     * {{{
+     * case class Product(field1: String, field2: case class OtherField())
+     * }}}
+     *
+     * With it, we cut recursion in messages, to leave only type names:
+     *
+     * {{{
+     * case class Product(field1: String, field2: OtherField)
+     * }}}
+     */
+    def nestedNamedTypesTrans[T](implicit T: Basis[Schema, T]): Trans[Schema, Schema, T] = Trans {
+      case TProduct(name, fields) =>
+        TProduct[T](
+          name,
+          fields.map { f: Field[T] =>
+            f.copy(tpe = namedTypes(T)(f.tpe))
+          }
+        )
+      case other => other
+    }
+
+    def namedTypesTrans[T]: Trans[Schema, Schema, T] = Trans {
+      case TProduct(name, _) => TNamedType[T](name)
+      case TSum(name, _)     => TNamedType[T](name)
+      case other             => other
+    }
+
+    def namedTypes[T: Basis[Schema, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
+    def nestedNamedTypes[T: Basis[Schema, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
   }
 
-  def render: Algebra[Schema, String] = {
+  def render: Algebra[Schema, String] = Algebra {
     case TNull()          => "Null"
     case TDouble()        => "Double"
     case TFloat()         => "Float"
@@ -139,19 +150,22 @@ object $name {
   /**
    * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](proto: AvroSchema.Protocol[T])(
-      implicit T: Recursive.Aux[T, avro.Schema],
-      U: Corecursive.Aux[U, Schema]): Service[U] =
+  def fromAvroProtocol[T, U](
+      proto: AvroSchema.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
+
+    val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
+
     Service(
       proto.namespace.fold("")(identity),
       proto.name,
-      proto.types.map(t => t.transCata[U](transformAvro)),
+      proto.types.map(toFreestyle),
       proto.messages.map(
         msg =>
           Service.Operation(
             msg.name,
-            msg.request.transCata[U](transformAvro),
-            msg.response.transCata[U](transformAvro)
+            toFreestyle(msg.request),
+            toFreestyle(msg.response)
         ))
     )
+  }
 }
