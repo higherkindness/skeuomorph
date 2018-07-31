@@ -17,18 +17,28 @@ example.  Or to a freestyle service description.
 
 ### parsing an avro schema and then converting it to scala:
 
-```scala
-import java.io.File
+```tut
 import org.apache.avro._
 import skeuomorph._
-import skeuomorph.freestyle.service._
 import turtles._
 import turtles.data.Mu
 import turtles.implicits._
 
-val schema: Schema = new Schema.Parser().parse(new File("user.avsc"));
+val definition = """
+  {"namespace": "example.avro",
+   "type": "record",
+   "name": "User",
+   "fields": [
+       {"name": "name", "type": "string"},
+       {"name": "favorite_number",  "type": ["int", "null"]},
+       {"name": "favorite_color", "type": ["string", "null"]}
+   ]
+  }
+  """
+
+val schema: Schema = new Schema.Parser().parse(definition)
 
 schema.ana[Mu[avro.Schema]](avro.util.fromAvro) // org.apache.avro.Schema => skeuomorph.avro.Schema
-      .transCata[Mu[freestyle.Schema]](freestyle.utils.transformAvro) // skeuomorph.avro.Schema => skeuomorph.freestyle.Schema
-      .cata(freestyle.utils.render) // skeuomorph.freestyle.Schema => String
+      .transCata[Mu[freestyle.Schema]](freestyle.util.transformAvro) // skeuomorph.avro.Schema => skeuomorph.freestyle.Schema
+      .cata(freestyle.util.render) // skeuomorph.freestyle.Schema => String
 ```
