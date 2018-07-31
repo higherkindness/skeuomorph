@@ -23,9 +23,7 @@ import org.specs2._
 import org.scalacheck._
 import org.apache.avro.{Schema => AvroSchema}
 
-import turtles.Algebra
-import turtles.data.Mu
-import turtles.implicits._
+import qq.droste._
 
 class AvroSpec extends Specification with ScalaCheck {
 
@@ -40,14 +38,14 @@ class AvroSpec extends Specification with ScalaCheck {
   """
 
   def convertSchema = Prop.forAll { (schema: AvroSchema) =>
-    schema
-      .ana[Mu[Schema]](util.fromAvro)
-      .cata(checkSchema(schema))
+    val test = scheme.hylo(checkSchema(schema).run, util.fromAvro.run)
+
+    test(schema)
   }
 
   def convertProtocol = todo
 
-  def checkSchema(sch: AvroSchema): Algebra[Schema, Boolean] = {
+  def checkSchema(sch: AvroSchema): Algebra[Schema, Boolean] = Algebra {
     case Schema.TNull()    => sch.getType should_== AvroSchema.Type.NULL
     case Schema.TBoolean() => sch.getType should_== AvroSchema.Type.BOOLEAN
     case Schema.TInt()     => sch.getType should_== AvroSchema.Type.INT

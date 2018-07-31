@@ -23,8 +23,7 @@ import org.apache.avro.Schema.{Type => AvroType}
 import scala.collection.JavaConverters._
 
 import cats.data.NonEmptyList
-import turtles._
-import turtles.implicits._
+import qq.droste._
 
 object util {
 
@@ -44,15 +43,17 @@ object util {
     avroF.schema
   )
 
-  def fromProto[T](proto: AvroProtocol)(implicit C: Corecursive.Aux[T, Schema]): Protocol[T] = {
+  def fromProto[T](proto: AvroProtocol)(implicit T: Embed[Schema, T]): Protocol[T] = {
+    val toFreestyle: AvroSchema => T = scheme.ana(fromAvro)
+
     Protocol(
       proto.getName,
       Option(proto.getNamespace),
-      proto.getTypes.asScala.toList.map(_.ana[T](fromAvro)),
+      proto.getTypes.asScala.toList.map(toFreestyle),
       proto.getMessages.asScala
         .map({
           case (_, message) =>
-            Message[T](message.getName, message.getRequest.ana[T](fromAvro), message.getResponse.ana[T](fromAvro))
+            Message[T](message.getName, toFreestyle(message.getRequest), toFreestyle(message.getResponse))
         })
         .toList
     )
@@ -61,7 +62,7 @@ object util {
   /**
    * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.AvroSchema]]
    */
-  def fromAvro: Coalgebra[Schema, AvroSchema] = { sch =>
+  def fromAvro: Coalgebra[Schema, AvroSchema] = Coalgebra { sch =>
     sch.getType match {
       case AvroType.STRING  => Schema.TString()
       case AvroType.BOOLEAN => Schema.TBoolean()
