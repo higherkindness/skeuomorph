@@ -79,43 +79,4 @@ message $name {
 }
 """
   }
-
-  /**
-   * {{{
-   * scala> import skeuomorph._
-   * import skeuomorph._
-   *
-   * scala> import turtles.data.Mu
-   * import turtles.data.Mu
-   *
-   * scala> import turtles.implicits._
-   * import turtles.implicits._
-   *
-   * scala> protobuf.util.searchRequest[Mu[protobuf.Schema]].cata(protobuf.util.render)
-   * res0: String =
-   * "
-   * message SearchRequest {
-   *
-   *   required string query = 1;
-   *   optional int32 page_number = 2;
-   *   optional int32 results_per_page = 3 [default = 10];
-   *   optional Corpus corpus = 3 [default = UNIVERSAL];
-   * }
-   * "
-   * }}}
-   */
-  def searchRequest[T](implicit T: Embed[Schema, T]): T = {
-    val embed: Schema[T] => T = T.algebra.run
-    embed(
-      TMessage[T](
-        "SearchRequest",
-        List(
-          Field("query", embed(TRequired[T](embed(TString[T]()))), 1, Nil),
-          Field("page_number", embed(TOptional[T](embed(TInt32[T]()))), 2, Nil),
-          Field("results_per_page", embed(TOptional[T](embed(TInt32[T]()))), 3, List(Option("default", "10"))),
-          Field("corpus", embed(TOptional[T](embed(TNamedType[T]("Corpus")))), 4, List(Option("default", "UNIVERSAL")))
-        ),
-        Nil
-      ))
-  }
 }
