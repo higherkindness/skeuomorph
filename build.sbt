@@ -53,6 +53,7 @@ onLoad in Global := { s =>
 lazy val commonSettings = Seq(
   organization := "io.frees",
   scalaVersion := "2.12.6",
+  startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   ThisBuild / scalafmtOnCompile := true,
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
@@ -73,71 +74,6 @@ lazy val compilerPlugins = Seq(
     compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
   )
 )
-
-lazy val releaseSettings = {
-  import ReleaseTransformations._
-  Seq(
-    releaseCrossBuild := true,
-    releaseProcess := Seq[ReleaseStep](
-      checkSnapshotDependencies,
-      inquireVersions,
-      runClean,
-      runTest,
-      setReleaseVersion,
-      commitReleaseVersion,
-      tagRelease,
-      releaseStepCommandAndRemaining("+publishSigned"),
-      setNextVersion,
-      commitNextVersion,
-      releaseStepCommand("sonatypeReleaseAll"),
-      pushChanges
-    ),
-    publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases" at nexus + "service/local/staging/deploy/maven2")
-    },
-    credentials ++= (
-      for {
-        username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-        password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-      } yield
-        Credentials(
-          "Sonatype Nexus Repository Manager",
-          "oss.sonatype.org",
-          username,
-          password
-        )
-    ).toSeq,
-    publishArtifact in Test := false,
-    releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-    scmInfo := Some(
-      ScmInfo(
-        url("https://github.com/frees-io/skeuomorph"),
-        "git@github.com:frees-io/skeuomorph.git"
-      )
-    ),
-    homepage := Some(url("https://github.com/frees-io/skeuomorph")),
-    licenses += ("MIT", url("http://opensource.org/licenses/MIT")),
-    publishMavenStyle := true,
-    pomIncludeRepository := { _ =>
-      false
-    },
-    pomExtra := {
-      <developers>
-        {for ((username, name) <- contributors) yield
-        <developer>
-          <id>{username}</id>
-          <name>{name}</name>
-          <url>http://github.com/{username}</url>
-        </developer>
-        }
-      </developers>
-    }
-  )
-}
 
 lazy val noPublishSettings = Seq(
   skip in publish := true,
