@@ -35,11 +35,12 @@ everywhere:
 ```
 case class Product(field1: String, field2: case class OtherField())
                                            ^---------------------^
-										   see how this is not valid scala code, it should be:
+// see how this is not valid scala code, it should be:
+
 case class Product(field1: String, field2: OtherField)
 ```
 
-We solve this by substituting nested produc types by it's name when
+We solve this by substituting nested product types by it's name when
 they're inside a product themselves.  And we do this with the
 `namedTypes` combinator:
 

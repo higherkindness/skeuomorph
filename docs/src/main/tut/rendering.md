@@ -8,7 +8,7 @@ position: 3
 
 We're able to render schema representation to its String
 representation.  This library doesn't do Codegen, but you can check
-out [freestyle-rpc][] idlGen plugin, which is based in skeuomorph
+out [freestyle-rpc][] idlGen plugin, which is based in skeuomorph.
 
 
-[freestyle-rpc]: http://frees.io/rpc
+[freestyle-rpc]: http://frees.io/docs/rpc/idl-generation
