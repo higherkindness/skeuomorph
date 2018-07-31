@@ -28,21 +28,20 @@ import org.scalacheck.cats.implicits._
 object instances {
 
   implicit val avroSchemaArbitrary: Arbitrary[AvroSchema] = Arbitrary {
-    def createGen(tpe: AvroType): Gen[AvroSchema] =
-      Gen.const(AvroSchema.create(tpe))
-
     val primitives: Gen[AvroSchema] = Gen.oneOf(
-      createGen(AvroType.STRING),
-      createGen(AvroType.BOOLEAN),
-      createGen(AvroType.BYTES),
-      createGen(AvroType.DOUBLE),
-      createGen(AvroType.FLOAT),
-      createGen(AvroType.INT),
-      createGen(AvroType.LONG),
-      createGen(AvroType.NULL)
+      List(
+        AvroType.STRING,
+        AvroType.BOOLEAN,
+        AvroType.BYTES,
+        AvroType.DOUBLE,
+        AvroType.FLOAT,
+        AvroType.INT,
+        AvroType.LONG,
+        AvroType.NULL
+      ).map(AvroSchema.create)
     )
 
-    val nonEmptyString: Gen[String] = Gen.nonEmptyListOf(Gen.alphaChar).map(_.mkString)
+    val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
 
     val arrayOrMap: Gen[AvroSchema] =
       Gen.oneOf(primitives.map(AvroSchema.createMap), primitives.map(AvroSchema.createArray))
