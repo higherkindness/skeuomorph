@@ -25,20 +25,37 @@ import turtles.data.Mu
 import turtles.implicits._
 
 val definition = """
-  {"namespace": "example.avro",
-   "type": "record",
-   "name": "User",
-   "fields": [
-       {"name": "name", "type": "string"},
-       {"name": "favorite_number",  "type": ["int", "null"]},
-       {"name": "favorite_color", "type": ["string", "null"]}
-   ]
-  }
+{
+  "namespace": "example.avro",
+  "type": "record",
+  "name": "User",
+  "fields": [
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "favorite_number",
+      "type": [
+        "int",
+        "null"
+      ]
+    },
+    {
+      "name": "favorite_color",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  ]
+}
   """
 
 val schema: Schema = new Schema.Parser().parse(definition)
 
-schema.ana[Mu[avro.Schema]](avro.util.fromAvro). // org.apache.avro.Schema => skeuomorph.avro.Schema
-      transCata[Mu[freestyle.Schema]](freestyle.util.transformAvro). // skeuomorph.avro.Schema => skeuomorph.freestyle.Schema
-      cata(freestyle.util.render) // skeuomorph.freestyle.Schema => String
+schema.
+  ana[Mu[avro.Schema]](avro.util.fromAvro). // org.apache.avro.Schema => skeuomorph.avro.Schema.
+  transCata[Mu[freestyle.Schema]](freestyle.util.transformAvro). // skeuomorph.avro.Schema => skeuomorph.freestyle.Schema.
+  cata(freestyle.util.render) // skeuomorph.freestyle.Schema => String
 ```
