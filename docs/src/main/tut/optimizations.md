@@ -20,9 +20,10 @@ mechanisms to apply that function to the AST correctly.  Let's see
 ## NamedTypes
 
 ```tut:invisible
-import turtles._
-import turtles.data._
-import turtles.implicits._
+import qq.droste._
+import qq.droste.data._
+import qq.droste.implicits._
+
 import skeuomorph.freestyle._
 import skeuomorph.freestyle.Schema._
 ```
@@ -42,32 +43,39 @@ case class Product(field1: String, field2: OtherField)
 
 We solve this by substituting nested product types by it's name when
 they're inside a product themselves.  And we do this with the
-`namedTypes` combinator:
+`namedTypes` combinator (in `skeuomorph.freestyle.util`):
 
-```tut:silent
-def namedTypes[T](t: T)(implicit T: Birecursive.Aux[T, Schema]): T =
-  t.project match {
-    case TProduct(name, fields) =>
-      TProduct[T](
-        name,
-        fields.map { f: Field[T] =>
-          f.copy(tpe = f.tpe.transCataT(_.project match {
-            case TProduct(name, _) => TNamedType[T](name).embed
-            case TSum(name, _)     => TNamedType[T](name).embed
-            case other             => other.embed
-          }))
-        }
-      ).embed
-    case other => other.embed
-  }
+```scala
+def nestedNamedTypesTrans[T](implicit T: Basis[Schema, T]): Trans[Schema, Schema, T] = Trans {
+  case TProduct(name, fields) =>
+    TProduct[T](
+      name,
+      fields.map { f: Field[T] =>
+        f.copy(tpe = namedTypes(T)(f.tpe))
+      }
+    )
+  case other => other
+}
+  
+def namedTypesTrans[T]: Trans[Schema, Schema, T] = Trans {
+  case TProduct(name, _) => TNamedType[T](name)
+  case TSum(name, _)     => TNamedType[T](name)
+  case other             => other
+}
+
+def namedTypes[T: Basis[Schema, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
+def nestedNamedTypes[T: Basis[Schema, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+
 ```
 
 and then apply the `namedTypes` combinator to the AST:
 
 ```tut:invisible
-def ast[T](implicit T: Birecursive.Aux[T, Schema]): T = TNull[T]().embed
+def ast = Fix(TNull[Fix[Schema]]())
 ```
 
 ```tut
-ast[Mu[Schema]].transCataT(namedTypes)
+val optimization = Optimize.namedTypes[Fix[Schema]]
+
+optimization(ast)
 ```

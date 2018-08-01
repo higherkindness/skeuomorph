@@ -6,15 +6,6 @@ position: 1
 
 # Schemas
 
-> Examples in this page expects you to have the following imports in
-> place:
-
-```tut:silent
-import turtles.data._
-import turtles.implicits._
-import skeuomorph._
-```
-
 Currently in skeuomorph there are schemas defined for different cases:
 
 - [Avro][]
