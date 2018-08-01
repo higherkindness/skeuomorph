@@ -21,9 +21,9 @@ import scala.collection.JavaConverters._
 
 import cats.Functor
 import cats.data.NonEmptyList
-import org.apache.avro.{Schema => AvroSchema}
-import org.apache.avro.Schema.{Type => AvroType}
 import qq.droste.Coalgebra
+import org.apache.avro.Schema
+import org.apache.avro.Schema.Type
 
 sealed trait AvroF[A]
 object AvroF {
@@ -96,21 +96,21 @@ object AvroF {
   }
 
   /**
-   * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.AvroSchema]]
+   * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.Schema]]
    */
-  def fromAvro: Coalgebra[AvroF, AvroSchema] = Coalgebra { sch =>
+  def fromAvro: Coalgebra[AvroF, Schema] = Coalgebra { sch =>
     sch.getType match {
-      case AvroType.STRING  => AvroF.TString()
-      case AvroType.BOOLEAN => AvroF.TBoolean()
-      case AvroType.BYTES   => AvroF.TBytes()
-      case AvroType.DOUBLE  => AvroF.TDouble()
-      case AvroType.FLOAT   => AvroF.TFloat()
-      case AvroType.INT     => AvroF.TInt()
-      case AvroType.LONG    => AvroF.TLong()
-      case AvroType.NULL    => AvroF.TNull()
-      case AvroType.MAP     => AvroF.TMap(sch.getValueType)
-      case AvroType.ARRAY   => AvroF.TArray(sch.getElementType)
-      case AvroType.RECORD =>
+      case Type.STRING  => AvroF.TString()
+      case Type.BOOLEAN => AvroF.TBoolean()
+      case Type.BYTES   => AvroF.TBytes()
+      case Type.DOUBLE  => AvroF.TDouble()
+      case Type.FLOAT   => AvroF.TFloat()
+      case Type.INT     => AvroF.TInt()
+      case Type.LONG    => AvroF.TLong()
+      case Type.NULL    => AvroF.TNull()
+      case Type.MAP     => AvroF.TMap(sch.getValueType)
+      case Type.ARRAY   => AvroF.TArray(sch.getElementType)
+      case Type.RECORD =>
         AvroF.TRecord(
           sch.getName,
           Option(sch.getNamespace),
@@ -118,7 +118,7 @@ object AvroF {
           Option(sch.getDoc),
           sch.getFields.asScala.toList.map(field2Field)
         )
-      case AvroType.ENUM =>
+      case Type.ENUM =>
         val symbols = sch.getEnumSymbols.asScala.toList
         AvroF.TEnum(
           sch.getName,
@@ -127,12 +127,12 @@ object AvroF {
           Option(sch.getDoc),
           symbols
         )
-      case AvroType.UNION =>
+      case Type.UNION =>
         val types = sch.getTypes.asScala.toList
         AvroF.TUnion(
           NonEmptyList.fromListUnsafe(types)
         )
-      case AvroType.FIXED =>
+      case Type.FIXED =>
         AvroF.TFixed(
           sch.getName,
           Option(sch.getNamespace),
@@ -142,13 +142,13 @@ object AvroF {
     }
   }
 
-  def order2Order(avroO: AvroSchema.Field.Order): Order = avroO match {
-    case AvroSchema.Field.Order.ASCENDING  => Order.Ascending
-    case AvroSchema.Field.Order.DESCENDING => Order.Descending
-    case AvroSchema.Field.Order.IGNORE     => Order.Ignore
+  def order2Order(avroO: Schema.Field.Order): Order = avroO match {
+    case Schema.Field.Order.ASCENDING  => Order.Ascending
+    case Schema.Field.Order.DESCENDING => Order.Descending
+    case Schema.Field.Order.IGNORE     => Order.Ignore
   }
 
-  def field2Field(avroF: AvroSchema.Field): Field[AvroSchema] = Field(
+  def field2Field(avroF: Schema.Field): Field[Schema] = Field(
     avroF.name,
     avroF.aliases.asScala.toList,
     Option(avroF.doc),

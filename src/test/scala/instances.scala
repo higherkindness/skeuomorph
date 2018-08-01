@@ -18,8 +18,8 @@ package skeuomorph
 package avro
 
 import scala.collection.JavaConverters._
-import org.apache.avro.{Schema => AvroSchema}
-import org.apache.avro.Schema.{Type => AvroType}
+import org.apache.avro.Schema
+import org.apache.avro.Schema.Type
 
 import cats.implicits._
 import org.scalacheck._
@@ -27,35 +27,35 @@ import org.scalacheck.cats.implicits._
 
 object instances {
 
-  implicit val avroSchemaArbitrary: Arbitrary[AvroSchema] = Arbitrary {
-    val primitives: Gen[AvroSchema] = Gen.oneOf(
+  implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
+    val primitives: Gen[Schema] = Gen.oneOf(
       List(
-        AvroType.STRING,
-        AvroType.BOOLEAN,
-        AvroType.BYTES,
-        AvroType.DOUBLE,
-        AvroType.FLOAT,
-        AvroType.INT,
-        AvroType.LONG,
-        AvroType.NULL
-      ).map(AvroSchema.create)
+        Type.STRING,
+        Type.BOOLEAN,
+        Type.BYTES,
+        Type.DOUBLE,
+        Type.FLOAT,
+        Type.INT,
+        Type.LONG,
+        Type.NULL
+      ).map(Schema.create)
     )
 
     val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
 
-    val arrayOrMap: Gen[AvroSchema] =
-      Gen.oneOf(primitives.map(AvroSchema.createMap), primitives.map(AvroSchema.createArray))
+    val arrayOrMap: Gen[Schema] =
+      Gen.oneOf(primitives.map(Schema.createMap), primitives.map(Schema.createArray))
 
-    val union: Gen[AvroSchema] =
-      Gen.nonEmptyContainerOf[Set, AvroSchema](primitives).map(l => AvroSchema.createUnion(l.toList.asJava))
+    val union: Gen[Schema] =
+      Gen.nonEmptyContainerOf[Set, Schema](primitives).map(l => Schema.createUnion(l.toList.asJava))
 
-    def field(name: String): Gen[AvroSchema.Field] =
+    def field(name: String): Gen[Schema.Field] =
       for {
         schema <- Gen.oneOf(primitives, arrayOrMap, union)
         doc    <- nonEmptyString
-      } yield new AvroSchema.Field(name, schema, doc, null.asInstanceOf[Any])
+      } yield new Schema.Field(name, schema, doc, null.asInstanceOf[Any])
 
-    val record: Gen[AvroSchema] = (
+    val record: Gen[Schema] = (
       nonEmptyString,
       nonEmptyString,
       nonEmptyString,
@@ -64,7 +64,7 @@ object instances {
       }
     ).mapN {
       case (name, doc, namespace, fields) =>
-        AvroSchema.createRecord(name, doc, namespace, false, fields.asJava)
+        Schema.createRecord(name, doc, namespace, false, fields.asJava)
     }
 
     Gen.oneOf(primitives, arrayOrMap, union, record)

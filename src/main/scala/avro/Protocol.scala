@@ -17,7 +17,8 @@
 package skeuomorph
 package avro
 
-import org.apache.avro.{Schema => AvroSchema, Protocol => AvroProtocol}
+import org.apache.avro.Schema
+import org.apache.avro.{Protocol => AvroProtocol}
 import scala.collection.JavaConverters._
 
 import qq.droste._

@@ -92,7 +92,7 @@ val parseAvroSchema: Schema => Mu[freestyle.Schema] =
 val printSchema: Mu[freestyle.Schema] => String =
   scheme.cata(render)
 
-(parseAvroSchema >>> printSchema)(schema)
+(parseAvro >>> print)(schema)
 ```
 
 

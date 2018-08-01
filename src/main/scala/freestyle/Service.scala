@@ -54,10 +54,10 @@ object Service {
   }
 
   def render[T](service: Service[T])(implicit T: Basis[FreesF, T]): String = {
-    val renderSchemaF: T => String = scheme.cata(FreesF.render)
-    val optimizeAndPrint           = namedTypes >>> renderSchemaF
+    val renderFrees: T => String = scheme.cata(FreesF.render)
+    val optimizeAndPrint         = namedTypes >>> renderFrees
 
-    val printDeclarations = service.declarations.map(renderSchemaF).mkString("\n")
+    val printDeclarations = service.declarations.map(renderFrees).mkString("\n")
     val printOperations = service.operations.map { op =>
       val printRequest  = optimizeAndPrint(op.request)
       val printResponse = optimizeAndPrint(op.response)
