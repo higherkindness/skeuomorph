@@ -34,7 +34,7 @@ object Service {
    * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
    */
   def fromAvroProtocol[T, U](
-      proto: avro.Schema.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
+      proto: avro.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
 
     val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
 
