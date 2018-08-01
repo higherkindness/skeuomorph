@@ -21,7 +21,6 @@ import cats.Functor
 import qq.droste.Algebra
 
 sealed trait Schema[A]
-
 object Schema {
   case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
   case class Option(name: String, value: String)
