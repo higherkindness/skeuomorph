@@ -30,7 +30,7 @@ case class Protocol[A](
 )
 
 object Protocol {
-  import Schema._
+  import AvroF._
 
   case class Message[A](name: String, request: A, response: A)
 

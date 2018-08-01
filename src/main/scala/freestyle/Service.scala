@@ -17,6 +17,7 @@
 package skeuomorph
 package freestyle
 
+import avro.AvroF
 import Optimize.namedTypes
 import Transform.transformAvro
 
@@ -33,8 +34,7 @@ object Service {
   /**
    * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](
-      proto: avro.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
+  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[FreesF, U]): Service[U] = {
 
     val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
     val toOperation: avro.Protocol.Message[T] => Operation[U] =
@@ -53,11 +53,11 @@ object Service {
     )
   }
 
-  def render[T](service: Service[T])(implicit T: Basis[Schema, T]): String = {
-    val renderSchema: T => String = scheme.cata(Schema.render)
-    val optimizeAndPrint          = namedTypes >>> renderSchema
+  def render[T](service: Service[T])(implicit T: Basis[FreesF, T]): String = {
+    val renderSchemaF: T => String = scheme.cata(FreesF.render)
+    val optimizeAndPrint           = namedTypes >>> renderSchemaF
 
-    val printDeclarations = service.declarations.map(renderSchema).mkString("\n")
+    val printDeclarations = service.declarations.map(renderSchemaF).mkString("\n")
     val printOperations = service.operations.map { op =>
       val printRequest  = optimizeAndPrint(op.request)
       val printResponse = optimizeAndPrint(op.response)

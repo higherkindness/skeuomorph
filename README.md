@@ -48,8 +48,9 @@ libraryDependencies += "io.frees" %% "skeuomorph" % "0.0.1"
 import org.apache.avro._
 import skeuomorph._
 import skeuomorph.freestyle.Transform.transformAvro
-import skeuomorph.freestyle.Schema.render
-import skeuomorph.avro.Schema.fromAvro
+import skeuomorph.freestyle.FreesF
+import skeuomorph.freestyle.FreesF.render
+import skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
 import qq.droste.implicits._

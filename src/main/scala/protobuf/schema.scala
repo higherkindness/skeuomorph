@@ -20,36 +20,36 @@ package protobuf
 import cats.Functor
 import qq.droste.Algebra
 
-sealed trait Schema[A]
-object Schema {
+sealed trait ProtobufF[A]
+object ProtobufF {
   case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
   case class Option(name: String, value: String)
 
-  case class TDouble[A]()                extends Schema[A]
-  case class TFloat[A]()                 extends Schema[A]
-  case class TInt32[A]()                 extends Schema[A]
-  case class TInt64[A]()                 extends Schema[A]
-  case class TUint32[A]()                extends Schema[A]
-  case class TUint64[A]()                extends Schema[A]
-  case class TSint32[A]()                extends Schema[A]
-  case class TSint64[A]()                extends Schema[A]
-  case class TFixed32[A]()               extends Schema[A]
-  case class TFixed64[A]()               extends Schema[A]
-  case class TSfixed32[A]()              extends Schema[A]
-  case class TSfixed64[A]()              extends Schema[A]
-  case class TBool[A]()                  extends Schema[A]
-  case class TString[A]()                extends Schema[A]
-  case class TBytes[A]()                 extends Schema[A]
-  case class TNamedType[A](name: String) extends Schema[A]
-  case class TRequired[A](value: A)      extends Schema[A]
-  case class TOptional[A](value: A)      extends Schema[A]
-  case class TRepeated[A](value: A)      extends Schema[A]
+  case class TDouble[A]()                extends ProtobufF[A]
+  case class TFloat[A]()                 extends ProtobufF[A]
+  case class TInt32[A]()                 extends ProtobufF[A]
+  case class TInt64[A]()                 extends ProtobufF[A]
+  case class TUint32[A]()                extends ProtobufF[A]
+  case class TUint64[A]()                extends ProtobufF[A]
+  case class TSint32[A]()                extends ProtobufF[A]
+  case class TSint64[A]()                extends ProtobufF[A]
+  case class TFixed32[A]()               extends ProtobufF[A]
+  case class TFixed64[A]()               extends ProtobufF[A]
+  case class TSfixed32[A]()              extends ProtobufF[A]
+  case class TSfixed64[A]()              extends ProtobufF[A]
+  case class TBool[A]()                  extends ProtobufF[A]
+  case class TString[A]()                extends ProtobufF[A]
+  case class TBytes[A]()                 extends ProtobufF[A]
+  case class TNamedType[A](name: String) extends ProtobufF[A]
+  case class TRequired[A](value: A)      extends ProtobufF[A]
+  case class TOptional[A](value: A)      extends ProtobufF[A]
+  case class TRepeated[A](value: A)      extends ProtobufF[A]
   case class TEnum[A](name: String, symbols: List[(String, Int)], options: List[Option], aliases: List[(String, Int)])
-      extends Schema[A]
-  case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends Schema[A]
+      extends ProtobufF[A]
+  case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
 
-  implicit val schemaFunctor: Functor[Schema] = new Functor[Schema] {
-    def map[A, B](fa: Schema[A])(f: A => B): Schema[B] = fa match {
+  implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
+    def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
       case TDouble()                              => TDouble()
       case TFloat()                               => TFloat()
       case TInt32()                               => TInt32()
@@ -82,7 +82,7 @@ object Schema {
 
   def printOption(o: Option): String = s"${o.name} = ${o.value}"
 
-  def render: Algebra[Schema, String] = Algebra {
+  def render: Algebra[ProtobufF, String] = Algebra {
     case TDouble()        => "double"
     case TFloat()         => "float"
     case TInt32()         => "int32"
