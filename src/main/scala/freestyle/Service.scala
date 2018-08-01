@@ -17,7 +17,8 @@
 package skeuomorph
 package freestyle
 
-import util.Optimize.namedTypes
+import Optimize.namedTypes
+import Transform.transformAvro
 
 import cats.instances.function._
 import cats.syntax.compose._
@@ -29,8 +30,30 @@ object Service {
 
   case class Operation[T](name: String, request: T, response: T)
 
+  /**
+   * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
+   */
+  def fromAvroProtocol[T, U](
+      proto: avro.Schema.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
+
+    val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
+
+    Service(
+      proto.namespace.fold("")(identity),
+      proto.name,
+      proto.types.map(toFreestyle),
+      proto.messages.map(
+        msg =>
+          Service.Operation(
+            msg.name,
+            toFreestyle(msg.request),
+            toFreestyle(msg.response)
+        ))
+    )
+  }
+
   def render[T](service: Service[T])(implicit T: Basis[Schema, T]): String = {
-    val renderSchema: T => String = scheme.cata(util.render)
+    val renderSchema: T => String = scheme.cata(Schema.render)
     val optimizeAndPrint          = namedTypes >>> renderSchema
 
     val printDeclarations = service.declarations.map(renderSchema).mkString("\n")

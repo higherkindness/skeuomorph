@@ -19,10 +19,9 @@ package freestyle
 
 import protobuf.{Schema => ProtoSchema}
 import avro.{Schema => AvroSchema}
+import qq.droste.Trans
 
-import qq.droste._
-
-object util {
+object Transform {
 
   import Schema._
 
@@ -73,99 +72,4 @@ object util {
       ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   }
 
-  /**
-   * Optimize object contains same schema transformations
-   */
-  object Optimize {
-
-    /**
-     * micro-optimization to convert types from fields in a product to
-     * NamedTypes.
-     *
-     * Without this optimization, printing a product containing fields
-     * of other products would end up with something like:
-     *
-     * {{{
-     * case class Product(field1: String, field2: case class OtherField())
-     * }}}
-     *
-     * With it, we cut recursion in messages, to leave only type names:
-     *
-     * {{{
-     * case class Product(field1: String, field2: OtherField)
-     * }}}
-     */
-    def nestedNamedTypesTrans[T](implicit T: Basis[Schema, T]): Trans[Schema, Schema, T] = Trans {
-      case TProduct(name, fields) =>
-        TProduct[T](
-          name,
-          fields.map { f: Field[T] =>
-            f.copy(tpe = namedTypes(T)(f.tpe))
-          }
-        )
-      case other => other
-    }
-
-    def namedTypesTrans[T]: Trans[Schema, Schema, T] = Trans {
-      case TProduct(name, _) => TNamedType[T](name)
-      case TSum(name, _)     => TNamedType[T](name)
-      case other             => other
-    }
-
-    def namedTypes[T: Basis[Schema, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-    def nestedNamedTypes[T: Basis[Schema, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
-  }
-
-  def render: Algebra[Schema, String] = Algebra {
-    case TNull()          => "Null"
-    case TDouble()        => "Double"
-    case TFloat()         => "Float"
-    case TInt()           => "Int"
-    case TLong()          => "Long"
-    case TBoolean()       => "Boolean"
-    case TString()        => "String"
-    case TByteArray()     => "Array[Byte]"
-    case TNamedType(name) => name
-    case TOption(value)   => s"Option[$value]"
-    case TMap(value)      => s"Map[String, $value]"
-    case TList(value)     => s"List[$value]"
-    case TRequired(value) => value
-    case TCoproduct(invariants) =>
-      invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
-    case TSum(name, fields) =>
-      val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
-      s"""
-sealed trait $name
-object $name {
-  $printFields
-}
-"""
-    case TProduct(name, fields) =>
-      val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
-      s"""
-@message case class $name($printFields)
-"""
-  }
-
-  /**
-   * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
-   */
-  def fromAvroProtocol[T, U](
-      proto: AvroSchema.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
-
-    val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
-
-    Service(
-      proto.namespace.fold("")(identity),
-      proto.name,
-      proto.types.map(toFreestyle),
-      proto.messages.map(
-        msg =>
-          Service.Operation(
-            msg.name,
-            toFreestyle(msg.request),
-            toFreestyle(msg.response)
-        ))
-    )
-  }
 }
