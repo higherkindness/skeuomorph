@@ -19,7 +19,7 @@ lazy val docs = project
   .settings(
     micrositeName := "Skeuomorph",
     micrositeDescription := "Schema transformations",
-    micrositeBaseUrl := "https://frees-io.github.io/skeuomorph",
+    micrositeBaseUrl := "/skeuomorph",
     micrositeGithubOwner := "frees-io",
     micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
