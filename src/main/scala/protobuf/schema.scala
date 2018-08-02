@@ -109,32 +109,30 @@ object Schema {
       val printOptions = options.map(o => s"option ${o.name} = ${o.value}").mkString("\n")
       val printSymbols = symbols.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
       val printAliases = aliases.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
-
       s"""
-enum $name {
-  $printOptions
-  $printSymbols
-  $printAliases
-}
-"""
+      |enum $name {
+      |  $printOptions
+      |  $printSymbols
+      |  $printAliases
+      |}
+      """.stripMargin
     case TMessage(name, fields, reserved) =>
       val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
       def printOptions(options: List[Option]) =
-        if (options.isEmpty) {
+        if (options.isEmpty)
           ""
-        } else {
-          options.map(printOption).mkString(" [", ", ", "]")
-        }
+        else
+          options.map(printOption).mkString(start = " [", sep = ", ", end = "]")
 
       val printFields =
         fields
-          .map(f => s"""${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};""")
+          .map(f => s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};")
           .mkString("\n  ")
       s"""
-message $name {
-  $printReserved
-  $printFields
-}
-"""
+      |message $name {
+      |  $printReserved
+      |  $printFields
+      |}
+      """.stripMargin
   }
 }

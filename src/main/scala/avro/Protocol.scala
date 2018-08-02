@@ -35,18 +35,15 @@ object Protocol {
   case class Message[A](name: String, request: A, response: A)
 
   def fromProto[T](proto: AvroProtocol)(implicit T: Embed[Schema, T]): Protocol[T] = {
-    val toFreestyle: AvroSchema => T = scheme.ana(fromAvro)
+    val toAvroSchema: AvroSchema => T = scheme.ana(fromAvro)
+    def toMessage(kv: (String, AvroProtocol#Message)): Message[T] =
+      Message[T](kv._2.getName, toAvroSchema(kv._2.getRequest), toAvroSchema(kv._2.getResponse))
 
     Protocol(
       proto.getName,
       Option(proto.getNamespace),
-      proto.getTypes.asScala.toList.map(toFreestyle),
-      proto.getMessages.asScala
-        .map({
-          case (_, message) =>
-            Message[T](message.getName, toFreestyle(message.getRequest), toFreestyle(message.getResponse))
-        })
-        .toList
+      proto.getTypes.asScala.toList.map(toAvroSchema),
+      proto.getMessages.asScala.toList.map(toMessage)
     )
   }
 

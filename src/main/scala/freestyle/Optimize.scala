@@ -44,11 +44,10 @@ object Optimize {
    */
   def nestedNamedTypesTrans[T](implicit T: Basis[Schema, T]): Trans[Schema, Schema, T] = Trans {
     case TProduct(name, fields) =>
+      def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
       TProduct[T](
         name,
-        fields.map { f: Field[T] =>
-          f.copy(tpe = namedTypes(T)(f.tpe))
-        }
+        fields.map(nameTypes)
       )
     case other => other
   }

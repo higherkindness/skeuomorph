@@ -86,9 +86,9 @@ val definition = """
 
 val schema: Schema = new Schema.Parser().parse(definition)
 
-val parseAvroSchema: Schema => Fix[freestyle.Schema] =
-  scheme.hylo(transformAvro[Fix[freestyle.Schema]].algebra.run, fromAvro.run)
-val printSchema: Fix[freestyle.Schema] => String =
+val parseAvroSchema: Schema => Mu[freestyle.Schema] =
+  scheme.hylo(transformAvro[Mu[freestyle.Schema]].algebra.run, fromAvro.run)
+val printSchema: Mu[freestyle.Schema] => String =
   scheme.cata(render)
 
 (parseAvroSchema >>> printSchema)(schema)

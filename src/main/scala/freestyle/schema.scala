@@ -82,16 +82,14 @@ object Schema {
     case TSum(name, fields) =>
       val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
       s"""
-sealed trait $name
-object $name {
-  $printFields
-}
-"""
+      |sealed trait $name
+      |object $name {
+      |  $printFields
+      |}
+      """.stripMargin
     case TProduct(name, fields) =>
       val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
-      s"""
-@message case class $name($printFields)
-"""
+      s"@message case class $name($printFields)"
   }
 
 }

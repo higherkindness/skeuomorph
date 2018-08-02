@@ -37,18 +37,19 @@ object Service {
       proto: avro.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
 
     val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
+    val toOperation: avro.Protocol.Message[T] => Operation[U] =
+      msg =>
+        Service.Operation(
+          msg.name,
+          toFreestyle(msg.request),
+          toFreestyle(msg.response)
+      )
 
     Service(
       proto.namespace.fold("")(identity),
       proto.name,
       proto.types.map(toFreestyle),
-      proto.messages.map(
-        msg =>
-          Service.Operation(
-            msg.name,
-            toFreestyle(msg.request),
-            toFreestyle(msg.response)
-        ))
+      proto.messages.map(toOperation)
     )
   }
 
