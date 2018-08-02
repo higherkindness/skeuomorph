@@ -17,41 +17,50 @@
 package skeuomorph
 package freestyle
 
-import turtles._
-import turtles.implicits._
+import Optimize.namedTypes
+import Transform.transformAvro
 
-/**
- * [[Service]] describes a service representation in freestyle-rpc.
- *
- * @see http://frees.io/docs/rpc/idl-generation
- */
+import cats.instances.function._
+import cats.syntax.compose._
+import qq.droste._
+
 case class Service[T](pkg: String, name: String, declarations: List[T], operations: List[Service.Operation[T]])
 
 object Service {
 
-  /**
-   * Each one of the endpoints of the service
-   */
   case class Operation[T](name: String, request: T, response: T)
 
   /**
-   * Optimization to kill recursion in nested product/sum types while
-   * rendering.
+   * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
    */
-  def namedTypes[T](t: T)(implicit T: Birecursive.Aux[T, Schema]): T = t.project match {
-    case Schema.TProduct(name, _) => Schema.TNamedType[T](name).embed
-    case Schema.TSum(name, _)     => Schema.TNamedType[T](name).embed
-    case other                    => other.embed
+  def fromAvroProtocol[T, U](
+      proto: avro.Protocol[T])(implicit T: Basis[avro.Schema, T], U: Basis[Schema, U]): Service[U] = {
+
+    val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
+    val toOperation: avro.Protocol.Message[T] => Operation[U] =
+      msg =>
+        Service.Operation(
+          msg.name,
+          toFreestyle(msg.request),
+          toFreestyle(msg.response)
+      )
+
+    Service(
+      proto.namespace.fold("")(identity),
+      proto.name,
+      proto.types.map(toFreestyle),
+      proto.messages.map(toOperation)
+    )
   }
 
-  /**
-   * Render a [[Service]] to its String representation
-   */
-  def render[T](service: Service[T])(implicit T: Birecursive.Aux[T, Schema]): String = {
-    val printDeclarations = service.declarations.map(_.cata(util.render)).mkString("\n")
+  def render[T](service: Service[T])(implicit T: Basis[Schema, T]): String = {
+    val renderSchema: T => String = scheme.cata(Schema.render)
+    val optimizeAndPrint          = namedTypes >>> renderSchema
+
+    val printDeclarations = service.declarations.map(renderSchema).mkString("\n")
     val printOperations = service.operations.map { op =>
-      val printRequest  = op.request.transCataT(namedTypes).cata(util.render)
-      val printResponse = op.response.transCataT(namedTypes).cata(util.render)
+      val printRequest  = optimizeAndPrint(op.request)
+      val printResponse = optimizeAndPrint(op.response)
 
       s"def ${op.name}(req: $printRequest): F[$printResponse]"
     } mkString ("\n  ")

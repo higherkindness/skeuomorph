@@ -19,17 +19,16 @@ package freestyle
 
 import protobuf.{Schema => ProtoSchema}
 import avro.{Schema => AvroSchema}
-import turtles._
-import turtles.implicits._
+import qq.droste.Trans
 
-object util {
+object Transform {
 
   import Schema._
 
   /**
    * transform Protobuf schema into Freestyle schema
    */
-  def transformProto[A]: ProtoSchema[A] => Schema[A] = {
+  def transformProto[A]: Trans[ProtoSchema, Schema, A] = Trans {
     case ProtoSchema.TDouble()                  => TDouble()
     case ProtoSchema.TFloat()                   => TFloat()
     case ProtoSchema.TInt32()                   => TInt()
@@ -53,7 +52,7 @@ object util {
     case ProtoSchema.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
   }
 
-  def transformAvro[A]: AvroSchema[A] => Schema[A] = {
+  def transformAvro[A]: Trans[AvroSchema, Schema, A] = Trans {
     case AvroSchema.TNull()          => TNull()
     case AvroSchema.TBoolean()       => TBoolean()
     case AvroSchema.TInt()           => TInt()
@@ -73,86 +72,4 @@ object util {
       ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   }
 
-  /**
-   * micro-optimization to convert types from fields in a product to
-   * NamedTypes.
-   *
-   * Without this optimization, printing a product containing fields
-   * of other products would end up with something like:
-   *
-   * {{{
-   * case class Product(field1: String, field2: case class OtherField())
-   * }}}
-   *
-   * With it, we cut recursion in messages, to leave only type names:
-   *
-   * {{{
-   * case class Product(field1: String, field2: OtherField)
-   * }}}
-   */
-  def namedTypes[T](t: T)(implicit T: Birecursive.Aux[T, Schema]): T =
-    t.project match {
-      case TProduct(name, fields) =>
-        TProduct[T](
-          name,
-          fields.map { f: Field[T] =>
-            f.copy(tpe = f.tpe.transCataT(_.project match {
-              case TProduct(name, _) => TNamedType[T](name).embed
-              case TSum(name, _)     => TNamedType[T](name).embed
-              case other             => other.embed
-            }))
-          }
-        ).embed
-      case other => other.embed
-    }
-
-  def render: Algebra[Schema, String] = {
-    case TNull()          => "Null"
-    case TDouble()        => "Double"
-    case TFloat()         => "Float"
-    case TInt()           => "Int"
-    case TLong()          => "Long"
-    case TBoolean()       => "Boolean"
-    case TString()        => "String"
-    case TByteArray()     => "Array[Byte]"
-    case TNamedType(name) => name
-    case TOption(value)   => s"Option[$value]"
-    case TMap(value)      => s"Map[String, $value]"
-    case TList(value)     => s"List[$value]"
-    case TRequired(value) => value
-    case TCoproduct(invariants) =>
-      invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
-    case TSum(name, fields) =>
-      val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
-      s"""
-sealed trait $name
-object $name {
-  $printFields
-}
-"""
-    case TProduct(name, fields) =>
-      val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
-      s"""
-@message case class $name($printFields)
-"""
-  }
-
-  /**
-   * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
-   */
-  def fromAvroProtocol[T, U](proto: AvroSchema.Protocol[T])(
-      implicit T: Recursive.Aux[T, avro.Schema],
-      U: Corecursive.Aux[U, Schema]): Service[U] =
-    Service(
-      proto.namespace.fold("")(identity),
-      proto.name,
-      proto.types.map(t => t.transCata[U](transformAvro)),
-      proto.messages.map(
-        msg =>
-          Service.Operation(
-            msg.name,
-            msg.request.transCata[U](transformAvro),
-            msg.response.transCata[U](transformAvro)
-        ))
-    )
 }
