@@ -70,11 +70,11 @@ def nestedNamedTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(nestedNamedTypes
 and then apply the `namedTypes` combinator to the AST:
 
 ```tut:invisible
-def ast = Mu(TNull[Mu[Schema]]())
+def ast = Mu(TNull[Mu[FreesF]]())
 ```
 
 ```tut
-val optimization = Optimize.namedTypes[Mu[Schema]]
+val optimization = Optimize.namedTypes[Mu[FreesF]]
 
 optimization(ast)
 ```
