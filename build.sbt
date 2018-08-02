@@ -1,8 +1,6 @@
 import microsites._
 import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 import sbtorgpolicies.templates.badges._
-import sbtorgpolicies.templates._
-
 
 lazy val root = project
   .in(file("."))
@@ -16,7 +14,6 @@ lazy val docs = project
   .dependsOn(root)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
-  .settings(compilerPlugins)
   .settings(noPublishSettings)
   .settings(
     micrositeName := "Skeuomorph",
@@ -44,10 +41,6 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
-lazy val contributors = Seq(
-  "pepegar" -> "Pepe Garcia"
-)
-
 // check for library updates whenever the project is [re]load
 onLoad in Global := { s =>
   "dependencyUpdates" :: s
@@ -59,7 +52,6 @@ lazy val commonSettings = Seq(
   scalaVersion := "2.12.6",
   startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
-  ThisBuild / scalafmtOnCompile := true,
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
     %%("cats-core"),
@@ -87,12 +79,4 @@ lazy val compilerPlugins = Seq(
     compilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
     compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
   )
-)
-
-lazy val noPublishSettings = Seq(
-  skip in publish := true,
-  publish := (()),
-  publishLocal := (()),
-  publishArtifact := false,
-  publishTo := None
 )
