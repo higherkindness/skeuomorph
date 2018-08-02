@@ -14,16 +14,16 @@ lazy val docs = project
   .dependsOn(root)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
+  .settings(sbtMicrositesSettings)
   .settings(noPublishSettings)
   .settings(
     micrositeName := "Skeuomorph",
     micrositeDescription := "Schema transformations",
-    micrositeBaseUrl := "frees.io/skeuomorph",
+    micrositeBaseUrl := "https://frees-io.github.io/skeuomorph",
     micrositeGithubOwner := "frees-io",
     micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
     micrositePushSiteWith := GitHub4s,
-    micrositeGithubToken := sys.env.get("GITHUB_TOKEN"),
     micrositeExtraMdFiles := Map(
       file("README.md") -> ExtraMdFileConfig(
         "index.md",
@@ -45,6 +45,10 @@ lazy val docs = project
 onLoad in Global := { s =>
   "dependencyUpdates" :: s
 }
+
+pgpPassphrase := Some(getEnvVar("PGP_PASSPHRASE").getOrElse("").toCharArray)
+pgpPublicRing := file(s"$gpgFolder/pubring.gpg")
+pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
