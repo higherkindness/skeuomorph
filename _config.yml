@@ -1,5 +1,5 @@
 name: Skeuomorph
-baseurl: /frees.io/skeuomorph
+baseurl: /https://frees-io.github.io/skeuomorph
 description: Schema transformations
 highlighter: rouge
 docs: true
