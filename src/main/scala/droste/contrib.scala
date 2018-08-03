@@ -19,10 +19,9 @@ package droste
 
 import qq.droste._
 
-
 /**
-  * to be contributed back to droste.  Maybe it's easier to use @typeclass there... dunno :)
-  */
+ * to be contributed back to droste.  Maybe it's easier to use @typeclass there... dunno :)
+ */
 object contrib {
 
   trait EmbedOps[F[_], T] {
