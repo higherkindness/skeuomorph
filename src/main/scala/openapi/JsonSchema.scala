@@ -74,7 +74,6 @@ object JsonSchemaF {
     case DateF()     => Json.fromString("date")
     case DateTimeF() => Json.fromString("datetime")
     case PasswordF() => Json.fromString("password")
-
     case ObjectF(name, properties, required) =>
       Json.obj(
         name -> Json.obj(
@@ -105,6 +104,10 @@ object JsonSchemaF {
           Property("city", Fix(StringF())),
           Property("state", Fix(StringF()))
         ),
-        Nil
+        List(
+          "street_address",
+          "city",
+          "state"
+        )
       ))
 }
