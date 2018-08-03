@@ -28,7 +28,7 @@ object JsonEncoders {
     Encoder.instance(
       r =>
         Json.obj(
-          "$ref" -> Json.fromString(r.ref)
+          "$$ref" -> Json.fromString(r.ref)
       ))
 
   implicit def orReferenceEncoder[A: Encoder]: Encoder[Either[A, Reference]] =
