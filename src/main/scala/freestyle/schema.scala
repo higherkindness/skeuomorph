@@ -21,29 +21,32 @@ import qq.droste.Algebra
 import cats.Functor
 import cats.data.NonEmptyList
 
-sealed trait Schema[A]
-object Schema {
+/**
+ *
+ */
+sealed trait FreesF[A]
+object FreesF {
   case class Field[A](name: String, tpe: A)
 
-  case class TNull[A]()                                        extends Schema[A]
-  case class TDouble[A]()                                      extends Schema[A]
-  case class TFloat[A]()                                       extends Schema[A]
-  case class TInt[A]()                                         extends Schema[A]
-  case class TLong[A]()                                        extends Schema[A]
-  case class TBoolean[A]()                                     extends Schema[A]
-  case class TString[A]()                                      extends Schema[A]
-  case class TByteArray[A]()                                   extends Schema[A]
-  case class TNamedType[A](name: String)                       extends Schema[A]
-  case class TOption[A](value: A)                              extends Schema[A]
-  case class TList[A](value: A)                                extends Schema[A]
-  case class TMap[A](value: A)                                 extends Schema[A]
-  case class TRequired[A](value: A)                            extends Schema[A]
-  case class TCoproduct[A](invariants: NonEmptyList[A])        extends Schema[A]
-  case class TSum[A](name: String, fields: List[String])       extends Schema[A]
-  case class TProduct[A](name: String, fields: List[Field[A]]) extends Schema[A]
+  case class TNull[A]()                                        extends FreesF[A]
+  case class TDouble[A]()                                      extends FreesF[A]
+  case class TFloat[A]()                                       extends FreesF[A]
+  case class TInt[A]()                                         extends FreesF[A]
+  case class TLong[A]()                                        extends FreesF[A]
+  case class TBoolean[A]()                                     extends FreesF[A]
+  case class TString[A]()                                      extends FreesF[A]
+  case class TByteArray[A]()                                   extends FreesF[A]
+  case class TNamedType[A](name: String)                       extends FreesF[A]
+  case class TOption[A](value: A)                              extends FreesF[A]
+  case class TList[A](value: A)                                extends FreesF[A]
+  case class TMap[A](value: A)                                 extends FreesF[A]
+  case class TRequired[A](value: A)                            extends FreesF[A]
+  case class TCoproduct[A](invariants: NonEmptyList[A])        extends FreesF[A]
+  case class TSum[A](name: String, fields: List[String])       extends FreesF[A]
+  case class TProduct[A](name: String, fields: List[Field[A]]) extends FreesF[A]
 
-  implicit val schemaFunctor: Functor[Schema] = new Functor[Schema] {
-    def map[A, B](fa: Schema[A])(f: A => B): Schema[B] = fa match {
+  implicit val freestyleFunctor: Functor[FreesF] = new Functor[FreesF] {
+    def map[A, B](fa: FreesF[A])(f: A => B): FreesF[B] = fa match {
       case TNull()                => TNull()
       case TDouble()              => TDouble()
       case TFloat()               => TFloat()
@@ -63,7 +66,7 @@ object Schema {
     }
   }
 
-  def render: Algebra[Schema, String] = Algebra {
+  def render: Algebra[FreesF, String] = Algebra {
     case TNull()          => "Null"
     case TDouble()        => "Double"
     case TFloat()         => "Float"

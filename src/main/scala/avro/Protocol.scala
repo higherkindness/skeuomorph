@@ -17,7 +17,8 @@
 package skeuomorph
 package avro
 
-import org.apache.avro.{Schema => AvroSchema, Protocol => AvroProtocol}
+import org.apache.avro.Schema
+import org.apache.avro.{Protocol => AvroProtocol}
 import scala.collection.JavaConverters._
 
 import qq.droste._
@@ -30,19 +31,19 @@ case class Protocol[A](
 )
 
 object Protocol {
-  import Schema._
+  import AvroF._
 
   case class Message[A](name: String, request: A, response: A)
 
-  def fromProto[T](proto: AvroProtocol)(implicit T: Embed[Schema, T]): Protocol[T] = {
-    val toAvroSchema: AvroSchema => T = scheme.ana(fromAvro)
+  def fromProto[T](proto: AvroProtocol)(implicit T: Embed[AvroF, T]): Protocol[T] = {
+    val toAvroF: Schema => T = scheme.ana(fromAvro)
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] =
-      Message[T](kv._2.getName, toAvroSchema(kv._2.getRequest), toAvroSchema(kv._2.getResponse))
+      Message[T](kv._2.getName, toAvroF(kv._2.getRequest), toAvroF(kv._2.getResponse))
 
     Protocol(
       proto.getName,
       Option(proto.getNamespace),
-      proto.getTypes.asScala.toList.map(toAvroSchema),
+      proto.getTypes.asScala.toList.map(toAvroF),
       proto.getMessages.asScala.toList.map(toMessage)
     )
   }

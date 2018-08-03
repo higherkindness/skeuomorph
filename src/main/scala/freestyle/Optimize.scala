@@ -18,7 +18,7 @@ package skeuomorph
 package freestyle
 
 import qq.droste._
-import Schema._
+import FreesF._
 
 /**
  * Optimize object contains transformations in same schema
@@ -42,7 +42,7 @@ object Optimize {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def nestedNamedTypesTrans[T](implicit T: Basis[Schema, T]): Trans[Schema, Schema, T] = Trans {
+  def nestedNamedTypesTrans[T](implicit T: Basis[FreesF, T]): Trans[FreesF, FreesF, T] = Trans {
     case TProduct(name, fields) =>
       def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
       TProduct[T](
@@ -52,12 +52,12 @@ object Optimize {
     case other => other
   }
 
-  def namedTypesTrans[T]: Trans[Schema, Schema, T] = Trans {
+  def namedTypesTrans[T]: Trans[FreesF, FreesF, T] = Trans {
     case TProduct(name, _) => TNamedType[T](name)
     case TSum(name, _)     => TNamedType[T](name)
     case other             => other
   }
 
-  def namedTypes[T: Basis[Schema, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-  def nestedNamedTypes[T: Basis[Schema, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+  def namedTypes[T: Basis[FreesF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
+  def nestedNamedTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
 }

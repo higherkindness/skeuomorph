@@ -17,58 +17,58 @@
 package skeuomorph
 package freestyle
 
-import protobuf.{Schema => ProtoSchema}
-import avro.{Schema => AvroSchema}
 import qq.droste.Trans
+import protobuf.ProtobufF
+import avro.AvroF
 
 object Transform {
 
-  import Schema._
+  import FreesF._
 
   /**
    * transform Protobuf schema into Freestyle schema
    */
-  def transformProto[A]: Trans[ProtoSchema, Schema, A] = Trans {
-    case ProtoSchema.TDouble()                  => TDouble()
-    case ProtoSchema.TFloat()                   => TFloat()
-    case ProtoSchema.TInt32()                   => TInt()
-    case ProtoSchema.TInt64()                   => TLong()
-    case ProtoSchema.TUint32()                  => TInt()
-    case ProtoSchema.TUint64()                  => TLong()
-    case ProtoSchema.TSint32()                  => TInt()
-    case ProtoSchema.TSint64()                  => TLong()
-    case ProtoSchema.TFixed32()                 => TInt()
-    case ProtoSchema.TFixed64()                 => TLong()
-    case ProtoSchema.TSfixed32()                => TInt()
-    case ProtoSchema.TSfixed64()                => TLong()
-    case ProtoSchema.TBool()                    => TBoolean()
-    case ProtoSchema.TString()                  => TString()
-    case ProtoSchema.TBytes()                   => TByteArray()
-    case ProtoSchema.TNamedType(name)           => TNamedType(name)
-    case ProtoSchema.TOptional(value)           => TOption(value)
-    case ProtoSchema.TRepeated(value)           => TList(value)
-    case ProtoSchema.TRequired(value)           => TRequired(value)
-    case ProtoSchema.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
-    case ProtoSchema.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+  def transformProto[A]: Trans[ProtobufF, FreesF, A] = Trans {
+    case ProtobufF.TDouble()                  => TDouble()
+    case ProtobufF.TFloat()                   => TFloat()
+    case ProtobufF.TInt32()                   => TInt()
+    case ProtobufF.TInt64()                   => TLong()
+    case ProtobufF.TUint32()                  => TInt()
+    case ProtobufF.TUint64()                  => TLong()
+    case ProtobufF.TSint32()                  => TInt()
+    case ProtobufF.TSint64()                  => TLong()
+    case ProtobufF.TFixed32()                 => TInt()
+    case ProtobufF.TFixed64()                 => TLong()
+    case ProtobufF.TSfixed32()                => TInt()
+    case ProtobufF.TSfixed64()                => TLong()
+    case ProtobufF.TBool()                    => TBoolean()
+    case ProtobufF.TString()                  => TString()
+    case ProtobufF.TBytes()                   => TByteArray()
+    case ProtobufF.TNamedType(name)           => TNamedType(name)
+    case ProtobufF.TOptional(value)           => TOption(value)
+    case ProtobufF.TRepeated(value)           => TList(value)
+    case ProtobufF.TRequired(value)           => TRequired(value)
+    case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
+    case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
   }
 
-  def transformAvro[A]: Trans[AvroSchema, Schema, A] = Trans {
-    case AvroSchema.TNull()          => TNull()
-    case AvroSchema.TBoolean()       => TBoolean()
-    case AvroSchema.TInt()           => TInt()
-    case AvroSchema.TLong()          => TLong()
-    case AvroSchema.TFloat()         => TFloat()
-    case AvroSchema.TDouble()        => TDouble()
-    case AvroSchema.TBytes()         => TByteArray()
-    case AvroSchema.TString()        => TString()
-    case AvroSchema.TNamedType(name) => TNamedType(name)
-    case AvroSchema.TArray(item)     => TList(item)
-    case AvroSchema.TMap(values)     => TMap(values)
-    case AvroSchema.TRecord(name, _, _, _, fields) =>
+  def transformAvro[A]: Trans[AvroF, FreesF, A] = Trans {
+    case AvroF.TNull()          => TNull()
+    case AvroF.TBoolean()       => TBoolean()
+    case AvroF.TInt()           => TInt()
+    case AvroF.TLong()          => TLong()
+    case AvroF.TFloat()         => TFloat()
+    case AvroF.TDouble()        => TDouble()
+    case AvroF.TBytes()         => TByteArray()
+    case AvroF.TString()        => TString()
+    case AvroF.TNamedType(name) => TNamedType(name)
+    case AvroF.TArray(item)     => TList(item)
+    case AvroF.TMap(values)     => TMap(values)
+    case AvroF.TRecord(name, _, _, _, fields) =>
       TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case AvroSchema.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
-    case AvroSchema.TUnion(options)               => TCoproduct(options)
-    case AvroSchema.TFixed(_, _, _, _) =>
+    case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
+    case AvroF.TUnion(options)               => TCoproduct(options)
+    case AvroF.TFixed(_, _, _, _) =>
       ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   }
 

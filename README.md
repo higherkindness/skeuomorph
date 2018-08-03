@@ -48,8 +48,9 @@ libraryDependencies += "io.frees" %% "skeuomorph" % "0.0.1"
 import org.apache.avro._
 import skeuomorph._
 import skeuomorph.freestyle.Transform.transformAvro
-import skeuomorph.freestyle.Schema.render
-import skeuomorph.avro.Schema.fromAvro
+import skeuomorph.freestyle.FreesF
+import skeuomorph.freestyle.FreesF.render
+import skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
 import qq.droste.implicits._
@@ -86,12 +87,12 @@ val definition = """
 
 val schema: Schema = new Schema.Parser().parse(definition)
 
-val parseAvroSchema: Schema => Mu[freestyle.Schema] =
-  scheme.hylo(transformAvro[Mu[freestyle.Schema]].algebra.run, fromAvro.run)
-val printSchema: Mu[freestyle.Schema] => String =
+val parseAvro: Schema => Mu[FreesF] =
+  scheme.hylo(transformAvro[Mu[FreesF]].algebra.run, fromAvro.run)
+val printSchema: Mu[FreesF] => String =
   scheme.cata(render)
 
-(parseAvroSchema >>> printSchema)(schema)
+(parseAvro >>> print)(schema)
 ```
 
 

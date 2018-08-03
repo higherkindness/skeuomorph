@@ -61,6 +61,7 @@ lazy val commonSettings = Seq(
     %%("cats-core"),
     "io.higherkindness" %% "droste-core" % "0.3.1",
     "org.apache.avro"   % "avro"             % "1.8.2",
+    %%("circe-core"),
     %%("specs2-core") % Test,
     %%("specs2-scalacheck") % Test,
     "io.chrisdavenport" %% "cats-scalacheck" % "0.1.0" % Test

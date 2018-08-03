@@ -21,12 +21,12 @@ import scala.collection.JavaConverters._
 
 import cats.Functor
 import cats.data.NonEmptyList
-import org.apache.avro.{Schema => AvroSchema}
-import org.apache.avro.Schema.{Type => AvroType}
 import qq.droste.Coalgebra
+import org.apache.avro.Schema
+import org.apache.avro.Schema.Type
 
-sealed trait Schema[A]
-object Schema {
+sealed trait AvroF[A]
+object AvroF {
 
   sealed trait Order
   object Order {
@@ -45,95 +45,95 @@ object Schema {
 
   type TypeName = String
 
-  case class TNull[A]()                    extends Schema[A]
-  case class TBoolean[A]()                 extends Schema[A]
-  case class TInt[A]()                     extends Schema[A]
-  case class TLong[A]()                    extends Schema[A]
-  case class TFloat[A]()                   extends Schema[A]
-  case class TDouble[A]()                  extends Schema[A]
-  case class TBytes[A]()                   extends Schema[A]
-  case class TString[A]()                  extends Schema[A]
-  case class TNamedType[A](name: TypeName) extends Schema[A]
-  case class TArray[A](item: A)            extends Schema[A]
-  case class TMap[A](values: A)            extends Schema[A]
+  case class TNull[A]()                    extends AvroF[A]
+  case class TBoolean[A]()                 extends AvroF[A]
+  case class TInt[A]()                     extends AvroF[A]
+  case class TLong[A]()                    extends AvroF[A]
+  case class TFloat[A]()                   extends AvroF[A]
+  case class TDouble[A]()                  extends AvroF[A]
+  case class TBytes[A]()                   extends AvroF[A]
+  case class TString[A]()                  extends AvroF[A]
+  case class TNamedType[A](name: TypeName) extends AvroF[A]
+  case class TArray[A](item: A)            extends AvroF[A]
+  case class TMap[A](values: A)            extends AvroF[A]
   case class TRecord[A](
       name: TypeName,
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
       fields: List[Field[A]])
-      extends Schema[A]
+      extends AvroF[A]
   case class TEnum[A](
       name: TypeName,
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
       symbols: List[String])
-      extends Schema[A]
-  case class TUnion[A](options: NonEmptyList[A])                                                      extends Schema[A]
-  case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int) extends Schema[A]
+      extends AvroF[A]
+  case class TUnion[A](options: NonEmptyList[A])                                                      extends AvroF[A]
+  case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int) extends AvroF[A]
 
-  implicit val schemaFunctor: Functor[Schema] = new Functor[Schema] {
-    def map[A, B](fa: Schema[A])(f: A => B): Schema[B] = fa match {
-      case Schema.TNull()          => Schema.TNull()
-      case Schema.TBoolean()       => Schema.TBoolean()
-      case Schema.TInt()           => Schema.TInt()
-      case Schema.TLong()          => Schema.TLong()
-      case Schema.TFloat()         => Schema.TFloat()
-      case Schema.TDouble()        => Schema.TDouble()
-      case Schema.TBytes()         => Schema.TBytes()
-      case Schema.TString()        => Schema.TString()
-      case Schema.TNamedType(name) => Schema.TNamedType(name)
-      case Schema.TArray(item)     => Schema.TArray(f(item))
-      case Schema.TMap(values)     => Schema.TMap(f(values))
-      case Schema.TRecord(name, namespace, aliases, doc, fields) =>
-        Schema.TRecord(name, namespace, aliases, doc, fields.map(field => field.copy(tpe = f(field.tpe))))
-      case Schema.TEnum(name, namespace, aliases, doc, symbols) =>
-        Schema.TEnum(name, namespace, aliases, doc, symbols)
-      case Schema.TUnion(options)                        => Schema.TUnion(options.map(f))
-      case Schema.TFixed(name, namespace, aliases, size) => Schema.TFixed(name, namespace, aliases, size)
+  implicit val avroFunctor: Functor[AvroF] = new Functor[AvroF] {
+    def map[A, B](fa: AvroF[A])(f: A => B): AvroF[B] = fa match {
+      case AvroF.TNull()          => AvroF.TNull()
+      case AvroF.TBoolean()       => AvroF.TBoolean()
+      case AvroF.TInt()           => AvroF.TInt()
+      case AvroF.TLong()          => AvroF.TLong()
+      case AvroF.TFloat()         => AvroF.TFloat()
+      case AvroF.TDouble()        => AvroF.TDouble()
+      case AvroF.TBytes()         => AvroF.TBytes()
+      case AvroF.TString()        => AvroF.TString()
+      case AvroF.TNamedType(name) => AvroF.TNamedType(name)
+      case AvroF.TArray(item)     => AvroF.TArray(f(item))
+      case AvroF.TMap(values)     => AvroF.TMap(f(values))
+      case AvroF.TRecord(name, namespace, aliases, doc, fields) =>
+        AvroF.TRecord(name, namespace, aliases, doc, fields.map(field => field.copy(tpe = f(field.tpe))))
+      case AvroF.TEnum(name, namespace, aliases, doc, symbols) =>
+        AvroF.TEnum(name, namespace, aliases, doc, symbols)
+      case AvroF.TUnion(options)                        => AvroF.TUnion(options.map(f))
+      case AvroF.TFixed(name, namespace, aliases, size) => AvroF.TFixed(name, namespace, aliases, size)
     }
   }
 
   /**
-   * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.AvroSchema]]
+   * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.Schema]]
    */
-  def fromAvro: Coalgebra[Schema, AvroSchema] = Coalgebra { sch =>
+  def fromAvro: Coalgebra[AvroF, Schema] = Coalgebra { sch =>
     sch.getType match {
-      case AvroType.STRING  => Schema.TString()
-      case AvroType.BOOLEAN => Schema.TBoolean()
-      case AvroType.BYTES   => Schema.TBytes()
-      case AvroType.DOUBLE  => Schema.TDouble()
-      case AvroType.FLOAT   => Schema.TFloat()
-      case AvroType.INT     => Schema.TInt()
-      case AvroType.LONG    => Schema.TLong()
-      case AvroType.NULL    => Schema.TNull()
-      case AvroType.MAP     => Schema.TMap(sch.getValueType)
-      case AvroType.ARRAY   => Schema.TArray(sch.getElementType)
-      case AvroType.RECORD =>
-        Schema.TRecord(
+      case Type.STRING  => AvroF.TString()
+      case Type.BOOLEAN => AvroF.TBoolean()
+      case Type.BYTES   => AvroF.TBytes()
+      case Type.DOUBLE  => AvroF.TDouble()
+      case Type.FLOAT   => AvroF.TFloat()
+      case Type.INT     => AvroF.TInt()
+      case Type.LONG    => AvroF.TLong()
+      case Type.NULL    => AvroF.TNull()
+      case Type.MAP     => AvroF.TMap(sch.getValueType)
+      case Type.ARRAY   => AvroF.TArray(sch.getElementType)
+      case Type.RECORD =>
+        AvroF.TRecord(
           sch.getName,
           Option(sch.getNamespace),
           sch.getAliases.asScala.toList,
           Option(sch.getDoc),
           sch.getFields.asScala.toList.map(field2Field)
         )
-      case AvroType.ENUM =>
+      case Type.ENUM =>
         val symbols = sch.getEnumSymbols.asScala.toList
-        Schema.TEnum(
+        AvroF.TEnum(
           sch.getName,
           Option(sch.getNamespace),
           sch.getAliases.asScala.toList,
           Option(sch.getDoc),
           symbols
         )
-      case AvroType.UNION =>
+      case Type.UNION =>
         val types = sch.getTypes.asScala.toList
-        Schema.TUnion(
+        AvroF.TUnion(
           NonEmptyList.fromListUnsafe(types)
         )
-      case AvroType.FIXED =>
-        Schema.TFixed(
+      case Type.FIXED =>
+        AvroF.TFixed(
           sch.getName,
           Option(sch.getNamespace),
           sch.getAliases.asScala.toList,
@@ -142,13 +142,13 @@ object Schema {
     }
   }
 
-  def order2Order(avroO: AvroSchema.Field.Order): Order = avroO match {
-    case AvroSchema.Field.Order.ASCENDING  => Order.Ascending
-    case AvroSchema.Field.Order.DESCENDING => Order.Descending
-    case AvroSchema.Field.Order.IGNORE     => Order.Ignore
+  def order2Order(avroO: Schema.Field.Order): Order = avroO match {
+    case Schema.Field.Order.ASCENDING  => Order.Ascending
+    case Schema.Field.Order.DESCENDING => Order.Descending
+    case Schema.Field.Order.IGNORE     => Order.Ignore
   }
 
-  def field2Field(avroF: AvroSchema.Field): Field[AvroSchema] = Field(
+  def field2Field(avroF: Schema.Field): Field[Schema] = Field(
     avroF.name,
     avroF.aliases.asScala.toList,
     Option(avroF.doc),
