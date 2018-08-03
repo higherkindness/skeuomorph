@@ -26,7 +26,7 @@ object schema {
       openapi: String,
       info: Info,
       servers: List[Server],
-      paths: Map[Path.Pattern, Path.ItemObject[A]],
+      paths: Map[String, Path.ItemObject[A]],
       components: Option[Components[A]],
       tags: Option[List[Tag]],
       externalDocs: Option[ExternalDocs])
@@ -40,7 +40,6 @@ object schema {
   }
 
   object Path {
-    type Pattern = String
     case class ItemObject[A](
         ref: String, // $ref
         summary: String,
@@ -97,4 +96,5 @@ object schema {
   case class Reference(ref: String) // $ref
 
   case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
+
 }
