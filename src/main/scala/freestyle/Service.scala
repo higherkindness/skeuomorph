@@ -25,19 +25,29 @@ import cats.instances.function._
 import cats.syntax.compose._
 import qq.droste._
 
-case class Service[T](pkg: String, name: String, declarations: List[T], operations: List[Service.Operation[T]])
+sealed trait SerializationType extends Product with Serializable
+object SerializationType {
+  case object Protobuf       extends SerializationType
+  case object Avro           extends SerializationType
+  case object AvroWithSchema extends SerializationType
+}
 
-object Service {
-
-  case class Operation[T](name: String, request: T, response: T)
+case class Protocol[T](
+    name: String,
+    pkg: Option[String],
+    options: List[(String, String)],
+    declarations: List[T],
+    services: List[Service[T]]
+)
+object Protocol {
 
   /**
    * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[FreesF, U]): Service[U] = {
+  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[FreesF, U]): Protocol[U] = {
 
     val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
-    val toOperation: avro.Protocol.Message[T] => Operation[U] =
+    val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
       msg =>
         Service.Operation(
           msg.name,
@@ -45,35 +55,52 @@ object Service {
           toFreestyle(msg.response)
       )
 
-    Service(
-      proto.namespace.fold("")(identity),
+    Protocol(
       proto.name,
+      proto.namespace,
+      Nil,
       proto.types.map(toFreestyle),
-      proto.messages.map(toOperation)
+      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
     )
   }
 
-  def render[T](service: Service[T])(implicit T: Basis[FreesF, T]): String = {
+  def render[T](protocol: Protocol[T])(implicit T: Basis[FreesF, T]): String = {
     val renderFrees: T => String = scheme.cata(FreesF.render)
     val optimizeAndPrint         = namedTypes >>> renderFrees
+    val printDeclarations        = protocol.declarations.map(renderFrees).mkString("\n")
+    val printOptions = protocol.options.map { op =>
+      s"@option(name = ${op._1}, value = ${op._2})"
+    } mkString ("\n")
+    val printServices = protocol.services.map { service =>
+      val printOperations = service.operations.map { op =>
+        val printRequest  = optimizeAndPrint(op.request)
+        val printResponse = optimizeAndPrint(op.response)
 
-    val printDeclarations = service.declarations.map(renderFrees).mkString("\n")
-    val printOperations = service.operations.map { op =>
-      val printRequest  = optimizeAndPrint(op.request)
-      val printResponse = optimizeAndPrint(op.response)
+        s"def ${op.name}(req: $printRequest): F[$printResponse]"
+      } mkString ("\n    ")
 
-      s"def ${op.name}(req: $printRequest): F[$printResponse]"
-    } mkString ("\n  ")
-    val printService = s"""
-@service trait ${service.name}[F[_]] {
-  $printOperations
-}
-"""
+      s"""
+        |@service trait ${service.name}[F[_]] {
+        |  $printOperations
+        |}
+        """.stripMargin
+    } mkString ("\n\n  ")
+
     s"""
-package ${service.pkg}
-$printDeclarations
-$printService
-"""
+    |package ${protocol.pkg}
+    |
+    |$printOptions
+    |object ${protocol.name} {
+    |
+    |$printDeclarations
+    |$printServices
+    |
+    |}
+    """.stripMargin
   }
+}
 
+case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
+object Service {
+  case class Operation[T](name: String, request: T, response: T)
 }
