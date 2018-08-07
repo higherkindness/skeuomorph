@@ -21,12 +21,27 @@ import scala.collection.JavaConverters._
 
 import cats.Functor
 import cats.data.NonEmptyList
-import qq.droste.Coalgebra
+import qq.droste.{Algebra, Coalgebra}
+import io.circe.Json
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 
 sealed trait AvroF[A]
 object AvroF {
+
+  def order2Order(avroO: Schema.Field.Order): Order = avroO match {
+    case Schema.Field.Order.ASCENDING  => Order.Ascending
+    case Schema.Field.Order.DESCENDING => Order.Descending
+    case Schema.Field.Order.IGNORE     => Order.Ignore
+  }
+
+  def field2Field(avroF: Schema.Field): Field[Schema] = Field(
+    avroF.name,
+    avroF.aliases.asScala.toList,
+    Option(avroF.doc),
+    Option(order2Order(avroF.order)),
+    avroF.schema
+  )
 
   sealed trait Order
   object Order {
@@ -173,18 +188,58 @@ object AvroF {
     }
   }
 
-  def order2Order(avroO: Schema.Field.Order): Order = avroO match {
-    case Schema.Field.Order.ASCENDING  => Order.Ascending
-    case Schema.Field.Order.DESCENDING => Order.Descending
-    case Schema.Field.Order.IGNORE     => Order.Ignore
+  def toJson: Algebra[AvroF, Json] = Algebra {
+    case TNull()          => Json.fromString("Null")
+    case TBoolean()       => Json.fromString("Boolean")
+    case TInt()           => Json.fromString("Int")
+    case TLong()          => Json.fromString("Long")
+    case TFloat()         => Json.fromString("Float")
+    case TDouble()        => Json.fromString("Double")
+    case TBytes()         => Json.fromString("Bytes")
+    case TString()        => Json.fromString("String")
+    case TNamedType(name) => Json.fromString(name)
+    case TArray(item) =>
+      Json.obj(
+        "type"  -> Json.fromString("array"),
+        "items" -> item
+      )
+    case TMap(values) =>
+      Json.obj(
+        "type"   -> Json.fromString("map"),
+        "values" -> values
+      )
+    case TRecord(name, namespace, aliases, doc, fields) =>
+      val base: Json = Json.obj(
+        "type" -> Json.fromString("record"),
+        "name" -> Json.fromString(name),
+        "fields" -> Json.arr(
+          fields.map(
+            f =>
+              Json.obj(
+                "name"    -> Json.fromString(f.name),
+                "aliases" -> Json.arr(f.aliases.map(Json.fromString): _*),
+                "type"    -> f.tpe
+            )): _*)
+      )
+      val withNamespace = namespace.fold(base) { n =>
+        base deepMerge Json.obj("namespace" -> Json.fromString(n))
+      }
+      val withAliases =
+        if (aliases.isEmpty)
+          withNamespace
+        else
+          withNamespace deepMerge Json.obj("aliases" -> Json.arr(aliases.map(Json.fromString): _*))
+      val withDoc = doc.fold(withAliases) { f =>
+        withAliases deepMerge Json.obj("doc" -> Json.fromString(f))
+      }
+      withDoc
+    case TEnum(_, _, _, _, _) => ???
+    case TUnion(options)      => Json.arr(options.toList: _*)
+    case TFixed(name, _, _, size) =>
+      Json.obj(
+        "type" -> Json.fromString("fixed"),
+        "name" -> Json.fromString(name),
+        "size" -> Json.fromInt(size)
+      )
   }
-
-  def field2Field(avroF: Schema.Field): Field[Schema] = Field(
-    avroF.name,
-    avroF.aliases.asScala.toList,
-    Option(avroF.doc),
-    Option(order2Order(avroF.order)),
-    avroF.schema
-  )
-
 }
