@@ -73,6 +73,37 @@ object AvroF {
   case class TUnion[A](options: NonEmptyList[A])                                                      extends AvroF[A]
   case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int) extends AvroF[A]
 
+  /**
+   * Helper methods to construct AvroF values.  These methods are to
+   * avoid scala infering the case type instead of AvroF.
+   */
+  def tNull[A](): AvroF[A]                    = TNull[A]()
+  def tBoolean[A](): AvroF[A]                 = TBoolean[A]()
+  def tInt[A](): AvroF[A]                     = TInt[A]()
+  def tLong[A](): AvroF[A]                    = TLong[A]()
+  def tFloat[A](): AvroF[A]                   = TFloat[A]()
+  def tDouble[A](): AvroF[A]                  = TDouble[A]()
+  def tBytes[A](): AvroF[A]                   = TBytes[A]()
+  def tString[A](): AvroF[A]                  = TString[A]()
+  def tNamedType[A](name: TypeName): AvroF[A] = TNamedType[A](name)
+  def tArray[A](item: A): AvroF[A]            = TArray[A](item)
+  def tMap[A](values: A): AvroF[A]            = TMap[A](values)
+  def tRecord[A](
+      name: TypeName,
+      namespace: Option[String],
+      aliases: List[TypeName],
+      doc: Option[String],
+      fields: List[Field[A]]): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
+  def tEnum[A](
+      name: TypeName,
+      namespace: Option[String],
+      aliases: List[TypeName],
+      doc: Option[String],
+      symbols: List[String]): AvroF[A]              = TEnum(name, namespace, aliases, doc, symbols)
+  def tUnion[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
+  def tFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int): AvroF[A] =
+    TFixed(name, namespace, aliases, size)
+
   implicit val avroFunctor: Functor[AvroF] = new Functor[AvroF] {
     def map[A, B](fa: AvroF[A])(f: A => B): AvroF[B] = fa match {
       case AvroF.TNull()          => AvroF.TNull()
