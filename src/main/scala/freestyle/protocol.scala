@@ -69,18 +69,18 @@ object Protocol {
     val optimizeAndPrint         = namedTypes >>> renderFrees
     val printDeclarations        = protocol.declarations.map(renderFrees).mkString("\n")
     val printOptions = protocol.options.map { op =>
-      s"@option(name = ${op._1}, value = ${op._2})"
+      s"""@option(name = "${op._1}", value = "${op._2})""""
     } mkString ("\n")
     val printServices = protocol.services.map { service =>
       val printOperations = service.operations.map { op =>
         val printRequest  = optimizeAndPrint(op.request)
         val printResponse = optimizeAndPrint(op.response)
 
-        s"def ${op.name}(req: $printRequest): F[$printResponse]"
-      } mkString ("\n    ")
+        s"def ${op.name}(req: $printRequest): $printResponse"
+      } mkString ("\n  ")
 
       s"""
-        |@service trait ${service.name}[F[_]] {
+        |@service(${service.serializationType}) trait ${service.name}[F[_]] {
         |  $printOperations
         |}
         """.stripMargin
