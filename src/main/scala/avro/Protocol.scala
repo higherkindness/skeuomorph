@@ -21,7 +21,11 @@ import org.apache.avro.Schema
 import org.apache.avro.{Protocol => AvroProtocol}
 import scala.collection.JavaConverters._
 
+import cats.syntax.option._
+import cats.data.NonEmptyList
+import skeuomorph.droste.contrib._
 import qq.droste._
+import freestyle.{FreesF, SerializationType}
 
 case class Protocol[A](
     name: String,
@@ -48,4 +52,46 @@ object Protocol {
     )
   }
 
+  def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[FreesF, AvroF, T] = Trans {
+    case FreesF.TNull()                => tNull()
+    case FreesF.TDouble()              => tDouble()
+    case FreesF.TFloat()               => tFloat()
+    case FreesF.TInt()                 => tInt()
+    case FreesF.TLong()                => tLong()
+    case FreesF.TBoolean()             => tBoolean()
+    case FreesF.TString()              => tString()
+    case FreesF.TByteArray()           => tBytes()
+    case FreesF.TNamedType(name)       => tNamedType(name)
+    case FreesF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
+    case FreesF.TList(value)           => tArray(value)
+    case FreesF.TMap(value)            => tMap(value)
+    case FreesF.TGeneric(_, _)         => ??? // WAT
+    case FreesF.TRequired(t)           => t.project
+    case FreesF.TCoproduct(invariants) => TUnion(invariants)
+    case FreesF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
+    case FreesF.TProduct(name, fields) =>
+      TRecord(
+        name,
+        none[String],
+        Nil,
+        none[String],
+        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
+  }
+
+  def fromFreesFProtocol[T, U](
+      proto: freestyle.Protocol[T])(implicit T: Basis[FreesF, T], U: Basis[AvroF, U]): Protocol[U] = {
+    def fromFreestyle: T => U = scheme.cata(fromFreesFSchema.algebra)
+    val services: List[Message[U]] = proto.services
+      .filter(_.serializationType == SerializationType.Avro)
+      .flatMap { s =>
+        s.operations.map(op => Message(op.name, fromFreestyle(op.request), fromFreestyle(op.response)))
+      }
+
+    Protocol(
+      proto.name,
+      proto.pkg,
+      proto.declarations.map(fromFreestyle),
+      services
+    )
+  }
 }
