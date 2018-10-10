@@ -18,8 +18,8 @@ package skeuomorph
 package openapi
 
 import schema._
-import skeuomorph.droste.contrib._
 import qq.droste._
+import qq.droste.syntax.all._
 import io.circe.{Encoder, Json}
 
 object JsonEncoders {
