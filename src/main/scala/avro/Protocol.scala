@@ -23,8 +23,8 @@ import scala.collection.JavaConverters._
 
 import cats.syntax.option._
 import cats.data.NonEmptyList
-import skeuomorph.droste.contrib._
 import qq.droste._
+import qq.droste.syntax.all._
 import freestyle.{FreesF, SerializationType}
 
 case class Protocol[A](
@@ -66,7 +66,7 @@ object Protocol {
     case FreesF.TList(value)           => tArray(value)
     case FreesF.TMap(value)            => tMap(value)
     case FreesF.TGeneric(_, _)         => ??? // WAT
-    case FreesF.TRequired(t)           => t.project
+    case FreesF.TRequired(t)           => T.coalgebra(t)
     case FreesF.TCoproduct(invariants) => TUnion(invariants)
     case FreesF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
     case FreesF.TProduct(name, fields) =>
