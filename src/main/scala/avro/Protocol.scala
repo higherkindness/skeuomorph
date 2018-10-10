@@ -26,6 +26,7 @@ import cats.data.NonEmptyList
 import qq.droste._
 import qq.droste.syntax.all._
 import freestyle.{FreesF, SerializationType}
+import io.circe.Json
 
 case class Protocol[A](
     name: String,
@@ -39,6 +40,18 @@ object Protocol {
 
   case class Message[A](name: String, request: A, response: A)
 
+  object Message {
+    def toJson[T](message: Message[T])(implicit T: Project[AvroF, T]): Json = Json.obj(
+      "request" -> Json.arr(
+        Json.obj(
+          "name" -> Json.fromString("arg"), //TODO: is this doable?
+          "type" -> scheme.cata(AvroF.toJson).apply(message.request)
+        )
+      ),
+      "response" -> scheme.cata(AvroF.toJson).apply(message.response)
+    )
+  }
+
   def fromProto[T](proto: AvroProtocol)(implicit T: Embed[AvroF, T]): Protocol[T] = {
     val toAvroF: Schema => T = scheme.ana(fromAvro)
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] =
@@ -49,6 +62,18 @@ object Protocol {
       Option(proto.getNamespace),
       proto.getTypes.asScala.toList.map(toAvroF),
       proto.getMessages.asScala.toList.map(toMessage)
+    )
+  }
+
+  def toJson[T](proto: Protocol[T])(implicit T: Basis[AvroF, T]): Json = {
+    val withNamespace: Json = Json.fromFields(proto.namespace.map("namespace" -> Json.fromString(_)).toList)
+
+    withNamespace deepMerge Json.obj(
+      "protocol" -> Json.fromString(proto.name),
+      "types"    -> Json.fromValues(proto.types.map(scheme.cata(AvroF.toJson))),
+      "messages" -> Json.fromFields(
+        proto.messages.map(m => m.name -> Message.toJson(m))
+      )
     )
   }
 
