@@ -17,10 +17,10 @@
 package skeuomorph
 package freestyle
 
-//import Optimize.namedTypes
+import Optimize.namedTypes
+import cats.instances.function._
+import cats.syntax.compose._
 
-// import cats.instances.function._
-// import cats.syntax.compose._
 import qq.droste._
 import FreesF._
 import catz.contrib.Divisible._
@@ -31,7 +31,7 @@ import SerializationType._
 
 object print {
 
-  def schema[T: Project[FreesF, ?]]: Printer[T] = {
+  def schema[T: Basis[FreesF, ?]]: Printer[T] = {
     val algebra: Algebra[FreesF, String] = Algebra {
       case TNull()                   => "Null"
       case TDouble()                 => "Double"
@@ -119,7 +119,9 @@ object print {
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
   def operation[T](implicit T: Basis[FreesF, T]): Printer[Service.Operation[T]] =
-    ((konst("def ") *< string) >*< (konst("(req: ") *< schema) >*< (konst("): ") *< schema)).contramap(opTuple)
+    ((konst("def ") *< string) >*< (konst("(req: ") *< Printer(namedTypes[T] >>> schema.print)) >*< (konst("): ") *< Printer(
+      namedTypes[T] >>> schema.print)))
+      .contramap(opTuple)
 
   def service[T](implicit T: Basis[FreesF, T]): Printer[Service[T]] =
     ((konst("@service(") *< serializationType >* konst(") trait ")) >*<
@@ -132,7 +134,7 @@ object print {
   def proto[T](implicit T: Basis[FreesF, T]): Printer[Protocol[T]] = {
     ((konst("pakage ") *< optional(string) >* (newLine >* newLine)) >*<
       mkList(option, "\n") >*<
-      (konst("object ") *< string >* konst("{ ") >* newLine >* newLine) >*<
+      (konst("object ") *< string >* konst(" { ") >* newLine >* newLine) >*<
       (mkList(schema, "\n") >* newLine) >*<
       (mkList(service, "\n\n ") >* (newLine >* newLine >* konst("}")))).contramap(protoTuple)
   }
