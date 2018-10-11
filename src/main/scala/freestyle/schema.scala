@@ -17,7 +17,6 @@
 package skeuomorph
 package freestyle
 
-import qq.droste.Algebra
 import cats.Functor
 import cats.data.NonEmptyList
 
@@ -67,35 +66,4 @@ object FreesF {
       case TProduct(name, fields)    => TProduct(name, fields.map(field => field.copy(tpe = f(field.tpe))))
     }
   }
-
-  def render: Algebra[FreesF, String] = Algebra {
-    case TNull()                   => "Null"
-    case TDouble()                 => "Double"
-    case TFloat()                  => "Float"
-    case TInt()                    => "Int"
-    case TLong()                   => "Long"
-    case TBoolean()                => "Boolean"
-    case TString()                 => "String"
-    case TByteArray()              => "Array[Byte]"
-    case TNamedType(name)          => name
-    case TOption(value)            => s"Option[$value]"
-    case TMap(value)               => s"Map[String, $value]"
-    case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
-    case TList(value)              => s"List[$value]"
-    case TRequired(value)          => value
-    case TCoproduct(invariants) =>
-      invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
-    case TSum(name, fields) =>
-      val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
-      s"""
-      |sealed trait $name
-      |object $name {
-      |  $printFields
-      |}
-      """.stripMargin
-    case TProduct(name, fields) =>
-      val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
-      s"@message case class $name($printFields)"
-  }
-
 }
