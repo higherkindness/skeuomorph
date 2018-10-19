@@ -41,8 +41,6 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
-scalafmtOnCompile in ThisBuild := true
-
 // check for library updates whenever the project is [re]load
 onLoad in Global := { s =>
   "dependencyUpdates" :: s
