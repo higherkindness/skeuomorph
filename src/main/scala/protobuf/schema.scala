@@ -22,31 +22,35 @@ import qq.droste.Algebra
 
 sealed trait ProtobufF[A]
 object ProtobufF {
-  case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
-  case class Option(name: String, value: String)
+  final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
+  final case class Option(name: String, value: String)
 
-  case class TDouble[A]()                extends ProtobufF[A]
-  case class TFloat[A]()                 extends ProtobufF[A]
-  case class TInt32[A]()                 extends ProtobufF[A]
-  case class TInt64[A]()                 extends ProtobufF[A]
-  case class TUint32[A]()                extends ProtobufF[A]
-  case class TUint64[A]()                extends ProtobufF[A]
-  case class TSint32[A]()                extends ProtobufF[A]
-  case class TSint64[A]()                extends ProtobufF[A]
-  case class TFixed32[A]()               extends ProtobufF[A]
-  case class TFixed64[A]()               extends ProtobufF[A]
-  case class TSfixed32[A]()              extends ProtobufF[A]
-  case class TSfixed64[A]()              extends ProtobufF[A]
-  case class TBool[A]()                  extends ProtobufF[A]
-  case class TString[A]()                extends ProtobufF[A]
-  case class TBytes[A]()                 extends ProtobufF[A]
-  case class TNamedType[A](name: String) extends ProtobufF[A]
-  case class TRequired[A](value: A)      extends ProtobufF[A]
-  case class TOptional[A](value: A)      extends ProtobufF[A]
-  case class TRepeated[A](value: A)      extends ProtobufF[A]
-  case class TEnum[A](name: String, symbols: List[(String, Int)], options: List[Option], aliases: List[(String, Int)])
+  final case class TDouble[A]()                extends ProtobufF[A]
+  final case class TFloat[A]()                 extends ProtobufF[A]
+  final case class TInt32[A]()                 extends ProtobufF[A]
+  final case class TInt64[A]()                 extends ProtobufF[A]
+  final case class TUint32[A]()                extends ProtobufF[A]
+  final case class TUint64[A]()                extends ProtobufF[A]
+  final case class TSint32[A]()                extends ProtobufF[A]
+  final case class TSint64[A]()                extends ProtobufF[A]
+  final case class TFixed32[A]()               extends ProtobufF[A]
+  final case class TFixed64[A]()               extends ProtobufF[A]
+  final case class TSfixed32[A]()              extends ProtobufF[A]
+  final case class TSfixed64[A]()              extends ProtobufF[A]
+  final case class TBool[A]()                  extends ProtobufF[A]
+  final case class TString[A]()                extends ProtobufF[A]
+  final case class TBytes[A]()                 extends ProtobufF[A]
+  final case class TNamedType[A](name: String) extends ProtobufF[A]
+  final case class TRequired[A](value: A)      extends ProtobufF[A]
+  final case class TOptional[A](value: A)      extends ProtobufF[A]
+  final case class TRepeated[A](value: A)      extends ProtobufF[A]
+  final case class TEnum[A](
+      name: String,
+      symbols: List[(String, Int)],
+      options: List[Option],
+      aliases: List[(String, Int)])
       extends ProtobufF[A]
-  case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
+  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {

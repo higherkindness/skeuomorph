@@ -22,7 +22,7 @@ package openapi
  */
 object schema {
 
-  case class OpenApi[A](
+  final case class OpenApi[A](
       openapi: String,
       info: Info,
       servers: List[Server],
@@ -31,16 +31,16 @@ object schema {
       tags: Option[List[Tag]],
       externalDocs: Option[ExternalDocs])
 
-  case class Info(title: String, description: Option[String], version: String)
+  final case class Info(title: String, description: Option[String], version: String)
 
-  case class Server(url: String, description: String, variables: Map[String, Server.Variable])
+  final case class Server(url: String, description: String, variables: Map[String, Server.Variable])
 
   object Server {
-    case class Variable(enum: List[String], default: String, description: Option[String])
+    final case class Variable(enum: List[String], default: String, description: Option[String])
   }
 
   object Path {
-    case class ItemObject[A](
+    final case class ItemObject[A](
         ref: String, // $ref
         summary: String,
         description: String,
@@ -54,7 +54,7 @@ object schema {
         trace: Option[Operation[A]],
         servers: List[Server])
 
-    case class Operation[A](
+    final case class Operation[A](
         tags: List[String],
         summary: String,
         description: String,
@@ -66,35 +66,35 @@ object schema {
         servers: List[Server])
   }
 
-  case class Components[A](
+  final case class Components[A](
       responses: Map[String, Either[Response[A], Reference]],
       requestBodies: Map[String, Either[Request[A], Reference]]
   )
 
-  case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
+  final case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
 
-  case class MediaType[A](schema: Either[JsonSchemaF[A], Reference], encoding: Map[String, Encoding[A]])
+  final case class MediaType[A](schema: Either[JsonSchemaF[A], Reference], encoding: Map[String, Encoding[A]])
 
-  case class Encoding[A](
+  final case class Encoding[A](
       contentType: String,
       headers: Map[String, Either[Header[A], Reference]],
       style: String,
       explode: Boolean,
       allowReserved: Boolean)
 
-  case class Response[A](
+  final case class Response[A](
       description: String,
       headers: Map[String, Either[Header[A], Reference]],
       content: Map[String, MediaType[A]])
 
-  case class Tag(name: String, description: Option[String], externalDocs: Option[ExternalDocs])
+  final case class Tag(name: String, description: Option[String], externalDocs: Option[ExternalDocs])
 
-  case class ExternalDocs(url: String, description: Option[String])
+  final case class ExternalDocs(url: String, description: Option[String])
 
   type Callback[A] = Map[String, Path.ItemObject[A]]
 
-  case class Reference(ref: String) // $ref
+  final case class Reference(ref: String) // $ref
 
-  case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
+  final case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
 
 }

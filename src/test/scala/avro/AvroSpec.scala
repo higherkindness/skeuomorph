@@ -38,7 +38,7 @@ class AvroSpec extends Specification with ScalaCheck {
   """
 
   def convertSchema = Prop.forAll { (schema: Schema) =>
-    val test = scheme.hylo(checkSchema(schema).run, AvroF.fromAvro.run)
+    val test = scheme.hylo(checkSchema(schema), AvroF.fromAvro)
 
     test(schema)
   }

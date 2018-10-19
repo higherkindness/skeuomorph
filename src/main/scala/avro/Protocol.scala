@@ -21,9 +21,14 @@ import org.apache.avro.Schema
 import org.apache.avro.{Protocol => AvroProtocol}
 import scala.collection.JavaConverters._
 
+import cats.syntax.option._
+import cats.data.NonEmptyList
 import qq.droste._
+import qq.droste.syntax.all._
+import freestyle.{FreesF, SerializationType}
+import io.circe.Json
 
-case class Protocol[A](
+final case class Protocol[A](
     name: String,
     namespace: Option[String],
     types: List[A],
@@ -33,7 +38,23 @@ case class Protocol[A](
 object Protocol {
   import AvroF._
 
-  case class Message[A](name: String, request: A, response: A)
+  final case class Message[A](name: String, request: A, response: A)
+
+  object Message {
+    def toJson[T](message: Message[T])(implicit T: Project[AvroF, T]): Json = {
+      val avroToJson = scheme.cata(AvroF.toJson)
+
+      Json.obj(
+        "request" -> Json.arr(
+          Json.obj(
+            "name" -> Json.fromString("arg"), //TODO: is this doable?
+            "type" -> avroToJson(message.request)
+          )
+        ),
+        "response" -> avroToJson(message.response)
+      )
+    }
+  }
 
   def fromProto[T](proto: AvroProtocol)(implicit T: Embed[AvroF, T]): Protocol[T] = {
     val toAvroF: Schema => T = scheme.ana(fromAvro)
@@ -48,4 +69,58 @@ object Protocol {
     )
   }
 
+  def toJson[T](proto: Protocol[T])(implicit T: Basis[AvroF, T]): Json = {
+    val withNamespace: Json = Json.fromFields(proto.namespace.map("namespace" -> Json.fromString(_)).toList)
+
+    withNamespace deepMerge Json.obj(
+      "protocol" -> Json.fromString(proto.name),
+      "types"    -> Json.fromValues(proto.types.map(scheme.cata(AvroF.toJson))),
+      "messages" -> Json.fromFields(
+        proto.messages.map(m => m.name -> Message.toJson(m))
+      )
+    )
+  }
+
+  def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[FreesF, AvroF, T] = Trans {
+    case FreesF.TNull()                => tNull()
+    case FreesF.TDouble()              => tDouble()
+    case FreesF.TFloat()               => tFloat()
+    case FreesF.TInt()                 => tInt()
+    case FreesF.TLong()                => tLong()
+    case FreesF.TBoolean()             => tBoolean()
+    case FreesF.TString()              => tString()
+    case FreesF.TByteArray()           => tBytes()
+    case FreesF.TNamedType(name)       => tNamedType(name)
+    case FreesF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
+    case FreesF.TList(value)           => tArray(value)
+    case FreesF.TMap(value)            => tMap(value)
+    case FreesF.TGeneric(_, _)         => ??? // WAT
+    case FreesF.TRequired(t)           => T.coalgebra(t)
+    case FreesF.TCoproduct(invariants) => TUnion(invariants)
+    case FreesF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
+    case FreesF.TProduct(name, fields) =>
+      TRecord(
+        name,
+        none[String],
+        Nil,
+        none[String],
+        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
+  }
+
+  def fromFreesFProtocol[T, U](
+      proto: freestyle.Protocol[T])(implicit T: Basis[FreesF, T], U: Basis[AvroF, U]): Protocol[U] = {
+    def fromFreestyle: T => U = scheme.cata(fromFreesFSchema.algebra)
+    val services: List[Message[U]] = proto.services
+      .filter(_.serializationType == SerializationType.Avro)
+      .flatMap { s =>
+        s.operations.map(op => Message(op.name, fromFreestyle(op.request), fromFreestyle(op.response)))
+      }
+
+    Protocol(
+      proto.name,
+      proto.pkg,
+      proto.declarations.map(fromFreestyle),
+      services
+    )
+  }
 }
