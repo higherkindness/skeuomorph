@@ -43,6 +43,13 @@ object AvroF {
     avroF.schema
   )
 
+  def field2Obj(f: Field[Json]): Json =
+    Json.obj(
+      "name"    -> Json.fromString(f.name),
+      "aliases" -> Json.arr(f.aliases.map(Json.fromString): _*),
+      "type"    -> f.tpe
+    )
+
   sealed trait Order
   object Order {
     case object Ascending  extends Order
@@ -210,16 +217,9 @@ object AvroF {
       )
     case TRecord(name, namespace, aliases, doc, fields) =>
       val base: Json = Json.obj(
-        "type" -> Json.fromString("record"),
-        "name" -> Json.fromString(name),
-        "fields" -> Json.arr(
-          fields.map(
-            f =>
-              Json.obj(
-                "name"    -> Json.fromString(f.name),
-                "aliases" -> Json.arr(f.aliases.map(Json.fromString): _*),
-                "type"    -> f.tpe
-            )): _*)
+        "type"   -> Json.fromString("record"),
+        "name"   -> Json.fromString(name),
+        "fields" -> Json.arr(fields.map(field2Obj): _*)
       )
       val withNamespace = namespace.fold(base) { n =>
         base deepMerge Json.obj("namespace" -> Json.fromString(n))
