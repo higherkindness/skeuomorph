@@ -41,15 +41,19 @@ object Protocol {
   final case class Message[A](name: String, request: A, response: A)
 
   object Message {
-    def toJson[T](message: Message[T])(implicit T: Project[AvroF, T]): Json = Json.obj(
-      "request" -> Json.arr(
-        Json.obj(
-          "name" -> Json.fromString("arg"), //TODO: is this doable?
-          "type" -> scheme.cata(AvroF.toJson).apply(message.request)
-        )
-      ),
-      "response" -> scheme.cata(AvroF.toJson).apply(message.response)
-    )
+    def toJson[T](message: Message[T])(implicit T: Project[AvroF, T]): Json = {
+      val avroToJson = scheme.cata(AvroF.toJson)
+
+      Json.obj(
+        "request" -> Json.arr(
+          Json.obj(
+            "name" -> Json.fromString("arg"), //TODO: is this doable?
+            "type" -> avroToJson(message.request)
+          )
+        ),
+        "response" -> avroToJson(message.response)
+      )
+    }
   }
 
   def fromProto[T](proto: AvroProtocol)(implicit T: Embed[AvroF, T]): Protocol[T] = {
