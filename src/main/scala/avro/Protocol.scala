@@ -28,7 +28,7 @@ import qq.droste.syntax.all._
 import freestyle.{FreesF, SerializationType}
 import io.circe.Json
 
-case class Protocol[A](
+final case class Protocol[A](
     name: String,
     namespace: Option[String],
     types: List[A],
@@ -38,7 +38,7 @@ case class Protocol[A](
 object Protocol {
   import AvroF._
 
-  case class Message[A](name: String, request: A, response: A)
+  final case class Message[A](name: String, request: A, response: A)
 
   object Message {
     def toJson[T](message: Message[T])(implicit T: Project[AvroF, T]): Json = Json.obj(

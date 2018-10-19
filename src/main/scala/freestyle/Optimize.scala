@@ -33,7 +33,7 @@ object Optimize {
    * of other products would end up with something like:
    *
    * {{{
-   * case class Product(field1: String, field2: case class OtherField())
+   * case class bbProduct(field1: String, field2: case class OtherField())
    * }}}
    *
    * With it, we cut recursion in messages, to leave only type names:

@@ -25,22 +25,23 @@ import qq.droste.data.Fix
 
 sealed trait JsonSchemaF[A]
 object JsonSchemaF {
-  case class Property[A](name: String, tpe: A)
+  final case class Property[A](name: String, tpe: A)
 
-  case class IntegerF[A]()                                                                   extends JsonSchemaF[A]
-  case class LongF[A]()                                                                      extends JsonSchemaF[A]
-  case class FloatF[A]()                                                                     extends JsonSchemaF[A]
-  case class DoubleF[A]()                                                                    extends JsonSchemaF[A]
-  case class StringF[A]()                                                                    extends JsonSchemaF[A]
-  case class ByteF[A]()                                                                      extends JsonSchemaF[A]
-  case class BinaryF[A]()                                                                    extends JsonSchemaF[A]
-  case class BooleanF[A]()                                                                   extends JsonSchemaF[A]
-  case class DateF[A]()                                                                      extends JsonSchemaF[A]
-  case class DateTimeF[A]()                                                                  extends JsonSchemaF[A]
-  case class PasswordF[A]()                                                                  extends JsonSchemaF[A]
-  case class ObjectF[A](name: String, properties: List[Property[A]], required: List[String]) extends JsonSchemaF[A]
-  case class ArrayF[A](values: A)                                                            extends JsonSchemaF[A]
-  case class EnumF[A](cases: List[A])                                                        extends JsonSchemaF[A]
+  final case class IntegerF[A]()  extends JsonSchemaF[A]
+  final case class LongF[A]()     extends JsonSchemaF[A]
+  final case class FloatF[A]()    extends JsonSchemaF[A]
+  final case class DoubleF[A]()   extends JsonSchemaF[A]
+  final case class StringF[A]()   extends JsonSchemaF[A]
+  final case class ByteF[A]()     extends JsonSchemaF[A]
+  final case class BinaryF[A]()   extends JsonSchemaF[A]
+  final case class BooleanF[A]()  extends JsonSchemaF[A]
+  final case class DateF[A]()     extends JsonSchemaF[A]
+  final case class DateTimeF[A]() extends JsonSchemaF[A]
+  final case class PasswordF[A]() extends JsonSchemaF[A]
+  final case class ObjectF[A](name: String, properties: List[Property[A]], required: List[String])
+      extends JsonSchemaF[A]
+  final case class ArrayF[A](values: A)     extends JsonSchemaF[A]
+  final case class EnumF[A](cases: List[A]) extends JsonSchemaF[A]
 
   implicit val jsonSchemaFunctor: Functor[JsonSchemaF] = new Functor[JsonSchemaF] {
     def map[A, B](fa: JsonSchemaF[A])(f: A => B): JsonSchemaF[B] = fa match {

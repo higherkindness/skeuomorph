@@ -32,7 +32,7 @@ object SerializationType {
   case object AvroWithSchema extends SerializationType
 }
 
-case class Protocol[T](
+final case class Protocol[T](
     name: String,
     pkg: Option[String],
     options: List[(String, String)],
@@ -100,7 +100,7 @@ object Protocol {
   }
 }
 
-case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
+final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
 object Service {
-  case class Operation[T](name: String, request: T, response: T)
+  final case class Operation[T](name: String, request: T, response: T)
 }

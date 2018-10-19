@@ -57,7 +57,7 @@ object AvroF {
     case object Ignore     extends Order
   }
 
-  case class Field[A](
+  final case class Field[A](
       name: String,
       aliases: List[String],
       doc: Option[String],
@@ -67,33 +67,34 @@ object AvroF {
 
   type TypeName = String
 
-  case class TNull[A]()                    extends AvroF[A]
-  case class TBoolean[A]()                 extends AvroF[A]
-  case class TInt[A]()                     extends AvroF[A]
-  case class TLong[A]()                    extends AvroF[A]
-  case class TFloat[A]()                   extends AvroF[A]
-  case class TDouble[A]()                  extends AvroF[A]
-  case class TBytes[A]()                   extends AvroF[A]
-  case class TString[A]()                  extends AvroF[A]
-  case class TNamedType[A](name: TypeName) extends AvroF[A]
-  case class TArray[A](item: A)            extends AvroF[A]
-  case class TMap[A](values: A)            extends AvroF[A]
-  case class TRecord[A](
+  final case class TNull[A]()                    extends AvroF[A]
+  final case class TBoolean[A]()                 extends AvroF[A]
+  final case class TInt[A]()                     extends AvroF[A]
+  final case class TLong[A]()                    extends AvroF[A]
+  final case class TFloat[A]()                   extends AvroF[A]
+  final case class TDouble[A]()                  extends AvroF[A]
+  final case class TBytes[A]()                   extends AvroF[A]
+  final case class TString[A]()                  extends AvroF[A]
+  final case class TNamedType[A](name: TypeName) extends AvroF[A]
+  final case class TArray[A](item: A)            extends AvroF[A]
+  final case class TMap[A](values: A)            extends AvroF[A]
+  final case class TRecord[A](
       name: TypeName,
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
       fields: List[Field[A]])
       extends AvroF[A]
-  case class TEnum[A](
+  final case class TEnum[A](
       name: TypeName,
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
       symbols: List[String])
       extends AvroF[A]
-  case class TUnion[A](options: NonEmptyList[A])                                                      extends AvroF[A]
-  case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int) extends AvroF[A]
+  final case class TUnion[A](options: NonEmptyList[A]) extends AvroF[A]
+  final case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int)
+      extends AvroF[A]
 
   /**
    * Helper methods to construct AvroF values.  These methods are to
