@@ -60,28 +60,30 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     %%("cats-core"),
     "io.higherkindness" %% "droste-core" % "0.3.1",
-    "org.apache.avro"   % "avro"             % "1.8.2",
+    "org.apache.avro"   % "avro"         % "1.8.2",
     %%("circe-core"),
-    %%("specs2-core") % Test,
+    %%("specs2-core")       % Test,
     %%("specs2-scalacheck") % Test,
-    "io.chrisdavenport" %% "cats-scalacheck" % "0.1.0" % Test
+    "io.chrisdavenport"     %% "cats-scalacheck" % "0.1.0" % Test
   ),
   orgProjectName := "Skeuomorph",
   orgBadgeListSetting := List(
     TravisBadge.apply,
-    CodecovBadge.apply,
-    { info => MavenCentralBadge.apply(info.copy(libName = "skeuomorph")) },
+    CodecovBadge.apply, { info =>
+      MavenCentralBadge.apply(info.copy(libName = "skeuomorph"))
+    },
     ScalaLangBadge.apply,
-    LicenseBadge.apply,
-    { info => GitterBadge.apply(info.copy(owner = "frees-io", repo = "skeuomorph")) },
+    LicenseBadge.apply, { info =>
+      GitterBadge.apply(info.copy(owner = "frees-io", repo = "skeuomorph"))
+    },
     GitHubIssuesBadge.apply
   )
 ) ++ compilerPlugins
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.spire-math" % "kind-projector"      % "0.9.7" cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.2.4"),
-    compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+    compilerPlugin("org.spire-math"  % "kind-projector"      % "0.9.7" cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.2.4"),
+    compilerPlugin("org.scalamacros" % "paradise"            % "2.1.1" cross CrossVersion.patch)
   )
 )
