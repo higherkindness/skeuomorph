@@ -19,14 +19,14 @@ package avro
 
 import scala.collection.JavaConverters._
 
-import cats.Functor
 import cats.data.NonEmptyList
 import qq.droste.{Algebra, Coalgebra}
+import qq.droste.macros.deriveTraverse
 import io.circe.Json
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 
-sealed trait AvroF[A]
+@deriveTraverse sealed trait AvroF[A]
 object AvroF {
 
   def order2Order(avroO: Schema.Field.Order): Order = avroO match {
@@ -35,7 +35,7 @@ object AvroF {
     case Schema.Field.Order.IGNORE     => Order.Ignore
   }
 
-  def field2Field(avroF: Schema.Field): Field[Schema] = Field(
+  def field2Field(avroF: Schema.Field): Schema = Field(
     avroF.name,
     avroF.aliases.asScala.toList,
     Option(avroF.doc),
@@ -43,27 +43,12 @@ object AvroF {
     avroF.schema
   )
 
-  def field2Obj(f: Field[Json]): Json =
-    Json.obj(
-      "name"    -> Json.fromString(f.name),
-      "aliases" -> Json.arr(f.aliases.map(Json.fromString): _*),
-      "type"    -> f.tpe
-    )
-
   sealed trait Order
   object Order {
     case object Ascending  extends Order
     case object Descending extends Order
     case object Ignore     extends Order
   }
-
-  final case class Field[A](
-      name: String,
-      aliases: List[String],
-      doc: Option[String],
-      order: Option[Order],
-      tpe: A
-  )
 
   type TypeName = String
 
@@ -78,12 +63,19 @@ object AvroF {
   final case class TNamedType[A](name: TypeName) extends AvroF[A]
   final case class TArray[A](item: A)            extends AvroF[A]
   final case class TMap[A](values: A)            extends AvroF[A]
+  final case class Field[A](
+      name: String,
+      aliases: List[String],
+      doc: Option[String],
+      order: Option[Order],
+      tpe: A
+  ) extends AvroF[A]
   final case class TRecord[A](
       name: TypeName,
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
-      fields: List[Field[A]])
+      fields: List[A])
       extends AvroF[A]
   final case class TEnum[A](
       name: TypeName,
@@ -116,7 +108,7 @@ object AvroF {
       namespace: Option[String],
       aliases: List[TypeName],
       doc: Option[String],
-      fields: List[Field[A]]): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
+      fields: List[A]): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
   def tEnum[A](
       name: TypeName,
       namespace: Option[String],
@@ -126,28 +118,6 @@ object AvroF {
   def tUnion[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
   def tFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int): AvroF[A] =
     TFixed(name, namespace, aliases, size)
-
-  implicit val avroFunctor: Functor[AvroF] = new Functor[AvroF] {
-    def map[A, B](fa: AvroF[A])(f: A => B): AvroF[B] = fa match {
-      case AvroF.TNull()          => AvroF.TNull()
-      case AvroF.TBoolean()       => AvroF.TBoolean()
-      case AvroF.TInt()           => AvroF.TInt()
-      case AvroF.TLong()          => AvroF.TLong()
-      case AvroF.TFloat()         => AvroF.TFloat()
-      case AvroF.TDouble()        => AvroF.TDouble()
-      case AvroF.TBytes()         => AvroF.TBytes()
-      case AvroF.TString()        => AvroF.TString()
-      case AvroF.TNamedType(name) => AvroF.TNamedType(name)
-      case AvroF.TArray(item)     => AvroF.TArray(f(item))
-      case AvroF.TMap(values)     => AvroF.TMap(f(values))
-      case AvroF.TRecord(name, namespace, aliases, doc, fields) =>
-        AvroF.TRecord(name, namespace, aliases, doc, fields.map(field => field.copy(tpe = f(field.tpe))))
-      case AvroF.TEnum(name, namespace, aliases, doc, symbols) =>
-        AvroF.TEnum(name, namespace, aliases, doc, symbols)
-      case AvroF.TUnion(options)                        => AvroF.TUnion(options.map(f))
-      case AvroF.TFixed(name, namespace, aliases, size) => AvroF.TFixed(name, namespace, aliases, size)
-    }
-  }
 
   /**
    * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.Schema]]
@@ -216,11 +186,17 @@ object AvroF {
         "type"   -> Json.fromString("map"),
         "values" -> values
       )
+    case Field(name, aliases, _, _, tpe) =>
+      Json.obj(
+        "name"    -> Json.fromString(name),
+        "aliases" -> Json.arr(aliases.map(Json.fromString): _*),
+        "type"    -> tpe
+      )
     case TRecord(name, namespace, aliases, doc, fields) =>
       val base: Json = Json.obj(
         "type"   -> Json.fromString("record"),
         "name"   -> Json.fromString(name),
-        "fields" -> Json.arr(fields.map(field2Obj): _*)
+        "fields" -> Json.fromValues(fields)
       )
       val withNamespace = namespace.fold(base) { n =>
         base deepMerge Json.obj("namespace" -> Json.fromString(n))

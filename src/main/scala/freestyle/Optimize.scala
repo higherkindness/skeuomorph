@@ -18,6 +18,9 @@ package skeuomorph
 package freestyle
 
 import qq.droste._
+import qq.droste.syntax.project._
+import qq.droste.syntax.embed._
+import cats.syntax.functor._
 import FreesF._
 
 /**
@@ -33,7 +36,7 @@ object Optimize {
    * of other products would end up with something like:
    *
    * {{{
-   * case class bbProduct(field1: String, field2: case class OtherField())
+   * case class Product(field1: String, field2: case class OtherField())
    * }}}
    *
    * With it, we cut recursion in messages, to leave only type names:
@@ -43,13 +46,8 @@ object Optimize {
    * }}}
    */
   def nestedNamedTypesTrans[T](implicit T: Basis[FreesF, T]): Trans[FreesF, FreesF, T] = Trans {
-    case TProduct(name, fields) =>
-      def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
-      TProduct[T](
-        name,
-        fields.map(nameTypes)
-      )
-    case other => other
+    case Field(name, tpe) => Field(name, tpe.project.map(namedTypes).embed)
+    case other            => other
   }
 
   def namedTypesTrans[T]: Trans[FreesF, FreesF, T] = Trans {

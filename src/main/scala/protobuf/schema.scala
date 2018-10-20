@@ -22,7 +22,6 @@ import qq.droste.Algebra
 
 sealed trait ProtobufF[A]
 object ProtobufF {
-  final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
   final case class Option(name: String, value: String)
 
   final case class TDouble[A]()                extends ProtobufF[A]
@@ -50,7 +49,8 @@ object ProtobufF {
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
-  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
+  final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])     extends ProtobufF[A]
+  final case class TMessage[A](name: String, fields: List[A], reserved: List[List[String]]) extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -74,13 +74,8 @@ object ProtobufF {
       case TOptional(value)                       => TOptional(f(value))
       case TRepeated(value)                       => TRepeated(f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
-      case TMessage(name, fields, reserved) =>
-        TMessage(
-          name,
-          fields.map(field => field.copy(tpe = f(field.tpe))),
-          reserved
-        )
-
+      case Field(name, tpe, position, options)    => Field(name, f(tpe), position, options)
+      case TMessage(name, fields, reserved)       => TMessage(name, fields.map(f), reserved)
     }
   }
 
@@ -119,18 +114,17 @@ object ProtobufF {
       |  $printAliases
       |}
       """.stripMargin
-    case TMessage(name, fields, reserved) =>
-      val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
+    case Field(name, tpe, position, options) =>
       def printOptions(options: List[Option]) =
         if (options.isEmpty)
           ""
         else
           options.map(printOption).mkString(start = " [", sep = ", ", end = "]")
+      s"$tpe $name = $position${printOptions(options)};"
+    case TMessage(name, fields, reserved) =>
+      val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
 
-      val printFields =
-        fields
-          .map(f => s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};")
-          .mkString("\n  ")
+      val printFields = fields.mkString("\n  ")
       s"""
       |message $name {
       |  $printReserved

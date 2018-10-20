@@ -98,13 +98,8 @@ object Protocol {
     case FreesF.TRequired(t)           => T.coalgebra(t)
     case FreesF.TCoproduct(invariants) => TUnion(invariants)
     case FreesF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
-    case FreesF.TProduct(name, fields) =>
-      TRecord(
-        name,
-        none[String],
-        Nil,
-        none[String],
-        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
+    case FreesF.Field(name, tpe)       => Field(name, Nil, none[String], none[Order], tpe)
+    case FreesF.TProduct(name, fields) => TRecord(name, none[String], Nil, none[String], fields)
   }
 
   def fromFreesFProtocol[T, U](

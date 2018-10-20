@@ -18,55 +18,29 @@ package skeuomorph
 package freestyle
 
 import qq.droste.Algebra
-import cats.Functor
+import qq.droste.macros.deriveTraverse
 import cats.data.NonEmptyList
 
-/**
- *
- */
-sealed trait FreesF[A]
+@deriveTraverse sealed trait FreesF[A]
 object FreesF {
-  final case class Field[A](name: String, tpe: A)
-
-  final case class TNull[A]()                                        extends FreesF[A]
-  final case class TDouble[A]()                                      extends FreesF[A]
-  final case class TFloat[A]()                                       extends FreesF[A]
-  final case class TInt[A]()                                         extends FreesF[A]
-  final case class TLong[A]()                                        extends FreesF[A]
-  final case class TBoolean[A]()                                     extends FreesF[A]
-  final case class TString[A]()                                      extends FreesF[A]
-  final case class TByteArray[A]()                                   extends FreesF[A]
-  final case class TNamedType[A](name: String)                       extends FreesF[A]
-  final case class TOption[A](value: A)                              extends FreesF[A]
-  final case class TList[A](value: A)                                extends FreesF[A]
-  final case class TMap[A](value: A)                                 extends FreesF[A]
-  final case class TGeneric[A](generic: A, params: List[A])          extends FreesF[A]
-  final case class TRequired[A](value: A)                            extends FreesF[A]
-  final case class TCoproduct[A](invariants: NonEmptyList[A])        extends FreesF[A]
-  final case class TSum[A](name: String, fields: List[String])       extends FreesF[A]
-  final case class TProduct[A](name: String, fields: List[Field[A]]) extends FreesF[A]
-
-  implicit val freestyleFunctor: Functor[FreesF] = new Functor[FreesF] {
-    def map[A, B](fa: FreesF[A])(f: A => B): FreesF[B] = fa match {
-      case TNull()                   => TNull()
-      case TDouble()                 => TDouble()
-      case TFloat()                  => TFloat()
-      case TInt()                    => TInt()
-      case TLong()                   => TLong()
-      case TBoolean()                => TBoolean()
-      case TString()                 => TString()
-      case TByteArray()              => TByteArray()
-      case TNamedType(name)          => TNamedType(name)
-      case TOption(value)            => TOption(f(value))
-      case TList(value)              => TList(f(value))
-      case TMap(value)               => TMap(f(value))
-      case TGeneric(generic, params) => TGeneric(f(generic), params.map(f))
-      case TRequired(value)          => TRequired(f(value))
-      case TCoproduct(invariants)    => TCoproduct(invariants.map(f))
-      case TSum(name, fields)        => TSum(name, fields)
-      case TProduct(name, fields)    => TProduct(name, fields.map(field => field.copy(tpe = f(field.tpe))))
-    }
-  }
+  final case class TNull[A]()                                  extends FreesF[A]
+  final case class TDouble[A]()                                extends FreesF[A]
+  final case class TFloat[A]()                                 extends FreesF[A]
+  final case class TInt[A]()                                   extends FreesF[A]
+  final case class TLong[A]()                                  extends FreesF[A]
+  final case class TBoolean[A]()                               extends FreesF[A]
+  final case class TString[A]()                                extends FreesF[A]
+  final case class TByteArray[A]()                             extends FreesF[A]
+  final case class TNamedType[A](name: String)                 extends FreesF[A]
+  final case class TOption[A](value: A)                        extends FreesF[A]
+  final case class TList[A](value: A)                          extends FreesF[A]
+  final case class TMap[A](value: A)                           extends FreesF[A]
+  final case class TGeneric[A](generic: A, params: List[A])    extends FreesF[A]
+  final case class TRequired[A](value: A)                      extends FreesF[A]
+  final case class TCoproduct[A](invariants: NonEmptyList[A])  extends FreesF[A]
+  final case class TSum[A](name: String, fields: List[String]) extends FreesF[A]
+  final case class TProduct[A](name: String, fields: List[A])  extends FreesF[A]
+  final case class Field[A](name: String, tpe: A)              extends FreesF[A]
 
   def render: Algebra[FreesF, String] = Algebra {
     case TNull()                   => "Null"
@@ -94,8 +68,10 @@ object FreesF {
       |}
       """.stripMargin
     case TProduct(name, fields) =>
-      val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
+      val printFields = fields.mkString(", ")
       s"@message final case class $name($printFields)"
+    case Field(name, tpe) =>
+      s"$name: $tpe"
   }
 
 }

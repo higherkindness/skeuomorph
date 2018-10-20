@@ -49,25 +49,26 @@ object Transform {
     case ProtobufF.TRepeated(value)           => TList(value)
     case ProtobufF.TRequired(value)           => TRequired(value)
     case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
-    case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+    case ProtobufF.Field(name, tpe, _, _)     => Field(name, tpe)
+    case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields)
   }
 
   def transformAvro[A]: Trans[AvroF, FreesF, A] = Trans {
-    case AvroF.TNull()          => TNull()
-    case AvroF.TBoolean()       => TBoolean()
-    case AvroF.TInt()           => TInt()
-    case AvroF.TLong()          => TLong()
-    case AvroF.TFloat()         => TFloat()
-    case AvroF.TDouble()        => TDouble()
-    case AvroF.TBytes()         => TByteArray()
-    case AvroF.TString()        => TString()
-    case AvroF.TNamedType(name) => TNamedType(name)
-    case AvroF.TArray(item)     => TList(item)
-    case AvroF.TMap(values)     => TMap(values)
-    case AvroF.TRecord(name, _, _, _, fields) =>
-      TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
-    case AvroF.TUnion(options)               => TCoproduct(options)
+    case AvroF.TNull()                        => TNull()
+    case AvroF.TBoolean()                     => TBoolean()
+    case AvroF.TInt()                         => TInt()
+    case AvroF.TLong()                        => TLong()
+    case AvroF.TFloat()                       => TFloat()
+    case AvroF.TDouble()                      => TDouble()
+    case AvroF.TBytes()                       => TByteArray()
+    case AvroF.TString()                      => TString()
+    case AvroF.TNamedType(name)               => TNamedType(name)
+    case AvroF.TArray(item)                   => TList(item)
+    case AvroF.TMap(values)                   => TMap(values)
+    case AvroF.TRecord(name, _, _, _, fields) => TProduct(name, fields)
+    case AvroF.Field(name, _, _, _, tpe)      => Field(name, tpe)
+    case AvroF.TEnum(name, _, _, _, symbols)  => TSum(name, symbols)
+    case AvroF.TUnion(options)                => TCoproduct(options)
     case AvroF.TFixed(_, _, _, _) =>
       ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   }
