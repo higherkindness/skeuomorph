@@ -92,6 +92,7 @@ object Protocol {
     case FreesF.TByteArray()           => tBytes()
     case FreesF.TNamedType(name)       => tNamedType(name)
     case FreesF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
+    case FreesF.TEither(left, right)   => tUnion(NonEmptyList(left, List(right)))
     case FreesF.TList(value)           => tArray(value)
     case FreesF.TMap(value)            => tMap(value)
     case FreesF.TGeneric(_, _)         => ??? // WAT
