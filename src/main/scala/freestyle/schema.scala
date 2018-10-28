@@ -38,6 +38,7 @@ object FreesF {
   final case class TByteArray[A]()                                   extends FreesF[A]
   final case class TNamedType[A](name: String)                       extends FreesF[A]
   final case class TOption[A](value: A)                              extends FreesF[A]
+  final case class TEither[A](left: A, right: A)                     extends FreesF[A]
   final case class TList[A](value: A)                                extends FreesF[A]
   final case class TMap[A](value: A)                                 extends FreesF[A]
   final case class TGeneric[A](generic: A, params: List[A])          extends FreesF[A]
@@ -58,6 +59,7 @@ object FreesF {
       case TByteArray()              => TByteArray()
       case TNamedType(name)          => TNamedType(name)
       case TOption(value)            => TOption(f(value))
+      case TEither(left, right)      => TEither(f(left), f(right))
       case TList(value)              => TList(f(value))
       case TMap(value)               => TMap(f(value))
       case TGeneric(generic, params) => TGeneric(f(generic), params.map(f))
@@ -79,12 +81,13 @@ object FreesF {
     case TByteArray()              => "Array[Byte]"
     case TNamedType(name)          => name
     case TOption(value)            => s"Option[$value]"
+    case TEither(left, right)      => s"Either[$left, $right]"
     case TMap(value)               => s"Map[String, $value]"
     case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
     case TList(value)              => s"List[$value]"
     case TRequired(value)          => value
     case TCoproduct(invariants) =>
-      invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
+      invariants.toList.mkString("Cop[", " :: ", " :: TNil]")
     case TSum(name, fields) =>
       val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
       s"""

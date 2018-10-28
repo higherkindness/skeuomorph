@@ -19,6 +19,7 @@ package freestyle
 
 import qq.droste._
 import FreesF._
+import cats.data.NonEmptyList
 
 /**
  * Optimize object contains transformations in same schema
@@ -60,4 +61,33 @@ object Optimize {
 
   def namedTypes[T: Basis[FreesF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
   def nestedNamedTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+
+  /**
+   * micro-optimization to convert known coproducts to named types
+   * such as Option or Either.
+   *
+   * Without this optimization, printing a product containing fields
+   * whose type is a coproduct would end up with something like:
+   *
+   * {{{
+   * case class Product(field1: Cop[Int :: String :: TNil], field2: Cop[Int :: Null :: TNil])
+   * }}}
+   *
+   * With it, we rename the known coproducts to the correspondent named types:
+   *
+   * {{{
+   * case class Product(field1: Either[Int, String], field2: Option[Int])
+   * }}}
+   */
+  def knownCoproductTypesTrans[T](implicit B: Basis[FreesF, T]): Trans[FreesF, FreesF, T] = Trans {
+    case TCoproduct(NonEmptyList(x, List(y))) =>
+      (B.coalgebra(x), B.coalgebra(y)) match {
+        case (_, TNull()) => TOption[T](x)
+        case (TNull(), _) => TOption[T](y)
+        case _            => TEither[T](x, y)
+      }
+    case other => other
+  }
+
+  def knownCoproductTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
 }
