@@ -1,6 +1,11 @@
 import microsites._
 import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
+import sbtorgpolicies.model._
+import sbtorgpolicies.runnable.SetSetting
+import sbtorgpolicies.runnable.syntax._
+import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
+import scoverage.ScoverageKeys
 
 lazy val root = project
   .in(file("."))
@@ -20,9 +25,10 @@ lazy val docs = project
     micrositeName := "Skeuomorph",
     micrositeDescription := "Schema transformations",
     micrositeBaseUrl := "/skeuomorph",
-    micrositeGithubOwner := "frees-io",
+    micrositeGithubOwner := "higherkindness",
     micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
+    includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md",
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
       file("README.md") -> ExtraMdFileConfig(
@@ -52,8 +58,8 @@ pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "io.frees",
-  scalaVersion := "2.12.6",
+  organization := "higherkindness",
+  scalaVersion := "2.12.7",
   startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
@@ -68,6 +74,7 @@ lazy val commonSettings = Seq(
     "io.chrisdavenport"     %% "cats-scalacheck" % "0.1.0" % Test
   ),
   orgProjectName := "Skeuomorph",
+  orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
     CodecovBadge.apply, { info =>
@@ -75,9 +82,47 @@ lazy val commonSettings = Seq(
     },
     ScalaLangBadge.apply,
     LicenseBadge.apply, { info =>
-      GitterBadge.apply(info.copy(owner = "frees-io", repo = "skeuomorph"))
+      GitterBadge.apply(info.copy(owner = "higherkindness", repo = "skeuomorph"))
     },
     GitHubIssuesBadge.apply
+  ),
+  orgEnforcedFilesSetting := List(
+    LicenseFileType(orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
+    ContributingFileType(
+      orgProjectName.value,
+      // Organization field can be configured with default value if we migrate it to the frees-io organization
+      orgGithubSetting.value.copy(organization = "higherkindness", project = "skeuomorph")
+    ),
+    AuthorsFileType(
+      name.value,
+      orgGithubSetting.value,
+      orgMaintainersSetting.value,
+      orgContributorsSetting.value),
+    NoticeFileType(orgProjectName.value, orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
+    VersionSbtFileType,
+    ChangelogFileType,
+    ReadmeFileType(
+      orgProjectName.value,
+      orgGithubSetting.value,
+      startYear.value,
+      orgLicenseSetting.value,
+      orgCommitBranchSetting.value,
+      sbtPlugin.value,
+      name.value,
+      version.value,
+      scalaBinaryVersion.value,
+      sbtBinaryVersion.value,
+      orgSupportedScalaJSVersion.value,
+      orgBadgeListSetting.value
+    ),
+    ScalafmtFileType,
+    TravisFileType(crossScalaVersions.value, orgScriptCICommandKey, orgAfterCISuccessCommandKey)
+  ),
+  orgScriptTaskListSetting := List(
+    (clean in Global).asRunnableItemFull,
+    (compile in Compile).asRunnableItemFull,
+    (test in Test).asRunnableItemFull,
+    "docs/tut".asRunnableItem,
   )
 ) ++ compilerPlugins
 
