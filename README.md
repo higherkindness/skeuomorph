@@ -88,11 +88,12 @@ val definition = """
 val schema: Schema = new Schema.Parser().parse(definition)
 
 val parseAvro: Schema => Mu[FreesF] =
-  scheme.hylo(transformAvro[Mu[FreesF]].algebra.run, fromAvro.run)
+  scheme.hylo(transformAvro[Mu[FreesF]].algebra, fromAvro)
 val printSchema: Mu[FreesF] => String =
   scheme.cata(render)
 
 (parseAvro >>> print)(schema)
+(printSchema >>> print)(parseAvro(schema))
 ```
 
 
