@@ -133,7 +133,7 @@ object print {
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
 
   def proto[T](implicit T: Basis[FreesF, T]): Printer[Protocol[T]] = {
-    val lineFeed = "\n"
+    val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
     ((konst("package ") *< optional(string) >* (newLine >* newLine)) >*<
       mkList(option, lineFeed) >*<
