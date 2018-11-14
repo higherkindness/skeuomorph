@@ -43,6 +43,7 @@ object print {
       case TByteArray()              => "Array[Byte]"
       case TNamedType(name)          => name
       case TOption(value)            => s"Option[$value]"
+      case TEither(a, b)             => s"Either[$a, $b]"
       case TMap(value)               => s"Map[String, $value]"
       case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
       case TList(value)              => s"List[$value]"
