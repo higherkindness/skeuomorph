@@ -60,7 +60,7 @@ object print {
       """.stripMargin
       case TProduct(name, fields) =>
         val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
-        s"@message case class $name($printFields)"
+        s"@message final case class $name($printFields)"
     }
 
     Printer(scheme.cata(algebra))
@@ -133,7 +133,7 @@ object print {
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
 
   def proto[T](implicit T: Basis[FreesF, T]): Printer[Protocol[T]] = {
-    ((konst("pakage ") *< optional(string) >* (newLine >* newLine)) >*<
+    ((konst("package ") *< optional(string) >* (newLine >* newLine)) >*<
       mkList(option, "\n") >*<
       (konst("object ") *< string >* konst(" { ") >* newLine >* newLine) >*<
       (mkList(schema, "\n") >* newLine) >*<

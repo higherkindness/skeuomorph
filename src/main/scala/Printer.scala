@@ -37,10 +37,10 @@ object Printer {
     Printer(_.fold("")(p.print))
 
   def mkList[A](p: Printer[A], sep: String): Printer[List[A]] =
-    Printer(_ match {
+    Printer {
       case Nil => ""
       case xs  => xs.map(p.print).mkString(sep)
-    })
+    }
 
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
     def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] =
