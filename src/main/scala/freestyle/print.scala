@@ -133,10 +133,12 @@ object print {
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
 
   def proto[T](implicit T: Basis[FreesF, T]): Printer[Protocol[T]] = {
+    val lineFeed = "\n"
+    val doubleLineFeed = "\n\n "
     ((konst("package ") *< optional(string) >* (newLine >* newLine)) >*<
-      mkList(option, "\n") >*<
+      mkList(option, lineFeed) >*<
       (konst("object ") *< string >* konst(" { ") >* newLine >* newLine) >*<
-      (mkList(schema, "\n") >* newLine) >*<
-      (mkList(service, "\n\n ") >* (newLine >* newLine >* konst("}")))).contramap(protoTuple)
+      (mkList(schema, lineFeed) >* newLine) >*<
+      (mkList(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))).contramap(protoTuple)
   }
 }
