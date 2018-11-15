@@ -18,25 +18,20 @@ package skeuomorph
 package catz
 package contrib
 
-import cats.Contravariant
+import cats.ContravariantMonoidal
 
-trait Divisible[F[_]] extends Contravariant[F] {
-  def divide[A, B, C](fa: F[A], fb: F[B])(cab: C => (A, B)): F[C]
-  def conquer[A]: F[A]
-}
+object ContravariantMonoidalSyntax {
+  def apply[F[_]](implicit F: ContravariantMonoidal[F]): ContravariantMonoidal[F] = F
 
-object Divisible {
-  def apply[F[_]](implicit F: Divisible[F]): Divisible[F] = F
-
-  implicit class divisibleSyntax[F[_]: Divisible, A](fa: F[A]) {
-    def >*<[B](fb: F[B]): F[(A, B)] = Divisible[F].divide(fa, fb)(identity)
+  implicit class divisibleSyntax[F[_]: ContravariantMonoidal, A](fa: F[A]) {
+    def >*<[B](fb: F[B]): F[(A, B)] = ContravariantMonoidal.contramap2(fa, fb)(identity)
   }
 
-  implicit class divisibleLeftForgetSyntax[F[_]: Divisible, A](fa: F[Unit]) {
-    def *<[B](fb: F[B]): F[B] = Divisible[F].divide(fa, fb)(a => ((), a))
+  implicit class divisibleLeftForgetSyntax[F[_]: ContravariantMonoidal, A](fa: F[Unit]) {
+    def *<[B](fb: F[B]): F[B] = ContravariantMonoidal.contramap2(fa, fb)(a => ((), a))
   }
 
-  implicit class divisibleRightForgetSyntax[F[_]: Divisible, A](fa: F[A]) {
-    def >*(fb: F[Unit]): F[A] = Divisible[F].divide(fa, fb)(a => (a, ()))
+  implicit class divisibleRightForgetSyntax[F[_]: ContravariantMonoidal, A](fa: F[A]) {
+    def >*(fb: F[Unit]): F[A] = ContravariantMonoidal.contramap2(fa, fb)(a => (a, ()))
   }
 }

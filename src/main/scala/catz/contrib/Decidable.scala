@@ -18,7 +18,9 @@ package skeuomorph
 package catz
 package contrib
 
-trait Decidable[F[_]] extends Divisible[F] {
+import cats.ContravariantMonoidal
+
+trait Decidable[F[_]] extends ContravariantMonoidal[F] {
   def choose[A, B, C](fa: F[A], fb: F[B])(cab: C => Either[A, B]): F[C]
 }
 

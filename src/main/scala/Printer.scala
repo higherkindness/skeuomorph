@@ -50,15 +50,13 @@ object Printer {
     }
 
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
-    def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] =
-      Printer(f >>> fa.print)
-    def conquer[A]: Printer[A] =
-      Printer(Function.const(""))
-    def divide[A, B, C](fa: Printer[A], fb: Printer[B])(cab: C => (A, B)): Printer[C] =
-      Printer(c =>
-        cab(c) match {
-          case (a, b) => fa.print(a) + fb.print(b)
-      })
+    def unit: Printer[Unit] = { _ =>
+      ""
+    }
+    def product[A, B](fa: Printer[A], fb: Printer[B]): Printer[(A, B)] = new Printer[(A, B)] {
+      def print(ab: (A, B)): String = fa.print(ab._1) + fb.print(ab._2)
+    }
+    def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] = Printer(f >>> fa.print)
     def choose[A, B, C](fa: Printer[A], fb: Printer[B])(cab: C => Either[A, B]): Printer[C] =
       Printer(cab(_).fold(fa.print, fb.print))
   }

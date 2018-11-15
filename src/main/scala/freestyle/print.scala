@@ -23,7 +23,7 @@ import cats.syntax.compose._
 
 import qq.droste._
 import FreesF._
-import catz.contrib.Divisible._
+import catz.contrib.ContravariantMonoidalSyntax._
 import catz.contrib.Decidable._
 import Printer._
 import SerializationType._
