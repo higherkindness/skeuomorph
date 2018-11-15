@@ -128,7 +128,7 @@ lazy val commonSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.spire-math"  % "kind-projector"      % "0.9.7" cross CrossVersion.binary),
+    compilerPlugin("org.spire-math"  % "kind-projector"      % "0.9.8" cross CrossVersion.binary),
     compilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.2.4"),
     compilerPlugin("org.scalamacros" % "paradise"            % "2.1.1" cross CrossVersion.patch)
   )
