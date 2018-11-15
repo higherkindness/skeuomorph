@@ -25,7 +25,6 @@ import qq.droste._
 import FreesF._
 import catz.contrib.Divisible._
 import catz.contrib.Decidable._
-import cats.syntax.contravariant._
 import Printer._
 import SerializationType._
 

@@ -20,9 +20,16 @@ import catz.contrib.Decidable
 import cats.syntax.compose._
 import cats.instances.function._
 
-case class Printer[A](print: A => String)
+trait Printer[A] {
+  def print(a: A): String
+  def contramap[B](f: B => A): Printer[B] = Printer(f >>> print)
+}
 
 object Printer {
+
+  def apply[A](f: A => String): Printer[A] = new Printer[A] {
+    def print(a: A): String = f(a)
+  }
 
   def konst(str: String): Printer[Unit] =
     Printer(Function.const(str))
