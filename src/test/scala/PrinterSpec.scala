@@ -41,7 +41,11 @@ class PrinterSpec extends Specification with ScalaCheck with Discipline {
 
   def is = s2"""
   $contravariantMonoidalPrinter
+
+
   $monoidPrinter
+
+
   $semigroupPrinter
   """
 
