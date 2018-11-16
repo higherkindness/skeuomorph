@@ -16,15 +16,17 @@
 
 package higherkindness.skeuomorph.mu
 
-import cats.Functor
+import qq.droste.macros.deriveTraverse
+
 import cats.data.NonEmptyList
+import cats.instances.list._
 
 /**
  *
  */
-sealed trait MuF[A]
+@deriveTraverse sealed trait MuF[A]
 object MuF {
-  final case class Field[A](name: String, tpe: A)
+  @deriveTraverse final case class Field[A](name: String, tpe: A)
 
   final case class TNull[A]()                                        extends MuF[A]
   final case class TDouble[A]()                                      extends MuF[A]
@@ -44,27 +46,4 @@ object MuF {
   final case class TCoproduct[A](invariants: NonEmptyList[A])        extends MuF[A]
   final case class TSum[A](name: String, fields: List[String])       extends MuF[A]
   final case class TProduct[A](name: String, fields: List[Field[A]]) extends MuF[A]
-
-  implicit val muFunctor: Functor[MuF] = new Functor[MuF] {
-    def map[A, B](fa: MuF[A])(f: A => B): MuF[B] = fa match {
-      case TNull()                   => TNull()
-      case TDouble()                 => TDouble()
-      case TFloat()                  => TFloat()
-      case TInt()                    => TInt()
-      case TLong()                   => TLong()
-      case TBoolean()                => TBoolean()
-      case TString()                 => TString()
-      case TByteArray()              => TByteArray()
-      case TNamedType(name)          => TNamedType(name)
-      case TOption(value)            => TOption(f(value))
-      case TEither(left, right)      => TEither(f(left), f(right))
-      case TList(value)              => TList(f(value))
-      case TMap(value)               => TMap(f(value))
-      case TGeneric(generic, params) => TGeneric(f(generic), params.map(f))
-      case TRequired(value)          => TRequired(f(value))
-      case TCoproduct(invariants)    => TCoproduct(invariants.map(f))
-      case TSum(name, fields)        => TSum(name, fields)
-      case TProduct(name, fields)    => TProduct(name, fields.map(field => field.copy(tpe = f(field.tpe))))
-    }
-  }
 }

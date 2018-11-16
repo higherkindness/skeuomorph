@@ -16,11 +16,13 @@
 
 package higherkindness.skeuomorph.protobuf
 
-import cats.Functor
+import cats.instances.list._
 
-sealed trait ProtobufF[A]
+import qq.droste.macros.deriveTraverse
+
+@deriveTraverse sealed trait ProtobufF[A]
 object ProtobufF {
-  final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
+  @deriveTraverse final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
   final case class Option(name: String, value: String)
 
   final case class TDouble[A]()                extends ProtobufF[A]
@@ -49,35 +51,4 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-
-  implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
-    def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()                              => TDouble()
-      case TFloat()                               => TFloat()
-      case TInt32()                               => TInt32()
-      case TInt64()                               => TInt64()
-      case TUint32()                              => TUint32()
-      case TUint64()                              => TUint64()
-      case TSint32()                              => TSint32()
-      case TSint64()                              => TSint64()
-      case TFixed32()                             => TFixed32()
-      case TFixed64()                             => TFixed64()
-      case TSfixed32()                            => TSfixed32()
-      case TSfixed64()                            => TSfixed64()
-      case TBool()                                => TBool()
-      case TString()                              => TString()
-      case TBytes()                               => TBytes()
-      case TNamedType(name)                       => TNamedType(name)
-      case TRequired(value)                       => TRequired(f(value))
-      case TOptional(value)                       => TOptional(f(value))
-      case TRepeated(value)                       => TRepeated(f(value))
-      case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
-      case TMessage(name, fields, reserved) =>
-        TMessage(
-          name,
-          fields.map(field => field.copy(tpe = f(field.tpe))),
-          reserved
-        )
-    }
-  }
 }

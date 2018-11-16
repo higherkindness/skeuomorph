@@ -16,8 +16,10 @@
 
 package higherkindness.skeuomorph.avro
 
-import cats.Functor
 import cats.data.NonEmptyList
+import cats.instances.list._
+import qq.droste.{Algebra, Coalgebra}
+import qq.droste.macros.deriveTraverse
 import io.circe.Json
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
@@ -25,7 +27,7 @@ import qq.droste.{Algebra, Coalgebra}
 
 import scala.collection.JavaConverters._
 
-sealed trait AvroF[A]
+@deriveTraverse sealed trait AvroF[A]
 object AvroF {
 
   def order2Order(avroO: Schema.Field.Order): Order = avroO match {
@@ -56,7 +58,7 @@ object AvroF {
     case object Ignore     extends Order
   }
 
-  final case class Field[A](
+  @deriveTraverse final case class Field[A](
       name: String,
       aliases: List[String],
       doc: Option[String],
@@ -125,28 +127,6 @@ object AvroF {
   def tUnion[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
   def tFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int): AvroF[A] =
     TFixed(name, namespace, aliases, size)
-
-  implicit val avroFunctor: Functor[AvroF] = new Functor[AvroF] {
-    def map[A, B](fa: AvroF[A])(f: A => B): AvroF[B] = fa match {
-      case AvroF.TNull()          => AvroF.TNull()
-      case AvroF.TBoolean()       => AvroF.TBoolean()
-      case AvroF.TInt()           => AvroF.TInt()
-      case AvroF.TLong()          => AvroF.TLong()
-      case AvroF.TFloat()         => AvroF.TFloat()
-      case AvroF.TDouble()        => AvroF.TDouble()
-      case AvroF.TBytes()         => AvroF.TBytes()
-      case AvroF.TString()        => AvroF.TString()
-      case AvroF.TNamedType(name) => AvroF.TNamedType(name)
-      case AvroF.TArray(item)     => AvroF.TArray(f(item))
-      case AvroF.TMap(values)     => AvroF.TMap(f(values))
-      case AvroF.TRecord(name, namespace, aliases, doc, fields) =>
-        AvroF.TRecord(name, namespace, aliases, doc, fields.map(field => field.copy(tpe = f(field.tpe))))
-      case AvroF.TEnum(name, namespace, aliases, doc, symbols) =>
-        AvroF.TEnum(name, namespace, aliases, doc, symbols)
-      case AvroF.TUnion(options)                        => AvroF.TUnion(options.map(f))
-      case AvroF.TFixed(name, namespace, aliases, size) => AvroF.TFixed(name, namespace, aliases, size)
-    }
-  }
 
   /**
    * Convert org.apache.avro.Schema to skeuomorph.avro.Schema
