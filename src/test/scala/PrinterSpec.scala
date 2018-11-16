@@ -17,9 +17,12 @@
 package skeuomorph
 
 import org.typelevel.discipline.specs2.Discipline
+import cats.kernel.laws.discipline.{MonoidTests, SemigroupTests}
 import cats.laws.discipline.ContravariantMonoidalTests
 import cats.laws.discipline.eq._
 
+import cats.ContravariantSemigroupal
+import cats.ContravariantMonoidal
 import cats.kernel.Eq
 import cats.instances.string._
 
@@ -33,15 +36,20 @@ class PrinterSpec extends Specification with ScalaCheck with Discipline {
 
   implicit def printerEq[T: Arbitrary]: Eq[Printer[T]] =
     Eq.by[Printer[T], T => String](_.print)
+  implicit val printerMonoid    = ContravariantMonoidal.monoid[Printer, Int]
+  implicit val printerSemigroup = ContravariantSemigroupal.semigroup[Printer, Int]
 
   def is = s2"""
-  A pretty printer
-
   $contravariantMonoidalPrinter
+  $monoidPrinter
+  $semigroupPrinter
   """
 
   val contravariantMonoidalPrinter = checkAll(
     "ContravariantMonoidal[Printer].contravariantMonoidal",
     ContravariantMonoidalTests[Printer].contravariantMonoidal[Int, Int, Int])
+
+  val monoidPrinter    = checkAll("ContravariantMonoidal[Printer].monoid", MonoidTests[Printer[Int]].monoid)
+  val semigroupPrinter = checkAll("ContravariantSemigroupal[Printer].semigroup", SemigroupTests[Printer[Int]].semigroup)
 
 }
