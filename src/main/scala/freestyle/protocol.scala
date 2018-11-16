@@ -18,11 +18,8 @@ package skeuomorph
 package freestyle
 
 import avro.AvroF
-import Optimize.namedTypes
 import Transform.transformAvro
 
-import cats.instances.function._
-import cats.syntax.compose._
 import qq.droste._
 
 sealed trait SerializationType extends Product with Serializable
@@ -62,41 +59,6 @@ object Protocol {
       proto.types.map(toFreestyle),
       List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
     )
-  }
-
-  def render[T](protocol: Protocol[T])(implicit T: Basis[FreesF, T]): String = {
-    val renderFrees: T => String = scheme.cata(FreesF.render)
-    val optimizeAndPrint         = namedTypes >>> renderFrees
-    val printDeclarations        = protocol.declarations.map(renderFrees).mkString("\n")
-    val printOptions = protocol.options.map { op =>
-      s"""@option(name = "${op._1}", value = "${op._2})""""
-    } mkString ("\n")
-    val printServices = protocol.services.map { service =>
-      val printOperations = service.operations.map { op =>
-        val printRequest  = optimizeAndPrint(op.request)
-        val printResponse = optimizeAndPrint(op.response)
-
-        s"def ${op.name}(req: $printRequest): $printResponse"
-      } mkString ("\n  ")
-
-      s"""
-        |@service(${service.serializationType}) trait ${service.name}[F[_]] {
-        |  $printOperations
-        |}
-        """.stripMargin
-    } mkString ("\n\n  ")
-
-    s"""
-    |package ${protocol.pkg}
-    |
-    |$printOptions
-    |object ${protocol.name} {
-    |
-    |$printDeclarations
-    |$printServices
-    |
-    |}
-    """.stripMargin
   }
 }
 
