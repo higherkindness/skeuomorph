@@ -34,25 +34,25 @@ object Printer {
   def konst(str: String): Printer[Unit] =
     Printer(Function.const(str))
 
-  def space = konst(" ")
+  val space: Printer[Unit] = konst(" ")
 
-  def newLine = konst("\n")
+  val newLine: Printer[Unit] = konst("\n")
 
   val string: Printer[String] = Printer(identity)
+
+  val unit: Printer[Unit] = Printer(_ => "")
 
   def optional[A](p: Printer[A]): Printer[Option[A]] =
     Printer(_.fold("")(p.print))
 
-  def mkList[A](p: Printer[A], sep: String): Printer[List[A]] =
+  def sepBy[A](p: Printer[A], sep: String): Printer[List[A]] =
     Printer {
       case Nil => ""
       case xs  => xs.map(p.print).mkString(sep)
     }
 
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
-    def unit: Printer[Unit] = { _ =>
-      ""
-    }
+    def unit: Printer[Unit] = Printer.unit
     def product[A, B](fa: Printer[A], fb: Printer[B]): Printer[(A, B)] = new Printer[(A, B)] {
       def print(ab: (A, B)): String = fa.print(ab._1) + fb.print(ab._2)
     }

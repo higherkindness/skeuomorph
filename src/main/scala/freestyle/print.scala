@@ -126,7 +126,7 @@ object print {
   def service[T](implicit T: Basis[FreesF, T]): Printer[Service[T]] =
     ((konst("@service(") *< serializationType >* konst(") trait ")) >*<
       (string >* konst("[F[_]] {") >* newLine) >*<
-      (mkList(operation, "\n") >* newLine >* konst("}"))).contramap(serviceTuple)
+      (sepBy(operation, "\n") >* newLine >* konst("}"))).contramap(serviceTuple)
 
   def option: Printer[(String, String)] =
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
@@ -135,9 +135,9 @@ object print {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
     ((konst("package ") *< optional(string) >* (newLine >* newLine)) >*<
-      mkList(option, lineFeed) >*<
+      sepBy(option, lineFeed) >*<
       (konst("object ") *< string >* konst(" { ") >* newLine >* newLine) >*<
-      (mkList(schema, lineFeed) >* newLine) >*<
-      (mkList(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))).contramap(protoTuple)
+      (sepBy(schema, lineFeed) >* newLine) >*<
+      (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))).contramap(protoTuple)
   }
 }
