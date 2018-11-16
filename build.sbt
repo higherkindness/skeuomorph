@@ -64,6 +64,7 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
+    %%("cats-laws") % Test,
     %%("cats-core"),
     "io.higherkindness" %% "droste-core"   % "0.5.0",
     "io.higherkindness" %% "droste-macros" % "0.5.0",
