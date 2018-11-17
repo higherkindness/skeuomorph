@@ -24,7 +24,7 @@ import org.apache.avro.Schema.Type
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
 import qq.droste.Basis
-import skeuomorph.freestyle.FreesF
+import skeuomorph.mu.MuF
 
 import scala.collection.JavaConverters._
 
@@ -73,33 +73,32 @@ object instances {
     Gen.oneOf(primitives, arrayOrMap, union, record)
   }
 
-  implicit def freestyleCoproductArbitrary[T](withTNull: Boolean)(
-      implicit B: Basis[FreesF, T]): Arbitrary[FreesF.TCoproduct[T]] =
+  implicit def muCoproductArbitrary[T](withTNull: Boolean)(implicit B: Basis[MuF, T]): Arbitrary[MuF.TCoproduct[T]] =
     Arbitrary {
-      val nonNullPrimitives: Gen[FreesF[T]] = Gen.oneOf(
+      val nonNullPrimitives: Gen[MuF[T]] = Gen.oneOf(
         List(
-          FreesF.TString[T](),
-          FreesF.TBoolean[T](),
-          FreesF.TByteArray[T](),
-          FreesF.TDouble[T](),
-          FreesF.TFloat[T](),
-          FreesF.TInt[T](),
-          FreesF.TLong[T]()
+          MuF.TString[T](),
+          MuF.TBoolean[T](),
+          MuF.TByteArray[T](),
+          MuF.TDouble[T](),
+          MuF.TFloat[T](),
+          MuF.TInt[T](),
+          MuF.TLong[T]()
         )
       )
 
       (
         nonNullPrimitives,
-        if (withTNull) Gen.const(FreesF.TNull[T]()) else nonNullPrimitives,
+        if (withTNull) Gen.const(MuF.TNull[T]()) else nonNullPrimitives,
         Gen.oneOf(true, false)
       ).mapN((t1, t2, reversed) =>
-        FreesF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
+        MuF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
         else NonEmptyList.of(B.algebra(t1), B.algebra(t2))))
     }
 
-  def freestyleCoproductWithTNullGen[T](implicit B: Basis[FreesF, T]): Gen[FreesF.TCoproduct[T]] =
-    freestyleCoproductArbitrary(withTNull = true).arbitrary
+  def muCoproductWithTNullGen[T](implicit B: Basis[MuF, T]): Gen[MuF.TCoproduct[T]] =
+    muCoproductArbitrary(withTNull = true).arbitrary
 
-  def freestyleCoproductWithoutTNullGen[T](implicit B: Basis[FreesF, T]): Gen[FreesF.TCoproduct[T]] =
-    freestyleCoproductArbitrary(withTNull = false).arbitrary
+  def muCoproductWithoutTNullGen[T](implicit B: Basis[MuF, T]): Gen[MuF.TCoproduct[T]] =
+    muCoproductArbitrary(withTNull = false).arbitrary
 }

@@ -15,7 +15,7 @@
  */
 
 package skeuomorph
-package freestyle
+package mu
 
 import avro.AvroF
 import Transform.transformAvro
@@ -39,9 +39,9 @@ final case class Protocol[T](
 object Protocol {
 
   /**
-   * create a [[skeuomorph.freestyle.Service]] from a [[skeuomorph.avro.Protocol]]
+   * create a [[skeuomorph.mu.Service]] from a [[skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[FreesF, U]): Protocol[U] = {
+  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
 
     val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
     val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
