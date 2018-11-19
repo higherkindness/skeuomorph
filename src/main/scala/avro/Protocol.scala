@@ -25,7 +25,7 @@ import cats.syntax.option._
 import cats.data.NonEmptyList
 import qq.droste._
 import qq.droste.syntax.all._
-import freestyle.{FreesF, SerializationType}
+import mu.{MuF, SerializationType}
 import io.circe.Json
 
 final case class Protocol[A](
@@ -81,25 +81,25 @@ object Protocol {
     )
   }
 
-  def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[FreesF, AvroF, T] = Trans {
-    case FreesF.TNull()                => tNull()
-    case FreesF.TDouble()              => tDouble()
-    case FreesF.TFloat()               => tFloat()
-    case FreesF.TInt()                 => tInt()
-    case FreesF.TLong()                => tLong()
-    case FreesF.TBoolean()             => tBoolean()
-    case FreesF.TString()              => tString()
-    case FreesF.TByteArray()           => tBytes()
-    case FreesF.TNamedType(name)       => tNamedType(name)
-    case FreesF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
-    case FreesF.TEither(left, right)   => tUnion(NonEmptyList(left, List(right)))
-    case FreesF.TList(value)           => tArray(value)
-    case FreesF.TMap(value)            => tMap(value)
-    case FreesF.TGeneric(_, _)         => ??? // WAT
-    case FreesF.TRequired(t)           => T.coalgebra(t)
-    case FreesF.TCoproduct(invariants) => TUnion(invariants)
-    case FreesF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
-    case FreesF.TProduct(name, fields) =>
+  def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
+    case MuF.TNull()                => tNull()
+    case MuF.TDouble()              => tDouble()
+    case MuF.TFloat()               => tFloat()
+    case MuF.TInt()                 => tInt()
+    case MuF.TLong()                => tLong()
+    case MuF.TBoolean()             => tBoolean()
+    case MuF.TString()              => tString()
+    case MuF.TByteArray()           => tBytes()
+    case MuF.TNamedType(name)       => tNamedType(name)
+    case MuF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
+    case MuF.TEither(left, right)   => tUnion(NonEmptyList(left, List(right)))
+    case MuF.TList(value)           => tArray(value)
+    case MuF.TMap(value)            => tMap(value)
+    case MuF.TGeneric(_, _)         => ??? // WAT
+    case MuF.TRequired(t)           => T.coalgebra(t)
+    case MuF.TCoproduct(invariants) => TUnion(invariants)
+    case MuF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
+    case MuF.TProduct(name, fields) =>
       TRecord(
         name,
         none[String],
@@ -108,8 +108,7 @@ object Protocol {
         fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
   }
 
-  def fromFreesFProtocol[T, U](
-      proto: freestyle.Protocol[T])(implicit T: Basis[FreesF, T], U: Basis[AvroF, U]): Protocol[U] = {
+  def fromFreesFProtocol[T, U](proto: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
     def fromFreestyle: T => U = scheme.cata(fromFreesFSchema.algebra)
     val services: List[Message[U]] = proto.services
       .filter(_.serializationType == SerializationType.Avro)

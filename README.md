@@ -11,7 +11,7 @@ Skeuomorph is a library for transforming different schemas in Scala.
 It provides schema definitions as non-recursive ADTs, and
 transformations & optimizations via recursion schemes.
 
-This library is primarily intended to be used at [freestyle-rpc][], but
+This library is primarily intended to be used at [mu][], but
 it's completely independent from it, so anybody can use it.
 
 Skeuomorph depends heavily on [cats][] and [droste][].
@@ -21,11 +21,11 @@ Skeuomorph depends heavily on [cats][] and [droste][].
 Currently skeuomorph supports 3 different schemas:
 - [Avro][]
 - [Protobuf][]
-- [freestyle-rpc][]
+- [mu][]
 
 And provides conversions between them.  This means that you can get a
 `org.apache.avro.Schema` value, and convert it to protobuf, for
-example.  Or to a freestyle service description.
+example.  Or to a mu service description.
 
 
 ## Installation
@@ -35,7 +35,7 @@ You can install skeuomorph as follows:
 [comment]: # (Start Replace)
 
 ```scala
-libraryDependencies += "io.frees" %% "skeuomorph" % "0.0.1"
+libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
 ```
 
 [comment]: # (End Replace)
@@ -45,11 +45,12 @@ libraryDependencies += "io.frees" %% "skeuomorph" % "0.0.1"
 ### parsing an avro schema and then converting it to scala:
 
 ```tut
+
 import org.apache.avro._
 import skeuomorph._
-import skeuomorph.freestyle.Transform.transformAvro
-import skeuomorph.freestyle.FreesF
-import skeuomorph.freestyle.FreesF.render
+import skeuomorph.mu.Transform.transformAvro
+import skeuomorph.mu.MuF
+import skeuomorph.mu.MuF.render
 import skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
@@ -87,9 +88,9 @@ val definition = """
 
 val schema: Schema = new Schema.Parser().parse(definition)
 
-val parseAvro: Schema => Mu[FreesF] =
-  scheme.hylo(transformAvro[Mu[FreesF]].algebra, fromAvro)
-val printSchema: Mu[FreesF] => String =
+val parseAvro: Schema => Mu[MuF] =
+  scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
+val printSchema: Mu[MuF] => String =
   scheme.cata(render)
 
 (parseAvro >>> print)(schema)
@@ -102,13 +103,13 @@ val printSchema: Mu[FreesF] => String =
 If you wish to add your library here please consider a PR to include
 it in the list below.
 
-| **Name**                                      | **Description**                                                                                    |
-|-----------------------------------------------|----------------------------------------------------------------------------------------------------|
-| [**freestyle-rpc**](http://frees.io/docs/rpc) | purely functional library for building RPC endpoint based services with support for RPC and HTTP/2 |
+| **Name**                                       | **Description**                                                                                    |
+|------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| [**mu**](https://higherkindness.github.io/mu/) | purely functional library for building RPC endpoint based services with support for RPC and HTTP/2 |
 
 [Avro]: https://avro.apache.org/
 [Protobuf]: https://developers.google.com/protocol-buffers/
-[freestyle-rpc]: http://frees.io/docs/rpc/quickstart
+[mu]: https://higherkindness.github.io/mu/
 [cats]: http://typelevel.org/cats
 [droste]: http://github.com/andyscott/droste
 

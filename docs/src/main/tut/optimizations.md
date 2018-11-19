@@ -24,8 +24,8 @@ import qq.droste._
 import qq.droste.data._
 import qq.droste.implicits._
 
-import skeuomorph.freestyle._
-import skeuomorph.freestyle.FreesF._
+import skeuomorph.mu._
+import skeuomorph.mu.MuF._
 ```
 
 We found that when we wanted to render a schema to its string
@@ -43,10 +43,10 @@ case class Product(field1: String, field2: OtherField)
 
 We solve this by substituting nested product types by its name when
 they're inside a product themselves.  And we do this with the
-`namedTypes` combinator (in `skeuomorph.freestyle.Optimize`):
+`namedTypes` combinator (in `skeuomorph.mu.Optimize`):
 
 ```scala
-def nestedNamedTypesTrans[T](implicit T: Basis[FreesF, T]): Trans[FreesF, FreesF, T] = Trans {
+def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
   case TProduct(name, fields) =>
     def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
     TProduct[T](
@@ -56,25 +56,25 @@ def nestedNamedTypesTrans[T](implicit T: Basis[FreesF, T]): Trans[FreesF, FreesF
   case other => other
 }
   
-def namedTypesTrans[T]: Trans[FreesF, FreesF, T] = Trans {
+def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
   case TProduct(name, _) => TNamedType[T](name)
   case TSum(name, _)     => TNamedType[T](name)
   case other             => other
 }
 
-def namedTypes[T: Basis[FreesF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-def nestedNamedTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+def namedTypes[T: Basis[MuF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
+def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
 
 ```
 
 and then apply the `namedTypes` combinator to the AST:
 
 ```tut:invisible
-def ast = Mu(TNull[Mu[FreesF]]())
+def ast = Mu(TNull[Mu[MuF]]())
 ```
 
 ```tut
-val optimization = Optimize.namedTypes[Mu[FreesF]]
+val optimization = Optimize.namedTypes[Mu[MuF]]
 
 optimization(ast)
 ```

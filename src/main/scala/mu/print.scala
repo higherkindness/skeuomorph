@@ -15,14 +15,14 @@
  */
 
 package skeuomorph
-package freestyle
+package mu
 
 import Optimize.namedTypes
 import cats.instances.function._
 import cats.syntax.compose._
 
 import qq.droste._
-import FreesF._
+import MuF._
 import catz.contrib.ContravariantMonoidalSyntax._
 import catz.contrib.Decidable._
 import Printer._
@@ -30,8 +30,8 @@ import SerializationType._
 
 object print {
 
-  def schema[T: Basis[FreesF, ?]]: Printer[T] = {
-    val algebra: Algebra[FreesF, String] = Algebra {
+  def schema[T: Basis[MuF, ?]]: Printer[T] = {
+    val algebra: Algebra[MuF, String] = Algebra {
       case TNull()                   => "Null"
       case TDouble()                 => "Double"
       case TFloat()                  => "Float"
@@ -71,7 +71,7 @@ object print {
    */
   def protoTuple[T](
       proto: Protocol[T]
-  ): ((((Option[String], List[(String, String)]), String), List[T]), List[skeuomorph.freestyle.Service[T]]) =
+  ): ((((Option[String], List[(String, String)]), String), List[T]), List[skeuomorph.mu.Service[T]]) =
     proto match {
       case Protocol(name, pkg, options, declarations, services) =>
         ((((pkg, options), name), declarations), services)
@@ -118,12 +118,12 @@ object print {
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
-  def operation[T](implicit T: Basis[FreesF, T]): Printer[Service.Operation[T]] =
+  def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
     ((konst("def ") *< string) >*< (konst("(req: ") *< Printer(namedTypes[T] >>> schema.print)) >*< (konst("): ") *< Printer(
       namedTypes[T] >>> schema.print)))
       .contramap(opTuple)
 
-  def service[T](implicit T: Basis[FreesF, T]): Printer[Service[T]] =
+  def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
     ((konst("@service(") *< serializationType >* konst(") trait ")) >*<
       (string >* konst("[F[_]] {") >* newLine) >*<
       (sepBy(operation, "\n") >* newLine >* konst("}"))).contramap(serviceTuple)
@@ -131,7 +131,7 @@ object print {
   def option: Printer[(String, String)] =
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
 
-  def proto[T](implicit T: Basis[FreesF, T]): Printer[Protocol[T]] = {
+  def proto[T](implicit T: Basis[MuF, T]): Printer[Protocol[T]] = {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
     ((konst("package ") *< optional(string) >* (newLine >* newLine)) >*<

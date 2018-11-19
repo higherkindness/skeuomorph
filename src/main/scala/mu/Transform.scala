@@ -15,7 +15,7 @@
  */
 
 package skeuomorph
-package freestyle
+package mu
 
 import qq.droste.Trans
 import protobuf.ProtobufF
@@ -23,12 +23,12 @@ import avro.AvroF
 
 object Transform {
 
-  import FreesF._
+  import MuF._
 
   /**
    * transform Protobuf schema into Freestyle schema
    */
-  def transformProto[A]: Trans[ProtobufF, FreesF, A] = Trans {
+  def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
     case ProtobufF.TDouble()                  => TDouble()
     case ProtobufF.TFloat()                   => TFloat()
     case ProtobufF.TInt32()                   => TInt()
@@ -52,7 +52,7 @@ object Transform {
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
   }
 
-  def transformAvro[A]: Trans[AvroF, FreesF, A] = Trans {
+  def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
     case AvroF.TNull()          => TNull()
     case AvroF.TBoolean()       => TBoolean()
     case AvroF.TInt()           => TInt()

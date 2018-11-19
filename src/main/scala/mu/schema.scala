@@ -15,7 +15,7 @@
  */
 
 package skeuomorph
-package freestyle
+package mu
 
 import cats.Functor
 import cats.data.NonEmptyList
@@ -23,31 +23,31 @@ import cats.data.NonEmptyList
 /**
  *
  */
-sealed trait FreesF[A]
-object FreesF {
+sealed trait MuF[A]
+object MuF {
   final case class Field[A](name: String, tpe: A)
 
-  final case class TNull[A]()                                        extends FreesF[A]
-  final case class TDouble[A]()                                      extends FreesF[A]
-  final case class TFloat[A]()                                       extends FreesF[A]
-  final case class TInt[A]()                                         extends FreesF[A]
-  final case class TLong[A]()                                        extends FreesF[A]
-  final case class TBoolean[A]()                                     extends FreesF[A]
-  final case class TString[A]()                                      extends FreesF[A]
-  final case class TByteArray[A]()                                   extends FreesF[A]
-  final case class TNamedType[A](name: String)                       extends FreesF[A]
-  final case class TOption[A](value: A)                              extends FreesF[A]
-  final case class TEither[A](left: A, right: A)                     extends FreesF[A]
-  final case class TList[A](value: A)                                extends FreesF[A]
-  final case class TMap[A](value: A)                                 extends FreesF[A]
-  final case class TGeneric[A](generic: A, params: List[A])          extends FreesF[A]
-  final case class TRequired[A](value: A)                            extends FreesF[A]
-  final case class TCoproduct[A](invariants: NonEmptyList[A])        extends FreesF[A]
-  final case class TSum[A](name: String, fields: List[String])       extends FreesF[A]
-  final case class TProduct[A](name: String, fields: List[Field[A]]) extends FreesF[A]
+  final case class TNull[A]()                                        extends MuF[A]
+  final case class TDouble[A]()                                      extends MuF[A]
+  final case class TFloat[A]()                                       extends MuF[A]
+  final case class TInt[A]()                                         extends MuF[A]
+  final case class TLong[A]()                                        extends MuF[A]
+  final case class TBoolean[A]()                                     extends MuF[A]
+  final case class TString[A]()                                      extends MuF[A]
+  final case class TByteArray[A]()                                   extends MuF[A]
+  final case class TNamedType[A](name: String)                       extends MuF[A]
+  final case class TOption[A](value: A)                              extends MuF[A]
+  final case class TEither[A](left: A, right: A)                     extends MuF[A]
+  final case class TList[A](value: A)                                extends MuF[A]
+  final case class TMap[A](value: A)                                 extends MuF[A]
+  final case class TGeneric[A](generic: A, params: List[A])          extends MuF[A]
+  final case class TRequired[A](value: A)                            extends MuF[A]
+  final case class TCoproduct[A](invariants: NonEmptyList[A])        extends MuF[A]
+  final case class TSum[A](name: String, fields: List[String])       extends MuF[A]
+  final case class TProduct[A](name: String, fields: List[Field[A]]) extends MuF[A]
 
-  implicit val freestyleFunctor: Functor[FreesF] = new Functor[FreesF] {
-    def map[A, B](fa: FreesF[A])(f: A => B): FreesF[B] = fa match {
+  implicit val muFunctor: Functor[MuF] = new Functor[MuF] {
+    def map[A, B](fa: MuF[A])(f: A => B): MuF[B] = fa match {
       case TNull()                   => TNull()
       case TDouble()                 => TDouble()
       case TFloat()                  => TFloat()

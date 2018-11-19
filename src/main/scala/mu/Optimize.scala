@@ -15,10 +15,10 @@
  */
 
 package skeuomorph
-package freestyle
+package mu
 
 import qq.droste._
-import FreesF._
+import MuF._
 import cats.data.NonEmptyList
 
 /**
@@ -43,7 +43,7 @@ object Optimize {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def nestedNamedTypesTrans[T](implicit T: Basis[FreesF, T]): Trans[FreesF, FreesF, T] = Trans {
+  def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
     case TProduct(name, fields) =>
       def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
       TProduct[T](
@@ -53,14 +53,14 @@ object Optimize {
     case other => other
   }
 
-  def namedTypesTrans[T]: Trans[FreesF, FreesF, T] = Trans {
+  def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
     case TProduct(name, _) => TNamedType[T](name)
     case TSum(name, _)     => TNamedType[T](name)
     case other             => other
   }
 
-  def namedTypes[T: Basis[FreesF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-  def nestedNamedTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+  def namedTypes[T: Basis[MuF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
+  def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
 
   /**
    * micro-optimization to convert known coproducts to named types
@@ -79,7 +79,7 @@ object Optimize {
    * case class Product(field1: Either[Int, String], field2: Option[Int])
    * }}}
    */
-  def knownCoproductTypesTrans[T](implicit B: Basis[FreesF, T]): Trans[FreesF, FreesF, T] = Trans {
+  def knownCoproductTypesTrans[T](implicit B: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
     case TCoproduct(NonEmptyList(x, List(y))) =>
       (B.coalgebra(x), B.coalgebra(y)) match {
         case (_, TNull()) => TOption[T](x)
@@ -89,5 +89,5 @@ object Optimize {
     case other => other
   }
 
-  def knownCoproductTypes[T: Basis[FreesF, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
+  def knownCoproductTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
 }
