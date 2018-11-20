@@ -47,6 +47,18 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
+lazy val readme = (project in file("readme"))
+  .settings(moduleName := "skeuomorph-readme")
+  .settings(commonSettings)
+  .settings(noPublishSettings)
+  .settings(
+    tutSourceDirectory := baseDirectory.value,
+    tutTargetDirectory := baseDirectory.value.getParentFile,
+    tutNameFilter := """README.md""".r,
+    scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains)
+  )
+  .enablePlugins(TutPlugin)
+
 // check for library updates whenever the project is [re]load
 onLoad in Global := { s =>
   "dependencyUpdates" :: s

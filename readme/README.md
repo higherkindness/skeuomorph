@@ -46,11 +46,11 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
 
 ```tut
 
+
 import org.apache.avro._
-import skeuomorph._
 import skeuomorph.mu.Transform.transformAvro
 import skeuomorph.mu.MuF
-import skeuomorph.mu.MuF.render
+import skeuomorph.mu.print
 import skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
@@ -86,7 +86,7 @@ val definition = """
 }
   """
 
-val schema: Schema = new Schema.Parser().parse(definition)
+val avroSchema: Schema = new Schema.Parser().parse(definition)
 
 val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
