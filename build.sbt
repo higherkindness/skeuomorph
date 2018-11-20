@@ -136,6 +136,7 @@ lazy val commonSettings = Seq(
     (compile in Compile).asRunnableItemFull,
     (test in Test).asRunnableItemFull,
     "docs/tut".asRunnableItem,
+    "readme/tut".asRunnableItem
   )
 ) ++ compilerPlugins
 
