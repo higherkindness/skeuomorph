@@ -49,6 +49,7 @@ lazy val docs = project
 
 lazy val readme = (project in file("readme"))
   .settings(moduleName := "skeuomorph-readme")
+  .dependsOn(root)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(
