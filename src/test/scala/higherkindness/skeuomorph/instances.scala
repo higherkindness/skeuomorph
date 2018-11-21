@@ -18,13 +18,14 @@ package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import higherkindness.skeuomorph.mu.MuF
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
 
 import qq.droste.Basis
+import mu.MuF
+import avro.AvroF
 
 import scala.collection.JavaConverters._
 
@@ -113,24 +114,14 @@ object instances {
         MuF.boolean[T]().pure[Gen],
         MuF.string[T]().pure[Gen],
         MuF.byteArray[T]().pure[Gen],
-        nonEmptyString map { str =>
-          MuF.namedType[T](str)
-        },
-        T.arbitrary map { t =>
-          MuF.option[T](t)
-        },
+        nonEmptyString map MuF.namedType[T],
+        T.arbitrary map MuF.option[T],
         (T.arbitrary, T.arbitrary) mapN { (a, b) =>
           MuF.either(a, b)
         },
-        T.arbitrary map { t =>
-          MuF.list[T](t)
-        },
-        T.arbitrary map { t =>
-          MuF.map[T](t)
-        },
-        T.arbitrary map { t =>
-          MuF.required[T](t)
-        },
+        T.arbitrary map MuF.list[T],
+        T.arbitrary map MuF.map[T],
+        T.arbitrary map MuF.required[T],
         (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
           MuF.generic[T](a, b)
         },
@@ -143,6 +134,57 @@ object instances {
         (nonEmptyString, Gen.nonEmptyListOf(Gen.lzy(fieldGen))).mapN { (n, f) =>
           MuF.product(n, f)
         }
+      ))
+  }
+
+  implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[AvroF[T]] = {
+
+    val orderGen: Gen[AvroF.Order] = Gen.oneOf(AvroF.Order.Ascending, AvroF.Order.Descending, AvroF.Order.Ignore)
+
+    val fieldGen: Gen[AvroF.Field[T]] = (
+      nonEmptyString,
+      Gen.listOf(nonEmptyString),
+      Gen.option(nonEmptyString),
+      Gen.option(orderGen),
+      T.arbitrary
+    ).mapN(AvroF.Field.apply[T])
+
+    Arbitrary(
+      Gen.oneOf(
+        AvroF.`null`[T]().pure[Gen],
+        AvroF.boolean[T]().pure[Gen],
+        AvroF.int[T]().pure[Gen],
+        AvroF.long[T]().pure[Gen],
+        AvroF.float[T]().pure[Gen],
+        AvroF.double[T]().pure[Gen],
+        AvroF.bytes[T]().pure[Gen],
+        AvroF.string[T]().pure[Gen],
+        nonEmptyString map AvroF.namedType[T],
+        T.arbitrary map AvroF.array[T],
+        T.arbitrary map AvroF.map[T],
+        (
+          nonEmptyString,
+          Gen.option(nonEmptyString),
+          Gen.listOf(nonEmptyString),
+          Gen.option(nonEmptyString),
+          Gen.listOf(fieldGen),
+        ).mapN(AvroF.record[T]),
+        Gen.nonEmptyListOf(T.arbitrary) map { l =>
+          AvroF.union[T](NonEmptyList.fromListUnsafe(l))
+        },
+        (
+          nonEmptyString,
+          Gen.option(nonEmptyString),
+          Gen.listOf(nonEmptyString),
+          Gen.option(nonEmptyString),
+          Gen.listOf(nonEmptyString)
+        ).mapN(AvroF.enum[T]),
+        (
+          nonEmptyString,
+          Gen.option(nonEmptyString),
+          Gen.listOf(nonEmptyString),
+          Gen.posNum[Int]
+        ).mapN(AvroF.fixed[T])
       ))
   }
 
