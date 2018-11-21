@@ -25,7 +25,7 @@ import higherkindness.skeuomorph.mu.Optimize._
 
 class OptimizeSpec extends Specification with ScalaCheck {
 
-  import higherkindness.skeuomorph.avro.instances._
+  import higherkindness.skeuomorph.instances._
 
   def is =
     s2"""

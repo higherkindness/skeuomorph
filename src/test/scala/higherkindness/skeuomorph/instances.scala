@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.avro
+package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
@@ -23,11 +23,13 @@ import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
+
 import qq.droste.Basis
 
 import scala.collection.JavaConverters._
 
 object instances {
+  val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
     val primitives: Gen[Schema] = Gen.oneOf(
@@ -42,8 +44,6 @@ object instances {
         Type.NULL
       ).map(Schema.create)
     )
-
-    val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
 
     val arrayOrMap: Gen[Schema] =
       Gen.oneOf(primitives.map(Schema.createMap), primitives.map(Schema.createArray))
@@ -94,6 +94,57 @@ object instances {
         MuF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
         else NonEmptyList.of(B.algebra(t1), B.algebra(t2))))
     }
+
+  implicit def muArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[MuF[T]] = {
+
+    def fieldGen: Gen[MuF.Field[T]] =
+      (
+        nonEmptyString,
+        Gen.lzy(T.arbitrary)
+      ).mapN(MuF.Field.apply)
+
+    Arbitrary(
+      Gen.oneOf(
+        MuF.`null`[T]().pure[Gen],
+        MuF.double[T]().pure[Gen],
+        MuF.float[T]().pure[Gen],
+        MuF.int[T]().pure[Gen],
+        MuF.long[T]().pure[Gen],
+        MuF.boolean[T]().pure[Gen],
+        MuF.string[T]().pure[Gen],
+        MuF.byteArray[T]().pure[Gen],
+        nonEmptyString map { str =>
+          MuF.namedType[T](str)
+        },
+        T.arbitrary map { t =>
+          MuF.option[T](t)
+        },
+        (T.arbitrary, T.arbitrary) mapN { (a, b) =>
+          MuF.either(a, b)
+        },
+        T.arbitrary map { t =>
+          MuF.list[T](t)
+        },
+        T.arbitrary map { t =>
+          MuF.map[T](t)
+        },
+        T.arbitrary map { t =>
+          MuF.required[T](t)
+        },
+        (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
+          MuF.generic[T](a, b)
+        },
+        (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
+          MuF.generic[T](a, b)
+        },
+        Gen.nonEmptyListOf(T.arbitrary) map { l =>
+          MuF.coproduct[T](NonEmptyList.fromListUnsafe(l))
+        },
+        (nonEmptyString, Gen.nonEmptyListOf(Gen.lzy(fieldGen))).mapN { (n, f) =>
+          MuF.product(n, f)
+        }
+      ))
+  }
 
   def muCoproductWithTNullGen[T](implicit B: Basis[MuF, T]): Gen[MuF.TCoproduct[T]] =
     muCoproductArbitrary(withTNull = true).arbitrary

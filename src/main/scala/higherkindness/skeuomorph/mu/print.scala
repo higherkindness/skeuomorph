@@ -27,6 +27,11 @@ import higherkindness.skeuomorph.mu.SerializationType._
 import cats.implicits._
 
 import qq.droste._
+import MuF.{string => _, _}
+import catz.contrib.ContravariantMonoidalSyntax._
+import catz.contrib.Decidable._
+import Printer._
+import SerializationType._
 
 object print {
 
