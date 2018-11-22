@@ -150,7 +150,7 @@ object AvroF {
   }
 
   /**
-   * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.Schema]]
+   * Convert org.apache.avro.Schema to skeuomorph.avro.Schema
    */
   def fromAvro: Coalgebra[AvroF, Schema] = Coalgebra { sch =>
     sch.getType match {

@@ -67,7 +67,7 @@ object print {
 
   /**
    * Needed to be able to use the Protocol case class
-   * as a [[catz.contrib.Divisible]].
+   * as a [[cats.ContravariantMonoidal]].
    */
   def protoTuple[T](
       proto: Protocol[T]
@@ -79,7 +79,7 @@ object print {
 
   /**
    * Needed to be able to use the Service.Operation case class
-   * as a [[catz.contrib.Divisible]].
+   * as a [[cats.ContravariantMonoidal]].
    */
   def opTuple[T](
       op: Service.Operation[T]
@@ -91,7 +91,7 @@ object print {
 
   /**
    * Needed to be able to use the Service case class
-   * as a [[catz.contrib.Divisible]].
+   * as a [[cats.ContravariantMonoidal]].
    */
   def serviceTuple[T](
       s: Service[T]
