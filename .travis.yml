@@ -10,6 +10,7 @@ scala:
 
 script:
 - sbt ++$TRAVIS_SCALA_VERSION orgScriptCI
+- sbt ++$TRAVIS_SCALA_VERSION readme/tut
 
 after_success:
 - sbt ++$TRAVIS_SCALA_VERSION orgAfterCISuccess

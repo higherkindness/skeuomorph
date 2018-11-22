@@ -33,6 +33,7 @@ lazy val docs = project
   .settings(commonSettings)
   .settings(sbtMicrositesSettings)
   .settings(noPublishSettings)
+  .settings(tutSettings)
   .settings(
     micrositeName := "Skeuomorph",
     micrositeDescription := "Schema transformations",
@@ -43,7 +44,7 @@ lazy val docs = project
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md",
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
-      file("README.md") -> ExtraMdFileConfig(
+      file("readme/README.md") -> ExtraMdFileConfig(
         "index.md",
         "home",
         Map("title" -> "Home", "section" -> "home", "position" -> "0")
@@ -53,9 +54,7 @@ lazy val docs = project
         "home",
         Map("title" -> "changelog", "section" -> "changelog", "position" -> "99")
       )
-    ),
-    scalacOptions in Tut ~= filterConsoleScalacOptions,
-    scalacOptions in Tut += "-language:postfixOps"
+    )
   )
   .enablePlugins(MicrositesPlugin)
 
@@ -64,11 +63,11 @@ lazy val readme = (project in file("readme"))
   .dependsOn(root)
   .settings(commonSettings)
   .settings(noPublishSettings)
+  .settings(tutSettings)
   .settings(
     tutSourceDirectory := baseDirectory.value,
     tutTargetDirectory := baseDirectory.value.getParentFile,
-    tutNameFilter := """README.md""".r,
-    scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains)
+    tutNameFilter := """README.md""".r
   )
   .enablePlugins(TutPlugin)
 
@@ -159,6 +158,12 @@ lazy val commonSettings = Seq(
     "readme/tut".asRunnableItem
   )
 ) ++ compilerPlugins
+
+lazy val tutSettings = Seq(
+  scalacOptions in Tut ~= filterConsoleScalacOptions,
+  scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains),
+  scalacOptions in Tut += "-language:postfixOps"
+)
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(

@@ -44,9 +44,7 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
 
 ### parsing an avro schema and then converting it to scala:
 
-```tut
-
-
+```tut:silent
 import org.apache.avro._
 import skeuomorph.mu.Transform.transformAvro
 import skeuomorph.mu.MuF
@@ -92,11 +90,14 @@ val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 val printAsScala: Mu[MuF] => String = 
   print.schema.print _
-
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
+```tut:evaluated
+(parseAvro >>> println)(avroSchema)
+(printAsScala >>> println)(parseAvro(avroSchema))
+```
 
 ## Skeuomorph in the wild
 
