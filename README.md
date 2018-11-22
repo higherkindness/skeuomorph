@@ -44,13 +44,11 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
 
 ### parsing an avro schema and then converting it to scala:
 
-```tut
-
+```scala
 import org.apache.avro._
-import skeuomorph._
 import skeuomorph.mu.Transform.transformAvro
 import skeuomorph.mu.MuF
-import skeuomorph.mu.MuF.render
+import skeuomorph.mu.print
 import skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
@@ -86,17 +84,20 @@ val definition = """
 }
   """
 
-val schema: Schema = new Schema.Parser().parse(definition)
+val avroSchema: Schema = new Schema.Parser().parse(definition)
 
 val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 val printAsScala: Mu[MuF] => String = 
   print.schema.print _
-
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
+```
+Mu(TProduct(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
+@message final case class User(name: String, favorite_number: Cop[Int :: Null:: TNil], favorite_color: Cop[String :: Null:: TNil])
+```
 
 ## Skeuomorph in the wild
 
