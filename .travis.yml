@@ -26,7 +26,7 @@ cache:
   - "$HOME/.sbt"
 
 before_install:
-- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then - openssl aes-256-cbc
+- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then openssl aes-256-cbc
   -K $encrypted_ca54c9c78452_key -iv $encrypted_ca54c9c78452_iv -in secring.gpg.enc -out secring.gpg -d; fi
 - export PATH=${PATH}:./vendor/bundle
 
