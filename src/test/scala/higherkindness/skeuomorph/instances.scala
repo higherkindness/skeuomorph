@@ -26,6 +26,7 @@ import org.scalacheck.cats.implicits._
 import qq.droste.Basis
 import mu.MuF
 import avro.AvroF
+import protobuf.ProtobufF
 
 import scala.collection.JavaConverters._
 
@@ -186,6 +187,51 @@ object instances {
           Gen.posNum[Int]
         ).mapN(AvroF.fixed[T])
       ))
+  }
+
+  implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[ProtobufF[T]] = {
+    val genOption: Gen[ProtobufF.Option] = (nonEmptyString, nonEmptyString).mapN(ProtobufF.Option.apply)
+    Arbitrary(
+      Gen.oneOf(
+        ProtobufF.double[T]().pure[Gen],
+        ProtobufF.float[T]().pure[Gen],
+        ProtobufF.int32[T]().pure[Gen],
+        ProtobufF.int64[T]().pure[Gen],
+        ProtobufF.uint32[T]().pure[Gen],
+        ProtobufF.uint64[T]().pure[Gen],
+        ProtobufF.sint32[T]().pure[Gen],
+        ProtobufF.sint64[T]().pure[Gen],
+        ProtobufF.fixed32[T]().pure[Gen],
+        ProtobufF.fixed64[T]().pure[Gen],
+        ProtobufF.sfixed32[T]().pure[Gen],
+        ProtobufF.sfixed64[T]().pure[Gen],
+        ProtobufF.bool[T]().pure[Gen],
+        ProtobufF.string[T]().pure[Gen],
+        ProtobufF.bytes[T]().pure[Gen],
+        nonEmptyString map ProtobufF.namedType[T],
+        T.arbitrary map ProtobufF.required[T],
+        T.arbitrary map ProtobufF.optional[T],
+        T.arbitrary map ProtobufF.repeated[T],
+        (
+          nonEmptyString,
+          Gen.listOf((nonEmptyString, Gen.posNum[Int]).tupled),
+          Gen.listOf(genOption),
+          Gen.listOf((nonEmptyString, Gen.posNum[Int]).tupled)
+        ).mapN(ProtobufF.enum[T]),
+        (
+          nonEmptyString,
+          Gen.listOf(
+            (
+              nonEmptyString,
+              T.arbitrary,
+              Gen.posNum[Int],
+              Gen.listOf(genOption)
+            ).mapN(ProtobufF.Field.apply[T])
+          ),
+          Gen.listOf(Gen.listOf(nonEmptyString))
+        ).mapN(ProtobufF.message[T])
+      )
+    )
   }
 
   def muCoproductWithTNullGen[T](implicit B: Basis[MuF, T]): Gen[MuF.TCoproduct[T]] =
