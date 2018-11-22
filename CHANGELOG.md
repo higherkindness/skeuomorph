@@ -1,28 +1,5 @@
 # Changelog
 
-## 11/22/2018 - Version 0.0.2
-
-Release changes:
-
-* Fixes Release Process ([#8](https://github.com/higherkindness/skeuomorph/pull/8))
-* Swagger schema ([#10](https://github.com/higherkindness/skeuomorph/pull/10))
-* fix microsite baseurl _again_ ([#9](https://github.com/higherkindness/skeuomorph/pull/9))
-* fix typo in optimizations documentation ([#15](https://github.com/higherkindness/skeuomorph/pull/15))
-* Adds new entries in gitignore file ([#16](https://github.com/higherkindness/skeuomorph/pull/16))
-* Frees & Avro schema fixes ([#13](https://github.com/higherkindness/skeuomorph/pull/13))
-* Optimize known coproducts ([#19](https://github.com/higherkindness/skeuomorph/pull/19))
-* Use sbt-org-policies plugin ([#20](https://github.com/higherkindness/skeuomorph/pull/20))
-* Update versions ([#23](https://github.com/higherkindness/skeuomorph/pull/23))
-* New approach for pretty printers ([#17](https://github.com/higherkindness/skeuomorph/pull/17))
-* Readme skeuomorph example compiles and uses printSchema variable. ([#21](https://github.com/higherkindness/skeuomorph/pull/21))
-* Add some more tests ([#24](https://github.com/higherkindness/skeuomorph/pull/24))
-* Migrate freestyle to mu ([#26](https://github.com/higherkindness/skeuomorph/pull/26))
-* Readme compiles with printer instance ([#29](https://github.com/higherkindness/skeuomorph/pull/29))
-* change the organization to io.higherkindness ([#32](https://github.com/higherkindness/skeuomorph/pull/32))
-* fix packaging ([#35](https://github.com/higherkindness/skeuomorph/pull/35))
-* release 0.0.2 ([#34](https://github.com/higherkindness/skeuomorph/pull/34))
-
-
 ## 08/02/2018 - Version 0.0.1
 
 Release changes:
