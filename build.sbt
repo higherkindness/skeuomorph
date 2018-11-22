@@ -71,7 +71,14 @@ pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "io.higherkindness",
+  orgGithubSetting := GitHubSettings(
+    organization = "higherkindness",
+    project = (name in LocalRootProject).value,
+    organizationName = "47 Degrees",
+    groupId = "io.higherkindness",
+    organizationHomePage = url("http://47deg.com"),
+    organizationEmail = "hello@47deg.com"
+  ),
   scalaVersion := "2.12.7",
   startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
