@@ -7,6 +7,18 @@ import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
 import scoverage.ScoverageKeys
 
+val V = new {
+  val betterMonadicFor: String = "0.2.4"
+  val macroParadise = "2.1.1"
+  val cats = "1.5.0-RC1"
+  val catsScalacheck = "0.1.0"
+  val kindProjector = "0.9.9"
+  val droste = "0.5.0"
+  val avro = "1.8.2"
+  val circe = "0.10.1"
+  val specs2 = "4.3.5"
+}
+
 lazy val root = project
   .in(file("."))
   .settings(commonSettings)
@@ -71,21 +83,28 @@ pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "higherkindness",
+  orgGithubSetting := GitHubSettings(
+    organization = "higherkindness",
+    project = (name in LocalRootProject).value,
+    organizationName = "47 Degrees",
+    groupId = "io.higherkindness",
+    organizationHomePage = url("http://47deg.com"),
+    organizationEmail = "hello@47deg.com"
+  ),
   scalaVersion := "2.12.7",
   startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
-    %%("cats-laws") % Test,
-    %%("cats-core"),
-    "io.higherkindness" %% "droste-core"   % "0.5.0",
-    "io.higherkindness" %% "droste-macros" % "0.5.0",
-    "org.apache.avro"   % "avro"           % "1.8.2",
-    %%("circe-core"),
-    %%("specs2-core")       % Test,
-    %%("specs2-scalacheck") % Test,
-    "io.chrisdavenport"     %% "cats-scalacheck" % "0.1.0" % Test
+    %%("cats-laws", V.cats) % Test,
+    %%("cats-core", V.cats),
+    "io.higherkindness" %% "droste-core"   % V.droste,
+    "io.higherkindness" %% "droste-macros" % V.droste,
+    "org.apache.avro"   % "avro"           % V.avro,
+    %%("circe-core", V.circe),
+    %%("specs2-core"      , V.specs2)       % Test,
+    %%("specs2-scalacheck", V.specs2) % Test,
+    "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
   orgProjectName := "Skeuomorph",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
@@ -143,8 +162,8 @@ lazy val commonSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.spire-math"  % "kind-projector"      % "0.9.8" cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.2.4"),
-    compilerPlugin("org.scalamacros" % "paradise"            % "2.1.1" cross CrossVersion.patch)
+    compilerPlugin("org.spire-math"  % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"      %% "better-monadic-for" % V.betterMonadicFor),
+    compilerPlugin("org.scalamacros" % "paradise"            % V.macroParadise cross CrossVersion.patch)
   )
 )
