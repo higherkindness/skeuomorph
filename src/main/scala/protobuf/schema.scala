@@ -17,7 +17,14 @@
 package skeuomorph
 package protobuf
 
+import java.io.FileInputStream
+import java.nio.file.{Path, Paths}
+
 import cats.Functor
+import com.github.os72.protocjar.Protoc
+import com.google.protobuf.DescriptorProtos
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto
+import qq.droste.Coalgebra
 
 sealed trait ProtobufF[A]
 object ProtobufF {
@@ -80,5 +87,50 @@ object ProtobufF {
           reserved
         )
     }
+  }
+
+  // TODO: fromProtobuf function to for anamorphism
+  def fromProtobuf: Coalgebra[ProtobufF, FileDescriptorProto] = ???
+
+}
+
+object parseProto {
+  import scala.collection.JavaConverters._
+
+  // TODO: Make FP, probably parameterize by F[_]: Monad
+  // TODO: Error handling when proto file is not found
+  // TODO: Error handling when path to proto file is malformed.
+  // TODO: Stop breaking substitution principle, lol.
+
+  def runProtoc(protoFileName: String, pathToProtoFile: Path): Seq[FileDescriptorProto] = {
+    val descriptorFileName = s"$protoFileName.desc"
+
+    Protoc.runProtoc(
+      Array(
+        "--include_imports",
+        s"--descriptor_set_out=$descriptorFileName",
+        s"--proto_path=${pathToProtoFile.toString}",
+        protoFileName
+      )
+    )
+
+    makeFileDescriptorProto(descriptorFileName)
+  }
+
+  def makeFileDescriptorProto(descriptorFileName: String): Seq[FileDescriptorProto] = {
+    // Note: This would really be better expressed as a cats-effect.Resource
+    val fileInputStream: FileInputStream = new FileInputStream(descriptorFileName)
+    val descriptorSet                    = DescriptorProtos.FileDescriptorSet.parseFrom(fileInputStream)
+    fileInputStream.close()
+    descriptorSet.getFileList.asScala
+  }
+
+}
+
+object Playground extends App {
+  val result =
+    parseProto.runProtoc("sampleProto.proto", Paths.get("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources"))
+  result.map { fileDescriptor =>
+    println(fileDescriptor)
   }
 }

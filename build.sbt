@@ -10,9 +10,18 @@ import scoverage.ScoverageKeys
 lazy val root = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(
-    name := "skeuomorph"
-  )
+//  .settings(
+//    name := "skeuomorph"
+//  ).settings(
+//  // Changing where to look for protos to compile (default src/main/protobuf):
+//    PB.protoSources in Compile := Seq((Compile / resourceDirectory).value)
+//  ).settings(
+//  // By default we generate into target/src_managed. To customize:
+//    PB.targets in Compile := Seq(
+//      MyCodeGenerator -> (sourceManaged in Compile).value,
+//      scalapb.gen() -> (sourceManaged in Compile).value,
+//    )
+//  )
 
 lazy val docs = project
   .in(file("docs"))
@@ -79,14 +88,17 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     %%("cats-laws") % Test,
     %%("cats-core"),
-    "io.higherkindness" %% "droste-core"   % "0.5.0",
-    "io.higherkindness" %% "droste-macros" % "0.5.0",
-    "org.apache.avro"   % "avro"           % "1.8.2",
+    "io.higherkindness"   %% "droste-core"   % "0.5.0",
+    "io.higherkindness"   %% "droste-macros" % "0.5.0",
+    "org.apache.avro"     % "avro"           % "1.8.2",
+    "com.github.os72" % "protoc-jar" % "3.6.0",
+    "com.google.protobuf"   % "protobuf-java"       % "3.6.1",
     %%("circe-core"),
     %%("specs2-core")       % Test,
     %%("specs2-scalacheck") % Test,
     "io.chrisdavenport"     %% "cats-scalacheck" % "0.1.0" % Test
   ),
+//  classpathTypes += "maven-plugin",
   orgProjectName := "Skeuomorph",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
