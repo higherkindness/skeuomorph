@@ -10,18 +10,6 @@ import scoverage.ScoverageKeys
 lazy val root = project
   .in(file("."))
   .settings(commonSettings)
-//  .settings(
-//    name := "skeuomorph"
-//  ).settings(
-//  // Changing where to look for protos to compile (default src/main/protobuf):
-//    PB.protoSources in Compile := Seq((Compile / resourceDirectory).value)
-//  ).settings(
-//  // By default we generate into target/src_managed. To customize:
-//    PB.targets in Compile := Seq(
-//      MyCodeGenerator -> (sourceManaged in Compile).value,
-//      scalapb.gen() -> (sourceManaged in Compile).value,
-//    )
-//  )
 
 lazy val docs = project
   .in(file("docs"))
@@ -91,8 +79,11 @@ lazy val commonSettings = Seq(
     "io.higherkindness"   %% "droste-core"   % "0.5.0",
     "io.higherkindness"   %% "droste-macros" % "0.5.0",
     "org.apache.avro"     % "avro"           % "1.8.2",
+    // TODO: PICK ONE
     "com.github.os72" % "protoc-jar" % "3.6.0",
     "com.google.protobuf"   % "protobuf-java"       % "3.6.1",
+    "com.thesamet.scalapb" %% "compilerplugin" % "0.8.2",
+    "com.thesamet.scalapb" %% "scalapb-runtime" % "0.8.2",
     %%("circe-core"),
     %%("specs2-core")       % Test,
     %%("specs2-scalacheck") % Test,
