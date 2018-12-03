@@ -79,11 +79,11 @@ lazy val commonSettings = Seq(
     "io.higherkindness"   %% "droste-core"   % "0.5.0",
     "io.higherkindness"   %% "droste-macros" % "0.5.0",
     "org.apache.avro"     % "avro"           % "1.8.2",
-    // TODO: PICK ONE
     "com.github.os72" % "protoc-jar" % "3.6.0",
     "com.google.protobuf"   % "protobuf-java"       % "3.6.1",
     "com.thesamet.scalapb" %% "compilerplugin" % "0.8.2",
     "com.thesamet.scalapb" %% "scalapb-runtime" % "0.8.2",
+    %%("cats-effect"),
     %%("circe-core"),
     %%("specs2-core")       % Test,
     %%("specs2-scalacheck") % Test,

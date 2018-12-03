@@ -18,8 +18,8 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.{DescriptorProto, FieldDescriptorProto}
-import qq.droste.Coalgebra
+//import com.google.protobuf.descriptor.{DescriptorProto, FieldDescriptorProto}
+//import qq.droste.Coalgebra
 import scalapb.descriptors.{FileDescriptor => _}
 
 sealed trait ProtobufF[A]
@@ -86,29 +86,29 @@ object ProtobufF {
   }
 
   // What I want is the parent type of everything... is that the DescriptorProto or something else?
-  def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, DescriptorProto)] = Coalgebra{ case (fieldDescriptor: FieldDescriptorProto, _: DescriptorProto) =>
-    // Need a match before the more granular type here to get at the enum descriptor
-    fieldDescriptor.getType match {
-      case FieldDescriptorProto.Type.TYPE_BOOL   => TBool()
-      case FieldDescriptorProto.Type.TYPE_BYTES  => TBytes()
-      case FieldDescriptorProto.Type.TYPE_DOUBLE => TDouble()
-      case FieldDescriptorProto.Type.TYPE_ENUM => TEnum(fieldDescriptor.getName, ???, ???, ??? )
-      case FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
-      case FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
-      case FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
-      case FieldDescriptorProto.Type.TYPE_GROUP => ??? // Is this supported???
-      case FieldDescriptorProto.Type.TYPE_INT32 => TInt32()
-      case FieldDescriptorProto.Type.TYPE_INT64 => TInt64()
-      case FieldDescriptorProto.Type.TYPE_MESSAGE => ???
-      case FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
-      case FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
-      case FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
-      case FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
-      case FieldDescriptorProto.Type.TYPE_STRING   => TString()
-      case FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
-      case FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-      case FieldDescriptorProto.Type.Unrecognized(x) => ???
-    }
-  }
+//  def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, DescriptorProto)] = Coalgebra{ case (fieldDescriptor: FieldDescriptorProto, _: DescriptorProto) =>
+//    // Need a match before the more granular type here to get at the enum descriptor
+//    fieldDescriptor.getType match {
+//      case FieldDescriptorProto.Type.TYPE_BOOL   => TBool()
+//      case FieldDescriptorProto.Type.TYPE_BYTES  => TBytes()
+//      case FieldDescriptorProto.Type.TYPE_DOUBLE => TDouble()
+//      case FieldDescriptorProto.Type.TYPE_ENUM => TEnum(fieldDescriptor.getName, ???, ???, ??? )
+//      case FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
+//      case FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
+//      case FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
+//      case FieldDescriptorProto.Type.TYPE_GROUP => ??? // Is this supported???
+//      case FieldDescriptorProto.Type.TYPE_INT32 => TInt32()
+//      case FieldDescriptorProto.Type.TYPE_INT64 => TInt64()
+//      case FieldDescriptorProto.Type.TYPE_MESSAGE => ???
+//      case FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
+//      case FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
+//      case FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
+//      case FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
+//      case FieldDescriptorProto.Type.TYPE_STRING   => TString()
+//      case FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
+//      case FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+//      case FieldDescriptorProto.Type.Unrecognized(x) => ???
+//    }
+//  }
 }
 

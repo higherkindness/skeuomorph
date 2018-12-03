@@ -1,97 +1,76 @@
 import java.io.FileInputStream
-import java.nio.file.{Path, Paths}
-import cats.ApplicativeError
+import java.time.Instant
+import cats.syntax.functor._
+import cats.syntax.flatMap._
+import cats.effect.{IO, Sync}
 import com.github.os72.protocjar.Protoc
-import com.google.protobuf.DescriptorProtos
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto
-
-import scala.util.Try
+import scalapb.descriptors.{FileDescriptor => ScalaFileDescriptor}
+import org.apache.commons.compress.utils.IOUtils
+import FileUtils._
 
 trait Parser[F[_], I, O] {
-  def parse(input: I)(implicit A: ApplicativeError[F, Throwable]): F[O]
+  def parse(input: I)(implicit S: Sync[F]): F[O]
 }
 
 // TODO: Error handling when proto file is not found
 // TODO: Error handling when path to proto file is malformed.
-// TODO: Stop breaking substitution principle!!!
 
 object ParseProto {
-  import scala.collection.JavaConverters._
-  import org.apache.commons.compress.utils.IOUtils
-  import java.io.FileOutputStream
 
   def apply[F[_],I,O](implicit parser: Parser[F, I, O]) = parser
 
-  implicit def parseProto[F[_]] = new Parser[F, FileInputStream, Seq[FileDescriptorProto]] {
-    override def parse(input: FileInputStream)(implicit A: ApplicativeError[F, Throwable]): F[Seq[FileDescriptorProto]] = {
-      A.fromTry(Try(runProtoc(input)))
+  implicit def parseProto[F[_]]: Parser[F, FileInputStream, ScalaFileDescriptor] = new Parser[F, FileInputStream, ScalaFileDescriptor] {
+    override def parse(input: FileInputStream)(implicit S: Sync[F]): F[ScalaFileDescriptor] = {
+      transpile(input)
     }
   }
 
-  def runProtoc(protoFileStream: FileInputStream): Seq[FileDescriptorProto] = {
-    // Generate new file for protoc
-    val fileOutput = new FileOutputStream("tmp")
-    // Ohno! Ohno! Ohno! My kingdom for a Resource
-    try {
-      IOUtils.copy(protoFileStream, fileOutput)
-      runProtoc("tmp", Paths.get("."))
-    } finally {
-      fileOutput.close()
-      protoFileStream.close()
-    }
+  private def transpile[F[_]: Sync](protoFileStream: FileInputStream): F[ScalaFileDescriptor] = {
+    val tmpPathPrefix = "/tmp"
+    val tmpFileName = s"$tmpPathPrefix/${Instant.now.toEpochMilli}.proto"
+
+    fileHandle(tmpFileName)
+      .flatMap(fileOutputStream[F])
+      .use { fos =>
+        IOUtils.copy(protoFileStream, fos)
+        runProtoc(tmpFileName, tmpPathPrefix)
+      }
   }
 
-  def runProtoc(protoFileName: String, pathToProtoFile: Path): Seq[FileDescriptorProto] = {
+  private def runProtoc[F[_]: Sync](protoFileName: String, pathToProtoFile: String): F[ScalaFileDescriptor] = {
     val descriptorFileName = s"$protoFileName.desc"
 
-    Protoc.runProtoc(
-      Array(
-        "--include_imports",
-        s"--descriptor_set_out=$descriptorFileName",
-        s"--proto_path=${pathToProtoFile.toString}",
-        protoFileName
+    for {
+      _ <- Sync[F].delay(
+        Protoc.runProtoc(
+          Array(
+            "--include_imports",
+            s"--descriptor_set_out=$descriptorFileName",
+            s"--proto_path=$pathToProtoFile",
+            protoFileName
+          )
+        )
       )
-    )
-
-    makeFileDescriptorProto(descriptorFileName)
+      fileDescriptor <- makeFileDescriptor[F](descriptorFileName)
+    } yield fileDescriptor
   }
 
-  private def makeFileDescriptorProto(descriptorFileName: String): Seq[FileDescriptorProto] = {
-    // Note: This would really be better expressed as a cats-effect.Resource
-    val fileInputStream: FileInputStream = new FileInputStream(descriptorFileName)
-    try{
-      val descriptorSet = DescriptorProtos.FileDescriptorSet.parseFrom(fileInputStream)
-      descriptorSet.getFileList.asScala
-    } finally {
-      fileInputStream.close()
+  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[ScalaFileDescriptor] = {
+    fileInputStream(descriptorFileName).use { fis: FileInputStream =>
+      // TODO: Wrap in Sync with Error handling
+      val fileDescriptorProto = com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(fis)
+      Sync[F].delay(ScalaFileDescriptor.buildFrom(fileDescriptorProto, Nil))
     }
   }
-
 }
-
-// TODO: Move to error contract folder/file
-trait SkeuomorphError extends Exception {
-  val message: String
-}
-
-case object ProtobufCompilationException extends SkeuomorphError {
-  override val message: String = "Failed to compile protobuf file"
-
-  override def getMessage = message
-}
-
-case object ProtobufParsingException extends SkeuomorphError {
-  override val message = "Failed to parse input as protobuf file"
-
-  override def getMessage = message
-}
-
-
 
 object Playground extends App {
-  val result =
-    ParseProto.runProtoc("sampleProto.proto", Paths.get("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources"))
-  result.foreach { fileDescriptor =>
-    println(fileDescriptor)
-  }
+
+  // An example of the contract Skeuomorph will support
+  val result = ParseProto.parseProto[IO].parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/simplerProto.proto"))
+
+  val t = result.unsafeRunSync()
+  // Problem: The scala type has no messages. Parsing is broken
+  println(t.messages)
+
 }
