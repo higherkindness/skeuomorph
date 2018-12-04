@@ -1,5 +1,6 @@
 import java.io.FileInputStream
 import java.time.Instant
+
 import cats.syntax.functor._
 import cats.syntax.flatMap._
 import cats.effect.{IO, Sync}
@@ -12,8 +13,6 @@ trait Parser[F[_], I, O] {
   def parse(input: I)(implicit S: Sync[F]): F[O]
 }
 
-// TODO: Error handling when proto file is not found
-// TODO: Error handling when path to proto file is malformed.
 
 object ParseProto {
 
@@ -32,8 +31,10 @@ object ParseProto {
     fileHandle(tmpFileName)
       .flatMap(fileOutputStream[F])
       .use { fos =>
-        IOUtils.copy(protoFileStream, fos)
-        runProtoc(tmpFileName, tmpPathPrefix)
+        for {
+          _ <- Sync[F].delay(IOUtils.copy(protoFileStream, fos))
+          fileDescriptor <- runProtoc(tmpFileName, tmpPathPrefix)
+        } yield fileDescriptor
       }
   }
 
@@ -57,9 +58,8 @@ object ParseProto {
 
   private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[ScalaFileDescriptor] = {
     fileInputStream(descriptorFileName).use { fis: FileInputStream =>
-      // TODO: Wrap in Sync with Error handling
-      val fileDescriptorProto = com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(fis)
-      Sync[F].delay(ScalaFileDescriptor.buildFrom(fileDescriptorProto, Nil))
+      Sync[F].delay(com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(fis))
+      .map{fileDescriptorProto => ScalaFileDescriptor.buildFrom(fileDescriptorProto, Nil)}
     }
   }
 }
@@ -67,7 +67,7 @@ object ParseProto {
 object Playground extends App {
 
   // An example of the contract Skeuomorph will support
-  val result = ParseProto.parseProto[IO].parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/simplerProto.proto"))
+  val result = ParseProto.parseProto[IO].parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/simpleProto.proto"))
 
   val t = result.unsafeRunSync()
   // Problem: The scala type has no messages. Parsing is broken
