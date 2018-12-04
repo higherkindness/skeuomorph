@@ -6,6 +6,7 @@ import cats.syntax.flatMap._
 import cats.effect.{IO, Sync}
 import com.github.os72.protocjar.Protoc
 import scalapb.descriptors.{FileDescriptor => ScalaFileDescriptor}
+import com.google.protobuf.descriptor.FileDescriptorSet
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
 
@@ -56,21 +57,24 @@ object ParseProto {
     } yield fileDescriptor
   }
 
-  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[ScalaFileDescriptor] = {
-    fileInputStream(descriptorFileName).use { fis: FileInputStream =>
-      Sync[F].delay(com.google.protobuf.descriptor.FileDescriptorProto.parseFrom(fis))
-      .map{fileDescriptorProto => ScalaFileDescriptor.buildFrom(fileDescriptorProto, Nil)}
+  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[ScalaFileDescriptor] =
+    fileInputStream(descriptorFileName).use { fis =>
+      val scalaFileDescriptorSet = Sync[F].delay(FileDescriptorSet.parseFrom(fis))
+      scalaFileDescriptorSet.map { descriptorSet =>
+        descriptorSet.file.head } // Think about this...
+    }.map { fileDescriptorProto =>
+      ScalaFileDescriptor.buildFrom(fileDescriptorProto, Nil)
     }
-  }
+
 }
 
 object Playground extends App {
-
   // An example of the contract Skeuomorph will support
-  val result = ParseProto.parseProto[IO].parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/simpleProto.proto"))
+  val result = ParseProto.parseProto[IO].parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
 
   val t = result.unsafeRunSync()
   // Problem: The scala type has no messages. Parsing is broken
+//  println(t.asProto)
   println(t.messages)
 
 }
