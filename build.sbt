@@ -10,6 +10,9 @@ import scoverage.ScoverageKeys
 lazy val root = project
   .in(file("."))
   .settings(commonSettings)
+  .settings(
+    name := "skeuomorph"
+  )
 
 lazy val docs = project
   .in(file("docs"))

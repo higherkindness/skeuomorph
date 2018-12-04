@@ -85,9 +85,7 @@ object ProtobufF {
     }
   }
 
-  // What I want is the parent type of everything... is that the DescriptorProto or something else?
-//  def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, DescriptorProto)] = Coalgebra{ case (fieldDescriptor: FieldDescriptorProto, _: DescriptorProto) =>
-//    // Need a match before the more granular type here to get at the enum descriptor
+//  def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, DescriptorProto)] = Coalgebra{ case (fieldDescriptor: FieldDescriptorProto, descriptor: DescriptorProto) =>
 //    fieldDescriptor.getType match {
 //      case FieldDescriptorProto.Type.TYPE_BOOL   => TBool()
 //      case FieldDescriptorProto.Type.TYPE_BYTES  => TBytes()
