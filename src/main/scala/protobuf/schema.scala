@@ -18,9 +18,8 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-//import com.google.protobuf.descriptor.{DescriptorProto, FieldDescriptorProto}
-//import qq.droste.Coalgebra
-import scalapb.descriptors.{FileDescriptor => _}
+import com.google.protobuf.descriptor.{DescriptorProto, FieldDescriptorProto, FileDescriptorProto}
+import qq.droste.Coalgebra
 
 sealed trait ProtobufF[A]
 object ProtobufF {
@@ -31,8 +30,8 @@ object ProtobufF {
   final case class TFloat[A]()                 extends ProtobufF[A]
   final case class TInt32[A]()                 extends ProtobufF[A]
   final case class TInt64[A]()                 extends ProtobufF[A]
-  final case class TUint32[A]()                extends ProtobufF[A] // Json number
-  final case class TUint64[A]()                extends ProtobufF[A] // Json number
+  final case class TUint32[A]()                extends ProtobufF[A]
+  final case class TUint64[A]()                extends ProtobufF[A]
   final case class TSint32[A]()                extends ProtobufF[A]
   final case class TSint64[A]()                extends ProtobufF[A]
   final case class TFixed32[A]()               extends ProtobufF[A]
@@ -85,28 +84,48 @@ object ProtobufF {
     }
   }
 
-//  def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, DescriptorProto)] = Coalgebra{ case (fieldDescriptor: FieldDescriptorProto, descriptor: DescriptorProto) =>
-//    fieldDescriptor.getType match {
-//      case FieldDescriptorProto.Type.TYPE_BOOL   => TBool()
-//      case FieldDescriptorProto.Type.TYPE_BYTES  => TBytes()
-//      case FieldDescriptorProto.Type.TYPE_DOUBLE => TDouble()
-//      case FieldDescriptorProto.Type.TYPE_ENUM => TEnum(fieldDescriptor.getName, ???, ???, ??? )
-//      case FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
-//      case FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
-//      case FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
-//      case FieldDescriptorProto.Type.TYPE_GROUP => ??? // Is this supported???
-//      case FieldDescriptorProto.Type.TYPE_INT32 => TInt32()
-//      case FieldDescriptorProto.Type.TYPE_INT64 => TInt64()
-//      case FieldDescriptorProto.Type.TYPE_MESSAGE => ???
-//      case FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
-//      case FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
-//      case FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
-//      case FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
-//      case FieldDescriptorProto.Type.TYPE_STRING   => TString()
-//      case FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
-//      case FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-//      case FieldDescriptorProto.Type.Unrecognized(x) => ???
-//    }
-//  }
-}
+  /* A problem, generally, with this plan, appears to be that by the time you are in a fieldDescriptor (to match on the type),
+   you have lost some more global information. I'm not confident that the .getType method would even work on a Message or Enum,
+   as it appears Protoc separates Messages from Enums and Services by writing those fields in a separate class altogether.
+   */
+  def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, FileDescriptorProto)] = Coalgebra {
+    case (fieldDescriptor: FieldDescriptorProto, file: FileDescriptorProto) =>
+      fieldDescriptor.getType match {
+        case FieldDescriptorProto.Type.TYPE_BOOL    => TBool()
+        case FieldDescriptorProto.Type.TYPE_BYTES   => TBytes()
+        case FieldDescriptorProto.Type.TYPE_DOUBLE  => TDouble()
+        case FieldDescriptorProto.Type.TYPE_ENUM    => TEnum(fieldDescriptor.getName, List(), null, null)
+        case FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
+        case FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
+        case FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
+        case FieldDescriptorProto.Type.TYPE_GROUP   => null // Is this supported in Proto 3???
+        case FieldDescriptorProto.Type.TYPE_INT32   => TInt32()
+        case FieldDescriptorProto.Type.TYPE_INT64   => TInt64()
+        case FieldDescriptorProto.Type.TYPE_MESSAGE => createMessage(file, fieldDescriptor)
+        case FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
+        case FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
+        case FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
+        case FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
+        case FieldDescriptorProto.Type.TYPE_STRING   => TString()
+        case FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
+        case FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+        case _ => ??? // TODO: Unrecognized
+      }
+  }
 
+  def findEnumOptions(enumName: String, fileDescriptorProto: FileDescriptorProto): List[Option] = {
+    val enumDescriptors = fileDescriptorProto.enumType.filter(enumDesc => enumDesc.name.getOrElse(false) == enumName)
+    enumDescriptors.map(edp => edp.options) // curiously, EnumDescriptors do not have the actual option names????
+    ???
+  }
+
+  def createMessage(file: FileDescriptorProto, field: FieldDescriptorProto): TMessage[(FieldDescriptorProto, FileDescriptorProto)] = {
+    val filtered: Seq[DescriptorProto] = file.messageType.filter(descriptorProto =>
+      descriptorProto.name.getOrElse(false) == field.getName
+    )
+    val protoFields: List[Field[(FieldDescriptorProto, FileDescriptorProto)]] = filtered.map(desc => Field(desc.getName, (field, file), field.getNumber, List())).toList
+
+    // TODO: Reserved
+    TMessage(field.getName, protoFields, List())
+  }
+}
