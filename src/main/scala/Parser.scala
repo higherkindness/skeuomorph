@@ -21,7 +21,7 @@ import cats.syntax.functor._
 import cats.syntax.flatMap._
 import cats.effect.{IO, Sync}
 import com.github.os72.protocjar.Protoc
-import scalapb.descriptors.{BaseDescriptor, FileDescriptor}
+import scalapb.descriptors.FileDescriptor
 import com.google.protobuf.descriptor.{FieldDescriptorProto, FileDescriptorSet}
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
@@ -92,24 +92,6 @@ object Playground extends App {
     .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
 
   val fileDescriptor: FileDescriptor = result.unsafeRunSync()
-
-  // Dissecting results
-  println("Messages")
-  println(fileDescriptor.messages)
-  println("Enums")
-  println(fileDescriptor.enums)
-  println("Enums internals")
-  println(fileDescriptor.enums.map(enumDesc => enumDesc.values))
-  println("base descriptors ") // Nothing
-  fileDescriptor.messages.flatMap(descriptor => descriptor.enums).foreach((baseDescriptor: BaseDescriptor) => println(baseDescriptor))
-  println("fields names")
-  fileDescriptor.messages.flatMap(descriptor => descriptor.fields).foreach{d => println(d)}
-  println("Fields as proto???")
-  fileDescriptor.messages.flatMap(descriptor => descriptor.fields).map{f => f.asProto}
-  println("Hmmm fields as proto lose their type???")
-  fileDescriptor.messages.flatMap(descriptor => descriptor.fields).map{f => f.asProto.getType}
-  println("Other proto type???")
-  fileDescriptor.messages.flatMap(descriptor => descriptor.fields).map{f => f.protoType}
 
   // Maybe what we actually want is the Proto version
   println("first translating it to a proto")

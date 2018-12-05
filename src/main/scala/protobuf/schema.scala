@@ -18,7 +18,7 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.{DescriptorProto, FieldDescriptorProto, FileDescriptorProto}
+import com.google.protobuf.descriptor.{DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto}
 import qq.droste.Coalgebra
 
 sealed trait ProtobufF[A]
@@ -94,14 +94,14 @@ object ProtobufF {
         case FieldDescriptorProto.Type.TYPE_BOOL    => TBool()
         case FieldDescriptorProto.Type.TYPE_BYTES   => TBytes()
         case FieldDescriptorProto.Type.TYPE_DOUBLE  => TDouble()
-        case FieldDescriptorProto.Type.TYPE_ENUM    => TEnum(fieldDescriptor.getName, List(), null, null)
+        case FieldDescriptorProto.Type.TYPE_ENUM    => createEnum(fieldDescriptor.getName, file)
         case FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
         case FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
         case FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
         case FieldDescriptorProto.Type.TYPE_GROUP   => null // Is this supported in Proto 3???
         case FieldDescriptorProto.Type.TYPE_INT32   => TInt32()
         case FieldDescriptorProto.Type.TYPE_INT64   => TInt64()
-        case FieldDescriptorProto.Type.TYPE_MESSAGE => createMessage(file, fieldDescriptor)
+        case FieldDescriptorProto.Type.TYPE_MESSAGE => createMessage(fieldDescriptor, file)
         case FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
         case FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
         case FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
@@ -109,22 +109,21 @@ object ProtobufF {
         case FieldDescriptorProto.Type.TYPE_STRING   => TString()
         case FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
         case FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-        case _ => ??? // TODO: Unrecognized
+        case FieldDescriptorProto.Type.Unrecognized(_) => ??? // TODO: Unrecognized
       }
   }
 
-  def findEnumOptions(enumName: String, fileDescriptorProto: FileDescriptorProto): List[Option] = {
-    val enumDescriptors = fileDescriptorProto.enumType.filter(enumDesc => enumDesc.name.getOrElse(false) == enumName)
-    enumDescriptors.map(edp => edp.options) // curiously, EnumDescriptors do not have the actual option names????
-    ???
+  def createEnum(enumName: String, fileDescriptorProto: FileDescriptorProto): TEnum[(FieldDescriptorProto, FileDescriptorProto)] = {
+    val enumDescriptors: Seq[EnumDescriptorProto] = fileDescriptorProto.enumType.filter(enumDesc => enumDesc.name.contains(enumName))
+    val symbols: List[(String, Int)] = enumDescriptors.flatMap(enumDesc => enumDesc.value.map(protoValue => (protoValue.getName, protoValue.getNumber))).toList
+    // TODO: Options and Aliases
+    TEnum(enumName, symbols, List(), List())
   }
 
-  def createMessage(file: FileDescriptorProto, field: FieldDescriptorProto): TMessage[(FieldDescriptorProto, FileDescriptorProto)] = {
-    val filtered: Seq[DescriptorProto] = file.messageType.filter(descriptorProto =>
-      descriptorProto.name.getOrElse(false) == field.getName
-    )
-    val protoFields: List[Field[(FieldDescriptorProto, FileDescriptorProto)]] = filtered.map(desc => Field(desc.getName, (field, file), field.getNumber, List())).toList
-
+  def createMessage(field: FieldDescriptorProto, file: FileDescriptorProto): TMessage[(FieldDescriptorProto, FileDescriptorProto)] = {
+    val filtered = file.messageType.filter(descriptorProto => descriptorProto.name.contains(field.getName))
+    // TODO: Options
+    val protoFields = filtered.map(desc => Field(desc.getName, (field, file), field.getNumber, List())).toList
     // TODO: Reserved
     TMessage(field.getName, protoFields, List())
   }
