@@ -7,7 +7,7 @@ class ProtobufSpec extends Specification {
   override def is: SpecStructure = s2"""
   Protobuf Schema
 
-  It should be possible to create a ProtoF TMessage from a FileDescriptorProto.
+  It should be possible to create a ProtoF TMessage from a BaseDescriptor.
 
   """
 }

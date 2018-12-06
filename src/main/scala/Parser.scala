@@ -97,5 +97,4 @@ object Playground extends App {
   val value = ProtobufF.fromProtobuf(fileDescriptor)
 
   pprint.pprintln(value)
-
 }

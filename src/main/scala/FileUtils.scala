@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import java.io.{File, FileInputStream, FileOutputStream}
-import java.nio.file.Files
+import java.io.{File, FileOutputStream, InputStream}
+import java.nio.file.{Files, Paths, StandardOpenOption}
 
 import cats.effect.{Resource, Sync}
 
@@ -34,13 +34,10 @@ object FileUtils {
       fos => Sync[F].delay(fos.close())
     )
 
-  def fileInputStream[F[_]: Sync](name: String): Resource[F, FileInputStream] =
+  def fileInputStream[F[_]: Sync](name: String): Resource[F, InputStream] =
     Resource.make(
-      Sync[F].delay(new FileInputStream(name))
+      Sync[F].delay(Files.newInputStream(Paths.get(name), StandardOpenOption.DELETE_ON_CLOSE))
     )(
-      fis => {
-        Sync[F].delay(fis.close())
-        Sync[F].delay(Files.delete(new File(name).toPath)) // Think on this...
-      }
+      is => Sync[F].delay(is.close())
     )
 }
