@@ -94,5 +94,8 @@ object Playground extends App {
 
   val fileDescriptor: FileDescriptor = result.unsafeRunSync()
 
-  pprint.pprintln(ProtobufF.fromProtobuf2(fileDescriptor))
+  val value = ProtobufF.fromProtobuf(fileDescriptor)
+
+  pprint.pprintln(value)
+
 }

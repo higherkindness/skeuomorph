@@ -48,6 +48,8 @@ object print {
       case TOptional(value) => s"optional $value"
       case TRepeated(value) => s"repeated $value"
 
+      case TFileDescriptor(_, _) => s"" // TODO: Figure this out
+
       case TEnum(name, symbols, options, aliases) =>
         val printOptions = options.map(o => s"option ${o.name} = ${o.value}").mkString("\n")
         val printSymbols = symbols.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
