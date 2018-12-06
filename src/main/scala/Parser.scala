@@ -25,6 +25,7 @@ import scalapb.descriptors.FileDescriptor
 import com.google.protobuf.descriptor.FileDescriptorSet
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
+import skeuomorph.protobuf.ProtobufF
 
 trait Parser[F[_], I, O] {
   def parse(input: I)(implicit S: Sync[F]): F[O]
@@ -93,5 +94,5 @@ object Playground extends App {
 
   val fileDescriptor: FileDescriptor = result.unsafeRunSync()
 
-  pprint.pprintln(fileDescriptor)
+  pprint.pprintln(ProtobufF.fromProtobuf2(fileDescriptor))
 }

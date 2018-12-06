@@ -21,7 +21,8 @@ import cats.Functor
 import com.google.protobuf.descriptor.{DescriptorProto, EnumDescriptorProto, FieldDescriptorProto, FileDescriptorProto}
 import qq.droste.Coalgebra
 
-sealed trait ProtobufF[A]
+
+sealed trait ProtobufF[+A] // Is it ok if I do this?
 object ProtobufF {
   final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
   final case class Option(name: String, value: String)
@@ -51,7 +52,8 @@ object ProtobufF {
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
-  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A] // This was probably not a great idea but as long as Field subclasses A It should be ok right?
+  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
+  final case class TFileDescriptor[A](messages: List[A], enums: List[A]) extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -81,6 +83,7 @@ object ProtobufF {
           fields.map(field => field.copy(tpe = f(field.tpe))),
           reserved
         )
+      case TFileDescriptor(messages, enums)                 => TFileDescriptor(messages.map(f), enums.map(f))
     }
   }
 
@@ -134,9 +137,9 @@ object ProtobufF {
   }
 
   import scalapb.descriptors._
-  // I'm not confident in this hybrid approach.
   def fromProtobuf2: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
+      case f: FileDescriptor => TFileDescriptor(f.messages.toList, f.enums.toList)
       case e: EnumDescriptor => enumFromScala(e)
       case d: Descriptor => messageFromScala(d)
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL => TBool()
@@ -162,9 +165,9 @@ object ProtobufF {
     TEnum(e.name, values, List(), List())
   }
 
-  def messageFromScala(d: Descriptor): TMessage[BaseDescriptor] = {
-    val fields = d.fields.map(fieldDesc => Field(fieldDesc.name, fieldDesc, fieldDesc.number, List())).toList
-    val reserved: Seq[List[String]] = d.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
-    TMessage(d.name, fields, reserved.toList)
+  def messageFromScala(descriptor: Descriptor): TMessage[FieldDescriptor] = {
+    val fields: List[Field[FieldDescriptor]] = descriptor.fields.map(fieldDesc => Field(fieldDesc.name, fieldDesc, fieldDesc.number, List())).toList
+    val reserved: Seq[List[String]] = descriptor.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
+    TMessage(descriptor.name, fields, reserved.toList)
   }
 }
