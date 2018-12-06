@@ -22,7 +22,7 @@ import cats.syntax.flatMap._
 import cats.effect.{IO, Sync}
 import com.github.os72.protocjar.Protoc
 import scalapb.descriptors.FileDescriptor
-import com.google.protobuf.descriptor.{FieldDescriptorProto, FileDescriptorSet}
+import com.google.protobuf.descriptor.FileDescriptorSet
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
 
@@ -77,11 +77,11 @@ object ParseProto {
       .use { fis =>
         for {
           scalaFileDescriptorSet <- Sync[F].delay(FileDescriptorSet.parseFrom(fis))
-          fileDescProto = scalaFileDescriptorSet.file.head // hmmm, is there a condition under which there would be more than one?
+          fileDescProto = scalaFileDescriptorSet.file.head // Is there a condition under which there would be more than one?
         } yield fileDescProto
       }
       .map { fileDescriptorProto =>
-        FileDescriptor.buildFrom(fileDescriptorProto, Nil) // Think about this: do I actually want just the File Descriptor Proto not this thing?
+        FileDescriptor.buildFrom(fileDescriptorProto, Nil)
       }
 }
 
@@ -93,18 +93,5 @@ object Playground extends App {
 
   val fileDescriptor: FileDescriptor = result.unsafeRunSync()
 
-  // Maybe what we actually want is the Proto version
-  println("first translating it to a proto")
-  println(fileDescriptor.asProto.messageType)
-  println("Hmmm this is the sad way you get type information of messages!!!")
-  println(fileDescriptor.asProto.messageType
-    .flatMap(desc => desc.field
-      .map((field: FieldDescriptorProto) => field.getType)
-    )
-  )
-  println("this format also has enum information")
-  println(fileDescriptor.asProto.enumType)
-  println("Enums have a value field that will be useful for us")
-  println(fileDescriptor.asProto.enumType.map(e => (e.name,e.value)))
-
+  pprint.pprintln(fileDescriptor)
 }

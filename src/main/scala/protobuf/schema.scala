@@ -51,7 +51,7 @@ object ProtobufF {
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
-  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
+  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A] // This was probably not a great idea but as long as Field subclasses A It should be ok right?
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -85,8 +85,9 @@ object ProtobufF {
   }
 
   /* A problem, generally, with this plan, appears to be that by the time you are in a fieldDescriptor (to match on the type),
-   you have lost some more global information. I'm not confident that the .getType method would even work on a Message or Enum,
-   as it appears Protoc separates Messages from Enums and Services by writing those fields in a separate class altogether.
+   you have lost some more global information. I'm not confident that the .getType method would even work on a Message or Enum
+   despite the fact that those types are represented in the list. It appears Protoc separates Messages from Enums and
+   Services by writing those fields in a separate class altogether.
    */
   def fromProtobuf: Coalgebra[ProtobufF, (FieldDescriptorProto, FileDescriptorProto)] = Coalgebra {
     case (fieldDescriptor: FieldDescriptorProto, file: FileDescriptorProto) =>
@@ -94,14 +95,11 @@ object ProtobufF {
         case FieldDescriptorProto.Type.TYPE_BOOL    => TBool()
         case FieldDescriptorProto.Type.TYPE_BYTES   => TBytes()
         case FieldDescriptorProto.Type.TYPE_DOUBLE  => TDouble()
-        case FieldDescriptorProto.Type.TYPE_ENUM    => createEnum(fieldDescriptor.getName, file)
         case FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
         case FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
         case FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
-        case FieldDescriptorProto.Type.TYPE_GROUP   => null // Is this supported in Proto 3???
         case FieldDescriptorProto.Type.TYPE_INT32   => TInt32()
         case FieldDescriptorProto.Type.TYPE_INT64   => TInt64()
-        case FieldDescriptorProto.Type.TYPE_MESSAGE => createMessage(fieldDescriptor, file)
         case FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
         case FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
         case FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
@@ -109,22 +107,64 @@ object ProtobufF {
         case FieldDescriptorProto.Type.TYPE_STRING   => TString()
         case FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
         case FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+        case FieldDescriptorProto.Type.TYPE_MESSAGE => createMessage(fieldDescriptor, file)
+        case FieldDescriptorProto.Type.TYPE_ENUM    => createEnum(fieldDescriptor.getName, file)
+        case FieldDescriptorProto.Type.TYPE_GROUP   => null // Is this supported in Proto 3???
         case FieldDescriptorProto.Type.Unrecognized(_) => ??? // TODO: Unrecognized
       }
   }
 
   def createEnum(enumName: String, fileDescriptorProto: FileDescriptorProto): TEnum[(FieldDescriptorProto, FileDescriptorProto)] = {
     val enumDescriptors: Seq[EnumDescriptorProto] = fileDescriptorProto.enumType.filter(enumDesc => enumDesc.name.contains(enumName))
-    val symbols: List[(String, Int)] = enumDescriptors.flatMap(enumDesc => enumDesc.value.map(protoValue => (protoValue.getName, protoValue.getNumber))).toList
+    val symbols: List[(String, Int)] = getEnumSymbols(enumDescriptors)
     // TODO: Options and Aliases
     TEnum(enumName, symbols, List(), List())
+  }
+
+  private def getEnumSymbols(enumDescs: Seq[EnumDescriptorProto]): List[(String, Int)] = {
+    enumDescs.flatMap(enumDesc => enumDesc.value.map(enumValue => (enumValue.getName, enumValue.getNumber))).toList
   }
 
   def createMessage(field: FieldDescriptorProto, file: FileDescriptorProto): TMessage[(FieldDescriptorProto, FileDescriptorProto)] = {
     val filtered = file.messageType.filter(descriptorProto => descriptorProto.name.contains(field.getName))
     // TODO: Options
-    val protoFields = filtered.map(desc => Field(desc.getName, (field, file), field.getNumber, List())).toList
-    // TODO: Reserved
-    TMessage(field.getName, protoFields, List())
+    val protoFields = filtered.map((desc: DescriptorProto) => Field(desc.getName, (field, file), field.getNumber, List())).toList
+    val reserved = filtered.map((desc: DescriptorProto) => desc.reservedRange.flatMap(res => (res.getStart to res.getEnd).map(_.toString).toList).toList).toList // AHHHHH!
+    TMessage(field.getName, protoFields, reserved)
+  }
+
+  import scalapb.descriptors._
+  // I'm not confident in this hybrid approach.
+  def fromProtobuf2: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
+    base match {
+      case e: EnumDescriptor => enumFromScala(e)
+      case d: Descriptor => messageFromScala(d)
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL => TBool()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES => TBytes()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE => TDouble()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED32 => TFixed32()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED64 => TFixed64()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FLOAT   => TFloat()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT32   => TInt32()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT64   => TInt64()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+    }
+  }
+
+  def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
+    val values = e.values.map(value => (value.name, value.number)).toList
+    TEnum(e.name, values, List(), List())
+  }
+
+  def messageFromScala(d: Descriptor): TMessage[BaseDescriptor] = {
+    val fields = d.fields.map(fieldDesc => Field(fieldDesc.name, fieldDesc, fieldDesc.number, List())).toList
+    val reserved: Seq[List[String]] = d.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
+    TMessage(d.name, fields, reserved.toList)
   }
 }

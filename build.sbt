@@ -86,6 +86,7 @@ lazy val commonSettings = Seq(
     "com.google.protobuf"   % "protobuf-java"       % "3.6.1",
     "com.thesamet.scalapb"  %% "compilerplugin"     % "0.8.2",
     "com.thesamet.scalapb"  %% "scalapb-runtime"    % "0.8.2",
+    "com.lihaoyi" %% "pprint" % "0.5.3", // TEMP
     %%("cats-effect"),
     %%("circe-core"),
     %%("specs2-core")       % Test,
