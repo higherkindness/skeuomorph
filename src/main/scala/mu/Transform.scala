@@ -50,7 +50,7 @@ object Transform {
     case ProtobufF.TRequired(value)           => TRequired(value)
     case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case ProtobufF.TFileDescriptor(_)         => ??? // TODO: figure this part out.
+    case ProtobufF.TFileDescriptor(_, _)      => ??? // TODO: figure this part out.
   }
 
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
