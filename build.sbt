@@ -16,6 +16,7 @@ val V = new {
   val droste           = "0.6.0"
   val kindProjector    = "0.9.9"
   val macroParadise    = "2.1.1"
+  val scalacheck       = "1.13.5"
   val specs2           = "4.3.5"
 }
 
@@ -100,10 +101,12 @@ lazy val commonSettings = Seq(
     "io.higherkindness" %% "droste-macros" % V.droste,
     "org.apache.avro"   % "avro"           % V.avro,
     %%("circe-core", V.circe),
-    %%("scalacheck", "1.13.5"),
+    %%("scalacheck", V.scalacheck),
     %%("specs2-core"      , V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
+    "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll(
+      ExclusionRule(organization="org.scalacheck")
+    )
   ),
   orgProjectName := "Skeuomorph",
   orgUpdateDocFilesSetting += baseDirectory.value / "readme",
