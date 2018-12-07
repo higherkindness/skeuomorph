@@ -18,7 +18,7 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.{FieldDescriptorProto, UninterpretedOption}
+import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
 import scalapb.descriptors._
 
@@ -53,7 +53,7 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](messages: List[A], enums: List[A])                           extends ProtobufF[A]
+  final case class TFileDescriptor[A](messages: List[A])                                           extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -83,13 +83,13 @@ object ProtobufF {
           fields.map(field => field.copy(tpe = f(field.tpe))),
           reserved
         )
-      case TFileDescriptor(messages, enums) => TFileDescriptor(messages.map(f), enums.map(f))
+      case TFileDescriptor(messages) => TFileDescriptor(messages.map(f))
     }
   }
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
-      case f: FileDescriptor                                                            => TFileDescriptor(f.messages.toList, f.enums.toList)
+      case f: FileDescriptor                                                            => TFileDescriptor(f.messages.toList)
       case e: EnumDescriptor                                                            => enumFromScala(e)
       case d: Descriptor                                                                => messageFromScala(d)
       case f: FieldDescriptor if f.isRequired                                           => TRequired(f)
@@ -138,10 +138,8 @@ object ProtobufF {
     TEnum(
       e.name,
       values,
-      Options.options(
-        e.getOptions,
-        defaultOptions,
-        (enumDescriptor: EnumDescriptor) => enumDescriptor.getOptions.uninterpretedOption),
+      Options
+        .options(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
       values.groupBy(_._2).values.filter(_.lengthCompare(1) > 0).flatten.toList
     )
   }
@@ -154,10 +152,15 @@ object ProtobufF {
       ("no_standard_descriptor_accessor", descriptor.getOptions.getNoStandardDescriptorAccessor)
     )
 
-      val fields: List[Field[BaseDescriptor]] =
+    val fields: List[Field[BaseDescriptor]] =
       descriptor.fields
-        .map(fieldDesc =>
-          Field[BaseDescriptor](fieldDesc.name, fieldDesc, fieldDesc.number, Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
+        .map(
+          fieldDesc =>
+            Field[BaseDescriptor](
+              fieldDesc.name,
+              fieldDesc,
+              fieldDesc.number,
+              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
         .toList
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
