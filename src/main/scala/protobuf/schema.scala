@@ -18,10 +18,9 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.FieldDescriptorProto
+import com.google.protobuf.descriptor.{FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
 import scalapb.descriptors._
-
 
 sealed trait ProtobufF[A]
 object ProtobufF {
@@ -93,6 +92,10 @@ object ProtobufF {
       case f: FileDescriptor                                                            => TFileDescriptor(f.messages.toList, f.enums.toList)
       case e: EnumDescriptor                                                            => enumFromScala(e)
       case d: Descriptor                                                                => messageFromScala(d)
+      case f: FieldDescriptor if f.isRequired                                           => TRequired(f)
+      case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
+      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
+      case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
@@ -112,15 +115,49 @@ object ProtobufF {
     }
   }
 
+  object Options {
+    import com.google.protobuf.descriptor.UninterpretedOption.NamePart
+
+    def options[A](a: A, defaultFlags: List[(String, Boolean)], f: A => Seq[UninterpretedOption]): List[Option] =
+      (defaultFlags.map(e => (e._1, s"${e._2}")) ++ uninterpretedOptions(a, f)).map {
+        case (name, value) => Option(name, value)
+      }
+
+    private def uninterpretedOptions[A](a: A, f: A => Seq[UninterpretedOption]): Seq[(String, String)] =
+      f(a).flatMap(o => o.identifierValue.map((toString(o.name), _)))
+
+    private def toString(nameParts: Seq[NamePart]): String =
+      nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
+  }
+
   def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
     val values = e.values.map(value => (value.name, value.number)).toList
-    TEnum(e.name, values, List(), List())
+
+    val defaultOptions = List(("allow_alias", e.getOptions.getAllowAlias), ("deprecated", e.getOptions.getDeprecated))
+
+    TEnum(
+      e.name,
+      values,
+      Options.options(
+        e.getOptions,
+        defaultOptions,
+        (enumDescriptor: EnumDescriptor) => enumDescriptor.getOptions.uninterpretedOption),
+      values.groupBy(_._2).values.filter(_.lengthCompare(1) > 0).flatten.toList
+    )
   }
 
   def messageFromScala(descriptor: Descriptor): TMessage[BaseDescriptor] = {
-    val fields: List[Field[BaseDescriptor]] =
+    val defaultOptions = List(
+      ("deprecated", descriptor.getOptions.getDeprecated),
+      ("map_entry", descriptor.getOptions.getMapEntry),
+      ("message_set_wire_format", descriptor.getOptions.getMessageSetWireFormat),
+      ("no_standard_descriptor_accessor", descriptor.getOptions.getNoStandardDescriptorAccessor)
+    )
+
+      val fields: List[Field[BaseDescriptor]] =
       descriptor.fields
-        .map(fieldDesc => Field[BaseDescriptor](fieldDesc.name, fieldDesc, fieldDesc.number, List()))
+        .map(fieldDesc =>
+          Field[BaseDescriptor](fieldDesc.name, fieldDesc, fieldDesc.number, Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
         .toList
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
