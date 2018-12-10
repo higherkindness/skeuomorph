@@ -90,7 +90,7 @@ lazy val commonSettings = Seq(
     organizationHomePage = url("http://47deg.com"),
     organizationEmail = "hello@47deg.com"
   ),
-  scalaVersion := "2.12.7",
+  scalaVersion := "2.12.8",
   startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
