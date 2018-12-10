@@ -45,15 +45,15 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.2"
 ### parsing an avro schema and then converting it to scala:
 
 ```scala
+import cats.implicits._
+import higherkindness.skeuomorph.mu.Transform.transformAvro
+import higherkindness.skeuomorph.mu.MuF
+import higherkindness.skeuomorph.mu.print
+import higherkindness.skeuomorph.avro.AvroF.fromAvro
 import org.apache.avro._
-import skeuomorph.mu.Transform.transformAvro
-import skeuomorph.mu.MuF
-import skeuomorph.mu.print
-import skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
 import qq.droste.data.Mu._
-import cats.implicits._
 
 
 val definition = """
