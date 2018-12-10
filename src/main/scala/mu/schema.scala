@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package mu
+package higherkindness.skeuomorph.mu
 
 import cats.Functor
 import cats.data.NonEmptyList

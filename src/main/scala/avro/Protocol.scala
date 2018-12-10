@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
+package higherkindness.skeuomorph.avro
 
-import org.apache.avro.Schema
-import org.apache.avro.{Protocol => AvroProtocol}
-import scala.collection.JavaConverters._
-
-import cats.syntax.option._
 import cats.data.NonEmptyList
+import cats.syntax.option._
+import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.mu.{MuF, SerializationType}
+import io.circe.Json
+import org.apache.avro.{Schema, Protocol => AvroProtocol}
 import qq.droste._
 import qq.droste.syntax.all._
-import mu.{MuF, SerializationType}
-import io.circe.Json
+
+import scala.collection.JavaConverters._
 
 final case class Protocol[A](
     name: String,

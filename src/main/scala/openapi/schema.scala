@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package openapi
+package higherkindness.skeuomorph.openapi
 
 /**
  * @see https://swagger.io/specification/

@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package mu
+package higherkindness.skeuomorph.mu
 
-import qq.droste._
-import MuF._
 import cats.data.NonEmptyList
+import higherkindness.skeuomorph.mu.MuF._
+import qq.droste._
 
 /**
  * Optimize object contains transformations in same schema
