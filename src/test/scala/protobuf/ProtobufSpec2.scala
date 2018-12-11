@@ -54,7 +54,7 @@ class ProtobufSpec2 extends Specification with ScalaCheck {
     fileDesc match {
       case e: EnumDescriptor => new BaseDescriptorTester[EnumDescriptor, ProtobufF.TEnum[Boolean]].enumTest(e, protobufF) // I'd have to do a double match here and I'd prefer not do to that...
       case d: Descriptor => new BaseDescriptorTester[Descriptor, ProtobufF.TMessage[Boolean]].messageTest(d, protobufF)
-      case f: FileDescriptor => new BaseDescriptorTester[FileDescriptor, ProtobufF.TMessage[Boolean]].fileDescriptorTest(f, protobufF)
+      case f: FileDescriptor => new BaseDescriptorTester[FileDescriptor, ProtobufF.TFileDescriptor[Boolean]].fileDescriptorTest(f, protobufF)
     }
   }
 }
@@ -85,7 +85,7 @@ class BaseDescriptorTester[D <: BaseDescriptor, B <: ProtobufF[Boolean]] {
 
   def fileDescriptorTest(fileDesc: D, protoM: B)(implicit ev: D =:= FileDescriptor, ev2: B =:= ProtobufF.TFileDescriptor[Boolean]): Boolean = {
     // TODO: remainder of file descriptor
-    fileDesc.enums.length == protoM.enums.length && fileDesc.messages.length == protoM.messages.length
+    fileDesc.enums.length + fileDesc.messages.length == protoM.values.length
   }
 
 }
