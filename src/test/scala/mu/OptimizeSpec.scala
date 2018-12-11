@@ -26,7 +26,7 @@ import skeuomorph.mu.Optimize._
 
 class OptimizeSpec extends Specification with ScalaCheck {
 
-  import skeuomorph.avro.instances._
+  import skeuomorph.avro.protobuf.instances._
 
   def is =
     s2"""

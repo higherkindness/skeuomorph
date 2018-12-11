@@ -18,7 +18,7 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.{FieldDescriptorProto, UninterpretedOption}
+import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
 import scalapb.descriptors._
 
@@ -96,6 +96,7 @@ object ProtobufF {
       case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
       case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
       case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
+      case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
@@ -111,7 +112,6 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-      case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
     }
   }
 
@@ -130,7 +130,7 @@ object ProtobufF {
       nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
   }
 
-  def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
+  private def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
     val values = e.values.map(value => (value.name, value.number)).toList
 
     val defaultOptions = List(("allow_alias", e.getOptions.getAllowAlias), ("deprecated", e.getOptions.getDeprecated))
@@ -141,7 +141,7 @@ object ProtobufF {
       Options.options(
         e.getOptions,
         defaultOptions,
-        (enumDescriptor: EnumDescriptor) => enumDescriptor.getOptions.uninterpretedOption),
+        (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
       values.groupBy(_._2).values.filter(_.lengthCompare(1) > 0).flatten.toList
     )
   }
@@ -154,7 +154,7 @@ object ProtobufF {
       ("no_standard_descriptor_accessor", descriptor.getOptions.getNoStandardDescriptorAccessor)
     )
 
-      val fields: List[Field[BaseDescriptor]] =
+    val fields: List[Field[BaseDescriptor]] =
       descriptor.fields
         .map(fieldDesc =>
           Field[BaseDescriptor](fieldDesc.name, fieldDesc, fieldDesc.number, Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))

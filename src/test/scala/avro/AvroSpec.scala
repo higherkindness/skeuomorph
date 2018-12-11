@@ -27,7 +27,7 @@ import qq.droste._
 
 class AvroSpec extends Specification with ScalaCheck {
 
-  import instances._
+  import skeuomorph.avro.protobuf.instances._
 
   def is = s2"""
   Avro Schema
