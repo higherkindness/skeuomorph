@@ -91,6 +91,7 @@ lazy val commonSettings = Seq(
     %%("circe-core"),
     %%("specs2-core")       % Test,
     %%("specs2-scalacheck") % Test,
+    %%("scalatest") % Test, 
     "io.chrisdavenport"     %% "cats-scalacheck" % "0.1.0" % Test
   ),
 //  classpathTypes += "maven-plugin",

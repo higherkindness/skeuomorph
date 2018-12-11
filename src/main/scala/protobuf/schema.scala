@@ -53,7 +53,7 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](values: List[A], options: List[Option])                    extends ProtobufF[A]
+  final case class TFileDescriptor[A](values: List[A], options: List[Option])                      extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -146,11 +146,12 @@ object ProtobufF {
     )
 
     TFileDescriptor(
-      fileDescriptor.messages.toList,
+      fileDescriptor.messages.toList ++ fileDescriptor.enums.toList,
       Options.options(
         fileDescriptor.getOptions,
         defaultOptions,
-        (fileOptions: FileOptions) => fileOptions.uninterpretedOption))
+        (fileOptions: FileOptions) => fileOptions.uninterpretedOption)
+    )
   }
 
   def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
