@@ -18,7 +18,7 @@ package skeuomorph
 package protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
+import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, FileOptions, UninterpretedOption}
 import qq.droste.Coalgebra
 import scalapb.descriptors._
 
@@ -53,7 +53,7 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](messages: List[A], enums: List[A])                           extends ProtobufF[A]
+  final case class TFileDescriptor[A](messages: List[A], options: List[Option])                    extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -83,13 +83,13 @@ object ProtobufF {
           fields.map(field => field.copy(tpe = f(field.tpe))),
           reserved
         )
-      case TFileDescriptor(messages, enums) => TFileDescriptor(messages.map(f), enums.map(f))
+      case TFileDescriptor(messages, options) => TFileDescriptor(messages.map(f), options)
     }
   }
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
-      case f: FileDescriptor                                                            => TFileDescriptor(f.messages.toList, f.enums.toList)
+      case f: FileDescriptor                                                            => fileFromScala(f)
       case e: EnumDescriptor                                                            => enumFromScala(e)
       case d: Descriptor                                                                => messageFromScala(d)
       case f: FieldDescriptor if f.isRequired                                           => TRequired(f)
@@ -118,7 +118,7 @@ object ProtobufF {
   object Options {
     import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 
-    def options[A](a: A, defaultFlags: List[(String, Boolean)], f: A => Seq[UninterpretedOption]): List[Option] =
+    def options[A, B](a: A, defaultFlags: List[(String, B)], f: A => Seq[UninterpretedOption]): List[Option] =
       (defaultFlags.map(e => (e._1, s"${e._2}")) ++ uninterpretedOptions(a, f)).map {
         case (name, value) => Option(name, value)
       }
@@ -130,7 +130,30 @@ object ProtobufF {
       nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
   }
 
-  private def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
+  def fileFromScala(fileDescriptor: FileDescriptor): TFileDescriptor[BaseDescriptor] = {
+    val options = fileDescriptor.getOptions
+    val defaultOptions = List(
+      ("java_package", options.getJavaPackage),
+      ("cc_enable_arenas", options.getCcEnableArenas),
+      ("cc_generic_services", options.getCcGenericServices),
+      ("deprecated", options.getDeprecated),
+      ("java_generate_equals_and_hash", options.getJavaGenerateEqualsAndHash),
+      ("java_outer_classname", options.getJavaOuterClassname),
+      ("java_multiple_files", options.getJavaMultipleFiles),
+      ("java_generic_services", options.getJavaGenericServices),
+      ("java_string_check_utf8", options.getJavaStringCheckUtf8),
+      ("cc_enable_arenas", options.getCcEnableArenas)
+    )
+
+    TFileDescriptor(
+      fileDescriptor.messages.toList,
+      Options.options(
+        fileDescriptor.getOptions,
+        defaultOptions,
+        (fileOptions: FileOptions) => fileOptions.uninterpretedOption))
+  }
+
+  def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
     val values = e.values.map(value => (value.name, value.number)).toList
 
     val defaultOptions = List(("allow_alias", e.getOptions.getAllowAlias), ("deprecated", e.getOptions.getDeprecated))
@@ -138,26 +161,30 @@ object ProtobufF {
     TEnum(
       e.name,
       values,
-      Options.options(
-        e.getOptions,
-        defaultOptions,
-        (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
+      Options
+        .options(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
       values.groupBy(_._2).values.filter(_.lengthCompare(1) > 0).flatten.toList
     )
   }
 
   def messageFromScala(descriptor: Descriptor): TMessage[BaseDescriptor] = {
+    val options = descriptor.getOptions
     val defaultOptions = List(
-      ("deprecated", descriptor.getOptions.getDeprecated),
-      ("map_entry", descriptor.getOptions.getMapEntry),
-      ("message_set_wire_format", descriptor.getOptions.getMessageSetWireFormat),
-      ("no_standard_descriptor_accessor", descriptor.getOptions.getNoStandardDescriptorAccessor)
+      ("deprecated", options.getDeprecated),
+      ("map_entry", options.getMapEntry),
+      ("message_set_wire_format", options.getMessageSetWireFormat),
+      ("no_standard_descriptor_accessor", options.getNoStandardDescriptorAccessor)
     )
 
     val fields: List[Field[BaseDescriptor]] =
       descriptor.fields
-        .map(fieldDesc =>
-          Field[BaseDescriptor](fieldDesc.name, fieldDesc, fieldDesc.number, Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
+        .map(
+          fieldDesc =>
+            Field[BaseDescriptor](
+              fieldDesc.name,
+              fieldDesc,
+              fieldDesc.number,
+              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
         .toList
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
