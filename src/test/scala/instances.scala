@@ -138,7 +138,7 @@ object instances {
       name <- nonEmptyString
       fields <- Gen.containerOf[Seq, FieldDescriptorProto](sampleFieldDescProto.arbitrary)
       oneOrZero <- Gen.choose(0,1)
-      nestedTypes <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
+      _ <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
 //      enumTypes <- Gen.some(???)
       messageOptions   <- Gen.option(sampleMessageOptionProto.arbitrary)
       reservedRange    <- Gen.containerOf[Seq, ReservedRange](sampleReservedRangeProto.arbitrary)
@@ -148,7 +148,7 @@ object instances {
         name = Some(name),
         field = fields,
         extension = Seq(),
-        nestedType = nestedTypes,
+        nestedType = Seq(),
         enumType = Seq(),
         extensionRange = Seq(),
         oneofDecl = Seq(), // TODO?
