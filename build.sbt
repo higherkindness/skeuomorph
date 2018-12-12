@@ -8,7 +8,7 @@ import sbtorgpolicies.templates.badges._
 import scoverage.ScoverageKeys
 
 val V = new {
-  val avro4s           = "2.0.2"
+  val avro             = "1.8.2"
   val betterMonadicFor = "0.2.4"
   val cats             = "1.5.0"
   val catsScalacheck   = "0.1.0"
@@ -98,7 +98,7 @@ lazy val commonSettings = Seq(
     %%("cats-core", V.cats),
     "io.higherkindness" %% "droste-core"   % V.droste,
     "io.higherkindness" %% "droste-macros" % V.droste,
-    "org.apache.avro"   % "avro"           % V.avro4s,
+    "org.apache.avro"   % "avro"           % V.avro,
     %%("circe-core", V.circe),
     %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
