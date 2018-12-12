@@ -1,5 +1,19 @@
 # Changelog
 
+## 12/12/2018 - Version 0.0.3
+
+Release changes:
+
+* Update CHANGELOG.md ([#39](https://github.com/higherkindness/skeuomorph/pull/39))
+* Update sbt to 1.2.7 ([#41](https://github.com/higherkindness/skeuomorph/pull/41))
+* Update Scala to 2.12.8 ([#47](https://github.com/higherkindness/skeuomorph/pull/47))
+* Update droste to 0.6.0 ([#49](https://github.com/higherkindness/skeuomorph/pull/49))
+* Update cats to 1.5.0 ([#48](https://github.com/higherkindness/skeuomorph/pull/48))
+* Move under higherkindness package ([#46](https://github.com/higherkindness/skeuomorph/pull/46))
+* Move code under higherkindness/skeuomorph dirs ([#50](https://github.com/higherkindness/skeuomorph/pull/50))
+* Build Fixes and Release 0.0.3 ([#52](https://github.com/higherkindness/skeuomorph/pull/52))
+
+
 ## 11/22/2018 - Version 0.0.2
 
 Release changes:
