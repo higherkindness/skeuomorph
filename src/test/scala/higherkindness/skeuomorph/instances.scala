@@ -74,7 +74,7 @@ object instances {
       Type.TYPE_SFIXED64,
       Type.TYPE_BOOL,
       Type.TYPE_STRING,
-      Type.TYPE_BYTES,
+      Type.TYPE_BYTES
     )
   )
 
