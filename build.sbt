@@ -22,9 +22,7 @@ val V = new {
 lazy val root = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(
-    name := "skeuomorph"
-  )
+  .settings(moduleName := "skeuomorph")
 
 lazy val docs = project
   .in(file("docs"))
@@ -82,6 +80,7 @@ pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
+  name := "skeuomorph",
   orgGithubSetting := GitHubSettings(
     organization = "higherkindness",
     project = (name in LocalRootProject).value,
@@ -106,6 +105,7 @@ lazy val commonSettings = Seq(
     "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
   orgProjectName := "Skeuomorph",
+  orgUpdateDocFilesSetting += baseDirectory.value / "readme",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
