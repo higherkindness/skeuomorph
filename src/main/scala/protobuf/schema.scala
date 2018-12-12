@@ -74,8 +74,8 @@ object ProtobufF {
       case TBytes()         => TBytes()
       case TNamedType(name) => TNamedType(name)
       case TRequired(value) => TRequired(f(value))
-//      case TOptional(value)                       => TOptional(f(value))
-//      case TRepeated(value)                       => TRepeated(f(value))
+      case TOptional(value)                       => TOptional(f(value))
+      case TRepeated(value)                       => TRepeated(f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
       case TMessage(name, fields, reserved) =>
         TMessage(
