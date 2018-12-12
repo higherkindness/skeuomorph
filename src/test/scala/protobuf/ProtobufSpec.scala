@@ -60,16 +60,6 @@ class ProtobufSpec extends FlatSpec with Matchers {
         case f: FieldDescriptor => f.name == n
         case _                  => false
       }
-    case ProtobufF.TRequired(_) =>
-      desc match {
-        case f: FieldDescriptor => f.isRequired
-        case _                  => false
-      }
-    case ProtobufF.TOptional(_) =>
-      desc match {
-        case f: FieldDescriptor => f.isOptional
-        case _                  => false
-      }
     case ProtobufF.TRepeated(_) =>
       desc match {
         case f: FieldDescriptor  => f.isRepeated
