@@ -45,8 +45,8 @@ object print {
       case TNamedType(name) => name
 
       case TRequired(value) => s"required $value"
-//      case TOptional(value) => s"optional $value"
-//      case TRepeated(value) => s"repeated $value"
+      case TOptional(value) => s"optional $value"
+      case TRepeated(value) => s"repeated $value"
 
       case TFileDescriptor(_, _) => s"" // TODO: Figure this out
 

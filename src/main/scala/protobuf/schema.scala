@@ -43,9 +43,9 @@ object ProtobufF {
   final case class TString[A]()                extends ProtobufF[A]
   final case class TBytes[A]()                 extends ProtobufF[A]
   final case class TNamedType[A](name: String) extends ProtobufF[A]
-  final case class TRequired[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these? Should we rethink this, maybe these are flags on the Field??
-//  final case class TOptional[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these and then never gets to the underlying primitive TField types!!!?
-//  final case class TRepeated[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these? Post commenting out note: Yeah, these should probably be modeled differently. Tests pass more often now.
+  final case class TRequired[A](value: A)      extends ProtobufF[A]
+  final case class TOptional[A](value: A)      extends ProtobufF[A]
+  final case class TRepeated[A](value: A)      extends ProtobufF[A]
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
