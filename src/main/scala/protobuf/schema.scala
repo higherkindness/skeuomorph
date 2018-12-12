@@ -43,7 +43,7 @@ object ProtobufF {
   final case class TString[A]()                extends ProtobufF[A]
   final case class TBytes[A]()                 extends ProtobufF[A]
   final case class TNamedType[A](name: String) extends ProtobufF[A]
-  final case class TRepeated[A](value: A)      extends ProtobufF[A]
+//  final case class TRepeated[A](value: A)      extends ProtobufF[A]
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
@@ -71,7 +71,7 @@ object ProtobufF {
       case TString()        => TString()
       case TBytes()         => TBytes()
       case TNamedType(name) => TNamedType(name)
-      case TRepeated(value)                       => TRepeated(f(value))
+//      case TRepeated(value)                       => TRepeated(f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
       case TMessage(name, fields, reserved) =>
         TMessage(
@@ -88,7 +88,7 @@ object ProtobufF {
       case f: FileDescriptor => fileFromScala(f)
       case e: EnumDescriptor => enumFromScala(e)
       case d: Descriptor     => messageFromScala(d)
-      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
+//      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
       case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()

@@ -90,7 +90,7 @@ object Playground extends App {
   // An example of the contract Skeuomorph will support
   val result = ParseProto
     .parseProto[IO]
-    .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/simpleProto.proto"))
+    .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
 
   val fileDescriptor: FileDescriptor = result.unsafeRunSync()
 

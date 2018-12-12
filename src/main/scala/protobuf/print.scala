@@ -44,7 +44,7 @@ object print {
       case TBytes()         => "bytes"
       case TNamedType(name) => name
 
-      case TRepeated(value) => s"repeated $value"
+//      case TRepeated(value) => s"repeated $value"
 
       case TFileDescriptor(_, _) => s"" // TODO: Figure this out
 

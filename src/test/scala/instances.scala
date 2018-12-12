@@ -57,6 +57,9 @@ object instances {
 
   lazy val labelGenerator: Gen[Label] = Gen.oneOf(Seq(Label.LABEL_REPEATED))
 
+  /* Type.TYPE_ENUM and Type.TYPE_MESSAGE are valid types but if added to these generators
+    they break the scalaPB parser. Type.TYPE_GROUP is not valid in Proto3 and therefore should
+    not be generated */
   lazy val fieldTypeGenerator: Gen[FieldDescriptorProto.Type] = Gen.oneOf(
     Seq(
       Type.TYPE_DOUBLE,
@@ -74,8 +77,6 @@ object instances {
       Type.TYPE_BOOL,
       Type.TYPE_STRING,
       Type.TYPE_BYTES,
-      Type.TYPE_MESSAGE,
-      Type.TYPE_ENUM
     )
   )
 
@@ -101,22 +102,22 @@ object instances {
         unknownFields = UnknownFieldSet()
       )
   }
-  
-  lazy val sampleFieldDescProto: Arbitrary[FieldDescriptorProto] = Arbitrary {
+
+  def sampleFieldDescProto(packageName: String, messageName: String ): Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
       name <- nonEmptyString
       number <- smallNumber
-      label <- labelGenerator
+      label <- Gen.option(labelGenerator)
       fieldType <- Gen.lzy(fieldTypeGenerator)
       options <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
     } yield
       new FieldDescriptorProto(
         Some(name),
         Some(number),
-        Some(label),
+        label,
         Some(fieldType),
-        Some(name),
-        extendee = None, // ?? 
+        Some(s".$packageName.$messageName"),
+        extendee = None, // ??
         defaultValue = None, // ?? see spec guide on this
         oneofIndex = None,
         Some(name),
@@ -134,7 +135,7 @@ object instances {
   lazy val sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
     for {
       name <- nonEmptyString
-      number <- smallNumber
+      number <- smallNumber // I think at least one of the numbers has to be 0.
 //      options = Gen.option() // TODO
     } yield new EnumValueDescriptorProto(
       name = Some(name),
@@ -146,7 +147,8 @@ object instances {
   lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
     for {
       name <- nonEmptyString
-      enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](2, sampleEnumValueDescriptor.arbitrary))
+      valueDescriptorLength <- Gen.choose(1, 3)
+      enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
 //      options <- Gen.option() // TODO
     } yield new EnumDescriptorProto(
       name = Some(name),
@@ -155,23 +157,24 @@ object instances {
     )
   }
 
-  lazy val sampleDescriptorProto: Arbitrary[DescriptorProto] = Arbitrary {
+  def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
     for {
       name      <- nonEmptyString
       oneOrZero <- Gen.choose(0, 1)
-      fields    <- Gen.lzy(Gen.resize(4, sampleFieldDescProto.arbitrary))
-      nestedTypes <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
-      enumTypes <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      messageName = name
+      fields    <- Gen.lzy(Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, messageName).arbitrary))
+      nestedTypes <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
+      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
       messageOptions <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
       reservedRange  <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
       reservedNames  <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
     } yield
       new DescriptorProto(
-        name = Some(name),
-        field = Seq(fields),
+        name = Some(messageName),
+        field = fields,
         extension = Seq(),
         nestedType = nestedTypes,
-        enumType = enumTypes,
+        enumType = enums,
         extensionRange = Seq(),
         oneofDecl = Seq(), // TODO?
         options = messageOptions,
@@ -182,17 +185,14 @@ object instances {
 
   lazy val sampleFileDescriptorProto: Arbitrary[FileDescriptorProto] = Arbitrary {
     for {
-      name      <- Gen.option(nonEmptyString)
-      packageN  <- Gen.option(nonEmptyString)
-      oneOrZero <- Gen.choose(0, 1)
-      messages  <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](5, sampleDescriptorProto.arbitrary))
-      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
-//      services <- Gen.someOf(???)
-//      extensions <- ???
+      packageN <- nonEmptyString
+      messageAndEnumLength <- Gen.choose(1, 5)
+      messages  <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
+      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
     } yield
       new FileDescriptorProto(
-        name = name,
-        `package` = packageN,
+        name = Some("fileDescriptorName"),
+        `package` = Some(packageN),
         dependency = Seq(), // TODO
         publicDependency = Seq(), // TODO
         weakDependency = Seq(),
