@@ -8,27 +8,25 @@ import sbtorgpolicies.templates.badges._
 import scoverage.ScoverageKeys
 
 val V = new {
-  val betterMonadicFor: String = "0.2.4"
-  val macroParadise = "2.1.1"
-  val cats = "1.5.0"
-  val catsScalacheck = "0.1.0"
-  val kindProjector = "0.9.9"
-  val droste = "0.6.0"
-  val avro = "1.8.2"
-  val circe = "0.10.1"
-  val specs2 = "4.3.5"
+  val avro             = "1.8.2"
+  val betterMonadicFor = "0.2.4"
+  val cats             = "1.5.0"
+  val catsScalacheck   = "0.1.0"
+  val circe            = "0.10.1"
+  val droste           = "0.6.0"
+  val kindProjector    = "0.9.9"
+  val macroParadise    = "2.1.1"
+  val specs2           = "4.3.5"
 }
 
-lazy val root = project
+lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(
-    name := "skeuomorph"
-  )
+  .settings(moduleName := "skeuomorph")
 
 lazy val docs = project
   .in(file("docs"))
-  .dependsOn(root)
+  .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
   .settings(sbtMicrositesSettings)
@@ -60,7 +58,7 @@ lazy val docs = project
 
 lazy val readme = (project in file("readme"))
   .settings(moduleName := "skeuomorph-readme")
-  .dependsOn(root)
+  .dependsOn(skeuomorph)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(tutSettings)
@@ -82,6 +80,7 @@ pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
+  name := "skeuomorph",
   orgGithubSetting := GitHubSettings(
     organization = "higherkindness",
     project = (name in LocalRootProject).value,
@@ -101,11 +100,12 @@ lazy val commonSettings = Seq(
     "io.higherkindness" %% "droste-macros" % V.droste,
     "org.apache.avro"   % "avro"           % V.avro,
     %%("circe-core", V.circe),
-    %%("specs2-core"      , V.specs2)       % Test,
+    %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test
+    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
   orgProjectName := "Skeuomorph",
+  orgUpdateDocFilesSetting += baseDirectory.value / "readme",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
@@ -125,11 +125,7 @@ lazy val commonSettings = Seq(
       // Organization field can be configured with default value if we migrate it to the frees-io organization
       orgGithubSetting.value.copy(organization = "higherkindness", project = "skeuomorph")
     ),
-    AuthorsFileType(
-      name.value,
-      orgGithubSetting.value,
-      orgMaintainersSetting.value,
-      orgContributorsSetting.value),
+    AuthorsFileType(name.value, orgGithubSetting.value, orgMaintainersSetting.value, orgContributorsSetting.value),
     NoticeFileType(orgProjectName.value, orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
     VersionSbtFileType,
     ChangelogFileType,
