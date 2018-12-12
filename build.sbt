@@ -8,15 +8,15 @@ import sbtorgpolicies.templates.badges._
 import scoverage.ScoverageKeys
 
 val V = new {
-  val betterMonadicFor: String = "0.2.4"
-  val macroParadise = "2.1.1"
-  val cats = "1.5.0"
-  val catsScalacheck = "0.1.0"
-  val kindProjector = "0.9.9"
-  val droste = "0.6.0"
-  val avro = "1.8.2"
-  val circe = "0.10.1"
-  val specs2 = "4.3.5"
+  val avro4s           = "2.0.2"
+  val betterMonadicFor = "0.2.4"
+  val cats             = "1.5.0"
+  val catsScalacheck   = "0.1.0"
+  val circe            = "0.10.1"
+  val droste           = "0.6.0"
+  val kindProjector    = "0.9.9"
+  val macroParadise    = "2.1.1"
+  val specs2           = "4.3.5"
 }
 
 lazy val skeuomorph = project
@@ -98,11 +98,11 @@ lazy val commonSettings = Seq(
     %%("cats-core", V.cats),
     "io.higherkindness" %% "droste-core"   % V.droste,
     "io.higherkindness" %% "droste-macros" % V.droste,
-    "org.apache.avro"   % "avro"           % V.avro,
+    "org.apache.avro"   % "avro"           % V.avro4s,
     %%("circe-core", V.circe),
-    %%("specs2-core"      , V.specs2)       % Test,
+    %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test
+    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
   orgProjectName := "Skeuomorph",
   orgUpdateDocFilesSetting += baseDirectory.value / "readme",
@@ -125,11 +125,7 @@ lazy val commonSettings = Seq(
       // Organization field can be configured with default value if we migrate it to the frees-io organization
       orgGithubSetting.value.copy(organization = "higherkindness", project = "skeuomorph")
     ),
-    AuthorsFileType(
-      name.value,
-      orgGithubSetting.value,
-      orgMaintainersSetting.value,
-      orgContributorsSetting.value),
+    AuthorsFileType(name.value, orgGithubSetting.value, orgMaintainersSetting.value, orgContributorsSetting.value),
     NoticeFileType(orgProjectName.value, orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
     VersionSbtFileType,
     ChangelogFileType,
