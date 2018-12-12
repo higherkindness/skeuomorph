@@ -25,7 +25,7 @@ import scalapb.descriptors.FileDescriptor
 import com.google.protobuf.descriptor.FileDescriptorSet
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
-import skeuomorph.protobuf.ProtobufF
+import higherkindness.skeuomorph.protobuf.ProtobufF
 
 trait Parser[F[_], I, O] {
   def parse(input: I)(implicit S: Sync[F]): F[O]

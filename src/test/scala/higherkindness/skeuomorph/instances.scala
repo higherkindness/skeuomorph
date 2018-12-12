@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
-package protobuf
+package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
@@ -30,7 +28,7 @@ import org.scalacheck.cats.implicits._
 import qq.droste.Basis
 import scalapb.UnknownFieldSet
 import scalapb.descriptors.FileDescriptor
-import skeuomorph.mu.MuF
+import higherkindness.skeuomorph.mu.MuF
 
 import scala.collection.JavaConverters._
 
@@ -82,11 +80,11 @@ object instances {
 
   lazy val sampleFieldOptions: Arbitrary[FieldOptions] = Arbitrary {
     for {
-      cTypeEnum <- Gen.choose(0, 2)
-      cType  <- Gen.option(CType.fromValue(cTypeEnum))
-      packed <- Gen.option(Arbitrary.arbBool.arbitrary)
+      cTypeEnum  <- Gen.choose(0, 2)
+      cType      <- Gen.option(CType.fromValue(cTypeEnum))
+      packed     <- Gen.option(Arbitrary.arbBool.arbitrary)
       jsTimeEnum <- Gen.choose(0, 2)
-      jsType <- Gen.option(JSType.fromValue(jsTimeEnum))
+      jsType     <- Gen.option(JSType.fromValue(jsTimeEnum))
       lazyf      <- Gen.option(Arbitrary.arbBool.arbitrary)
       deprecated <- Gen.option(Arbitrary.arbBool.arbitrary)
       weak       <- Gen.option(Arbitrary.arbBool.arbitrary)
@@ -105,11 +103,11 @@ object instances {
 
   def sampleFieldDescProto(packageName: String, messageName: String ): Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
-      name <- nonEmptyString
-      number <- smallNumber
-      label <- Gen.option(labelGenerator)
+      name      <- nonEmptyString
+      number    <- smallNumber
+      label     <- Gen.option(labelGenerator)
       fieldType <- Gen.lzy(fieldTypeGenerator)
-      options <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
+      options   <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
     } yield
       new FieldDescriptorProto(
         Some(name),
@@ -134,8 +132,8 @@ object instances {
 
   lazy val sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
     for {
-      name <- nonEmptyString
-      number <- smallNumber // I think at least one of the numbers has to be 0.
+      name   <- nonEmptyString
+      number <- smallNumber
 //      options = Gen.option() // TODO
     } yield new EnumValueDescriptorProto(
       name = Some(name),
@@ -146,7 +144,7 @@ object instances {
 
   lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
     for {
-      name <- nonEmptyString
+      name                  <- nonEmptyString
       valueDescriptorLength <- Gen.choose(1, 3)
       enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
 //      options <- Gen.option() // TODO
@@ -159,15 +157,15 @@ object instances {
 
   def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
     for {
-      name      <- nonEmptyString
-      oneOrZero <- Gen.choose(0, 1)
-      messageName = name
-      fields    <- Gen.lzy(Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, messageName).arbitrary))
-      nestedTypes <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
-      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
-      messageOptions <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
-      reservedRange  <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
-      reservedNames  <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
+      name            <- nonEmptyString
+      oneOrZero       <- Gen.choose(0, 1)
+      messageName     = name
+      fields          <- Gen.lzy(Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, messageName).arbitrary))
+      nestedTypes     <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
+      enums           <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      messageOptions  <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
+      reservedRange   <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
+      reservedNames   <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
     } yield
       new DescriptorProto(
         name = Some(messageName),
@@ -185,10 +183,11 @@ object instances {
 
   lazy val sampleFileDescriptorProto: Arbitrary[FileDescriptorProto] = Arbitrary {
     for {
-      packageN <- nonEmptyString
-      messageAndEnumLength <- Gen.choose(1, 5)
-      messages  <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
-      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
+      name                  <- Gen.option(nonEmptyString)
+      packageN              <- nonEmptyString
+      messageAndEnumLength  <- Gen.choose(1, 5)
+      messages              <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
+      enums                 <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
     } yield
       new FileDescriptorProto(
         name = Some("fileDescriptorName"),

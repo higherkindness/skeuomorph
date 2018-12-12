@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package openapi
+package higherkindness.skeuomorph.openapi
 
-import schema._
+import higherkindness.skeuomorph.openapi.schema._
+import io.circe.{Encoder, Json}
 import qq.droste._
 import qq.droste.syntax.all._
-import io.circe.{Encoder, Json}
 
 object JsonEncoders {
 

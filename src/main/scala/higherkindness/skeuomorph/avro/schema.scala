@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
-
-import scala.collection.JavaConverters._
+package higherkindness.skeuomorph.avro
 
 import cats.Functor
 import cats.data.NonEmptyList
-import qq.droste.{Algebra, Coalgebra}
 import io.circe.Json
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
+import qq.droste.{Algebra, Coalgebra}
+
+import scala.collection.JavaConverters._
 
 sealed trait AvroF[A]
 object AvroF {
@@ -150,7 +149,7 @@ object AvroF {
   }
 
   /**
-   * Convert [[org.apache.avro.Schema]] to [[skeuomorph.avro.Schema]]
+   * Convert org.apache.avro.Schema to skeuomorph.avro.Schema
    */
   def fromAvro: Coalgebra[AvroF, Schema] = Coalgebra { sch =>
     sch.getType match {

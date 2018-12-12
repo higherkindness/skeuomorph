@@ -1,7 +1,7 @@
 
 [comment]: # (Start Badges)
 
-[![Build Status](https://travis-ci.org/frees-io/skeuomorph.svg?branch=master)](https://travis-ci.org/frees-io/skeuomorph) [![codecov.io](http://codecov.io/github/frees-io/skeuomorph/coverage.svg?branch=master)](http://codecov.io/github/frees-io/skeuomorph?branch=master) [![Maven Central](https://img.shields.io/badge/maven%20central-0.0.1-green.svg)](https://oss.sonatype.org/#nexus-search;gav~io.frees~skeuomorph*) [![Latest version](https://img.shields.io/badge/skeuomorph-0.0.1-green.svg)](https://index.scala-lang.org/frees-io/skeuomorph) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/frees-io/skeuomorph/master/LICENSE) [![Join the chat at https://gitter.im/frees-io/skeuomorph](https://badges.gitter.im/frees-io/skeuomorph.svg)](https://gitter.im/frees-io/skeuomorph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GitHub Issues](https://img.shields.io/github/issues/frees-io/skeuomorph.svg)](https://github.com/frees-io/skeuomorph/issues)
+[![Build Status](https://travis-ci.org/higherkindness/skeuomorph.svg?branch=master)](https://travis-ci.org/higherkindness/skeuomorph) [![codecov.io](http://codecov.io/github/higherkindness/skeuomorph/coverage.svg?branch=master)](http://codecov.io/github/higherkindness/skeuomorph?branch=master) [![Maven Central](https://img.shields.io/badge/maven%20central-0.0.3-green.svg)](https://oss.sonatype.org/#nexus-search;gav~io.higherkindness~skeuomorph*) [![Latest version](https://img.shields.io/badge/skeuomorph-0.0.3-green.svg)](https://index.scala-lang.org/higherkindness/skeuomorph) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/higherkindness/skeuomorph/master/LICENSE) [![Join the chat at https://gitter.im/higherkindness/skeuomorph](https://badges.gitter.im/higherkindness/skeuomorph.svg)](https://gitter.im/higherkindness/skeuomorph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GitHub Issues](https://img.shields.io/github/issues/higherkindness/skeuomorph.svg)](https://github.com/higherkindness/skeuomorph/issues)
 
 [comment]: # (End Badges)
 
@@ -35,7 +35,7 @@ You can install skeuomorph as follows:
 [comment]: # (Start Replace)
 
 ```scala
-libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
+libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.3"
 ```
 
 [comment]: # (End Replace)
@@ -44,14 +44,12 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
 
 ### parsing an avro schema and then converting it to scala:
 
-```tut
-
+```scala
 import org.apache.avro._
-import skeuomorph._
-import skeuomorph.mu.Transform.transformAvro
-import skeuomorph.mu.MuF
-import skeuomorph.mu.MuF.render
-import skeuomorph.avro.AvroF.fromAvro
+import higherkindness.skeuomorph.mu.Transform.transformAvro
+import higherkindness.skeuomorph.mu.MuF
+import higherkindness.skeuomorph.mu.print
+import higherkindness.skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
 import qq.droste.data.Mu._
@@ -86,17 +84,20 @@ val definition = """
 }
   """
 
-val schema: Schema = new Schema.Parser().parse(definition)
+val avroSchema: Schema = new Schema.Parser().parse(definition)
 
 val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 val printAsScala: Mu[MuF] => String = 
   print.schema.print _
-
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
+```
+Mu(TProduct(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
+@message final case class User(name: String, favorite_number: Cop[Int :: Null:: TNil], favorite_color: Cop[String :: Null:: TNil])
+```
 
 ## Skeuomorph in the wild
 

@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
+package higherkindness.skeuomorph.avro
 
 import org.apache.avro.Schema
-import scala.collection.JavaConverters._
-
-import org.specs2._
 import org.scalacheck._
-
+import org.specs2._
 import qq.droste._
+
+import scala.collection.JavaConverters._
 
 class AvroSpec extends Specification with ScalaCheck {
 
-  import skeuomorph.avro.protobuf.instances._
+  import higherkindness.skeuomorph.instances._
 
   def is = s2"""
   Avro Schema

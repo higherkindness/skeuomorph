@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package protobuf
+package higherkindness.skeuomorph.protobuf
 
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type._
@@ -22,12 +22,11 @@ import org.scalacheck.Prop
 import org.scalatest.{FlatSpec, Matchers}
 import scalapb.descriptors._
 import qq.droste._
-import skeuomorph.protobuf.ProtobufF
 import org.scalatest.prop.Checkers._
 
 class ProtobufSpec extends FlatSpec with Matchers {
 
-  import skeuomorph.avro.protobuf.instances._
+  import higherkindness.skeuomorph.instances._
 
   "ProtobufF.fromProtobuf" should "translate proto files" in {
     check(convertBaseDescriptor)

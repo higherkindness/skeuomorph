@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package openapi
+package higherkindness.skeuomorph.openapi
 
 import cats.Functor
 import io.circe.Json
-
 import qq.droste._
 import qq.droste.data.Fix
 
