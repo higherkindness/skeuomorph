@@ -92,9 +92,9 @@ object ProtobufF {
       case f: FileDescriptor => fileFromScala(f)
       case e: EnumDescriptor => enumFromScala(e)
       case d: Descriptor     => messageFromScala(d)
-//      case f: FieldDescriptor if f.isRequired                                           => TRequired(f)
-//      case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
-//      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
+      case f: FieldDescriptor if f.isRequired                                           => TRequired(f)
+      case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
+      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
       case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
