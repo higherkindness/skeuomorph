@@ -19,14 +19,14 @@ val V = new {
   val specs2 = "4.3.5"
 }
 
-lazy val root = project
+lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
 
 lazy val docs = project
   .in(file("docs"))
-  .dependsOn(root)
+  .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
   .settings(sbtMicrositesSettings)
@@ -58,7 +58,7 @@ lazy val docs = project
 
 lazy val readme = (project in file("readme"))
   .settings(moduleName := "skeuomorph-readme")
-  .dependsOn(root)
+  .dependsOn(skeuomorph)
   .settings(commonSettings)
   .settings(noPublishSettings)
   .settings(tutSettings)
