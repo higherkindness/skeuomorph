@@ -59,21 +59,11 @@ class ProtobufSpec extends FlatSpec with Matchers {
         case f: FieldDescriptor => f.name == n
         case _                  => false
       }
-    case ProtobufF.TRequired(_) =>
+    case ProtobufF.TRepeated(_) =>
       desc match {
-        case f: FieldDescriptor => f.isRequired
+        case f: FieldDescriptor  => f.isRepeated
         case _                  => false
       }
-//    case ProtobufF.TOptional(o) =>
-//      desc match {
-//        case f: FieldDescriptor if f.isOptional => o
-//        case _                  => false
-//      }
-//    case ProtobufF.TRepeated(r) =>
-//      desc match {
-//        case f: FieldDescriptor if f.isRepeated => r
-//        case _                  => false
-//      }
     case e: ProtobufF.TEnum[Boolean] =>
       desc match {
         case eDesc: EnumDescriptor => enumTest(e, eDesc)
@@ -102,8 +92,8 @@ class ProtobufSpec extends FlatSpec with Matchers {
     val protoSymbols = protoEnum.symbols.toSet
     val nameBool     = protoEnum.name == enumDesc.name
     val symbolsBool  = protoSymbols.diff(enumDesc.values.map(evd => (evd.name, evd.number)).toSet) == Set.empty
-    val optionsBool  = true // TODO pending options implementation from Oli
-    val aliasBool    = true // TODO: pending alias implementation
+    val optionsBool  = true // TODO
+    val aliasBool    = true // TODO
 
     nameBool && symbolsBool && optionsBool && aliasBool
   }
