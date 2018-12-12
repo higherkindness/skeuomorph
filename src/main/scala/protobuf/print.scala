@@ -44,7 +44,7 @@ object print {
       case TBytes()         => "bytes"
       case TNamedType(name) => name
 
-//      case TRequired(value) => s"required $value"
+      case TRequired(value) => s"required $value"
 //      case TOptional(value) => s"optional $value"
 //      case TRepeated(value) => s"repeated $value"
 

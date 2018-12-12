@@ -43,7 +43,7 @@ object ProtobufF {
   final case class TString[A]()                extends ProtobufF[A]
   final case class TBytes[A]()                 extends ProtobufF[A]
   final case class TNamedType[A](name: String) extends ProtobufF[A]
-//  final case class TRequired[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these? Should we rethink this, maybe these are flags on the Field??
+  final case class TRequired[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these? Should we rethink this, maybe these are flags on the Field??
 //  final case class TOptional[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these and then never gets to the underlying primitive TField types!!!?
 //  final case class TRepeated[A](value: A)      extends ProtobufF[A] // Note it gets stuck on these? Post commenting out note: Yeah, these should probably be modeled differently. Tests pass more often now.
   final case class TEnum[A](
@@ -57,23 +57,23 @@ object ProtobufF {
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()                              => TDouble()
-      case TFloat()                               => TFloat()
-      case TInt32()                               => TInt32()
-      case TInt64()                               => TInt64()
-      case TUint32()                              => TUint32()
-      case TUint64()                              => TUint64()
-      case TSint32()                              => TSint32()
-      case TSint64()                              => TSint64()
-      case TFixed32()                             => TFixed32()
-      case TFixed64()                             => TFixed64()
-      case TSfixed32()                            => TSfixed32()
-      case TSfixed64()                            => TSfixed64()
-      case TBool()                                => TBool()
-      case TString()                              => TString()
-      case TBytes()                               => TBytes()
-      case TNamedType(name)                       => TNamedType(name)
-//      case TRequired(value)                       => TRequired(f(value))
+      case TDouble()        => TDouble()
+      case TFloat()         => TFloat()
+      case TInt32()         => TInt32()
+      case TInt64()         => TInt64()
+      case TUint32()        => TUint32()
+      case TUint64()        => TUint64()
+      case TSint32()        => TSint32()
+      case TSint64()        => TSint64()
+      case TFixed32()       => TFixed32()
+      case TFixed64()       => TFixed64()
+      case TSfixed32()      => TSfixed32()
+      case TSfixed64()      => TSfixed64()
+      case TBool()          => TBool()
+      case TString()        => TString()
+      case TBytes()         => TBytes()
+      case TNamedType(name) => TNamedType(name)
+      case TRequired(value) => TRequired(f(value))
 //      case TOptional(value)                       => TOptional(f(value))
 //      case TRepeated(value)                       => TRepeated(f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
@@ -89,9 +89,9 @@ object ProtobufF {
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
-      case f: FileDescriptor                                                            => fileFromScala(f)
-      case e: EnumDescriptor                                                            => enumFromScala(e)
-      case d: Descriptor                                                                => messageFromScala(d)
+      case f: FileDescriptor => fileFromScala(f)
+      case e: EnumDescriptor => enumFromScala(e)
+      case d: Descriptor     => messageFromScala(d)
 //      case f: FieldDescriptor if f.isRequired                                           => TRequired(f)
 //      case f: FieldDescriptor if f.isOptional                                           => TOptional(f)
 //      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
