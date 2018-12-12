@@ -101,7 +101,7 @@ object instances {
       )
   }
 
-  def sampleFieldDescProto(packageName: String, messageName: String ): Arbitrary[FieldDescriptorProto] = Arbitrary {
+  def sampleFieldDescProto(packageName: String, messageName: String): Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
       name      <- nonEmptyString
       number    <- smallNumber
@@ -135,37 +135,42 @@ object instances {
       name   <- nonEmptyString
       number <- smallNumber
 //      options = Gen.option() // TODO
-    } yield new EnumValueDescriptorProto(
-      name = Some(name),
-      number = Some(number),
-      options = None
-    )
+    } yield
+      new EnumValueDescriptorProto(
+        name = Some(name),
+        number = Some(number),
+        options = None
+      )
   }
 
   lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
     for {
       name                  <- nonEmptyString
       valueDescriptorLength <- Gen.choose(1, 3)
-      enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
+      enumValues <- Gen.lzy(
+        Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
 //      options <- Gen.option() // TODO
-    } yield new EnumDescriptorProto(
-      name = Some(name),
-      value = enumValues,
-      options = None
-    )
+    } yield
+      new EnumDescriptorProto(
+        name = Some(name),
+        value = enumValues,
+        options = None
+      )
   }
 
   def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
     for {
-      name            <- nonEmptyString
-      oneOrZero       <- Gen.choose(0, 1)
-      messageName     = name
-      fields          <- Gen.lzy(Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, messageName).arbitrary))
-      nestedTypes     <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
-      enums           <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
-      messageOptions  <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
-      reservedRange   <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
-      reservedNames   <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
+      name      <- nonEmptyString
+      oneOrZero <- Gen.choose(0, 1)
+      messageName = name
+      fields <- Gen.lzy(
+        Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, messageName).arbitrary))
+      nestedTypes <- Gen.lzy(
+        Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
+      enums          <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      messageOptions <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
+      reservedRange  <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
+      reservedNames  <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
     } yield
       new DescriptorProto(
         name = Some(messageName),
@@ -183,14 +188,15 @@ object instances {
 
   lazy val sampleFileDescriptorProto: Arbitrary[FileDescriptorProto] = Arbitrary {
     for {
-      name                  <- Gen.option(nonEmptyString)
-      packageN              <- nonEmptyString
-      messageAndEnumLength  <- Gen.choose(1, 5)
-      messages              <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
-      enums                 <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
+      name                 <- nonEmptyString
+      packageN             <- nonEmptyString
+      messageAndEnumLength <- Gen.choose(1, 5)
+      messages <- Gen.lzy(
+        Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
+      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
     } yield
       new FileDescriptorProto(
-        name = Some("fileDescriptorName"),
+        name = Some(name),
         `package` = Some(packageN),
         dependency = Seq(), // TODO
         publicDependency = Seq(), // TODO
