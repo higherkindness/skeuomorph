@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package protobuf
+package higherkindness.skeuomorph.protobuf
 
 import cats.Functor
 

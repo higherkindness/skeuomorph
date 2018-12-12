@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
+package higherkindness.skeuomorph.avro
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import higherkindness.skeuomorph.mu.MuF
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
 import qq.droste.Basis
-import skeuomorph.mu.MuF
 
 import scala.collection.JavaConverters._
 

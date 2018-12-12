@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package mu
+package higherkindness.skeuomorph.mu
 
-import Optimize.namedTypes
 import cats.instances.function._
 import cats.syntax.compose._
-
+import higherkindness.skeuomorph.Printer
+import higherkindness.skeuomorph.Printer._
+import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
+import higherkindness.skeuomorph.catz.contrib.Decidable._
+import higherkindness.skeuomorph.mu.MuF._
+import higherkindness.skeuomorph.mu.Optimize.namedTypes
+import higherkindness.skeuomorph.mu.SerializationType._
 import qq.droste._
-import MuF._
-import catz.contrib.ContravariantMonoidalSyntax._
-import catz.contrib.Decidable._
-import Printer._
-import SerializationType._
 
 object print {
 
@@ -71,7 +70,7 @@ object print {
    */
   def protoTuple[T](
       proto: Protocol[T]
-  ): ((((Option[String], List[(String, String)]), String), List[T]), List[skeuomorph.mu.Service[T]]) =
+  ): ((((Option[String], List[(String, String)]), String), List[T]), List[higherkindness.skeuomorph.mu.Service[T]]) =
     proto match {
       case Protocol(name, pkg, options, declarations, services) =>
         ((((pkg, options), name), declarations), services)

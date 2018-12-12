@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package mu
+package higherkindness.skeuomorph.mu
 
+import higherkindness.skeuomorph.avro.AvroF
+import higherkindness.skeuomorph.protobuf.ProtobufF
 import qq.droste.Trans
-import protobuf.ProtobufF
-import avro.AvroF
 
 object Transform {
 

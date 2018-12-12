@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package mu
+package higherkindness.skeuomorph.mu
 
 import org.scalacheck.Prop
 import org.specs2.{ScalaCheck, Specification}
 import qq.droste._
 import qq.droste.data._
-import skeuomorph.mu.MuF.TCoproduct
-import skeuomorph.mu.Optimize._
+import higherkindness.skeuomorph.mu.MuF.TCoproduct
+import higherkindness.skeuomorph.mu.Optimize._
 
 class OptimizeSpec extends Specification with ScalaCheck {
 
-  import skeuomorph.avro.instances._
+  import higherkindness.skeuomorph.avro.instances._
 
   def is =
     s2"""

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
+package higherkindness.skeuomorph
 
 import org.typelevel.discipline.specs2.Discipline
 import cats.kernel.laws.discipline.{MonoidTests, SemigroupTests}

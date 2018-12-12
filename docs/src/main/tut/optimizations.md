@@ -24,8 +24,8 @@ import qq.droste._
 import qq.droste.data._
 import qq.droste.implicits._
 
-import skeuomorph.mu._
-import skeuomorph.mu.MuF._
+import higherkindness.skeuomorph.mu._
+import higherkindness.skeuomorph.mu.MuF._
 ```
 
 We found that when we wanted to render a schema to its string

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
+package higherkindness.skeuomorph
 
 import catz.contrib.Decidable
 import cats.syntax.compose._

@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package catz
-package contrib
+package higherkindness.skeuomorph.catz.contrib
 
 import cats.ContravariantMonoidal
 
