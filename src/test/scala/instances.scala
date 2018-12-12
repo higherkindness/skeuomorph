@@ -79,23 +79,21 @@ object instances {
     )
   )
 
-  // TODO: create instances of trait not object.
-  lazy val sampleCType  = Arbitrary(CType.CORD)
-  lazy val sampleJsType = Arbitrary(JSType)
-
   lazy val sampleFieldOptions: Arbitrary[FieldOptions] = Arbitrary {
     for {
-//      _                    <- Gen.option(sampleCType.arbitrary)
+      cTypeEnum <- Gen.choose(0, 2)
+      cType  <- Gen.option(CType.fromValue(cTypeEnum))
       packed <- Gen.option(Arbitrary.arbBool.arbitrary)
-//      _                    <- Gen.option(sampleJsType.arbitrary)
+      jsTimeEnum <- Gen.choose(0, 2)
+      jsType <- Gen.option(JSType.fromValue(jsTimeEnum))
       lazyf      <- Gen.option(Arbitrary.arbBool.arbitrary)
       deprecated <- Gen.option(Arbitrary.arbBool.arbitrary)
       weak       <- Gen.option(Arbitrary.arbBool.arbitrary)
     } yield
       new FieldOptions(
-        ctype = None,
+        ctype = cType,
         packed,
-        jstype = None,
+        jstype = jsType,
         lazyf,
         deprecated,
         weak,
@@ -117,7 +115,7 @@ object instances {
         Some(number),
         label,
         Some(fieldType),
-        Some(fieldType.name),
+        Some(name),
         extendee = None, // ?? 
         defaultValue = None, // ?? see spec guide on this
         oneofIndex = None,
@@ -137,7 +135,7 @@ object instances {
     for {
       name <- nonEmptyString
       number <- smallNumber
-//      options = Gen.option()
+//      options = Gen.option() // TODO
     } yield new EnumValueDescriptorProto(
       name = Some(name),
       number = Some(number),
@@ -148,8 +146,8 @@ object instances {
   lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
     for {
       name <- nonEmptyString
-      enumValues <- Gen.lzy(Gen.containerOf[Seq, EnumValueDescriptorProto](sampleEnumValueDescriptor.arbitrary))
-//      options <- Gen.option()
+      enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](2, sampleEnumValueDescriptor.arbitrary))
+//      options <- Gen.option() // TODO
     } yield new EnumDescriptorProto(
       name = Some(name),
       value = enumValues,

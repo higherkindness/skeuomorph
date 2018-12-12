@@ -120,21 +120,21 @@ class ProtobufSpec extends FlatSpec with Matchers {
         case f: FieldDescriptor => f.name == n
         case _                  => false
       }
-    case ProtobufF.TRequired(_) =>
-      desc match {
-        case f: FieldDescriptor => f.isRequired
-        case _                  => false
-      }
-    case ProtobufF.TOptional(_) =>
-      desc match {
-        case f: FieldDescriptor => f.isOptional
-        case _                  => false
-      }
-    case ProtobufF.TRepeated(_) =>
-      desc match {
-        case f: FieldDescriptor => f.isRepeated
-        case _                  => false
-      }
+//    case ProtobufF.TRequired(r) =>
+//      desc match {
+//        case f: FieldDescriptor if f.isRequired => r
+//        case _                  => false
+//      }
+//    case ProtobufF.TOptional(o) =>
+//      desc match {
+//        case f: FieldDescriptor if f.isOptional => o
+//        case _                  => false
+//      }
+//    case ProtobufF.TRepeated(r) =>
+//      desc match {
+//        case f: FieldDescriptor if f.isRepeated => r
+//        case _                  => false
+//      }
     case e: ProtobufF.TEnum[Boolean] =>
       desc match {
         case eDesc: EnumDescriptor => enumTest(e, eDesc)
@@ -167,10 +167,9 @@ class ProtobufSpec extends FlatSpec with Matchers {
   }
 
   def messageTest[B](m: ProtobufF.TMessage[B], messageDesc: Descriptor): Boolean =
-    // TODO: remainder of message
-    messageDesc.fullName == m.name
+    messageDesc.fullName == m.name &&
+    m.fields.length == messageDesc.fields.length
 
   def fileDescriptorTest[B](f: ProtobufF.TFileDescriptor[B], fileDesc: FileDescriptor): Boolean =
-    // TODO: remainder of file descriptor
     fileDesc.enums.length + fileDesc.messages.length == f.values.length
 }
