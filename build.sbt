@@ -1,11 +1,9 @@
 import microsites._
 import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 import sbtorgpolicies.model._
-import sbtorgpolicies.runnable.SetSetting
 import sbtorgpolicies.runnable.syntax._
 import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
-import scoverage.ScoverageKeys
 
 val V = new {
   val avro             = "1.8.2"
@@ -17,6 +15,9 @@ val V = new {
   val kindProjector    = "0.9.9"
   val macroParadise    = "2.1.1"
   val specs2           = "4.3.5"
+  val protoc           = "3.6.0"
+  val protobuf         = "3.6.1"
+  val scalapb          = "0.8.2"
 }
 
 lazy val skeuomorph = project
@@ -96,19 +97,19 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     %%("cats-laws", V.cats) % Test,
     %%("cats-core", V.cats),
-    "io.higherkindness"     %% "droste-core"        % V.droste,
-    "io.higherkindness"     %% "droste-macros"      % V.droste,
-    "org.apache.avro"       % "avro"                % V.avro,
-    "com.github.os72"       % "protoc-jar"          % "3.6.0",
-    "com.google.protobuf"   % "protobuf-java"       % "3.6.1",
-    "com.thesamet.scalapb"  %% "compilerplugin"     % "0.8.2",
-    "com.thesamet.scalapb"  %% "scalapb-runtime"    % "0.8.2",
-    "com.lihaoyi" %% "pprint" % "0.5.3", // TEMP
+    "io.higherkindness"    %% "droste-core"     % V.droste,
+    "io.higherkindness"    %% "droste-macros"   % V.droste,
+    "org.apache.avro"      % "avro"             % V.avro,
+    "com.github.os72"      % "protoc-jar"       % V.protoc,
+    "com.google.protobuf"  % "protobuf-java"    % V.protobuf,
+    "com.thesamet.scalapb" %% "compilerplugin"  % V.scalapb,
+    "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
+    "com.lihaoyi"          %% "pprint"          % "0.5.3", // TEMP
     %%("cats-effect"),
     %%("circe-core", V.circe),
     %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    %%("scalatest") % Test, 
+    %%("scalatest")                   % Test,
     "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
 //  classpathTypes += "maven-plugin",

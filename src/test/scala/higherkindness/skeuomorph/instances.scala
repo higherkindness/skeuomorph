@@ -79,11 +79,11 @@ object instances {
 
   lazy val sampleFieldOptions: Arbitrary[FieldOptions] = Arbitrary {
     for {
-      cTypeEnum <- Gen.choose(0, 2)
-      cType  <- Gen.option(CType.fromValue(cTypeEnum))
-      packed <- Gen.option(Arbitrary.arbBool.arbitrary)
+      cTypeEnum  <- Gen.choose(0, 2)
+      cType      <- Gen.option(CType.fromValue(cTypeEnum))
+      packed     <- Gen.option(Arbitrary.arbBool.arbitrary)
       jsTimeEnum <- Gen.choose(0, 2)
-      jsType <- Gen.option(JSType.fromValue(jsTimeEnum))
+      jsType     <- Gen.option(JSType.fromValue(jsTimeEnum))
       lazyf      <- Gen.option(Arbitrary.arbBool.arbitrary)
       deprecated <- Gen.option(Arbitrary.arbBool.arbitrary)
       weak       <- Gen.option(Arbitrary.arbBool.arbitrary)
@@ -102,11 +102,11 @@ object instances {
 
   lazy val sampleFieldDescProto: Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
-      name <- nonEmptyString
-      number <- smallNumber
-      label <- Gen.option(labelGenerator)
+      name      <- nonEmptyString
+      number    <- smallNumber
+      label     <- Gen.option(labelGenerator)
       fieldType <- Gen.lzy(fieldTypeGenerator)
-      options <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
+      options   <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
     } yield
       new FieldDescriptorProto(
         Some(name),
@@ -131,35 +131,37 @@ object instances {
 
   lazy val sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
     for {
-      name <- nonEmptyString
+      name   <- nonEmptyString
       number <- smallNumber
 //      options = Gen.option() // TODO
-    } yield new EnumValueDescriptorProto(
-      name = Some(name),
-      number = Some(number),
-      options = None
-    )
+    } yield
+      new EnumValueDescriptorProto(
+        name = Some(name),
+        number = Some(number),
+        options = None
+      )
   }
 
   lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
     for {
-      name <- nonEmptyString
+      name       <- nonEmptyString
       enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](2, sampleEnumValueDescriptor.arbitrary))
 //      options <- Gen.option() // TODO
-    } yield new EnumDescriptorProto(
-      name = Some(name),
-      value = enumValues,
-      options = None
-    )
+    } yield
+      new EnumDescriptorProto(
+        name = Some(name),
+        value = enumValues,
+        options = None
+      )
   }
 
   lazy val sampleDescriptorProto: Arbitrary[DescriptorProto] = Arbitrary {
     for {
-      name      <- nonEmptyString
-      oneOrZero <- Gen.choose(0, 1)
-      fields    <- Gen.lzy(Gen.resize(1, sampleFieldDescProto.arbitrary))
-      nestedTypes <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
-      enumTypes <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      name           <- nonEmptyString
+      oneOrZero      <- Gen.choose(0, 1)
+      fields         <- Gen.lzy(Gen.resize(1, sampleFieldDescProto.arbitrary))
+      nestedTypes    <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
+      enumTypes      <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
       messageOptions <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
       reservedRange  <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
       reservedNames  <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
@@ -184,7 +186,7 @@ object instances {
       packageN  <- Gen.option(nonEmptyString)
       oneOrZero <- Gen.choose(0, 1)
       messages  <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
-      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      enums     <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
 //      services <- Gen.someOf(???)
 //      extensions <- ???
     } yield
