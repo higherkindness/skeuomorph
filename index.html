@@ -29,7 +29,7 @@ example.  Or to a mu service description.</p>
 
 <p>You can install skeuomorph as follows:</p>
 
-<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.higherkindness"</span> <span class="o">%%</span> <span class="s">"skeuomorph"</span> <span class="o">%</span> <span class="s">"0.0.1"</span>
+<div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">libraryDependencies</span> <span class="o">+=</span> <span class="s">"io.higherkindness"</span> <span class="o">%%</span> <span class="s">"skeuomorph"</span> <span class="o">%</span> <span class="s">"0.0.3"</span>
 </code></pre></div></div>
 
 <h2 id="examples">Examples</h2>
@@ -37,10 +37,10 @@ example.  Or to a mu service description.</p>
 <h3 id="parsing-an-avro-schema-and-then-converting-it-to-scala">parsing an avro schema and then converting it to scala:</h3>
 
 <div class="language-scala highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="nn">org.apache.avro._</span>
-<span class="k">import</span> <span class="nn">skeuomorph.mu.Transform.transformAvro</span>
-<span class="k">import</span> <span class="nn">skeuomorph.mu.MuF</span>
-<span class="k">import</span> <span class="nn">skeuomorph.mu.print</span>
-<span class="k">import</span> <span class="nn">skeuomorph.avro.AvroF.fromAvro</span>
+<span class="k">import</span> <span class="nn">higherkindness.skeuomorph.mu.Transform.transformAvro</span>
+<span class="k">import</span> <span class="nn">higherkindness.skeuomorph.mu.MuF</span>
+<span class="k">import</span> <span class="nn">higherkindness.skeuomorph.mu.print</span>
+<span class="k">import</span> <span class="nn">higherkindness.skeuomorph.avro.AvroF.fromAvro</span>
 <span class="k">import</span> <span class="nn">qq.droste._</span>
 <span class="k">import</span> <span class="nn">qq.droste.data._</span>
 <span class="k">import</span> <span class="nn">qq.droste.data.Mu._</span>
