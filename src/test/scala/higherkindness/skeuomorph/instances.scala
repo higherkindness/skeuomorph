@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
-package protobuf
+package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
@@ -30,7 +28,7 @@ import org.scalacheck.cats.implicits._
 import qq.droste.Basis
 import scalapb.UnknownFieldSet
 import scalapb.descriptors.FileDescriptor
-import skeuomorph.mu.MuF
+import higherkindness.skeuomorph.mu.MuF
 
 import scala.collection.JavaConverters._
 
@@ -101,7 +99,7 @@ object instances {
         unknownFields = UnknownFieldSet()
       )
   }
-  
+
   lazy val sampleFieldDescProto: Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
       name <- nonEmptyString
@@ -116,7 +114,7 @@ object instances {
         label,
         Some(fieldType),
         Some(name),
-        extendee = None, // ?? 
+        extendee = None, // ??
         defaultValue = None, // ?? see spec guide on this
         oneofIndex = None,
         Some(name),

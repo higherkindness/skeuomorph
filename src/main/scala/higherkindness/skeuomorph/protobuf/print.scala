@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package protobuf
+package higherkindness.skeuomorph.protobuf
 
+import higherkindness.skeuomorph.Printer
 import qq.droste._
 
 object print {

@@ -7,20 +7,31 @@ import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
 import scoverage.ScoverageKeys
 
-lazy val root = project
+val V = new {
+  val avro             = "1.8.2"
+  val betterMonadicFor = "0.2.4"
+  val cats             = "1.5.0"
+  val catsScalacheck   = "0.1.0"
+  val circe            = "0.10.1"
+  val droste           = "0.6.0"
+  val kindProjector    = "0.9.9"
+  val macroParadise    = "2.1.1"
+  val specs2           = "4.3.5"
+}
+
+lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
-  .settings(
-    name := "skeuomorph"
-  )
+  .settings(moduleName := "skeuomorph")
 
 lazy val docs = project
   .in(file("docs"))
-  .dependsOn(root)
+  .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
   .settings(sbtMicrositesSettings)
   .settings(noPublishSettings)
+  .settings(tutSettings)
   .settings(
     micrositeName := "Skeuomorph",
     micrositeDescription := "Schema transformations",
@@ -31,7 +42,7 @@ lazy val docs = project
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md",
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
-      file("README.md") -> ExtraMdFileConfig(
+      file("readme/README.md") -> ExtraMdFileConfig(
         "index.md",
         "home",
         Map("title" -> "Home", "section" -> "home", "position" -> "0")
@@ -41,22 +52,20 @@ lazy val docs = project
         "home",
         Map("title" -> "changelog", "section" -> "changelog", "position" -> "99")
       )
-    ),
-    scalacOptions in Tut ~= filterConsoleScalacOptions,
-    scalacOptions in Tut += "-language:postfixOps"
+    )
   )
   .enablePlugins(MicrositesPlugin)
 
 lazy val readme = (project in file("readme"))
   .settings(moduleName := "skeuomorph-readme")
-  .dependsOn(root)
+  .dependsOn(skeuomorph)
   .settings(commonSettings)
   .settings(noPublishSettings)
+  .settings(tutSettings)
   .settings(
     tutSourceDirectory := baseDirectory.value,
     tutTargetDirectory := baseDirectory.value.getParentFile,
-    tutNameFilter := """README.md""".r,
-    scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains)
+    tutNameFilter := """README.md""".r
   )
   .enablePlugins(TutPlugin)
 
@@ -71,31 +80,40 @@ pgpSecretRing := file(s"$gpgFolder/secring.gpg")
 
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "higherkindness",
-  scalaVersion := "2.12.7",
+  name := "skeuomorph",
+  orgGithubSetting := GitHubSettings(
+    organization = "higherkindness",
+    project = (name in LocalRootProject).value,
+    organizationName = "47 Degrees",
+    groupId = "io.higherkindness",
+    organizationHomePage = url("http://47deg.com"),
+    organizationEmail = "hello@47deg.com"
+  ),
+  scalaVersion := "2.12.8",
   startYear := Some(2018),
   crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
-    %%("cats-laws") % Test,
-    %%("cats-core"),
-    "io.higherkindness"     %% "droste-core"        % "0.5.0",
-    "io.higherkindness"     %% "droste-macros"      % "0.5.0",
-    "org.apache.avro"       % "avro"                % "1.8.2",
+    %%("cats-laws", V.cats) % Test,
+    %%("cats-core", V.cats),
+    "io.higherkindness"     %% "droste-core"        % V.droste,
+    "io.higherkindness"     %% "droste-macros"      % V.droste,
+    "org.apache.avro"       % "avro"                % V.avro,
     "com.github.os72"       % "protoc-jar"          % "3.6.0",
     "com.google.protobuf"   % "protobuf-java"       % "3.6.1",
     "com.thesamet.scalapb"  %% "compilerplugin"     % "0.8.2",
     "com.thesamet.scalapb"  %% "scalapb-runtime"    % "0.8.2",
     "com.lihaoyi" %% "pprint" % "0.5.3", // TEMP
     %%("cats-effect"),
-    %%("circe-core"),
-    %%("specs2-core")       % Test,
-    %%("specs2-scalacheck") % Test,
+    %%("circe-core", V.circe),
+    %%("specs2-core", V.specs2)       % Test,
+    %%("specs2-scalacheck", V.specs2) % Test,
     %%("scalatest") % Test, 
-    "io.chrisdavenport"     %% "cats-scalacheck" % "0.1.0" % Test
+    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
 //  classpathTypes += "maven-plugin",
   orgProjectName := "Skeuomorph",
+  orgUpdateDocFilesSetting += baseDirectory.value / "readme",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
@@ -115,11 +133,7 @@ lazy val commonSettings = Seq(
       // Organization field can be configured with default value if we migrate it to the frees-io organization
       orgGithubSetting.value.copy(organization = "higherkindness", project = "skeuomorph")
     ),
-    AuthorsFileType(
-      name.value,
-      orgGithubSetting.value,
-      orgMaintainersSetting.value,
-      orgContributorsSetting.value),
+    AuthorsFileType(name.value, orgGithubSetting.value, orgMaintainersSetting.value, orgContributorsSetting.value),
     NoticeFileType(orgProjectName.value, orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
     VersionSbtFileType,
     ChangelogFileType,
@@ -149,10 +163,16 @@ lazy val commonSettings = Seq(
   )
 ) ++ compilerPlugins
 
+lazy val tutSettings = Seq(
+  scalacOptions in Tut ~= filterConsoleScalacOptions,
+  scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains),
+  scalacOptions in Tut += "-language:postfixOps"
+)
+
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.spire-math"  % "kind-projector"      % "0.9.8" cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"      %% "better-monadic-for" % "0.2.4"),
-    compilerPlugin("org.scalamacros" % "paradise"            % "2.1.1" cross CrossVersion.patch)
+    compilerPlugin("org.spire-math"  % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"      %% "better-monadic-for" % V.betterMonadicFor),
+    compilerPlugin("org.scalamacros" % "paradise"            % V.macroParadise cross CrossVersion.patch)
   )
 )

@@ -35,7 +35,7 @@ You can install skeuomorph as follows:
 [comment]: # (Start Replace)
 
 ```scala
-libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
+libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.3"
 ```
 
 [comment]: # (End Replace)
@@ -44,14 +44,12 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.1"
 
 ### parsing an avro schema and then converting it to scala:
 
-```tut
-
-
+```tut:silent
 import org.apache.avro._
-import skeuomorph.mu.Transform.transformAvro
-import skeuomorph.mu.MuF
-import skeuomorph.mu.print
-import skeuomorph.avro.AvroF.fromAvro
+import higherkindness.skeuomorph.mu.Transform.transformAvro
+import higherkindness.skeuomorph.mu.MuF
+import higherkindness.skeuomorph.mu.print
+import higherkindness.skeuomorph.avro.AvroF.fromAvro
 import qq.droste._
 import qq.droste.data._
 import qq.droste.data.Mu._
@@ -92,11 +90,14 @@ val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 val printAsScala: Mu[MuF] => String = 
   print.schema.print _
-
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
+```tut:evaluated
+(parseAvro >>> println)(avroSchema)
+(printAsScala >>> println)(parseAvro(avroSchema))
+```
 
 ## Skeuomorph in the wild
 
