@@ -42,7 +42,7 @@ object ProtobufF {
   final case class TString[A]()                extends ProtobufF[A]
   final case class TBytes[A]()                 extends ProtobufF[A]
   final case class TNamedType[A](name: String) extends ProtobufF[A]
-//  final case class TRepeated[A](value: A)      extends ProtobufF[A]
+  final case class TRepeated[A](value: A)      extends ProtobufF[A]
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
@@ -54,23 +54,23 @@ object ProtobufF {
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()        => TDouble()
-      case TFloat()         => TFloat()
-      case TInt32()         => TInt32()
-      case TInt64()         => TInt64()
-      case TUint32()        => TUint32()
-      case TUint64()        => TUint64()
-      case TSint32()        => TSint32()
-      case TSint64()        => TSint64()
-      case TFixed32()       => TFixed32()
-      case TFixed64()       => TFixed64()
-      case TSfixed32()      => TSfixed32()
-      case TSfixed64()      => TSfixed64()
-      case TBool()          => TBool()
-      case TString()        => TString()
-      case TBytes()         => TBytes()
-      case TNamedType(name) => TNamedType(name)
-//      case TRepeated(value)                       => TRepeated(f(value))
+      case TDouble()                              => TDouble()
+      case TFloat()                               => TFloat()
+      case TInt32()                               => TInt32()
+      case TInt64()                               => TInt64()
+      case TUint32()                              => TUint32()
+      case TUint64()                              => TUint64()
+      case TSint32()                              => TSint32()
+      case TSint64()                              => TSint64()
+      case TFixed32()                             => TFixed32()
+      case TFixed64()                             => TFixed64()
+      case TSfixed32()                            => TSfixed32()
+      case TSfixed64()                            => TSfixed64()
+      case TBool()                                => TBool()
+      case TString()                              => TString()
+      case TBytes()                               => TBytes()
+      case TNamedType(name)                       => TNamedType(name)
+      case TRepeated(value)                       => TRepeated(f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
       case TMessage(name, fields, reserved) =>
         TMessage(
@@ -84,10 +84,9 @@ object ProtobufF {
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
-      case f: FileDescriptor => fileFromScala(f)
-      case e: EnumDescriptor => enumFromScala(e)
-      case d: Descriptor     => messageFromScala(d)
-//      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
+      case f: FileDescriptor                                                            => fileFromScala(f)
+      case e: EnumDescriptor                                                            => enumFromScala(e)
+      case d: Descriptor                                                                => messageFromScala(d)
       case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
@@ -104,6 +103,7 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
     }
   }
 

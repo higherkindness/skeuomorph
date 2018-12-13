@@ -18,10 +18,13 @@ package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import com.google.protobuf.ByteString
 import com.google.protobuf.descriptor.DescriptorProto.ReservedRange
 import com.google.protobuf.descriptor.FieldDescriptorProto.{Label, Type}
 import com.google.protobuf.descriptor._
 import com.google.protobuf.descriptor.FieldOptions.{CType, JSType}
+import com.google.protobuf.descriptor.FileOptions.OptimizeMode
+import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
@@ -38,19 +41,47 @@ object instances {
 
   lazy val smallNumber: Gen[Int] = Gen.choose(1, 10)
 
-  lazy val sampleUninterpretedOption: Arbitrary[UninterpretedOption] = Arbitrary {
-    new UninterpretedOption() // TODO
+  lazy val sampleBool: Gen[Boolean] = Gen.oneOf(true, false)
+
+  lazy val uninterpretedOptionNamePart = Arbitrary {
+    for {
+      name        <- nonEmptyString
+      isExtension <- sampleBool
+    } yield new NamePart(name, isExtension)
+  }
+
+  lazy val uninterpretedOptionSample: Arbitrary[UninterpretedOption] = Arbitrary {
+    for {
+      name             <- Gen.containerOfN[Seq, NamePart](2, uninterpretedOptionNamePart.arbitrary)
+      identifierValue  <- nonEmptyString
+      positiveIntValue <- Gen.option(smallNumber.map(_.toLong))
+      negativeIntValue <- Gen.option(smallNumber.map(_.toLong * -1))
+      doubleValue      <- Gen.option(Gen.oneOf(2.0, 3.0))
+      stringValue      <- Gen.option(nonEmptyString.map(s => ByteString.copyFrom(s.getBytes("UTF-8"))))
+    } yield
+      new UninterpretedOption(
+        name = name,
+        identifierValue = Some(identifierValue),
+        positiveIntValue = positiveIntValue,
+        negativeIntValue = negativeIntValue,
+        doubleValue = doubleValue,
+        stringValue = stringValue,
+        aggregateValue = None
+      )
   }
 
   lazy val sampleMessageOptionProto: Arbitrary[MessageOptions] = Arbitrary {
-    new MessageOptions(
-      messageSetWireFormat = Some(false),
-      noStandardDescriptorAccessor = Some(false),
-      deprecated = Some(false),
-      mapEntry = None,
-      uninterpretedOption = Seq(), //TODO: See above
-      unknownFields = UnknownFieldSet()
-    )
+    for {
+      uninterpretedOption <- uninterpretedOptionSample.arbitrary
+    } yield
+      new MessageOptions(
+        messageSetWireFormat = Some(false),
+        noStandardDescriptorAccessor = Some(false),
+        deprecated = Some(false),
+        mapEntry = None,
+        uninterpretedOption = Seq(uninterpretedOption),
+        unknownFields = UnknownFieldSet()
+      )
   }
 
   lazy val labelGenerator: Gen[Label] = Gen.oneOf(Seq(Label.LABEL_REPEATED))
@@ -80,24 +111,25 @@ object instances {
 
   lazy val sampleFieldOptions: Arbitrary[FieldOptions] = Arbitrary {
     for {
-      cTypeEnum  <- Gen.choose(0, 2)
-      cType      <- Gen.option(CType.fromValue(cTypeEnum))
-      packed     <- Gen.option(Arbitrary.arbBool.arbitrary)
-      jsTimeEnum <- Gen.choose(0, 2)
-      jsType     <- Gen.option(JSType.fromValue(jsTimeEnum))
-      lazyf      <- Gen.option(Arbitrary.arbBool.arbitrary)
-      deprecated <- Gen.option(Arbitrary.arbBool.arbitrary)
-      weak       <- Gen.option(Arbitrary.arbBool.arbitrary)
+      cTypeEnum            <- Gen.choose(0, 2)
+      cType                <- Gen.option(CType.fromValue(cTypeEnum))
+      packed               <- Gen.option(Arbitrary.arbBool.arbitrary)
+      jsTimeEnum           <- Gen.choose(0, 2)
+      jsType               <- Gen.option(JSType.fromValue(jsTimeEnum))
+      lazyf                <- Gen.option(Arbitrary.arbBool.arbitrary)
+      deprecated           <- Gen.option(Arbitrary.arbBool.arbitrary)
+      weak                 <- Gen.option(Arbitrary.arbBool.arbitrary)
+      uninterpretedOptions <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
     } yield
       new FieldOptions(
-        ctype = cType,
+        cType,
         packed,
-        jstype = jsType,
+        jsType,
         lazyf,
         deprecated,
         weak,
-        uninterpretedOption = Seq(), // TODO: see above
-        unknownFields = UnknownFieldSet()
+        uninterpretedOptions,
+        UnknownFieldSet()
       )
   }
 
@@ -105,14 +137,14 @@ object instances {
     for {
       name      <- nonEmptyString
       number    <- smallNumber
-      label     <- Gen.option(labelGenerator)
+      label     <- labelGenerator
       fieldType <- Gen.lzy(fieldTypeGenerator)
       options   <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
     } yield
       new FieldDescriptorProto(
         Some(name),
         Some(number),
-        label,
+        Some(label),
         Some(fieldType),
         Some(s".$packageName.$messageName"),
         extendee = None, // ??
@@ -130,16 +162,37 @@ object instances {
     } yield new ReservedRange(maybeStart, maybeEnd)
   }
 
+  lazy val enumOptions: Arbitrary[EnumOptions] = Arbitrary {
+    for {
+      allowAlias          <- Gen.option(sampleBool)
+      deprecated          <- Gen.option(sampleBool)
+      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
+    } yield
+      new EnumOptions(
+        allowAlias,
+        deprecated,
+        uninterpretedOption,
+        UnknownFieldSet()
+      )
+  }
+
+  lazy val enumValueOptions: Arbitrary[EnumValueOptions] = Arbitrary {
+    for {
+      deprecated          <- Gen.option(sampleBool)
+      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
+    } yield new EnumValueOptions(deprecated, uninterpretedOption, UnknownFieldSet())
+  }
+
   lazy val sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
     for {
-      name   <- nonEmptyString
-      number <- smallNumber
-//      options = Gen.option() // TODO
+      name    <- nonEmptyString
+      number  <- smallNumber
+      options <- Gen.option(enumValueOptions.arbitrary)
     } yield
       new EnumValueDescriptorProto(
         name = Some(name),
         number = Some(number),
-        options = None
+        options = options
       )
   }
 
@@ -149,12 +202,12 @@ object instances {
       valueDescriptorLength <- Gen.choose(1, 3)
       enumValues <- Gen.lzy(
         Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
-//      options <- Gen.option() // TODO
+      options <- Gen.option(enumOptions.arbitrary)
     } yield
       new EnumDescriptorProto(
         name = Some(name),
         value = enumValues,
-        options = None
+        options = options
       )
   }
 
@@ -186,6 +239,35 @@ object instances {
       )
   }
 
+  lazy val optimizationOptions: Arbitrary[OptimizeMode] = Arbitrary {
+    for {
+      enumVal <- Gen.oneOf(0 to 3)
+    } yield OptimizeMode.fromValue(enumVal)
+  }
+
+  lazy val sampleFileOptions: Arbitrary[FileOptions] = Arbitrary {
+    for {
+      javaPackage         <- Gen.option(nonEmptyString)
+      javaOuterClassname  <- Gen.option(nonEmptyString)
+      javaMultipleFiles   <- Gen.option(sampleBool)
+      javaStringCheckUtf8 <- Gen.option(sampleBool)
+      optimizeFor         <- Gen.option(optimizationOptions.arbitrary)
+      deprecated          <- Gen.option(sampleBool)
+      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](1, uninterpretedOptionSample.arbitrary)
+    } yield
+      new FileOptions(
+        javaPackage = javaPackage,
+        javaOuterClassname = javaOuterClassname,
+        javaMultipleFiles = javaMultipleFiles,
+        javaGenerateEqualsAndHash = None,
+        javaStringCheckUtf8 = javaStringCheckUtf8,
+        optimizeFor = optimizeFor,
+        deprecated = deprecated,
+        uninterpretedOption = uninterpretedOption,
+        unknownFields = UnknownFieldSet()
+      )
+  }
+
   lazy val sampleFileDescriptorProto: Arbitrary[FileDescriptorProto] = Arbitrary {
     for {
       name                 <- nonEmptyString
@@ -193,19 +275,20 @@ object instances {
       messageAndEnumLength <- Gen.choose(1, 5)
       messages <- Gen.lzy(
         Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
-      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
+      enums       <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
+      fileOptions <- Gen.option(sampleFileOptions.arbitrary)
     } yield
       new FileDescriptorProto(
         name = Some(name),
         `package` = Some(packageN),
-        dependency = Seq(), // TODO
-        publicDependency = Seq(), // TODO
+        dependency = Seq(),
+        publicDependency = Seq(),
         weakDependency = Seq(),
         messageType = messages,
         enumType = enums,
-        service = Seq(),
+        service = Seq(), // These generators do not create services
         extension = Seq(),
-        options = None,
+        options = fileOptions,
         sourceCodeInfo = None,
         syntax = Some("proto3")
       )
@@ -275,7 +358,7 @@ object instances {
       (
         nonNullPrimitives,
         if (withTNull) Gen.const(MuF.TNull[T]()) else nonNullPrimitives,
-        Gen.oneOf(true, false)
+        sampleBool
       ).mapN((t1, t2, reversed) =>
         MuF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
         else NonEmptyList.of(B.algebra(t1), B.algebra(t2))))
