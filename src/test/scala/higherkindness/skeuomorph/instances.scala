@@ -119,7 +119,7 @@ object instances {
         Some(number),
         Some(label),
         Some(fieldType),
-        Some(s".$packageName.$messageName"),
+        typeName = Some(s".$packageName.$messageName"),
         extendee = None,
         defaultValue = None,
         oneofIndex = None,
@@ -128,6 +128,7 @@ object instances {
       )
   }
 
+  // Note: there are some constraints for reserved ranges that are not currently reflected in the generators
   lazy val sampleReservedRangeProto: Arbitrary[ReservedRange] = Arbitrary {
     for {
       maybeStart <- Gen.option(smallNumber)
