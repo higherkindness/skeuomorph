@@ -18,10 +18,11 @@ package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import com.google.protobuf.ByteString
 import com.google.protobuf.descriptor.DescriptorProto.ReservedRange
 import com.google.protobuf.descriptor.FieldDescriptorProto.{Label, Type}
 import com.google.protobuf.descriptor._
-import com.google.protobuf.descriptor.FieldOptions.{CType, JSType}
+import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
@@ -38,23 +39,40 @@ object instances {
 
   lazy val smallNumber: Gen[Int] = Gen.choose(1, 10)
 
-  lazy val sampleUninterpretedOption: Arbitrary[UninterpretedOption] = Arbitrary {
-    new UninterpretedOption() // TODO
+  lazy val sampleBool: Gen[Boolean] = Gen.oneOf(true, false)
+
+  lazy val uninterpretedOptionNamePart = Arbitrary {
+    for {
+      name <- nonEmptyString
+      isExtension = false // These generators will not support Extensions as that is a Proto2 concept
+    } yield new NamePart(name, isExtension)
   }
 
-  lazy val sampleMessageOptionProto: Arbitrary[MessageOptions] = Arbitrary {
-    new MessageOptions(
-      messageSetWireFormat = Some(false),
-      noStandardDescriptorAccessor = Some(false),
-      deprecated = Some(false),
-      mapEntry = None,
-      uninterpretedOption = Seq(), //TODO: See above
-      unknownFields = UnknownFieldSet()
-    )
+  val uninterpretedOptionSample: Arbitrary[UninterpretedOption] = Arbitrary {
+    for {
+      name             <- Gen.containerOfN[Seq, NamePart](2, uninterpretedOptionNamePart.arbitrary)
+      identifierValue  <- nonEmptyString
+      positiveIntValue <- Gen.option(smallNumber.map(_.toLong))
+      negativeIntValue <- Gen.option(smallNumber.map(_.toLong * -1))
+      doubleValue      <- Gen.option(Gen.oneOf(2.0, 3.0))
+      stringValue      <- Gen.option(nonEmptyString.map(s => ByteString.copyFrom(s.getBytes("UTF-8"))))
+    } yield
+      new UninterpretedOption(
+        name = name,
+        identifierValue = Some(identifierValue),
+        positiveIntValue = positiveIntValue,
+        negativeIntValue = negativeIntValue,
+        doubleValue = doubleValue,
+        stringValue = stringValue,
+        aggregateValue = None
+      )
   }
 
   lazy val labelGenerator: Gen[Label] = Gen.oneOf(Seq(Label.LABEL_REPEATED))
 
+  /* Type.TYPE_ENUM and Type.TYPE_MESSAGE are valid types but if added to these generators
+    they break the scalaPB parser. Type.TYPE_GROUP is not valid in Proto3 and therefore should
+    not be generated */
   lazy val fieldTypeGenerator: Gen[FieldDescriptorProto.Type] = Gen.oneOf(
     Seq(
       Type.TYPE_DOUBLE,
@@ -71,36 +89,24 @@ object instances {
       Type.TYPE_SFIXED64,
       Type.TYPE_BOOL,
       Type.TYPE_STRING,
-      Type.TYPE_BYTES,
-      Type.TYPE_MESSAGE,
-      Type.TYPE_ENUM
+      Type.TYPE_BYTES
     )
   )
 
   lazy val sampleFieldOptions: Arbitrary[FieldOptions] = Arbitrary {
     for {
-      cTypeEnum  <- Gen.choose(0, 2)
-      cType      <- Gen.option(CType.fromValue(cTypeEnum))
-      packed     <- Gen.option(Arbitrary.arbBool.arbitrary)
-      jsTimeEnum <- Gen.choose(0, 2)
-      jsType     <- Gen.option(JSType.fromValue(jsTimeEnum))
-      lazyf      <- Gen.option(Arbitrary.arbBool.arbitrary)
-      deprecated <- Gen.option(Arbitrary.arbBool.arbitrary)
-      weak       <- Gen.option(Arbitrary.arbBool.arbitrary)
+      lazyf                <- Gen.option(Arbitrary.arbBool.arbitrary)
+      deprecated           <- Gen.option(Arbitrary.arbBool.arbitrary)
+      uninterpretedOptions <- Gen.containerOfN[Seq, UninterpretedOption](1, uninterpretedOptionSample.arbitrary)
     } yield
       new FieldOptions(
-        ctype = cType,
-        packed,
-        jstype = jsType,
-        lazyf,
-        deprecated,
-        weak,
-        uninterpretedOption = Seq(), // TODO: see above
-        unknownFields = UnknownFieldSet()
+        `lazy` = lazyf,
+        deprecated = deprecated,
+        uninterpretedOption = uninterpretedOptions
       )
   }
 
-  lazy val sampleFieldDescProto: Arbitrary[FieldDescriptorProto] = Arbitrary {
+  def sampleFieldDescProto(packageName: String, messageName: String): Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
       name      <- nonEmptyString
       number    <- smallNumber
@@ -113,15 +119,16 @@ object instances {
         Some(number),
         Some(label),
         Some(fieldType),
-        Some(name),
-        extendee = None, // ?? 
-        defaultValue = None, // ?? see spec guide on this
+        typeName = Some(s".$packageName.$messageName"),
+        extendee = None,
+        defaultValue = None,
         oneofIndex = None,
         Some(name),
         options
       )
   }
 
+  // Note: there are some constraints for reserved ranges that are not currently reflected in the generators
   lazy val sampleReservedRangeProto: Arbitrary[ReservedRange] = Arbitrary {
     for {
       maybeStart <- Gen.option(smallNumber)
@@ -129,50 +136,77 @@ object instances {
     } yield new ReservedRange(maybeStart, maybeEnd)
   }
 
+  lazy val enumOptions: Arbitrary[EnumOptions] = Arbitrary {
+    for {
+      allowAlias          <- Gen.option(sampleBool)
+      deprecated          <- Gen.option(sampleBool)
+      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
+    } yield
+      new EnumOptions(
+        allowAlias,
+        deprecated,
+        uninterpretedOption,
+        UnknownFieldSet()
+      )
+  }
+
+  lazy val enumValueOptions: Arbitrary[EnumValueOptions] = Arbitrary {
+    for {
+      deprecated          <- Gen.option(sampleBool)
+      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
+    } yield new EnumValueOptions(deprecated, uninterpretedOption, UnknownFieldSet())
+  }
+
   lazy val sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
     for {
-      name   <- nonEmptyString
-      number <- smallNumber
-//      options = Gen.option() // TODO
-    } yield new EnumValueDescriptorProto(
-      name = Some(name),
-      number = Some(number),
-      options = None
-    )
+      name           <- nonEmptyString
+      number         <- smallNumber
+      enumValOptions <- Gen.option(enumValueOptions.arbitrary)
+    } yield
+      new EnumValueDescriptorProto(
+        name = Some(name),
+        number = Some(number),
+        options = enumValOptions
+      )
   }
 
   lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
     for {
-      name       <- nonEmptyString
-      enumValues <- Gen.lzy(Gen.containerOfN[Seq, EnumValueDescriptorProto](2, sampleEnumValueDescriptor.arbitrary))
-//      options <- Gen.option() // TODO
-    } yield new EnumDescriptorProto(
-      name = Some(name),
-      value = enumValues,
-      options = None
-    )
+      name                  <- nonEmptyString
+      valueDescriptorLength <- Gen.choose(1, 3)
+      enumValues <- Gen.lzy(
+        Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
+      enumOptions <- Gen.option(enumOptions.arbitrary)
+    } yield
+      new EnumDescriptorProto(
+        name = Some(name),
+        value = enumValues,
+        options = enumOptions
+      )
   }
 
-  lazy val sampleDescriptorProto: Arbitrary[DescriptorProto] = Arbitrary {
+  def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
     for {
-      name           <- nonEmptyString
-      oneOrZero      <- Gen.choose(0, 1)
-      fields         <- Gen.lzy(Gen.resize(4, sampleFieldDescProto.arbitrary))
-      nestedTypes    <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto.arbitrary))
-      enumTypes      <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
-      messageOptions <- Gen.lzy(Gen.option(sampleMessageOptionProto.arbitrary))
-      reservedRange  <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
-      reservedNames  <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
+      name      <- nonEmptyString
+      oneOrZero <- Gen.choose(0, 1)
+      messageName = name
+      fields <- Gen.lzy(
+        Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, messageName).arbitrary))
+      nestedTypes <- Gen.lzy(
+        Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
+      enums         <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      reservedRange <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
+      reservedNames <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
     } yield
       new DescriptorProto(
-        name = Some(name),
-        field = Seq(fields),
+        name = Some(messageName),
+        field = fields,
         extension = Seq(),
         nestedType = nestedTypes,
-        enumType = enumTypes,
+        enumType = enums,
         extensionRange = Seq(),
-        oneofDecl = Seq(), // TODO?
-        options = messageOptions,
+        oneofDecl = Seq(), // TODO
+        options = None,
         reservedRange = reservedRange,
         reservedName = reservedNames
       )
@@ -180,23 +214,22 @@ object instances {
 
   lazy val sampleFileDescriptorProto: Arbitrary[FileDescriptorProto] = Arbitrary {
     for {
-      name      <- Gen.option(nonEmptyString)
-      packageN  <- Gen.option(nonEmptyString)
-      oneOrZero <- Gen.choose(0, 1)
-      messages  <- Gen.lzy(Gen.containerOfN[Seq, DescriptorProto](5, sampleDescriptorProto.arbitrary))
-      enums     <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
-//      services <- Gen.someOf(???)
-//      extensions <- ???
+      name                 <- nonEmptyString
+      packageN             <- nonEmptyString
+      messageAndEnumLength <- Gen.choose(1, 5)
+      messages <- Gen.lzy(
+        Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
+      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
     } yield
       new FileDescriptorProto(
-        name = name,
-        `package` = packageN,
-        dependency = Seq(), // TODO
-        publicDependency = Seq(), // TODO
+        name = Some(name),
+        `package` = Some(packageN),
+        dependency = Seq(),
+        publicDependency = Seq(),
         weakDependency = Seq(),
         messageType = messages,
         enumType = enums,
-        service = Seq(),
+        service = Seq(), // These generators do not create services for now
         extension = Seq(),
         options = None,
         sourceCodeInfo = None,
@@ -268,7 +301,7 @@ object instances {
       (
         nonNullPrimitives,
         if (withTNull) Gen.const(MuF.TNull[T]()) else nonNullPrimitives,
-        Gen.oneOf(true, false)
+        sampleBool
       ).mapN((t1, t2, reversed) =>
         MuF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
         else NonEmptyList.of(B.algebra(t1), B.algebra(t2))))

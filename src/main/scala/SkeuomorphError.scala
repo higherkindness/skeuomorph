@@ -21,11 +21,11 @@ trait SkeuomorphError extends Exception {
 case object ProtobufCompilationException extends SkeuomorphError {
   override val message: String = "Protoc failed to compile protobuf file"
 
-  override def getMessage = message
+  override def getMessage: String = message
 }
 
 case object ProtobufParsingException extends SkeuomorphError {
-  override val message = "Failed to parse input as protobuf file"
+  override val message = "Failed to parse protobuf file"
 
-  override def getMessage = message
+  override def getMessage: String = message
 }

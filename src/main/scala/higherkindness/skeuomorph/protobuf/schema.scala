@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, FileOptions, UninterpretedOption}
+import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
 import scalapb.descriptors._
 
@@ -50,26 +50,26 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](values: List[A], options: List[Option])                      extends ProtobufF[A]
+  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)            extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()        => TDouble()
-      case TFloat()         => TFloat()
-      case TInt32()         => TInt32()
-      case TInt64()         => TInt64()
-      case TUint32()        => TUint32()
-      case TUint64()        => TUint64()
-      case TSint32()        => TSint32()
-      case TSint64()        => TSint64()
-      case TFixed32()       => TFixed32()
-      case TFixed64()       => TFixed64()
-      case TSfixed32()      => TSfixed32()
-      case TSfixed64()      => TSfixed64()
-      case TBool()          => TBool()
-      case TString()        => TString()
-      case TBytes()         => TBytes()
-      case TNamedType(name) => TNamedType(name)
+      case TDouble()                              => TDouble()
+      case TFloat()                               => TFloat()
+      case TInt32()                               => TInt32()
+      case TInt64()                               => TInt64()
+      case TUint32()                              => TUint32()
+      case TUint64()                              => TUint64()
+      case TSint32()                              => TSint32()
+      case TSint64()                              => TSint64()
+      case TFixed32()                             => TFixed32()
+      case TFixed64()                             => TFixed64()
+      case TSfixed32()                            => TSfixed32()
+      case TSfixed64()                            => TSfixed64()
+      case TBool()                                => TBool()
+      case TString()                              => TString()
+      case TBytes()                               => TBytes()
+      case TNamedType(name)                       => TNamedType(name)
       case TRepeated(value)                       => TRepeated(f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
       case TMessage(name, fields, reserved) =>
@@ -78,16 +78,15 @@ object ProtobufF {
           fields.map(field => field.copy(tpe = f(field.tpe))),
           reserved
         )
-      case TFileDescriptor(messages, options) => TFileDescriptor(messages.map(f), options)
+      case TFileDescriptor(messages, name, packageName) => TFileDescriptor(messages.map(f), name, packageName)
     }
   }
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
-      case f: FileDescriptor => fileFromScala(f)
-      case e: EnumDescriptor => enumFromScala(e)
-      case d: Descriptor     => messageFromScala(d)
-      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f)
+      case f: FileDescriptor                                                            => fileFromScala(f)
+      case e: EnumDescriptor                                                            => enumFromScala(e)
+      case d: Descriptor                                                                => messageFromScala(d)
       case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
@@ -104,6 +103,7 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f) // TODO rethink this and TOptional/TRequired
     }
   }
 
@@ -123,26 +123,10 @@ object ProtobufF {
   }
 
   def fileFromScala(fileDescriptor: FileDescriptor): TFileDescriptor[BaseDescriptor] = {
-    val options = fileDescriptor.getOptions
-    val defaultOptions = List(
-      ("java_package", options.getJavaPackage),
-      ("cc_enable_arenas", options.getCcEnableArenas),
-      ("cc_generic_services", options.getCcGenericServices),
-      ("deprecated", options.getDeprecated),
-      ("java_generate_equals_and_hash", options.getJavaGenerateEqualsAndHash),
-      ("java_outer_classname", options.getJavaOuterClassname),
-      ("java_multiple_files", options.getJavaMultipleFiles),
-      ("java_generic_services", options.getJavaGenericServices),
-      ("java_string_check_utf8", options.getJavaStringCheckUtf8),
-      ("cc_enable_arenas", options.getCcEnableArenas)
-    )
-
     TFileDescriptor(
       fileDescriptor.messages.toList ++ fileDescriptor.enums.toList,
-      Options.options(
-        fileDescriptor.getOptions,
-        defaultOptions,
-        (fileOptions: FileOptions) => fileOptions.uninterpretedOption)
+      fileDescriptor.fullName,
+      fileDescriptor.packageName
     )
   }
 

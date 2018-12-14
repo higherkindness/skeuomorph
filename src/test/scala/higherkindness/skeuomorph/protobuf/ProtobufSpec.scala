@@ -61,7 +61,7 @@ class ProtobufSpec extends FlatSpec with Matchers {
       }
     case ProtobufF.TRepeated(_) =>
       desc match {
-        case f: FieldDescriptor  => f.isRepeated
+        case f: FieldDescriptor => f.isRepeated
         case _                  => false
       }
     case e: ProtobufF.TEnum[Boolean] =>
