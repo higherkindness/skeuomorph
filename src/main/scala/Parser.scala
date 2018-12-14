@@ -21,11 +21,11 @@ import cats.syntax.functor._
 import cats.syntax.flatMap._
 import cats.effect.{IO, Sync}
 import com.github.os72.protocjar.Protoc
-import scalapb.descriptors.FileDescriptor
+import scalapb.descriptors.{BaseDescriptor, FileDescriptor}
 import com.google.protobuf.descriptor.FileDescriptorSet
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
-import higherkindness.skeuomorph.protobuf.ProtobufF
+import higherkindness.skeuomorph.mu.MuF
 
 trait Parser[F[_], I, O] {
   def parse(input: I)(implicit S: Sync[F]): F[O]
@@ -88,13 +88,35 @@ object ParseProto {
 
 object Playground extends App {
   // An example of the contract Skeuomorph will support
-  val result = ParseProto
+  import qq.droste.data.Mu._
+  import higherkindness.skeuomorph.protobuf._
+  import qq.droste.data.Mu
+  import qq.droste.scheme
+  import higherkindness.skeuomorph.mu.Transform
+
+  val readFile: IO[FileDescriptor] = ParseProto
     .parseProto[IO]
     .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
 
-  val fileDescriptor: FileDescriptor = result.unsafeRunSync()
+  val fileDescriptor: FileDescriptor = readFile.unsafeRunSync()
 
-  val value = ProtobufF.fromProtobuf(fileDescriptor)
+  val parseProto: BaseDescriptor => Mu[ProtobufF] =
+    scheme.ana(ProtobufF.fromProtobuf)
 
-  pprint.pprintln(value)
+  val printProto: Mu[ProtobufF] => String =
+    print.printSchema.print _
+
+  val roundTrip: String = printProto(parseProto(fileDescriptor))
+
+  // Render Proto file
+  println(roundTrip)
+
+  val transformToMu: FileDescriptor => Mu[MuF] =
+    scheme.hylo(Transform.transformProto.algebra, ProtobufF.fromProtobuf)
+
+  val printAsScala: Mu[MuF] => String =
+    higherkindness.skeuomorph.mu.print.schema.print _
+
+  // Render Scala
+  println(printAsScala(transformToMu(fileDescriptor)))
 }

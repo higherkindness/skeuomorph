@@ -44,19 +44,19 @@ object print {
       case TBytes()         => "bytes"
       case TNamedType(name) => name
 
-      case TRepeated(value) => s"repeated $value"
+//      case TRepeated(value) => s"repeated $value"
 
-      case TFileDescriptor(_, _, _) => s"" // TODO: Figure this out
+      case TFileDescriptor(values, _, packageName) => s"package $packageName \n ${values.mkString("\n")}"
 
       case TEnum(name, symbols, options, aliases) =>
-        val printOptions = options.map(o => s"option ${o.name} = ${o.value}").mkString("\n")
-        val printSymbols = symbols.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
-        val printAliases = aliases.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
+        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value}").mkString("\n")
+        val printSymbols = symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
+        val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         s"""
       |enum $name {
-      |  $printOptions
-      |  $printSymbols
-      |  $printAliases
+      |$printOptions
+      |$printSymbols
+      |$printAliases
       |}
       """.stripMargin
 
@@ -79,7 +79,7 @@ object print {
       |}
       """.stripMargin
 
-      case TOneOf(_) => ??? // TODO
+      case TOneOf(invariants) => s"${invariants.mkString("\n")}"
     }
 
     Printer(scheme.cata(algebra))
