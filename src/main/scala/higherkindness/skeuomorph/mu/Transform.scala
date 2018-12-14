@@ -16,6 +16,7 @@
 
 package higherkindness.skeuomorph.mu
 
+import cats.data.NonEmptyList
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.protobuf.ProtobufF
 import qq.droste.Trans
@@ -48,6 +49,7 @@ object Transform {
     case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
     case ProtobufF.TFileDescriptor(_, _, _)   => ??? // TODO: figure this part out.
+    case ProtobufF.TOneOf(invariants)         => TCoproduct(NonEmptyList(invariants.head, invariants.tail)) // TODO
   }
 
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {

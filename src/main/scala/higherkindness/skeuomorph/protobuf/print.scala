@@ -59,6 +59,7 @@ object print {
       |  $printAliases
       |}
       """.stripMargin
+
       case TMessage(name, fields, reserved) =>
         val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
         def printOptions(options: List[Option]) =
@@ -77,6 +78,8 @@ object print {
       |  $printFields
       |}
       """.stripMargin
+
+      case TOneOf(_) => ??? // TODO
     }
 
     Printer(scheme.cata(algebra))

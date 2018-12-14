@@ -26,23 +26,24 @@ object ProtobufF {
   final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
   final case class Option(name: String, value: String)
 
-  final case class TDouble[A]()                extends ProtobufF[A]
-  final case class TFloat[A]()                 extends ProtobufF[A]
-  final case class TInt32[A]()                 extends ProtobufF[A]
-  final case class TInt64[A]()                 extends ProtobufF[A]
-  final case class TUint32[A]()                extends ProtobufF[A]
-  final case class TUint64[A]()                extends ProtobufF[A]
-  final case class TSint32[A]()                extends ProtobufF[A]
-  final case class TSint64[A]()                extends ProtobufF[A]
-  final case class TFixed32[A]()               extends ProtobufF[A]
-  final case class TFixed64[A]()               extends ProtobufF[A]
-  final case class TSfixed32[A]()              extends ProtobufF[A]
-  final case class TSfixed64[A]()              extends ProtobufF[A]
-  final case class TBool[A]()                  extends ProtobufF[A]
-  final case class TString[A]()                extends ProtobufF[A]
-  final case class TBytes[A]()                 extends ProtobufF[A]
-  final case class TNamedType[A](name: String) extends ProtobufF[A]
-  final case class TRepeated[A](value: A)      extends ProtobufF[A]
+  final case class TDouble[A]()                   extends ProtobufF[A]
+  final case class TFloat[A]()                    extends ProtobufF[A]
+  final case class TInt32[A]()                    extends ProtobufF[A]
+  final case class TInt64[A]()                    extends ProtobufF[A]
+  final case class TUint32[A]()                   extends ProtobufF[A]
+  final case class TUint64[A]()                   extends ProtobufF[A]
+  final case class TSint32[A]()                   extends ProtobufF[A]
+  final case class TSint64[A]()                   extends ProtobufF[A]
+  final case class TFixed32[A]()                  extends ProtobufF[A]
+  final case class TFixed64[A]()                  extends ProtobufF[A]
+  final case class TSfixed32[A]()                 extends ProtobufF[A]
+  final case class TSfixed64[A]()                 extends ProtobufF[A]
+  final case class TBool[A]()                     extends ProtobufF[A]
+  final case class TString[A]()                   extends ProtobufF[A]
+  final case class TBytes[A]()                    extends ProtobufF[A]
+  final case class TNamedType[A](name: String)    extends ProtobufF[A]
+  final case class TRepeated[A](value: A)         extends ProtobufF[A]
+  final case class TOneOf[A](invariants: List[A]) extends ProtobufF[A]
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
@@ -71,6 +72,7 @@ object ProtobufF {
       case TBytes()                               => TBytes()
       case TNamedType(name)                       => TNamedType(name)
       case TRepeated(value)                       => TRepeated(f(value))
+      case TOneOf(values)                         => TOneOf(values.map(f))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
       case TMessage(name, fields, reserved) =>
         TMessage(
@@ -87,7 +89,7 @@ object ProtobufF {
       case f: FileDescriptor                                                            => fileFromScala(f)
       case e: EnumDescriptor                                                            => enumFromScala(e)
       case d: Descriptor                                                                => messageFromScala(d)
-      case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
+      case o: OneofDescriptor                                                           => TOneOf(o.fields.toList)
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
@@ -104,6 +106,7 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
       case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f) // TODO rethink this and TOptional/TRequired
+      case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
     }
   }
 

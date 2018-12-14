@@ -54,10 +54,10 @@ class ProtobufSpec extends FlatSpec with Matchers {
     case ProtobufF.TBool()     => fieldTest(desc, TYPE_BOOL)
     case ProtobufF.TString()   => fieldTest(desc, TYPE_STRING)
     case ProtobufF.TBytes()    => fieldTest(desc, TYPE_BYTES)
-    case ProtobufF.TNamedType(n) =>
+    case o: ProtobufF.TOneOf[Boolean] =>
       desc match {
-        case f: FieldDescriptor => f.name == n
-        case _                  => false
+        case oneofDescriptor: OneofDescriptor => o.invariants.length == oneofDescriptor.fields.length
+        case _                                => false
       }
     case ProtobufF.TRepeated(_) =>
       desc match {
@@ -78,6 +78,11 @@ class ProtobufSpec extends FlatSpec with Matchers {
       desc match {
         case fDesc: FileDescriptor => fileDescriptorTest(f, fDesc)
         case _                     => false
+      }
+    case ProtobufF.TNamedType(n) =>
+      desc match {
+        case f: FieldDescriptor => f.name == n
+        case _                  => false
       }
   }
 
