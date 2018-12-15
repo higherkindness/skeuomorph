@@ -25,7 +25,6 @@ import scalapb.descriptors.{BaseDescriptor, FileDescriptor}
 import com.google.protobuf.descriptor.FileDescriptorSet
 import org.apache.commons.compress.utils.IOUtils
 import FileUtils._
-import higherkindness.skeuomorph.mu.MuF
 
 trait Parser[F[_], I, O] {
   def parse(input: I)(implicit S: Sync[F]): F[O]
@@ -41,9 +40,9 @@ object ParseProto {
         transpile(input)
     }
 
-  private def transpile[F[_]: Sync](protoFileStream: FileInputStream): F[FileDescriptor] = {
+  private def transpile[F[_] : Sync](protoFileStream: FileInputStream): F[FileDescriptor] = {
     val tmpPathPrefix = "/tmp"
-    val tmpFileName   = s"$tmpPathPrefix/${Instant.now.toEpochMilli}.proto"
+    val tmpFileName = s"$tmpPathPrefix/${Instant.now.toEpochMilli}.proto"
 
     fileHandle(tmpFileName)
       .flatMap(fileOutputStream[F])
@@ -55,25 +54,30 @@ object ParseProto {
       }
   }
 
-  private def runProtoc[F[_]: Sync](protoFileName: String, pathToProtoFile: String): F[FileDescriptor] = {
+  private def runProtoc[F[_] : Sync](protoFileName: String, pathToProtoFile: String): F[FileDescriptor] = {
     val descriptorFileName = s"$protoFileName.desc"
-
-    for {
-      _ <- Sync[F].delay(
-        Protoc.runProtoc(
-          Array(
-            "--include_imports",
-            s"--descriptor_set_out=$descriptorFileName",
-            s"--proto_path=$pathToProtoFile",
-            protoFileName
-          )
+    val protoCompilation = Sync[F].delay(
+      Protoc.runProtoc(
+        Array(
+          "--include_imports",
+          s"--descriptor_set_out=$descriptorFileName",
+          s"--proto_path=$pathToProtoFile",
+          protoFileName
         )
       )
-      fileDescriptor <- makeFileDescriptor[F](descriptorFileName)
+    )
+
+    for {
+      _               <- Sync[F].adaptError(protoCompilation) {
+        case ex: Exception => ProtobufCompilationException(ex)
+      }
+      fileDescriptor  <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
+        case ex: Exception => ProtobufParsingException(ex)
+      }
     } yield fileDescriptor
   }
 
-  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptor] =
+  private def makeFileDescriptor[F[_] : Sync](descriptorFileName: String): F[FileDescriptor] =
     fileInputStream(descriptorFileName)
       .use { fis =>
         for {
@@ -88,9 +92,10 @@ object ParseProto {
 
 object Playground extends App {
   // An example of the contract Skeuomorph will support
-  import qq.droste.data.Mu._
-  import higherkindness.skeuomorph.protobuf._
   import qq.droste.data.Mu
+  import qq.droste.data.Mu._
+  import higherkindness.skeuomorph.mu.MuF
+  import higherkindness.skeuomorph.protobuf._
   import qq.droste.scheme
   import higherkindness.skeuomorph.mu.Transform
 
