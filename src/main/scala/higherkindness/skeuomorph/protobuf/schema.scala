@@ -86,10 +86,10 @@ object ProtobufF {
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
-      case f: FileDescriptor                  => fileFromScala(f)
-      case e: EnumDescriptor                  => enumFromScala(e)
-      case o: Descriptor if o.oneofs.nonEmpty => TOneOf(o.oneofs.flatMap(oof => oof.fields).toList)
-      case d: Descriptor                      => messageFromScala(d)
+      case f: FileDescriptor                                                            => fileFromScala(f)
+      case e: EnumDescriptor                                                            => enumFromScala(e)
+      case o: Descriptor if o.oneofs.nonEmpty                                           => TOneOf(o.oneofs.flatMap(oof => oof.fields).toList)
+      case d: Descriptor                                                                => messageFromScala(d)
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()

@@ -49,7 +49,7 @@ object Transform {
     case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
     case ProtobufF.TFileDescriptor(values, _, _) =>
-      TCoproduct(NonEmptyList(values.head, values.tail)) // TODO: We will likely need a different case of MuF to represent this.
+      TContaining(values)
     case ProtobufF.TOneOf(invariants) => TCoproduct(NonEmptyList(invariants.head, invariants.tail)) // TODO
   }
 
