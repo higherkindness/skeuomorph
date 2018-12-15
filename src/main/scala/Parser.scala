@@ -40,9 +40,9 @@ object ParseProto {
         transpile(input)
     }
 
-  private def transpile[F[_] : Sync](protoFileStream: FileInputStream): F[FileDescriptor] = {
+  private def transpile[F[_]: Sync](protoFileStream: FileInputStream): F[FileDescriptor] = {
     val tmpPathPrefix = "/tmp"
-    val tmpFileName = s"$tmpPathPrefix/${Instant.now.toEpochMilli}.proto"
+    val tmpFileName   = s"$tmpPathPrefix/${Instant.now.toEpochMilli}.proto"
 
     fileHandle(tmpFileName)
       .flatMap(fileOutputStream[F])
@@ -54,7 +54,7 @@ object ParseProto {
       }
   }
 
-  private def runProtoc[F[_] : Sync](protoFileName: String, pathToProtoFile: String): F[FileDescriptor] = {
+  private def runProtoc[F[_]: Sync](protoFileName: String, pathToProtoFile: String): F[FileDescriptor] = {
     val descriptorFileName = s"$protoFileName.desc"
     val protoCompilation = Sync[F].delay(
       Protoc.runProtoc(
@@ -68,16 +68,16 @@ object ParseProto {
     )
 
     for {
-      _               <- Sync[F].adaptError(protoCompilation) {
+      _ <- Sync[F].adaptError(protoCompilation) {
         case ex: Exception => ProtobufCompilationException(ex)
       }
-      fileDescriptor  <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
+      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
     } yield fileDescriptor
   }
 
-  private def makeFileDescriptor[F[_] : Sync](descriptorFileName: String): F[FileDescriptor] =
+  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptor] =
     fileInputStream(descriptorFileName)
       .use { fis =>
         for {

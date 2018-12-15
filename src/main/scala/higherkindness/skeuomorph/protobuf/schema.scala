@@ -105,8 +105,8 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-//      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f) // TODO rethink this and TOptional/TRequired
-      case f: FieldDescriptor if f.name.nonEmpty => TNamedType(f.name) // TODO double check ???
+//      case f: FieldDescriptor if f.isRepeated  => TRepeated(f) // TODO rethink this and TOptional/TRequired
+      case f: FieldDescriptor if f.name.nonEmpty => TNamedType(f.name) // TODO double check if this is needed
     }
   }
 
