@@ -41,7 +41,7 @@ object Protocol {
     case MuF.TBoolean()         => TBool()
     case MuF.TString()          => TString()
     case MuF.TByteArray()       => TBytes()
-    case MuF.TList(value)       => TRepeated(value)
+    // case MuF.TList(value)       => TRepeated(value)
     case MuF.TSum(name, fields) => TEnum(name, fields.zipWithIndex, Nil, Nil) // TODO verify .zipWithIndex
     case MuF.TRequired(value)   => T.coalgebra(value) // TODO
     case MuF.TNamedType(name)   => TNamedType(name)
