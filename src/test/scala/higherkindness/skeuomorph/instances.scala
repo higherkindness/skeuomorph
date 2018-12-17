@@ -122,7 +122,7 @@ object instances {
         typeName = Some(s".$packageName.$messageName"),
         extendee = None,
         defaultValue = None,
-        oneofIndex = None,
+        oneofIndex = Some(1),
         Some(name),
         options
       )
@@ -185,6 +185,12 @@ object instances {
       )
   }
 
+  lazy val sampleOneOfDescriptor: Arbitrary[OneofDescriptorProto] = Arbitrary {
+    for {
+      name <- nonEmptyString
+    } yield new OneofDescriptorProto(name = Some(name), options = None)
+  }
+
   def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
     for {
       name      <- nonEmptyString
@@ -195,6 +201,7 @@ object instances {
       nestedTypes <- Gen.lzy(
         Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
       enums         <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
+      oneOfs        <- Gen.lzy(Gen.containerOfN[Seq, OneofDescriptorProto](5, sampleOneOfDescriptor.arbitrary))
       reservedRange <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
       reservedNames <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
     } yield
@@ -205,7 +212,7 @@ object instances {
         nestedType = nestedTypes,
         enumType = enums,
         extensionRange = Seq(),
-        oneofDecl = Seq(), // TODO
+        oneofDecl = oneOfs, // TODO
         options = None,
         reservedRange = reservedRange,
         reservedName = reservedNames

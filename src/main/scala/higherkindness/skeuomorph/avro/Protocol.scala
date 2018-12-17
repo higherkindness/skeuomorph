@@ -95,6 +95,7 @@ object Protocol {
     case MuF.TList(value)           => tArray(value)
     case MuF.TMap(value)            => tMap(value)
     case MuF.TGeneric(_, _)         => ??? // WAT
+    case MuF.TContaining(_)         => ??? // TBD
     case MuF.TRequired(t)           => T.coalgebra(t)
     case MuF.TCoproduct(invariants) => TUnion(invariants)
     case MuF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)

@@ -45,6 +45,7 @@ object print {
       case TMap(value)               => s"Map[String, $value]"
       case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
       case TList(value)              => s"List[$value]"
+      case TContaining(values)       => values.mkString("\n")
       case TRequired(value)          => value
       case TCoproduct(invariants) =>
         invariants.toList.mkString("Cop[", " :: ", ":: TNil]")

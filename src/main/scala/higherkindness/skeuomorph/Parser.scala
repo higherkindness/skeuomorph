@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-trait SkeuomorphError extends Exception {
-  val message: String
+package higherkindness.skeuomorph
+
+import cats.effect.Sync
+
+trait Parser[F[_], I, O] {
+  def parse(input: I)(implicit S: Sync[F]): F[O]
 }
 
-case object ProtobufCompilationException extends SkeuomorphError {
-  override val message: String = "Protoc failed to compile protobuf file"
-
-  override def getMessage: String = message
-}
-
-case object ProtobufParsingException extends SkeuomorphError {
-  override val message = "Failed to parse protobuf file"
-
-  override def getMessage: String = message
+object Parser {
+  def apply[F[_], I, O](implicit parser: Parser[F, I, O]) = parser
 }

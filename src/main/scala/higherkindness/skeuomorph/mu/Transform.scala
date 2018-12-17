@@ -16,6 +16,7 @@
 
 package higherkindness.skeuomorph.mu
 
+import cats.data.NonEmptyList
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.protobuf.ProtobufF
 import qq.droste.Trans
@@ -25,29 +26,31 @@ object Transform {
   import MuF._
 
   /**
-   * transform Protobuf schema into Freestyle schema
+   * transform Protobuf schema into Mu schema
    */
   def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
-    case ProtobufF.TDouble()                  => TDouble()
-    case ProtobufF.TFloat()                   => TFloat()
-    case ProtobufF.TInt32()                   => TInt()
-    case ProtobufF.TInt64()                   => TLong()
-    case ProtobufF.TUint32()                  => TInt()
-    case ProtobufF.TUint64()                  => TLong()
-    case ProtobufF.TSint32()                  => TInt()
-    case ProtobufF.TSint64()                  => TLong()
-    case ProtobufF.TFixed32()                 => TInt()
-    case ProtobufF.TFixed64()                 => TLong()
-    case ProtobufF.TSfixed32()                => TInt()
-    case ProtobufF.TSfixed64()                => TLong()
-    case ProtobufF.TBool()                    => TBoolean()
-    case ProtobufF.TString()                  => TString()
-    case ProtobufF.TBytes()                   => TByteArray()
-    case ProtobufF.TNamedType(name)           => TNamedType(name)
-    case ProtobufF.TRepeated(value)           => TList(value)
+    case ProtobufF.TDouble()        => TDouble()
+    case ProtobufF.TFloat()         => TFloat()
+    case ProtobufF.TInt32()         => TInt()
+    case ProtobufF.TInt64()         => TLong()
+    case ProtobufF.TUint32()        => TInt()
+    case ProtobufF.TUint64()        => TLong()
+    case ProtobufF.TSint32()        => TInt()
+    case ProtobufF.TSint64()        => TLong()
+    case ProtobufF.TFixed32()       => TInt()
+    case ProtobufF.TFixed64()       => TLong()
+    case ProtobufF.TSfixed32()      => TInt()
+    case ProtobufF.TSfixed64()      => TLong()
+    case ProtobufF.TBool()          => TBoolean()
+    case ProtobufF.TString()        => TString()
+    case ProtobufF.TBytes()         => TByteArray()
+    case ProtobufF.TNamedType(name) => TNamedType(name)
+//    case ProtobufF.TRepeated(value)           => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case ProtobufF.TFileDescriptor(_, _, _)   => ??? // TODO: figure this part out.
+    case ProtobufF.TFileDescriptor(values, _, _) =>
+      TContaining(values)
+    case ProtobufF.TOneOf(invariants) => TCoproduct(NonEmptyList(invariants.head, invariants.tail)) // TODO
   }
 
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {

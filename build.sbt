@@ -101,18 +101,14 @@ lazy val commonSettings = Seq(
     "io.higherkindness"    %% "droste-macros"   % V.droste,
     "org.apache.avro"      % "avro"             % V.avro,
     "com.github.os72"      % "protoc-jar"       % V.protoc,
-    "com.google.protobuf"  % "protobuf-java"    % V.protobuf,
-    "com.thesamet.scalapb" %% "compilerplugin"  % V.scalapb,
-    "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
-    "com.lihaoyi"          %% "pprint"          % "0.5.3", // TEMP
+     "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
     %%("cats-effect"),
     %%("circe-core", V.circe),
     %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    %%("scalatest")                   % Test,
+    %%("scalatest")                   % Test, // TEMP
     "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
   ),
-//  classpathTypes += "maven-plugin",
   orgProjectName := "Skeuomorph",
   orgUpdateDocFilesSetting += baseDirectory.value / "readme",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),

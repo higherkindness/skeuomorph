@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
+package higherkindness.skeuomorph.protobuf
+
 import java.io.FileInputStream
 import java.time.Instant
 
-import cats.syntax.functor._
+import cats.effect.Sync
 import cats.syntax.flatMap._
-import cats.effect.{IO, Sync}
+import cats.syntax.functor._
 import com.github.os72.protocjar.Protoc
-import scalapb.descriptors.FileDescriptor
 import com.google.protobuf.descriptor.FileDescriptorSet
+import higherkindness.skeuomorph.FileUtils._
+import higherkindness.skeuomorph.{Parser, _}
 import org.apache.commons.compress.utils.IOUtils
-import FileUtils._
-import higherkindness.skeuomorph.protobuf.ProtobufF
-
-trait Parser[F[_], I, O] {
-  def parse(input: I)(implicit S: Sync[F]): F[O]
-}
+import scalapb.descriptors.FileDescriptor
 
 object ParseProto {
-
-  def apply[F[_], I, O](implicit parser: Parser[F, I, O]) = parser
 
   implicit def parseProto[F[_]]: Parser[F, FileInputStream, FileDescriptor] =
     new Parser[F, FileInputStream, FileDescriptor] {
@@ -57,19 +53,24 @@ object ParseProto {
 
   private def runProtoc[F[_]: Sync](protoFileName: String, pathToProtoFile: String): F[FileDescriptor] = {
     val descriptorFileName = s"$protoFileName.desc"
-
-    for {
-      _ <- Sync[F].delay(
-        Protoc.runProtoc(
-          Array(
-            "--include_imports",
-            s"--descriptor_set_out=$descriptorFileName",
-            s"--proto_path=$pathToProtoFile",
-            protoFileName
-          )
+    val protoCompilation = Sync[F].delay(
+      Protoc.runProtoc(
+        Array(
+          "--include_imports",
+          s"--descriptor_set_out=$descriptorFileName",
+          s"--proto_path=$pathToProtoFile",
+          protoFileName
         )
       )
-      fileDescriptor <- makeFileDescriptor[F](descriptorFileName)
+    )
+
+    for {
+      _ <- Sync[F].adaptError(protoCompilation) {
+        case ex: Exception => ProtobufCompilationException(ex)
+      }
+      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
+        case ex: Exception => ProtobufParsingException(ex)
+      }
     } yield fileDescriptor
   }
 
@@ -84,17 +85,4 @@ object ParseProto {
       .map { fileDescriptorProto =>
         FileDescriptor.buildFrom(fileDescriptorProto, Nil)
       }
-}
-
-object Playground extends App {
-  // An example of the contract Skeuomorph will support
-  val result = ParseProto
-    .parseProto[IO]
-    .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
-
-  val fileDescriptor: FileDescriptor = result.unsafeRunSync()
-
-  val value = ProtobufF.fromProtobuf(fileDescriptor)
-
-  pprint.pprintln(value)
 }

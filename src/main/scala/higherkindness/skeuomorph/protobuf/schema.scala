@@ -22,8 +22,11 @@ import qq.droste.Coalgebra
 import scalapb.descriptors._
 
 sealed trait ProtobufF[A]
+
 object ProtobufF {
+
   final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
+
   final case class Option(name: String, value: String)
 
   final case class TDouble[A]()                extends ProtobufF[A]
@@ -42,35 +45,40 @@ object ProtobufF {
   final case class TString[A]()                extends ProtobufF[A]
   final case class TBytes[A]()                 extends ProtobufF[A]
   final case class TNamedType[A](name: String) extends ProtobufF[A]
-  final case class TRepeated[A](value: A)      extends ProtobufF[A]
+//  final case class TRepeated[A](value: A)   extends ProtobufF[A]
+  final case class TOneOf[A](invariants: List[A]) extends ProtobufF[A]
+
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
+
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)            extends ProtobufF[A]
+
+  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()                              => TDouble()
-      case TFloat()                               => TFloat()
-      case TInt32()                               => TInt32()
-      case TInt64()                               => TInt64()
-      case TUint32()                              => TUint32()
-      case TUint64()                              => TUint64()
-      case TSint32()                              => TSint32()
-      case TSint64()                              => TSint64()
-      case TFixed32()                             => TFixed32()
-      case TFixed64()                             => TFixed64()
-      case TSfixed32()                            => TSfixed32()
-      case TSfixed64()                            => TSfixed64()
-      case TBool()                                => TBool()
-      case TString()                              => TString()
-      case TBytes()                               => TBytes()
-      case TNamedType(name)                       => TNamedType(name)
-      case TRepeated(value)                       => TRepeated(f(value))
+      case TDouble()        => TDouble()
+      case TFloat()         => TFloat()
+      case TInt32()         => TInt32()
+      case TInt64()         => TInt64()
+      case TUint32()        => TUint32()
+      case TUint64()        => TUint64()
+      case TSint32()        => TSint32()
+      case TSint64()        => TSint64()
+      case TFixed32()       => TFixed32()
+      case TFixed64()       => TFixed64()
+      case TSfixed32()      => TSfixed32()
+      case TSfixed64()      => TSfixed64()
+      case TBool()          => TBool()
+      case TString()        => TString()
+      case TBytes()         => TBytes()
+      case TNamedType(name) => TNamedType(name)
+//      case TRepeated(value)                       => TRepeated(f(value))
+      case TOneOf(values)                         => TOneOf(values.map(f))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
       case TMessage(name, fields, reserved) =>
         TMessage(
@@ -86,8 +94,8 @@ object ProtobufF {
     base match {
       case f: FileDescriptor                                                            => fileFromScala(f)
       case e: EnumDescriptor                                                            => enumFromScala(e)
+      case o: Descriptor if o.oneofs.nonEmpty                                           => TOneOf(o.oneofs.flatMap(oof => oof.fields).toList)
       case d: Descriptor                                                                => messageFromScala(d)
-      case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name) // TODO double check ???
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
@@ -103,7 +111,8 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-      case f: FieldDescriptor if f.isRepeated                                           => TRepeated(f) // TODO rethink this and TOptional/TRequired
+//      case f: FieldDescriptor if f.isRepeated  => TRepeated(f) // TODO rethink this and TOptional/TRequired
+      case f: FieldDescriptor if f.name.nonEmpty => TNamedType(f.name) // TODO double check if this is needed
     }
   }
 
@@ -148,9 +157,7 @@ object ProtobufF {
     val options = descriptor.getOptions
     val defaultOptions = List(
       ("deprecated", options.getDeprecated),
-      ("map_entry", options.getMapEntry),
-      ("message_set_wire_format", options.getMessageSetWireFormat),
-      ("no_standard_descriptor_accessor", options.getNoStandardDescriptorAccessor)
+      ("map_entry", options.getMapEntry)
     )
 
     val fields: List[Field[BaseDescriptor]] =
@@ -161,10 +168,12 @@ object ProtobufF {
               fieldDesc.name,
               fieldDesc,
               fieldDesc.number,
-              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
+              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+          )
+        )
         .toList
     val reserved: List[List[String]] =
-      descriptor.asProto.reservedRange.map(range => (range.getStart to range.getEnd).map(_.toString).toList).toList
+      descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList
     TMessage(descriptor.name, fields, reserved)
   }
 }
