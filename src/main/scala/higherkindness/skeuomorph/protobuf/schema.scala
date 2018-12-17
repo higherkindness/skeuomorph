@@ -22,8 +22,11 @@ import qq.droste.Coalgebra
 import scalapb.descriptors._
 
 sealed trait ProtobufF[A]
+
 object ProtobufF {
+
   final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
+
   final case class Option(name: String, value: String)
 
   final case class TDouble[A]()                extends ProtobufF[A]
@@ -42,16 +45,19 @@ object ProtobufF {
   final case class TString[A]()                extends ProtobufF[A]
   final case class TBytes[A]()                 extends ProtobufF[A]
   final case class TNamedType[A](name: String) extends ProtobufF[A]
-//  final case class TRepeated[A](value: A)         extends ProtobufF[A]
+//  final case class TRepeated[A](value: A)   extends ProtobufF[A]
   final case class TOneOf[A](invariants: List[A]) extends ProtobufF[A]
+
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
+
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)            extends ProtobufF[A]
+
+  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
   implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
     def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
@@ -151,9 +157,7 @@ object ProtobufF {
     val options = descriptor.getOptions
     val defaultOptions = List(
       ("deprecated", options.getDeprecated),
-      ("map_entry", options.getMapEntry),
-      ("message_set_wire_format", options.getMessageSetWireFormat),
-      ("no_standard_descriptor_accessor", options.getNoStandardDescriptorAccessor)
+      ("map_entry", options.getMapEntry)
     )
 
     val fields: List[Field[BaseDescriptor]] =
@@ -164,7 +168,9 @@ object ProtobufF {
               fieldDesc.name,
               fieldDesc,
               fieldDesc.number,
-              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)))
+              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+          )
+        )
         .toList
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList

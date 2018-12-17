@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package higherkindness.skeuomorph
+
 import java.io.{File, FileOutputStream, InputStream}
 import java.nio.file.{Files, Paths, StandardOpenOption}
 

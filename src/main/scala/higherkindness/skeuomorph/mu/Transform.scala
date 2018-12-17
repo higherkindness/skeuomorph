@@ -26,7 +26,7 @@ object Transform {
   import MuF._
 
   /**
-   * transform Protobuf schema into Freestyle schema
+   * transform Protobuf schema into Mu schema
    */
   def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
     case ProtobufF.TDouble()        => TDouble()

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package higherkindness.skeuomorph
+
 trait SkeuomorphError extends Exception {
   val message: String
 }
