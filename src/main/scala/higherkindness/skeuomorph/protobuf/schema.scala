@@ -168,7 +168,7 @@ object ProtobufF {
               fieldDesc.name,
               fieldDesc,
               fieldDesc.number,
-              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)
           )
         )
         .toList
