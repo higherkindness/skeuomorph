@@ -65,9 +65,7 @@ object ParseProto {
     )
 
     for {
-      _ <- Sync[F].adaptError(protoCompilation) {
-        case ex: Exception => ProtobufCompilationException(ex)
-      }
+      _ <- Sync[F].ensure[Int](protoCompilation)(ProtobufCompilationException())((exitCode: Int) => exitCode == 0)
       fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
