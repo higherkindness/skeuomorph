@@ -2,8 +2,18 @@ syntax = "proto3";
 
 package com.book;
 
+message Person {
+    string name = 1;
+}
+
 message Book {
     repeated int64 isbn = 1;
     string title = 2;
-    string author = 3;
+    Person author = 3;
+    BookType book_type = 4;
+}
+
+enum BookType {
+    HARDCOVER = 0;
+    PAPERBACK = 1;
 }

@@ -101,7 +101,7 @@ lazy val commonSettings = Seq(
     "io.higherkindness"    %% "droste-macros"   % V.droste,
     "org.apache.avro"      % "avro"             % V.avro,
     "com.github.os72"      % "protoc-jar"       % V.protoc,
-     "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
+    "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
     %%("cats-effect"),
     %%("circe-core", V.circe),
     %%("specs2-core", V.specs2)       % Test,

@@ -20,7 +20,7 @@ import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
 import qq.droste.macros.deriveTraverse
-import scalapb.descriptors._
+import scalapb.descriptors.{ScalaType, _}
 
 @deriveTraverse
 sealed trait ProtobufF[A]
@@ -82,7 +82,8 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-      case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name)
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedTypeName(f)
+      case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedTypeName(f)
     }
   }
 
@@ -146,5 +147,13 @@ object ProtobufF {
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList
     TMessage(descriptor.name, fields, reserved)
+  }
+
+  def getNestedTypeName(f: FieldDescriptor): TNamedType[BaseDescriptor] = {
+    f.scalaType match {
+      case ScalaType.Message(descriptor) => TNamedType(descriptor.name)
+      case ScalaType.Enum(enumDesc)      => TNamedType(enumDesc.name)
+      case _: ScalaType                  => TNamedType("Unknown") // TODO: what should be done here?
+    }
   }
 }

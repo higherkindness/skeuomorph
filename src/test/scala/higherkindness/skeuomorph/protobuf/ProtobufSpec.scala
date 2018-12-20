@@ -81,8 +81,13 @@ class ProtobufSpec extends FlatSpec with Matchers {
       }
     case ProtobufF.TNamedType(n) =>
       desc match {
-        case f: FieldDescriptor => f.name == n
-        case _                  => false
+        case f: FieldDescriptor =>
+          f.scalaType match {
+            case ScalaType.Message(descriptor) => descriptor.fullName.contains(n)
+            case ScalaType.Enum(enumDesc)      => enumDesc.fullName.contains(n)
+            case _                             => false
+          }
+        case _ => false
       }
   }
 
