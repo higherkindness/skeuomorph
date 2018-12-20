@@ -30,6 +30,7 @@ import qq.droste.Basis
 import scalapb.UnknownFieldSet
 import scalapb.descriptors.FileDescriptor
 import higherkindness.skeuomorph.mu.MuF
+import higherkindness.skeuomorph.protobuf.ProtobufF
 
 import scala.collection.JavaConverters._
 
@@ -248,6 +249,43 @@ object instances {
     for {
       sampleFileDescriptorProto <- Gen.lzy(sampleFileDescriptorProto.arbitrary)
     } yield FileDescriptor.buildFrom(sampleFileDescriptorProto, Nil)
+  }
+
+  def protobufFMessageWithRepeatFields[T](withRepeat: Boolean)(
+      implicit B: Basis[ProtobufF, T]): Gen[ProtobufF.TMessage[T]] = {
+
+    val innerTypes: Gen[ProtobufF[T]] = Gen.oneOf(
+      List(
+        ProtobufF.TDouble[T](),
+        ProtobufF.TFloat[T](),
+        ProtobufF.TInt32[T](),
+        ProtobufF.TInt64[T](),
+        ProtobufF.TUint32[T](),
+        ProtobufF.TUint64[T](),
+        ProtobufF.TSint32[T](),
+        ProtobufF.TSint64[T](),
+        ProtobufF.TFixed32[T](),
+        ProtobufF.TFixed64[T](),
+        ProtobufF.TSfixed32[T](),
+        ProtobufF.TSfixed64[T](),
+        ProtobufF.TBool[T](),
+        ProtobufF.TString[T](),
+        ProtobufF.TBytes[T]()
+      )
+    )
+
+    val sampleField: Gen[ProtobufF.Field[T]] = {
+      for {
+        name     <- nonEmptyString
+        tpe      <- innerTypes
+        position <- smallNumber
+      } yield ProtobufF.Field(name, B.algebra(tpe), position, List(), withRepeat)
+    }
+
+    for {
+      name  <- nonEmptyString
+      field <- sampleField
+    } yield ProtobufF.TMessage(name, List(field), List())
   }
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
