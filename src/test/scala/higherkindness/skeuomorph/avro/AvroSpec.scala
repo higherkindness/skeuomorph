@@ -16,6 +16,8 @@
 
 package higherkindness.skeuomorph.avro
 
+import higherkindness.skeuomorph.instances._
+
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.specs2._
@@ -24,8 +26,6 @@ import qq.droste._
 import scala.collection.JavaConverters._
 
 class AvroSpec extends Specification with ScalaCheck {
-
-  import instances._
 
   def is = s2"""
   Avro Schema
