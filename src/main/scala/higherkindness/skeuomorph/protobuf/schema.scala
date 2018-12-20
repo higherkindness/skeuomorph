@@ -16,17 +16,17 @@
 
 package higherkindness.skeuomorph.protobuf
 
-import cats.{Applicative, Traverse}
 import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
-import qq.droste.util.DefaultTraverse
+import qq.droste.macros.deriveTraverse
 import scalapb.descriptors._
 
+@deriveTraverse
 sealed trait ProtobufF[A]
 
 object ProtobufF {
-
+  @deriveTraverse
   final case class Field[A](name: String, tpe: A, position: Int, options: List[Option], isRepeated: Boolean)
 
   final case class Option(name: String, value: String)
@@ -60,45 +60,6 @@ object ProtobufF {
   final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
-
-  implicit val protobufFTraverse: Traverse[ProtobufF] =
-    new DefaultTraverse[ProtobufF] {
-      def traverse[G[_]: Applicative, A, B](fa: ProtobufF[A])(f: A => G[B]): G[ProtobufF[B]] = {
-        fa match {
-          case TDouble()                              => (TDouble(): ProtobufF[B]).pure[G]
-          case TFloat()                               => (TFloat(): ProtobufF[B]).pure[G]
-          case TInt32()                               => (TInt32(): ProtobufF[B]).pure[G]
-          case TInt64()                               => (TInt64(): ProtobufF[B]).pure[G]
-          case TUint32()                              => (TUint32(): ProtobufF[B]).pure[G]
-          case TUint64()                              => (TUint64(): ProtobufF[B]).pure[G]
-          case TSint32()                              => (TSint32(): ProtobufF[B]).pure[G]
-          case TSint64()                              => (TSint64(): ProtobufF[B]).pure[G]
-          case TFixed32()                             => (TFixed32(): ProtobufF[B]).pure[G]
-          case TFixed64()                             => (TFixed64(): ProtobufF[B]).pure[G]
-          case TSfixed32()                            => (TSfixed32(): ProtobufF[B]).pure[G]
-          case TSfixed64()                            => (TSfixed64(): ProtobufF[B]).pure[G]
-          case TBool()                                => (TBool(): ProtobufF[B]).pure[G]
-          case TString()                              => (TString(): ProtobufF[B]).pure[G]
-          case TBytes()                               => (TBytes(): ProtobufF[B]).pure[G]
-          case TRepeated(value)                       => f(value).map(TRepeated(_))
-          case TNamedType(name)                       => (TNamedType(name): ProtobufF[B]).pure[G]
-          case TEnum(name, symbols, options, aliases) => (TEnum(name, symbols, options, aliases): ProtobufF[B]).pure[G]
-          case TOneOf(values) =>
-            values
-              .traverse(value => f(value))
-              .map(oneOfs => TOneOf(oneOfs))
-          case TMessage(name, fields, reserved) =>
-            fields
-              .traverse(field =>
-                f(field.tpe).map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated)))
-              .map(fieldList => TMessage(name, fieldList, reserved))
-          case TFileDescriptor(messages, name, packageName) =>
-            messages
-              .traverse(f)
-              .map(messageG => TFileDescriptor(messageG, name, packageName))
-        }
-      }
-    }
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
