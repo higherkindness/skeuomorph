@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package avro
+package higherkindness.skeuomorph.protobuf
 
+import higherkindness.skeuomorph.instances._
 import org.typelevel.discipline.specs2.Discipline
 import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
 import cats.implicits._
 import org.specs2._
-import instances._
 
-class AvroSchemaSpec extends Specification with ScalaCheck with Discipline {
+class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
 
   def is = s2"""
   $traverse
@@ -31,7 +30,8 @@ class AvroSchemaSpec extends Specification with ScalaCheck with Discipline {
   $foldable
   """
 
-  val traverse = checkAll("Traverse[AvroF]", TraverseTests[AvroF].traverse[Int, Int, Int, Set[Int], Option, Option])
-  val functor  = checkAll("Functor[AvroF]", FunctorTests[AvroF].functor[Int, Int, String])
-  val foldable = checkAll("Foldable[AvroF]", FoldableTests[AvroF].foldable[Int, Int])
+  val traverse =
+    checkAll("Traverse[ProtobufF]", TraverseTests[ProtobufF].traverse[Int, Int, Int, Set[Int], Option, Option])
+  val functor  = checkAll("Functor[ProtobufF]", FunctorTests[ProtobufF].functor[Int, Int, String])
+  val foldable = checkAll("Foldable[ProtobufF]", FoldableTests[ProtobufF].foldable[Int, Int])
 }

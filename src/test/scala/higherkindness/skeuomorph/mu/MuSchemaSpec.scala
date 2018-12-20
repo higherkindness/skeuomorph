@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package skeuomorph
-package mu
+package higherkindness.skeuomorph.mu
 
+import higherkindness.skeuomorph.instances._
 import org.typelevel.discipline.specs2.Discipline
 import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
 import cats.implicits._
 import org.specs2._
-import instances._
 
 class MuSchemaSpec extends Specification with ScalaCheck with Discipline {
 

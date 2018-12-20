@@ -20,18 +20,13 @@ import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
-import higherkindness.skeuomorph.mu.MuF._
+import higherkindness.skeuomorph.mu.MuF.{string => _, _}
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
 import higherkindness.skeuomorph.mu.SerializationType._
 
 import cats.implicits._
 
 import qq.droste._
-import MuF.{string => _, _}
-import catz.contrib.ContravariantMonoidalSyntax._
-import catz.contrib.Decidable._
-import Printer._
-import SerializationType._
 
 object print {
 
