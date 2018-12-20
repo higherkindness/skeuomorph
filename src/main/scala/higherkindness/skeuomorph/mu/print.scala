@@ -16,8 +16,6 @@
 
 package higherkindness.skeuomorph.mu
 
-import cats.instances.function._
-import cats.syntax.compose._
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
@@ -25,11 +23,14 @@ import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.mu.MuF._
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
 import higherkindness.skeuomorph.mu.SerializationType._
+
+import cats.implicits._
+
 import qq.droste._
 
 object print {
 
-  def schema[T: Basis[MuF, ?]]: Printer[T] = {
+  def schema[T: Project[MuF, ?]]: Printer[T] = {
     val algebra: Algebra[MuF, String] = Algebra {
       case TNull()                   => "Null"
       case TDouble()                 => "Double"
@@ -70,10 +71,10 @@ object print {
    */
   def protoTuple[T](
       proto: Protocol[T]
-  ): ((((Option[String], List[(String, String)]), String), List[T]), List[higherkindness.skeuomorph.mu.Service[T]]) =
+  ): (Option[String], List[(String, String)], String, List[T], List[Service[T]]) =
     proto match {
       case Protocol(name, pkg, options, declarations, services) =>
-        ((((pkg, options), name), declarations), services)
+        (pkg, options, name, declarations, services)
     }
 
   /**
@@ -82,10 +83,9 @@ object print {
    */
   def opTuple[T](
       op: Service.Operation[T]
-  ): ((String, T), T) =
+  ): (String, T, T) =
     op match {
-      case Service.Operation(name, request, response) =>
-        ((name, request), response)
+      case Service.Operation(name, request, response) => (name, request, response)
     }
 
   /**
@@ -94,10 +94,10 @@ object print {
    */
   def serviceTuple[T](
       s: Service[T]
-  ): ((SerializationType, String), List[Service.Operation[T]]) =
+  ): (SerializationType, String, List[Service.Operation[T]]) =
     s match {
       case Service(name, serType, ops) =>
-        ((serType, name), ops)
+        (serType, name, ops)
     }
 
   /**
@@ -118,14 +118,18 @@ object print {
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
   def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
-    ((konst("def ") *< string) >*< (konst("(req: ") *< Printer(namedTypes[T] >>> schema.print)) >*< (konst("): ") *< Printer(
-      namedTypes[T] >>> schema.print)))
-      .contramap(opTuple)
+    (
+      (konst("def ") *< string),
+      (konst("(req: ") *< Printer(namedTypes[T] >>> schema.print)),
+      (konst("): ") *< Printer(namedTypes[T] >>> schema.print))
+    ).contramapN(opTuple)
 
   def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
-    ((konst("@service(") *< serializationType >* konst(") trait ")) >*<
-      (string >* konst("[F[_]] {") >* newLine) >*<
-      (sepBy(operation, "\n") >* newLine >* konst("}"))).contramap(serviceTuple)
+    (
+      (konst("@service(") *< serializationType >* konst(") trait ")),
+      (string >* konst("[F[_]] {") >* newLine),
+      (sepBy(operation, "\n") >* newLine >* konst("}"))
+    ).contramapN(serviceTuple)
 
   def option: Printer[(String, String)] =
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
@@ -133,10 +137,12 @@ object print {
   def proto[T](implicit T: Basis[MuF, T]): Printer[Protocol[T]] = {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
-    ((konst("package ") *< optional(string) >* (newLine >* newLine)) >*<
-      sepBy(option, lineFeed) >*<
-      (konst("object ") *< string >* konst(" { ") >* newLine >* newLine) >*<
-      (sepBy(schema, lineFeed) >* newLine) >*<
-      (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))).contramap(protoTuple)
+    (
+      (konst("package ") *< optional(string) >* newLine >* newLine),
+      sepBy(option, lineFeed),
+      (konst("object ") *< string >* konst(" { ") >* newLine >* newLine),
+      (sepBy(schema, lineFeed) >* newLine),
+      (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))
+    ).contramapN(protoTuple)
   }
 }
