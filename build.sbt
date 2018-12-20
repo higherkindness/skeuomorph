@@ -101,7 +101,7 @@ lazy val commonSettings = Seq(
     "io.higherkindness" %% "droste-macros" % V.droste,
     "org.apache.avro"   % "avro"           % V.avro,
     %%("circe-core", V.circe),
-    %%("scalacheck", V.scalacheck),
+    %%("scalacheck", V.scalacheck) % Test,
     %%("specs2-core"      , V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
     "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll(
