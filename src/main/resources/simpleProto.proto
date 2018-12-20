@@ -10,10 +10,4 @@ message Book {
     repeated int64 isbn = 1;
     string title = 2;
     Person author = 3;
-    BookType book_type = 4;
-}
-
-enum BookType {
-    HARDCOVER = 0;
-    PAPERBACK = 1;
 }
