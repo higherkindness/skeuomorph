@@ -168,7 +168,7 @@ object instances {
           Gen.option(nonEmptyString),
           Gen.listOf(nonEmptyString),
           Gen.option(nonEmptyString),
-          Gen.listOf(fieldGen),
+          Gen.listOf(fieldGen)
         ).mapN(AvroF.record[T]),
         Gen.nonEmptyListOf(T.arbitrary) map { l =>
           AvroF.union[T](NonEmptyList.fromListUnsafe(l))
