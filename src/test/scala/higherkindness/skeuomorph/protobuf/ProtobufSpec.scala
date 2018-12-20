@@ -59,11 +59,11 @@ class ProtobufSpec extends FlatSpec with Matchers {
         case oneofDescriptor: OneofDescriptor => o.invariants.length == oneofDescriptor.fields.length
         case _                                => false
       }
-//    case ProtobufF.TRepeated(_) =>
-//      desc match {
-//        case f: FieldDescriptor => f.isRepeated
-//        case _                  => false
-//      }
+    case ProtobufF.TRepeated(_) =>
+      desc match {
+        case f: FieldDescriptor => f.isRepeated
+        case _                  => false
+      }
     case e: ProtobufF.TEnum[Boolean] =>
       desc match {
         case eDesc: EnumDescriptor => enumTest(e, eDesc)

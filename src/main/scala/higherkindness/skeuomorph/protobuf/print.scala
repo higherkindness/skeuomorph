@@ -44,7 +44,7 @@ object print {
       case TBytes()         => "bytes"
       case TNamedType(name) => name
 
-//      case TRepeated(value) => s"repeated $value"
+      case TRepeated(value) => s"repeated $value"
 
       case TFileDescriptor(values, _, packageName) => s"package $packageName \n ${values.mkString("\n")}"
 

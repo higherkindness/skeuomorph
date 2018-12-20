@@ -16,36 +16,38 @@
 
 package higherkindness.skeuomorph.protobuf
 
-import cats.Functor
+import cats.{Applicative, Traverse}
+import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
+import qq.droste.util.DefaultTraverse
 import scalapb.descriptors._
 
 sealed trait ProtobufF[A]
 
 object ProtobufF {
 
-  final case class Field[A](name: String, tpe: A, position: Int, options: List[Option])
+  final case class Field[A](name: String, tpe: A, position: Int, options: List[Option], isRepeated: Boolean)
 
   final case class Option(name: String, value: String)
 
-  final case class TDouble[A]()                extends ProtobufF[A]
-  final case class TFloat[A]()                 extends ProtobufF[A]
-  final case class TInt32[A]()                 extends ProtobufF[A]
-  final case class TInt64[A]()                 extends ProtobufF[A]
-  final case class TUint32[A]()                extends ProtobufF[A]
-  final case class TUint64[A]()                extends ProtobufF[A]
-  final case class TSint32[A]()                extends ProtobufF[A]
-  final case class TSint64[A]()                extends ProtobufF[A]
-  final case class TFixed32[A]()               extends ProtobufF[A]
-  final case class TFixed64[A]()               extends ProtobufF[A]
-  final case class TSfixed32[A]()              extends ProtobufF[A]
-  final case class TSfixed64[A]()              extends ProtobufF[A]
-  final case class TBool[A]()                  extends ProtobufF[A]
-  final case class TString[A]()                extends ProtobufF[A]
-  final case class TBytes[A]()                 extends ProtobufF[A]
-  final case class TNamedType[A](name: String) extends ProtobufF[A]
-//  final case class TRepeated[A](value: A)   extends ProtobufF[A]
+  final case class TDouble[A]()                   extends ProtobufF[A]
+  final case class TFloat[A]()                    extends ProtobufF[A]
+  final case class TInt32[A]()                    extends ProtobufF[A]
+  final case class TInt64[A]()                    extends ProtobufF[A]
+  final case class TUint32[A]()                   extends ProtobufF[A]
+  final case class TUint64[A]()                   extends ProtobufF[A]
+  final case class TSint32[A]()                   extends ProtobufF[A]
+  final case class TSint64[A]()                   extends ProtobufF[A]
+  final case class TFixed32[A]()                  extends ProtobufF[A]
+  final case class TFixed64[A]()                  extends ProtobufF[A]
+  final case class TSfixed32[A]()                 extends ProtobufF[A]
+  final case class TSfixed64[A]()                 extends ProtobufF[A]
+  final case class TBool[A]()                     extends ProtobufF[A]
+  final case class TString[A]()                   extends ProtobufF[A]
+  final case class TBytes[A]()                    extends ProtobufF[A]
+  final case class TNamedType[A](name: String)    extends ProtobufF[A]
+  final case class TRepeated[A](value: A)         extends ProtobufF[A]
   final case class TOneOf[A](invariants: List[A]) extends ProtobufF[A]
 
   final case class TEnum[A](
@@ -59,36 +61,44 @@ object ProtobufF {
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
-  implicit val protobufFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
-    def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()        => TDouble()
-      case TFloat()         => TFloat()
-      case TInt32()         => TInt32()
-      case TInt64()         => TInt64()
-      case TUint32()        => TUint32()
-      case TUint64()        => TUint64()
-      case TSint32()        => TSint32()
-      case TSint64()        => TSint64()
-      case TFixed32()       => TFixed32()
-      case TFixed64()       => TFixed64()
-      case TSfixed32()      => TSfixed32()
-      case TSfixed64()      => TSfixed64()
-      case TBool()          => TBool()
-      case TString()        => TString()
-      case TBytes()         => TBytes()
-      case TNamedType(name) => TNamedType(name)
-//      case TRepeated(value)                       => TRepeated(f(value))
-      case TOneOf(values)                         => TOneOf(values.map(f))
-      case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
-      case TMessage(name, fields, reserved) =>
-        TMessage(
-          name,
-          fields.map(field => field.copy(tpe = f(field.tpe))),
-          reserved
-        )
-      case TFileDescriptor(messages, name, packageName) => TFileDescriptor(messages.map(f), name, packageName)
+  implicit val protobufFTraverse: Traverse[ProtobufF] =
+    new DefaultTraverse[ProtobufF] {
+      def traverse[G[_]: Applicative, A, B](fa: ProtobufF[A])(f: A => G[B]): G[ProtobufF[B]] = {
+        fa match {
+          case TDouble()                              => (TDouble(): ProtobufF[B]).pure[G]
+          case TFloat()                               => (TFloat(): ProtobufF[B]).pure[G]
+          case TInt32()                               => (TInt32(): ProtobufF[B]).pure[G]
+          case TInt64()                               => (TInt64(): ProtobufF[B]).pure[G]
+          case TUint32()                              => (TUint32(): ProtobufF[B]).pure[G]
+          case TUint64()                              => (TUint64(): ProtobufF[B]).pure[G]
+          case TSint32()                              => (TSint32(): ProtobufF[B]).pure[G]
+          case TSint64()                              => (TSint64(): ProtobufF[B]).pure[G]
+          case TFixed32()                             => (TFixed32(): ProtobufF[B]).pure[G]
+          case TFixed64()                             => (TFixed64(): ProtobufF[B]).pure[G]
+          case TSfixed32()                            => (TSfixed32(): ProtobufF[B]).pure[G]
+          case TSfixed64()                            => (TSfixed64(): ProtobufF[B]).pure[G]
+          case TBool()                                => (TBool(): ProtobufF[B]).pure[G]
+          case TString()                              => (TString(): ProtobufF[B]).pure[G]
+          case TBytes()                               => (TBytes(): ProtobufF[B]).pure[G]
+          case TRepeated(value)                       => f(value).map(TRepeated(_))
+          case TNamedType(name)                       => (TNamedType(name): ProtobufF[B]).pure[G]
+          case TEnum(name, symbols, options, aliases) => (TEnum(name, symbols, options, aliases): ProtobufF[B]).pure[G]
+          case TOneOf(values) =>
+            values
+              .traverse(value => f(value))
+              .map(oneOfs => TOneOf(oneOfs))
+          case TMessage(name, fields, reserved) =>
+            fields
+              .traverse(field =>
+                f(field.tpe).map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated)))
+              .map(fieldList => TMessage(name, fieldList, reserved))
+          case TFileDescriptor(messages, name, packageName) =>
+            messages
+              .traverse(f)
+              .map(messageG => TFileDescriptor(messageG, name, packageName))
+        }
+      }
     }
-  }
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra { base: BaseDescriptor =>
     base match {
@@ -111,8 +121,7 @@ object ProtobufF {
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
       case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-//      case f: FieldDescriptor if f.isRepeated  => TRepeated(f) // TODO rethink this and TOptional/TRequired
-      case f: FieldDescriptor if f.name.nonEmpty => TNamedType(f.name) // TODO double check if this is needed
+      case f: FieldDescriptor if f.name.nonEmpty                                        => TNamedType(f.name)
     }
   }
 
@@ -168,7 +177,8 @@ object ProtobufF {
               fieldDesc.name,
               fieldDesc,
               fieldDesc.number,
-              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption)
+              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+              fieldDesc.isRepeated
           )
         )
         .toList
