@@ -2,6 +2,14 @@ syntax = "proto3";
 
 package com.book;
 
+enum Genre {
+    option allow_alias = true;
+    UNKNOWN = 0;
+    SCI_FI = 1;
+    SPECULATIVE_FICTION = 1;
+    POETRY = 2;
+}
+
 message Person {
     string name = 1;
 }

@@ -32,7 +32,7 @@ object Playground extends App {
 
   val readFile: IO[FileDescriptor] = ParseProto
     .parseProto[IO]
-    .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
+    .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/simpleProto.proto"))
 
   val fileDescriptor: FileDescriptor = readFile.unsafeRunSync()
 

@@ -111,16 +111,24 @@ object ProtobufF {
   }
 
   def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
-    val values = e.values.map(value => (value.name, value.number)).toList
-
     val defaultOptions = List(("allow_alias", e.getOptions.getAllowAlias), ("deprecated", e.getOptions.getDeprecated))
+
+    val valuesAndAliases = e.values.map(value => (value.name, value.number))
+    val (hasAlias, noAlias) = valuesAndAliases
+      .groupBy(_._2)
+      .values
+      .partition(_.lengthCompare(1) > 0)
+
+    val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
+    val values = separateValueFromAliases.map(_._1) ++ noAlias.flatten
+    val aliases = separateValueFromAliases.flatMap(_._2)
 
     TEnum(
       e.name,
-      values,
+      values.toList,
       Options
         .options(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
-      values.groupBy(_._2).values.filter(_.lengthCompare(1) > 0).flatten.toList
+      aliases.toList
     )
   }
 
