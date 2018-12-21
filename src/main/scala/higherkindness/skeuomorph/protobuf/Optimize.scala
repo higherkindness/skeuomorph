@@ -28,8 +28,8 @@ object Optimize {
    */
   def repeatedFieldToListTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
     case message: TMessage[T] =>
-      val res: T = repeatedTypes(T)(T.algebra(message))
-      T.coalgebra(res)
+      val transformedMessage: T = repeatedTypes(T)(T.algebra(message))
+      T.coalgebra(transformedMessage)
     case other => other
   }
 
@@ -37,11 +37,11 @@ object Optimize {
 
   def repeatedTypesTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
     case TMessage(n, fields, reserved) =>
-      val listFields: List[ProtobufF.Field[T]] = fields.map(
-        f =>
-          if (f.isRepeated)
-            ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated)
-          else f)
+      val listFields: List[ProtobufF.Field[T]] = fields.map( f =>
+        if (f.isRepeated)
+          ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated)
+        else f
+      )
       TMessage(n, listFields, reserved)
     case other => other
   }
