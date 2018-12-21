@@ -112,8 +112,19 @@ object ProtobufF {
 
   def enumFromScala(e: EnumDescriptor): TEnum[BaseDescriptor] = {
     val defaultOptions = List(("allow_alias", e.getOptions.getAllowAlias), ("deprecated", e.getOptions.getDeprecated))
+    val valuesAndAliases: Seq[(String, Int)] = e.values.map(value => (value.name, value.number))
+    val (values, aliases) = partitionValuesAliases(valuesAndAliases)
 
-    val valuesAndAliases = e.values.map(value => (value.name, value.number))
+    TEnum(
+      e.name,
+      values,
+      Options
+        .options(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
+      aliases
+    )
+  }
+
+  def partitionValuesAliases(valuesAndAliases: Seq[(String, Int)]): (List[(String, Int)], List[(String, Int)]) = {
     val (hasAlias, noAlias) = valuesAndAliases
       .groupBy(_._2)
       .values
@@ -122,14 +133,7 @@ object ProtobufF {
     val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
     val values = separateValueFromAliases.map(_._1) ++ noAlias.flatten
     val aliases = separateValueFromAliases.flatMap(_._2)
-
-    TEnum(
-      e.name,
-      values.toList,
-      Options
-        .options(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
-      aliases.toList
-    )
+    (values.toList, aliases.toList)
   }
 
   def messageFromScala(descriptor: Descriptor): TMessage[BaseDescriptor] = {

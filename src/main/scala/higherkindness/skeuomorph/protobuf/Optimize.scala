@@ -23,7 +23,7 @@ object Optimize {
 
   /**
    * micro optimization to convert repeated fields (necessary for
-   * protobuf support) into their proper list type. Doing this in
+   * protobuf support) into their proper list type, TRepeated. Doing this in
    * initial parsing pass creates infinite loop problems.
    */
   def repeatedFieldToListTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
