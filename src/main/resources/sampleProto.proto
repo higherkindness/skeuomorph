@@ -39,9 +39,10 @@ message BookStore {
 enum Genre {
     option allow_alias = true;
     UNKNOWN = 0;
-    SCI_FI = 1;
+    SCIENCE_FICTION = 1;
     SPECULATIVE_FICTION = 1;
     POETRY = 2;
+    SCI_FI = 1;
 }
 
 enum BindingType {

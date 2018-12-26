@@ -51,6 +51,7 @@ object Transform {
     case ProtobufF.TFileDescriptor(values, _, _) =>
       TContaining(values)
     case ProtobufF.TOneOf(invariants) => TCoproduct(NonEmptyList(invariants.head, invariants.tail)) // TODO
+    case ProtobufF.TMap(key, values)  => TMap(Some(key), values)
   }
 
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
@@ -64,7 +65,7 @@ object Transform {
     case AvroF.TString()        => TString()
     case AvroF.TNamedType(name) => TNamedType(name)
     case AvroF.TArray(item)     => TList(item)
-    case AvroF.TMap(values)     => TMap(values)
+    case AvroF.TMap(values)     => TMap(None, values)
     case AvroF.TRecord(name, _, _, _, fields) =>
       TProduct(name, fields.map(f => Field(f.name, f.tpe)))
     case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)

@@ -93,7 +93,7 @@ object Protocol {
     case MuF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
     case MuF.TEither(left, right)   => tUnion(NonEmptyList(left, List(right)))
     case MuF.TList(value)           => tArray(value)
-    case MuF.TMap(value)            => tMap(value)
+    case MuF.TMap(_, value)         => tMap(value)
     case MuF.TGeneric(_, _)         => ??? // WAT
     case MuF.TContaining(_)         => ??? // TBD
     case MuF.TRequired(t)           => T.coalgebra(t)

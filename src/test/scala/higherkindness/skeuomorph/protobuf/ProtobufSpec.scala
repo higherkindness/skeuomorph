@@ -59,6 +59,11 @@ class ProtobufSpec extends FlatSpec with Matchers {
         case oneofDescriptor: OneofDescriptor => o.invariants.length == oneofDescriptor.fields.length
         case _                                => false
       }
+    case _: ProtobufF.TMap[Boolean] =>
+      desc match {
+        case f: FieldDescriptor => f.isMapField
+        case _                  => false
+      }
     case ProtobufF.TRepeated(_) =>
       desc match {
         case f: FieldDescriptor => f.isRepeated

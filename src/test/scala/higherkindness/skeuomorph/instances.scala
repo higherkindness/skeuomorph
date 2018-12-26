@@ -279,7 +279,7 @@ object instances {
         name     <- nonEmptyString
         tpe      <- innerTypes
         position <- smallNumber
-      } yield ProtobufF.Field(name, B.algebra(tpe), position, List(), withRepeat)
+      } yield ProtobufF.Field(name, B.algebra(tpe), position, List(), withRepeat, isMapField = false)
     }
 
     for {

@@ -43,10 +43,10 @@ object print {
       case TString()        => "string"
       case TBytes()         => "bytes"
       case TNamedType(name) => name
-
       case TRepeated(value) => s"repeated $value"
+      case TMap(key, value) => s"map<$key, $value>"
 
-      case TFileDescriptor(values, _, packageName) => s"package $packageName \n ${values.mkString("\n")}"
+      case TFileDescriptor(values, _, packageName) => s"package $packageName; \n ${values.mkString("\n")}"
 
       case TEnum(name, symbols, options, aliases) =>
         val printOptions = options.map(o => s"\toption ${o.name} = ${o.value}").mkString("\n")

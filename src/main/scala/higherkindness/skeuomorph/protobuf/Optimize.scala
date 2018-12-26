@@ -37,11 +37,11 @@ object Optimize {
 
   def repeatedTypesTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
     case TMessage(n, fields, reserved) =>
-      val listFields: List[ProtobufF.Field[T]] = fields.map( f =>
-        if (f.isRepeated)
-          ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated)
-        else f
-      )
+      val listFields: List[ProtobufF.Field[T]] = fields.map(
+        f =>
+          if (f.isRepeated && !f.isMapField) // Map fields cannot be repeated according to the proto spec
+            ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated, f.isMapField)
+          else f)
       TMessage(n, listFields, reserved)
     case other => other
   }

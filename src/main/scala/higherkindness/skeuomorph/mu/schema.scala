@@ -38,7 +38,7 @@ object MuF {
   final case class TOption[A](value: A)                              extends MuF[A]
   final case class TEither[A](left: A, right: A)                     extends MuF[A]
   final case class TList[A](value: A)                                extends MuF[A]
-  final case class TMap[A](value: A)                                 extends MuF[A]
+  final case class TMap[A](keyTpe: Option[A], value: A)              extends MuF[A]
   final case class TGeneric[A](generic: A, params: List[A])          extends MuF[A]
   final case class TContaining[A](values: List[A])                   extends MuF[A]
   final case class TRequired[A](value: A)                            extends MuF[A]
@@ -60,7 +60,7 @@ object MuF {
       case TOption(value)            => TOption(f(value))
       case TEither(left, right)      => TEither(f(left), f(right))
       case TList(value)              => TList(f(value))
-      case TMap(value)               => TMap(f(value))
+      case TMap(key, value)          => TMap(key.map(f), f(value))
       case TGeneric(generic, params) => TGeneric(f(generic), params.map(f))
       case TContaining(values)       => TContaining(values.map(f))
       case TRequired(value)          => TRequired(f(value))

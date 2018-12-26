@@ -42,7 +42,8 @@ object print {
       case TNamedType(name)          => name
       case TOption(value)            => s"Option[$value]"
       case TEither(a, b)             => s"Either[$a, $b]"
-      case TMap(value)               => s"Map[String, $value]"
+      case TMap(Some(key), value)    => s"Map[$key, $value]"
+      case TMap(None, value)         => s"Map[String, $value]" // Compatibility for Avro
       case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
       case TList(value)              => s"List[$value]"
       case TContaining(values)       => values.mkString("\n")
