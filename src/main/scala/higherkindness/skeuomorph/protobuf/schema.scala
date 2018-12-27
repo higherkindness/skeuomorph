@@ -144,8 +144,7 @@ object ProtobufF {
   def messageFromDescriptor(descriptor: Descriptor): TMessage[BaseDescriptor] = {
     val options = descriptor.getOptions
     val defaultOptions = List(
-      ("deprecated", options.getDeprecated),
-      ("map_entry", options.getMapEntry)
+      ("deprecated", options.getDeprecated)
     )
 
     val fields: List[Field[BaseDescriptor]] =

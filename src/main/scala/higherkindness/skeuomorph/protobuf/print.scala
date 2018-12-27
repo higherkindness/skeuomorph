@@ -49,7 +49,7 @@ object print {
       case TFileDescriptor(values, _, packageName) => s"package $packageName; \n ${values.mkString("\n")}"
 
       case TEnum(name, symbols, options, aliases) =>
-        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value}").mkString("\n")
+        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
         val printSymbols = symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         s"""
@@ -61,7 +61,7 @@ object print {
       """.stripMargin
 
       case TMessage(name, fields, reserved) =>
-        val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
+        val printReserved: String = reserved.map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";")).mkString("\n  ")
         def printOptions(options: List[Option]) =
           if (options.isEmpty)
             ""
