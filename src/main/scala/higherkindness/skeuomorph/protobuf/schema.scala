@@ -88,8 +88,8 @@ object ProtobufF {
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedTypeName(f)
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedTypeName(f)
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedType(f)
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedType(f)
   }
 
   object Options {
@@ -138,7 +138,7 @@ object ProtobufF {
     val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
     val values                   = separateValueFromAliases.map(_._1) ++ noAlias.flatten
     val aliases                  = separateValueFromAliases.flatMap(_._2)
-    (values.toList, aliases.toList)
+    (values.toList.sortBy(_._2), aliases.toList) // Sorted b/c Enums must always start with their 0 value field
   }
 
   def messageFromDescriptor(descriptor: Descriptor): TMessage[BaseDescriptor] = {
@@ -166,7 +166,7 @@ object ProtobufF {
     TMessage(descriptor.name, fields, reserved)
   }
 
-  def getNestedTypeName(f: FieldDescriptor): ProtobufF[BaseDescriptor] = {
+  def getNestedType(f: FieldDescriptor): ProtobufF[BaseDescriptor] = {
     f.scalaType match {
       case ScalaType.Message(descriptor) if f.isMapField => getMapTypes(descriptor)
       case ScalaType.Message(descriptor)                 => TNamedType(descriptor.name)

@@ -48,8 +48,7 @@ object Transform {
     case ProtobufF.TRepeated(value)           => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case ProtobufF.TFileDescriptor(values, _, _) =>
-      TContaining(values)
+    case ProtobufF.TFileDescriptor(values, _, _) => TContaining(values)
     case ProtobufF.TOneOf(invariants) => TCoproduct(NonEmptyList(invariants.head, invariants.tail)) // TODO
     case ProtobufF.TMap(key, values)  => TMap(Some(key), values)
   }
