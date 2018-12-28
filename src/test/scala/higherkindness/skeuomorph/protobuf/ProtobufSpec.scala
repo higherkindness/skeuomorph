@@ -56,7 +56,7 @@ class ProtobufSpec extends FlatSpec with Matchers {
     case ProtobufF.TBytes()    => fieldTest(desc, TYPE_BYTES)
     case o: ProtobufF.TOneOf[Boolean] =>
       desc match {
-        case oneofDescriptor: OneofDescriptor => o.invariants.length == oneofDescriptor.fields.length
+        case oneofDescriptor: OneofDescriptor => o.fields.length == oneofDescriptor.fields.length
         case _                                => false
       }
     case _: ProtobufF.TMap[Boolean] =>

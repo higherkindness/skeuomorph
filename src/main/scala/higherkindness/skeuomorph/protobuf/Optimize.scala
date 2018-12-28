@@ -22,7 +22,7 @@ import qq.droste.{scheme, Basis, Trans}
 object Optimize {
 
   /**
-   * micro optimization to convert repeated fields (necessary for
+   * Micro optimization to convert repeated fields (necessary for
    * protobuf support) into their proper list type, TRepeated. Doing this in
    * initial parsing pass creates infinite loop problems.
    */
@@ -36,13 +36,39 @@ object Optimize {
   def repeatedTypes[T: Basis[ProtobufF, ?]]: T => T = scheme.cata(repeatedTypesTrans.algebra)
 
   def repeatedTypesTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
-    case TMessage(n, fields, reserved) =>
+    case TMessage(n, fields, reserved, oneOfs) =>
       val listFields: List[ProtobufF.Field[T]] = fields.map(
         f =>
           if (f.isRepeated && !f.isMapField) // Map fields cannot be repeated according to the proto spec
             ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated, f.isMapField)
           else f)
-      TMessage(n, listFields, reserved)
+      TMessage(n, listFields, reserved, oneOfs)
+    case other => other
+  }
+
+  /**
+   * This optimization includes the protobuf "OneOf" list as fields, so
+   * that it can be interpreted into correct scala code as a member of a case
+   * class.
+   * */
+  def combineFields[T: Basis[ProtobufF, ?]]: T => T = scheme.cata(oneOfsAsFieldsTrans.algebra)
+
+  def oneOfsAsFieldsTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
+    case TMessage(name, messageFields, reserved, oneOfs) => {
+
+      val oneOfAsField: Seq[ProtobufF.Field[T]] = oneOfs.map(
+        oneOf =>
+          ProtobufF.Field(
+            oneOf.name,
+            T.algebra(oneOf),
+            999,
+            List(),
+            false,
+            false
+        ))
+
+      TMessage(name, messageFields ++ oneOfAsField, reserved, List())
+    }
     case other => other
   }
 }

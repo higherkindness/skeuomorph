@@ -60,8 +60,10 @@ object print {
       |}
       """.stripMargin
 
-      case TMessage(name, fields, reserved) =>
-        val printReserved: String = reserved.map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";")).mkString("\n  ")
+      case TMessage(name, fields, reserved, _) =>
+        val printReserved: String = reserved
+          .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
+          .mkString("\n  ")
         def printOptions(options: List[Option]) =
           if (options.isEmpty)
             ""
@@ -79,7 +81,17 @@ object print {
       |}
       """.stripMargin
 
-      case TOneOf(invariants) => s"${invariants.mkString("\n")}"
+      case TOneOf(name, fields) =>
+        val printFields =
+          fields
+            .map(f => s"${f.tpe} ${f.name} = ${f.position};")
+            .mkString("\n  ")
+
+        s"""
+      |oneof $name {
+      |  $printFields
+      |}
+      """.stripMargin
     }
 
     Printer(scheme.cata(algebra))

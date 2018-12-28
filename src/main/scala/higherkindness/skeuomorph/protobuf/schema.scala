@@ -37,25 +37,26 @@ object ProtobufF {
 
   final case class Option(name: String, value: String)
 
-  final case class TDouble[A]()                   extends ProtobufF[A]
-  final case class TFloat[A]()                    extends ProtobufF[A]
-  final case class TInt32[A]()                    extends ProtobufF[A]
-  final case class TInt64[A]()                    extends ProtobufF[A]
-  final case class TUint32[A]()                   extends ProtobufF[A]
-  final case class TUint64[A]()                   extends ProtobufF[A]
-  final case class TSint32[A]()                   extends ProtobufF[A]
-  final case class TSint64[A]()                   extends ProtobufF[A]
-  final case class TFixed32[A]()                  extends ProtobufF[A]
-  final case class TFixed64[A]()                  extends ProtobufF[A]
-  final case class TSfixed32[A]()                 extends ProtobufF[A]
-  final case class TSfixed64[A]()                 extends ProtobufF[A]
-  final case class TBool[A]()                     extends ProtobufF[A]
-  final case class TString[A]()                   extends ProtobufF[A]
-  final case class TBytes[A]()                    extends ProtobufF[A]
-  final case class TNamedType[A](name: String)    extends ProtobufF[A]
-  final case class TRepeated[A](value: A)         extends ProtobufF[A]
-  final case class TOneOf[A](invariants: List[A]) extends ProtobufF[A]
-  final case class TMap[A](keyTpe: A, value: A)   extends ProtobufF[A]
+  final case class TDouble[A]()                extends ProtobufF[A]
+  final case class TFloat[A]()                 extends ProtobufF[A]
+  final case class TInt32[A]()                 extends ProtobufF[A]
+  final case class TInt64[A]()                 extends ProtobufF[A]
+  final case class TUint32[A]()                extends ProtobufF[A]
+  final case class TUint64[A]()                extends ProtobufF[A]
+  final case class TSint32[A]()                extends ProtobufF[A]
+  final case class TSint64[A]()                extends ProtobufF[A]
+  final case class TFixed32[A]()               extends ProtobufF[A]
+  final case class TFixed64[A]()               extends ProtobufF[A]
+  final case class TSfixed32[A]()              extends ProtobufF[A]
+  final case class TSfixed64[A]()              extends ProtobufF[A]
+  final case class TBool[A]()                  extends ProtobufF[A]
+  final case class TString[A]()                extends ProtobufF[A]
+  final case class TBytes[A]()                 extends ProtobufF[A]
+  final case class TNamedType[A](name: String) extends ProtobufF[A]
+  final case class TRepeated[A](value: A)      extends ProtobufF[A]
+  @deriveTraverse
+  final case class TOneOf[A](name: String, fields: List[Field[A]]) extends ProtobufF[A]
+  final case class TMap[A](keyTpe: A, value: A)                    extends ProtobufF[A]
 
   final case class TEnum[A](
       name: String,
@@ -63,15 +64,19 @@ object ProtobufF {
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
-
-  final case class TMessage[A](name: String, fields: List[Field[A]], reserved: List[List[String]]) extends ProtobufF[A]
+  final case class TMessage[A](
+      name: String,
+      fields: List[Field[A]],
+      reserved: List[List[String]],
+      oneOfs: List[TOneOf[A]])
+      extends ProtobufF[A]
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra {
     case f: FileDescriptor                                                            => fileFromDescriptor(f)
     case e: EnumDescriptor                                                            => enumFromDescriptor(e)
-    case o: Descriptor if o.oneofs.nonEmpty                                           => TOneOf(o.oneofs.flatMap(oof => oof.fields).toList)
+    case o: OneofDescriptor                                                           => makeTOneOf(o)
     case d: Descriptor                                                                => messageFromDescriptor(d)
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
@@ -142,28 +147,51 @@ object ProtobufF {
   }
 
   def messageFromDescriptor(descriptor: Descriptor): TMessage[BaseDescriptor] = {
-    val options = descriptor.getOptions
-    val defaultOptions = List(
-      ("deprecated", options.getDeprecated)
-    )
-
-    val fields: List[Field[BaseDescriptor]] =
-      descriptor.fields
-        .map(
-          fieldDesc =>
-            Field[BaseDescriptor](
-              fieldDesc.name,
-              fieldDesc,
-              fieldDesc.number,
-              Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
-              fieldDesc.isRepeated,
-              fieldDesc.isMapField
-          )
-        )
-        .toList
+    val fields: List[Field[BaseDescriptor]] = fieldsFromDescriptor(descriptor)
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList
-    TMessage(descriptor.name, fields, reserved)
+    TMessage[BaseDescriptor](descriptor.name, fields, reserved, oneOfFromdescriptor(descriptor))
+  }
+
+  def oneOfFromdescriptor(descriptor: Descriptor): List[TOneOf[BaseDescriptor]] =
+    descriptor.oneofs.map(makeTOneOf).toList
+
+  def makeTOneOf(oneOf: OneofDescriptor): TOneOf[BaseDescriptor] = {
+    val fields = oneOf.fields.map(
+      f =>
+        Field[BaseDescriptor](
+          f.name,
+          f,
+          f.number,
+          List(),
+          f.isRepeated,
+          f.isMapField
+      )
+    )
+
+    TOneOf[BaseDescriptor](oneOf.name, fields.toList)
+  }
+
+  def fieldsFromDescriptor(descriptor: Descriptor): List[Field[BaseDescriptor]] = {
+    val options        = descriptor.getOptions
+    val defaultOptions = List(("deprecated", options.getDeprecated))
+
+    descriptor.fields
+      .filterNot(
+        fieldDesc => descriptor.oneofs.flatMap(_.fields.map(_.number)).contains(fieldDesc.number)
+      )
+      .map(
+        fieldDesc =>
+          Field[BaseDescriptor](
+            fieldDesc.name,
+            fieldDesc,
+            fieldDesc.number,
+            Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+            fieldDesc.isRepeated,
+            fieldDesc.isMapField
+        )
+      )
+      .toList
   }
 
   def getNestedType(f: FieldDescriptor): ProtobufF[BaseDescriptor] = {
@@ -179,9 +207,13 @@ object ProtobufF {
    * as a Descriptor that it creates itself, which is not available at the top level
    * of a file. We need to parse that synthetic descriptor to get at its inner fields,
    * which represent the key and value of a scala map */
-  def getMapTypes(syntheticDesc: Descriptor) = {
-    val keyValueMessage     = messageFromDescriptor(syntheticDesc)
-    val key :: value :: Nil = keyValueMessage.fields // TODO: Will fail if decomposition doesn't match
+  def getMapTypes(syntheticDesc: Descriptor): TMap[BaseDescriptor] = {
+    val keyValueFields = fieldsFromDescriptor(syntheticDesc)
+    require(
+      keyValueFields.length == 2,
+      s"Message did not contain exactly two fields corresponding to the key and value of a Map"
+    )
+    val key :: value :: Nil = keyValueFields
     TMap(key.tpe, value.tpe)
   }
 }
