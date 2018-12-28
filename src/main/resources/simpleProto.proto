@@ -6,7 +6,7 @@ message Person {
  string name = 1;
 
  oneof avatar {
-    string image_url = 2;
+    Test image_url = 2;
     bytes image_data = 3;
  }
 

@@ -61,7 +61,7 @@ object Optimize {
           ProtobufF.Field(
             oneOf.name,
             T.algebra(oneOf),
-            999,
+            999, // TODO Argh!
             List(),
             false,
             false
