@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,14 @@ object Optimize {
 
   def repeatedTypesTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
     case TMessage(n, fields, reserved, oneOfs) =>
-      val listFields: List[ProtobufF.Field[T]] = fields.map(
-        f =>
-          if (f.isRepeated && !f.isMapField) // Map fields cannot be repeated according to the proto spec
-            ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated, f.isMapField)
-          else f)
+      val listFields: List[FieldF[T]] = fields.map(field =>
+        field match {
+          case f: ProtobufF.Field[T] =>
+            if (f.isRepeated && !f.isMapField) // Map fields cannot be repeated according to the proto spec
+              ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated, f.isMapField)
+            else f
+          case other => other
+      })
       TMessage(n, listFields, reserved, oneOfs)
     case other => other
   }
@@ -56,15 +59,11 @@ object Optimize {
   def oneOfsAsFieldsTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
     case TMessage(name, messageFields, reserved, oneOfs) => {
 
-      val oneOfAsField: Seq[ProtobufF.Field[T]] = oneOfs.map(
+      val oneOfAsField: Seq[ProtobufF.SimpleField[T]] = oneOfs.map(
         oneOf =>
-          ProtobufF.Field(
+          ProtobufF.SimpleField(
             oneOf.name,
-            T.algebra(oneOf),
-            999, // TODO Argh!
-            List(),
-            false,
-            false
+            T.algebra(oneOf)
         ))
 
       TMessage(name, messageFields ++ oneOfAsField, reserved, List())

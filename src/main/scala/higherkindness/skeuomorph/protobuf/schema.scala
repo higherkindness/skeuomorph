@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,20 @@
 
 package higherkindness.skeuomorph.protobuf
 
+import cats.Functor
 import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
-import qq.droste.macros.deriveTraverse
 import scalapb.descriptors.{ScalaType, _}
 
-@deriveTraverse
 sealed trait ProtobufF[A]
 
+sealed trait FieldF[A] {
+  val name: String
+  val tpe: A
+}
+
 object ProtobufF {
-  @deriveTraverse
   final case class Field[A](
       name: String,
       tpe: A,
@@ -34,27 +37,29 @@ object ProtobufF {
       options: List[Option],
       isRepeated: Boolean,
       isMapField: Boolean)
+      extends FieldF[A]
+
+  final case class SimpleField[A](name: String, tpe: A) extends FieldF[A]
 
   final case class Option(name: String, value: String)
 
-  final case class TDouble[A]()                extends ProtobufF[A]
-  final case class TFloat[A]()                 extends ProtobufF[A]
-  final case class TInt32[A]()                 extends ProtobufF[A]
-  final case class TInt64[A]()                 extends ProtobufF[A]
-  final case class TUint32[A]()                extends ProtobufF[A]
-  final case class TUint64[A]()                extends ProtobufF[A]
-  final case class TSint32[A]()                extends ProtobufF[A]
-  final case class TSint64[A]()                extends ProtobufF[A]
-  final case class TFixed32[A]()               extends ProtobufF[A]
-  final case class TFixed64[A]()               extends ProtobufF[A]
-  final case class TSfixed32[A]()              extends ProtobufF[A]
-  final case class TSfixed64[A]()              extends ProtobufF[A]
-  final case class TBool[A]()                  extends ProtobufF[A]
-  final case class TString[A]()                extends ProtobufF[A]
-  final case class TBytes[A]()                 extends ProtobufF[A]
-  final case class TNamedType[A](name: String) extends ProtobufF[A]
-  final case class TRepeated[A](value: A)      extends ProtobufF[A]
-  @deriveTraverse
+  final case class TDouble[A]()                                    extends ProtobufF[A]
+  final case class TFloat[A]()                                     extends ProtobufF[A]
+  final case class TInt32[A]()                                     extends ProtobufF[A]
+  final case class TInt64[A]()                                     extends ProtobufF[A]
+  final case class TUint32[A]()                                    extends ProtobufF[A]
+  final case class TUint64[A]()                                    extends ProtobufF[A]
+  final case class TSint32[A]()                                    extends ProtobufF[A]
+  final case class TSint64[A]()                                    extends ProtobufF[A]
+  final case class TFixed32[A]()                                   extends ProtobufF[A]
+  final case class TFixed64[A]()                                   extends ProtobufF[A]
+  final case class TSfixed32[A]()                                  extends ProtobufF[A]
+  final case class TSfixed64[A]()                                  extends ProtobufF[A]
+  final case class TBool[A]()                                      extends ProtobufF[A]
+  final case class TString[A]()                                    extends ProtobufF[A]
+  final case class TBytes[A]()                                     extends ProtobufF[A]
+  final case class TNamedType[A](name: String)                     extends ProtobufF[A]
+  final case class TRepeated[A](value: A)                          extends ProtobufF[A]
   final case class TOneOf[A](name: String, fields: List[Field[A]]) extends ProtobufF[A]
   final case class TMap[A](keyTpe: A, value: A)                    extends ProtobufF[A]
 
@@ -66,7 +71,7 @@ object ProtobufF {
       extends ProtobufF[A]
   final case class TMessage[A](
       name: String,
-      fields: List[Field[A]],
+      fields: List[FieldF[A]],
       reserved: List[List[String]],
       oneOfs: List[TOneOf[A]])
       extends ProtobufF[A]
@@ -95,6 +100,47 @@ object ProtobufF {
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedType(f)
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedType(f)
+  }
+
+  implicit val protoFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
+    def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
+      case TDouble()                              => TDouble[B]()
+      case TFloat()                               => TFloat[B]()
+      case TInt32()                               => TInt32[B]()
+      case TInt64()                               => TInt64[B]()
+      case TUint32()                              => TUint32[B]()
+      case TUint64()                              => TUint64[B]()
+      case TSint32()                              => TSint32[B]()
+      case TSint64()                              => TSint64[B]()
+      case TFixed32()                             => TFixed32[B]()
+      case TFixed64()                             => TFixed64[B]()
+      case TSfixed32()                            => TSfixed32[B]()
+      case TSfixed64()                            => TSfixed64[B]()
+      case TBool()                                => TBool[B]()
+      case TString()                              => TString[B]()
+      case TBytes()                               => TBytes[B]()
+      case TNamedType(name)                       => TNamedType[B](name)
+      case TRepeated(value)                       => TRepeated[B](f(value))
+      case TOneOf(name, fields)                   => TOneOf[B](name, fields.map(field => field.copy(tpe = f(field.tpe))))
+      case TMap(keyTpe, value)                    => TMap[B](f(keyTpe), f(value))
+      case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
+      case TMessage(name, fields, reserved, oneOfs) =>
+        TMessage[B](
+          name,
+          fields.map(
+            field =>
+              field match {
+                case SimpleField(n, tpe)                        => SimpleField(n, f(tpe))
+                case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
+            }
+          ),
+          reserved,
+          oneOfs.map(
+            oneOf => oneOf.copy(fields = oneOf.fields.map(field => field.copy(tpe = f(field.tpe))))
+          )
+        )
+      case TFileDescriptor(values, name, p) => TFileDescriptor(values.map(f), name, p)
+    }
   }
 
   object Options {
@@ -147,7 +193,7 @@ object ProtobufF {
   }
 
   def messageFromDescriptor(descriptor: Descriptor): TMessage[BaseDescriptor] = {
-    val fields: List[Field[BaseDescriptor]] = fieldsFromDescriptor(descriptor)
+    val fields: List[FieldF[BaseDescriptor]] = fieldsFromDescriptor(descriptor)
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList
     TMessage[BaseDescriptor](descriptor.name, fields, reserved, oneOfFromdescriptor(descriptor))

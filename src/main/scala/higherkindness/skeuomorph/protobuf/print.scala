@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,7 +72,14 @@ object print {
 
         val printFields =
           fields
-            .map(f => s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};")
+            .map { field =>
+              field match {
+                case f: Field[String] =>
+                  s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
+                case sf: SimpleField[String] =>
+                  s"${sf.tpe}"
+              }
+            }
             .mkString("\n  ")
         s"""
       |message $name {
