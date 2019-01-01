@@ -285,7 +285,7 @@ object instances {
     for {
       name  <- nonEmptyString
       field <- sampleField
-    } yield ProtobufF.TMessage(name, List(field), List(), List())
+    } yield ProtobufF.TMessage(name, List(field), List())
   }
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {

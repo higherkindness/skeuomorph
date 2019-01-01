@@ -38,8 +38,7 @@ object ProtobufF {
       isRepeated: Boolean,
       isMapField: Boolean)
       extends FieldF[A]
-
-  final case class SimpleField[A](name: String, tpe: A) extends FieldF[A]
+  final case class OneOfField[A](name: String, tpe: A) extends FieldF[A]
 
   final case class Option(name: String, value: String)
 
@@ -72,8 +71,7 @@ object ProtobufF {
   final case class TMessage[A](
       name: String,
       fields: List[FieldF[A]],
-      reserved: List[List[String]],
-      oneOfs: List[TOneOf[A]])
+      reserved: List[List[String]])
       extends ProtobufF[A]
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
@@ -124,20 +122,17 @@ object ProtobufF {
       case TOneOf(name, fields)                   => TOneOf[B](name, fields.map(field => field.copy(tpe = f(field.tpe))))
       case TMap(keyTpe, value)                    => TMap[B](f(keyTpe), f(value))
       case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
-      case TMessage(name, fields, reserved, oneOfs) =>
+      case TMessage(name, fields, reserved) =>
         TMessage[B](
           name,
           fields.map(
             field =>
               field match {
-                case SimpleField(n, tpe)                        => SimpleField(n, f(tpe))
+                case OneOfField(n, tpe)                        => OneOfField(n, f(tpe))
                 case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
             }
           ),
-          reserved,
-          oneOfs.map(
-            oneOf => oneOf.copy(fields = oneOf.fields.map(field => field.copy(tpe = f(field.tpe))))
-          )
+          reserved
         )
       case TFileDescriptor(values, name, p) => TFileDescriptor(values.map(f), name, p)
     }
@@ -196,11 +191,11 @@ object ProtobufF {
     val fields: List[FieldF[BaseDescriptor]] = fieldsFromDescriptor(descriptor)
     val reserved: List[List[String]] =
       descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList
-    TMessage[BaseDescriptor](descriptor.name, fields, reserved, oneOfFromdescriptor(descriptor))
+    TMessage[BaseDescriptor](descriptor.name, fields, reserved)
   }
 
-  def oneOfFromdescriptor(descriptor: Descriptor): List[TOneOf[BaseDescriptor]] =
-    descriptor.oneofs.map(makeTOneOf).toList
+//  def oneOfFromdescriptor(descriptor: Descriptor): List[TOneOf[BaseDescriptor]] =
+//    descriptor.oneofs.map(makeTOneOf).toList
 
   def makeTOneOf(oneOf: OneofDescriptor): TOneOf[BaseDescriptor] = {
     val fields = oneOf.fields.map(
@@ -218,11 +213,15 @@ object ProtobufF {
     TOneOf[BaseDescriptor](oneOf.name, fields.toList)
   }
 
-  def fieldsFromDescriptor(descriptor: Descriptor): List[Field[BaseDescriptor]] = {
+  def fieldsFromDescriptor(descriptor: Descriptor): List[FieldF[BaseDescriptor]] = {
     val options        = descriptor.getOptions
     val defaultOptions = List(("deprecated", options.getDeprecated))
 
-    descriptor.fields
+    val simpleFields: List[OneOfField[BaseDescriptor]] = descriptor.oneofs.map(oneOf =>
+    OneOfField[BaseDescriptor](oneOf.name, oneOf)
+    ).toList
+
+    val fields = descriptor.fields
       .filterNot(
         fieldDesc => descriptor.oneofs.flatMap(_.fields.map(_.number)).contains(fieldDesc.number)
       )
@@ -238,6 +237,8 @@ object ProtobufF {
         )
       )
       .toList
+
+    fields ++ simpleFields
   }
 
   def getNestedType(f: FieldDescriptor): ProtobufF[BaseDescriptor] = {

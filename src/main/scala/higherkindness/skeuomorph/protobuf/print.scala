@@ -60,7 +60,7 @@ object print {
       |}
       """.stripMargin
 
-      case TMessage(name, fields, reserved, _) =>
+      case TMessage(name, fields, reserved) =>
         val printReserved: String = reserved
           .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
           .mkString("\n  ")
@@ -76,8 +76,8 @@ object print {
               field match {
                 case f: Field[String] =>
                   s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
-                case sf: SimpleField[String] =>
-                  s"${sf.tpe}"
+                case oneOf: OneOfField[String] =>
+                  s"${oneOf.tpe}"
               }
             }
             .mkString("\n  ")

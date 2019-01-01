@@ -38,7 +38,7 @@ object Playground extends App {
   val fileDescriptor: FileDescriptor = readFile.unsafeRunSync()
 
   // This step is new and is actually important for creating valid data
-  val optimizeProtobufF: Mu[ProtobufF] => Mu[ProtobufF] = repeatedTypes andThen combineFields
+  val optimizeProtobufF: Mu[ProtobufF] => Mu[ProtobufF] = repeatedTypes
 
   val parseProto: BaseDescriptor => Mu[ProtobufF] =
     scheme.ana(ProtobufF.fromProtobuf) andThen optimizeProtobufF

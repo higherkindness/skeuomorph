@@ -36,7 +36,7 @@ object Optimize {
   def repeatedTypes[T: Basis[ProtobufF, ?]]: T => T = scheme.cata(repeatedTypesTrans.algebra)
 
   def repeatedTypesTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
-    case TMessage(n, fields, reserved, oneOfs) =>
+    case TMessage(n, fields, reserved) =>
       val listFields: List[FieldF[T]] = fields.map(field =>
         field match {
           case f: ProtobufF.Field[T] =>
@@ -45,29 +45,7 @@ object Optimize {
             else f
           case other => other
       })
-      TMessage(n, listFields, reserved, oneOfs)
-    case other => other
-  }
-
-  /**
-   * This optimization includes the protobuf "OneOf" list as fields, so
-   * that it can be interpreted into correct scala code as a member of a case
-   * class.
-   * */
-  def combineFields[T: Basis[ProtobufF, ?]]: T => T = scheme.cata(oneOfsAsFieldsTrans.algebra)
-
-  def oneOfsAsFieldsTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
-    case TMessage(name, messageFields, reserved, oneOfs) => {
-
-      val oneOfAsField: Seq[ProtobufF.SimpleField[T]] = oneOfs.map(
-        oneOf =>
-          ProtobufF.SimpleField(
-            oneOf.name,
-            T.algebra(oneOf)
-        ))
-
-      TMessage(name, messageFields ++ oneOfAsField, reserved, List())
-    }
+      TMessage(n, listFields, reserved)
     case other => other
   }
 }
