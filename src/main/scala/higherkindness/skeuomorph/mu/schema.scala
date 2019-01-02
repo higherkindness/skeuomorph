@@ -22,6 +22,7 @@ import cats.Eq
 import cats.data.NonEmptyList
 import cats.instances.list._
 import cats.instances.string._
+import cats.instances.option._
 import cats.syntax.eq._
 
 /**
@@ -94,7 +95,7 @@ object MuF {
   def option[A](value: A): MuF[A]                              = TOption(value)
   def either[A](left: A, right: A): MuF[A]                     = TEither(left, right)
   def list[A](value: A): MuF[A]                                = TList(value)
-  def map[A](value: A): MuF[A]                                 = TMap(value)
+  def map[A](maybeKey: Option[A], value: A): MuF[A]            = TMap(maybeKey, value)
   def generic[A](generic: A, params: List[A]): MuF[A]          = TGeneric(generic, params)
   def required[A](value: A): MuF[A]                            = TRequired(value)
   def coproduct[A](invariants: NonEmptyList[A]): MuF[A]        = TCoproduct(invariants)

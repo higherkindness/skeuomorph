@@ -18,48 +18,49 @@ package higherkindness.skeuomorph.protobuf
 
 import cats.Functor
 import cats.implicits._
+import cats.instances.int._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
 import scalapb.descriptors.{ScalaType, _}
-import cats.kernel.Eq
-import cats.instances.list._
-import cats.instances.string._
-import cats.instances.int._
-import cats.instances.tuple._
-import cats.syntax.eq._
 
-import qq.droste.macros.deriveTraverse
+sealed trait ProtobufF[A]
 
-@deriveTraverse sealed trait ProtobufF[A]
-
-@deriveTraverse sealed trait FieldF[A] {
+sealed trait FieldF[A] {
   val name: String
   val tpe: A
 }
 
 object ProtobufF {
-  @deriveTraverse final case class Field[A](
-                                             name: String,
-                                             tpe: A,
-                                             position: Int,
-                                             options: List[Option],
-                                             isRepeated: Boolean,
-                                             isMapField: Boolean) extends FieldF[A]
-  object Field {
-    implicit def fieldEq[T: Eq]: Eq[Field[T]] = Eq.instance {
-      case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
-        n === n2 && t === t2 && p === p2 && o === o2 && r === r2 && m === m2
-    }
-  }
+  final case class Field[A](
+      name: String,
+      tpe: A,
+      position: Int,
+      options: List[Option],
+      isRepeated: Boolean,
+      isMapField: Boolean)
+      extends FieldF[A]
+// TODO: Check with Pepe, why do we need equality instances for these now?
+//  object Field {
+//    implicit def fieldEq[T: Eq]: Eq[Field[T]] = Eq.instance {
+//      case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
+//        n === n2 && t === t2 && p === p2 && o === o2 && r === r2 && m === m2
+//    }
+//  }
 
-  @deriveTraverse final case class OneOfField[A](name: String, tpe: A) extends FieldF[A]
+  final case class OneOfField[A](name: String, tpe: A) extends FieldF[A]
+//  object OneOfField {
+//    implicit def oneOfFieldEq[T: Eq]: Eq[OneOfField[T]] = Eq.instance {
+//      case (OneOfField(n, tpe), OneOfField(n2, tpe2)) =>
+//        n === n2 && tpe === tpe2
+//    }
+//  }
 
   final case class Option(name: String, value: String)
-  object Option {
-    implicit val optionEq: Eq[Option] = Eq.instance {
-      case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
-    }
-  }
+//  object Option {
+//    implicit val optionEq: Eq[Option] = Eq.instance {
+//      case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
+//    }
+//  }
 
   final case class TDouble[A]()                                    extends ProtobufF[A]
   final case class TFloat[A]()                                     extends ProtobufF[A]
@@ -82,69 +83,67 @@ object ProtobufF {
   final case class TMap[A](keyTpe: A, value: A)                    extends ProtobufF[A]
 
   final case class TEnum[A](
-                             name: String,
-                             symbols: List[(String, Int)],
-                             options: List[Option],
-                             aliases: List[(String, Int)])
-    extends ProtobufF[A]
+      name: String,
+      symbols: List[(String, Int)],
+      options: List[Option],
+      aliases: List[(String, Int)])
+      extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
-  def double[A](): ProtobufF[A]                = TDouble()
-  def float[A](): ProtobufF[A]                 = TFloat()
-  def int32[A](): ProtobufF[A]                 = TInt32()
-  def int64[A](): ProtobufF[A]                 = TInt64()
-  def uint32[A](): ProtobufF[A]                = TUint32()
-  def uint64[A](): ProtobufF[A]                = TUint64()
-  def sint32[A](): ProtobufF[A]                = TSint32()
-  def sint64[A](): ProtobufF[A]                = TSint64()
-  def fixed32[A](): ProtobufF[A]               = TFixed32()
-  def fixed64[A](): ProtobufF[A]               = TFixed64()
-  def sfixed32[A](): ProtobufF[A]              = TSfixed32()
-  def sfixed64[A](): ProtobufF[A]              = TSfixed64()
-  def bool[A](): ProtobufF[A]                  = TBool()
-  def string[A](): ProtobufF[A]                = TString()
-  def bytes[A](): ProtobufF[A]                 = TBytes()
-  def namedType[A](name: String): ProtobufF[A] = TNamedType(name)
-  def repeated[A](value: A): ProtobufF[A]      = TRepeated(value)
-  def oneOf[A](name: String,
-               fields: List[Field[A]]): ProtobufF[A]  = TOneOf(name, fields)
-  def map[A](keyTpe: A, value: A): ProtobufF[A]       = TMap(keyTpe, value)
+  def double[A](): ProtobufF[A]                                    = TDouble()
+  def float[A](): ProtobufF[A]                                     = TFloat()
+  def int32[A](): ProtobufF[A]                                     = TInt32()
+  def int64[A](): ProtobufF[A]                                     = TInt64()
+  def uint32[A](): ProtobufF[A]                                    = TUint32()
+  def uint64[A](): ProtobufF[A]                                    = TUint64()
+  def sint32[A](): ProtobufF[A]                                    = TSint32()
+  def sint64[A](): ProtobufF[A]                                    = TSint64()
+  def fixed32[A](): ProtobufF[A]                                   = TFixed32()
+  def fixed64[A](): ProtobufF[A]                                   = TFixed64()
+  def sfixed32[A](): ProtobufF[A]                                  = TSfixed32()
+  def sfixed64[A](): ProtobufF[A]                                  = TSfixed64()
+  def bool[A](): ProtobufF[A]                                      = TBool()
+  def string[A](): ProtobufF[A]                                    = TString()
+  def bytes[A](): ProtobufF[A]                                     = TBytes()
+  def namedType[A](name: String): ProtobufF[A]                     = TNamedType(name)
+  def repeated[A](value: A): ProtobufF[A]                          = TRepeated(value)
+  def oneOf[A](name: String, fields: List[Field[A]]): ProtobufF[A] = TOneOf(name, fields)
+  def map[A](keyTpe: A, value: A): ProtobufF[A]                    = TMap(keyTpe, value)
   def enum[A](
-               name: String,
-               symbols: List[(String, Int)],
-               options: List[Option],
-               aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
+      name: String,
+      symbols: List[(String, Int)],
+      options: List[Option],
+      aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
   def message[A](name: String, fields: List[Field[A]], reserved: List[List[String]]): ProtobufF[A] =
     TMessage(name, fields, reserved)
 
-  implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
-    case (TDouble(), TDouble())          => true
-    case (TFloat(), TFloat())            => true
-    case (TInt32(), TInt32())            => true
-    case (TInt64(), TInt64())            => true
-    case (TUint32(), TUint32())          => true
-    case (TUint64(), TUint64())          => true
-    case (TSint32(), TSint32())          => true
-    case (TSint64(), TSint64())          => true
-    case (TFixed32(), TFixed32())        => true
-    case (TFixed64(), TFixed64())        => true
-    case (TSfixed32(), TSfixed32())      => true
-    case (TSfixed64(), TSfixed64())      => true
-    case (TBool(), TBool())              => true
-    case (TString(), TString())          => true
-    case (TBytes(), TBytes())            => true
-    case (TNamedType(n), TNamedType(n2)) => n === n2
-    case (TRepeated(v), TRepeated(v2))   => v === v2
-
-    case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2)) =>
-      n === n2 && s === s2 && o === o2 && a === a2
-    case (TMessage(n, f, r), TMessage(n2, f2, r2)) => n === n2 && f === f2 && r === r2
-
-    case _ => false
-  }
-
+//  implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
+//    case (TDouble(), TDouble())          => true
+//    case (TFloat(), TFloat())            => true
+//    case (TInt32(), TInt32())            => true
+//    case (TInt64(), TInt64())            => true
+//    case (TUint32(), TUint32())          => true
+//    case (TUint64(), TUint64())          => true
+//    case (TSint32(), TSint32())          => true
+//    case (TSint64(), TSint64())          => true
+//    case (TFixed32(), TFixed32())        => true
+//    case (TFixed64(), TFixed64())        => true
+//    case (TSfixed32(), TSfixed32())      => true
+//    case (TSfixed64(), TSfixed64())      => true
+//    case (TBool(), TBool())              => true
+//    case (TString(), TString())          => true
+//    case (TBytes(), TBytes())            => true
+//    case (TNamedType(n), TNamedType(n2)) => n === n2
+//    case (TRepeated(v), TRepeated(v2))   => v === v2
+//
+//    case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2)) =>
+//      n === n2 && s === s2 && o === o2 && a === a2
+//    case (TMessage(n, f, r), TMessage(n2, f2, r2)) => n === n2 && f === f2 && r === r2
+//
+//    case _ => false
+//  }
 
   def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra {
     case f: FileDescriptor                                                            => fileFromDescriptor(f)
@@ -200,7 +199,7 @@ object ProtobufF {
               field match {
                 case OneOfField(n, tpe)                         => OneOfField(n, f(tpe))
                 case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
-              }
+            }
           ),
           reserved
         )
@@ -274,7 +273,7 @@ object ProtobufF {
           List(),
           f.isRepeated,
           f.isMapField
-        )
+      )
     )
 
     TOneOf[BaseDescriptor](oneOf.name, fields.toList)
@@ -300,7 +299,7 @@ object ProtobufF {
             Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
             fieldDesc.isRepeated,
             fieldDesc.isMapField
-          )
+        )
       )
       .toList
 
@@ -317,9 +316,9 @@ object ProtobufF {
   }
 
   /** Protobuf represents a .proto file's map<keyType, valueType>
-    * as a Descriptor that it creates itself, which is not available at the top level
-    * of a file. We need to parse that synthetic descriptor to get at its inner fields,
-    * which represent the key and value of a scala map */
+   * as a Descriptor that it creates itself, which is not available at the top level
+   * of a file. We need to parse that synthetic descriptor to get at its inner fields,
+   * which represent the key and value of a scala map */
   def getMapTypes(syntheticDesc: Descriptor): TMap[BaseDescriptor] = {
     val keyValueFields = fieldsFromDescriptor(syntheticDesc)
     require(

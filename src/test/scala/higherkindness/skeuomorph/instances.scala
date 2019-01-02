@@ -35,14 +35,13 @@ import org.scalacheck.cats.implicits._
 import mu.MuF
 import avro.AvroF
 import protobuf.ProtobufF
-
 import qq.droste.Basis
+import scalapb.UnknownFieldSet
+import scalapb.descriptors.FileDescriptor
 
 import scala.collection.JavaConverters._
 
 object instances {
-  val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
-
   lazy val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
 
   lazy val smallNumber: Gen[Int] = Gen.choose(1, 10)
@@ -383,7 +382,7 @@ object instances {
           MuF.either(a, b)
         },
         T.arbitrary map MuF.list[T],
-        T.arbitrary map MuF.map[T],
+        T.arbitrary map (t => MuF.map[T](None, t)),
         T.arbitrary map MuF.required[T],
         (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
           MuF.generic[T](a, b)
@@ -471,8 +470,6 @@ object instances {
         ProtobufF.string[T]().pure[Gen],
         ProtobufF.bytes[T]().pure[Gen],
         nonEmptyString map ProtobufF.namedType[T],
-        T.arbitrary map ProtobufF.required[T],
-        T.arbitrary map ProtobufF.optional[T],
         T.arbitrary map ProtobufF.repeated[T],
         (
           nonEmptyString,
@@ -487,7 +484,9 @@ object instances {
               nonEmptyString,
               T.arbitrary,
               Gen.posNum[Int],
-              Gen.listOf(genOption)
+              Gen.listOf(genOption),
+              sampleBool,
+              sampleBool
             ).mapN(ProtobufF.Field.apply[T])
           ),
           Gen.listOf(Gen.listOf(nonEmptyString))
