@@ -72,13 +72,11 @@ object print {
 
         val printFields =
           fields
-            .map { field =>
-              field match {
-                case f: Field[String] =>
-                  s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
-                case oneOf: OneOfField[String] =>
-                  s"${oneOf.tpe}"
-              }
+            .map {
+              case f: Field[String] =>
+                s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
+              case oneOf: OneOfField[String] =>
+                s"${oneOf.tpe}"
             }
             .mkString("\n  ")
         s"""

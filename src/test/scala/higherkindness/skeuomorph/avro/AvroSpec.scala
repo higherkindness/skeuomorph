@@ -27,7 +27,6 @@ import scala.collection.JavaConverters._
 
 class AvroSpec extends Specification with ScalaCheck {
 
-
   def is = s2"""
   Avro Schema
 

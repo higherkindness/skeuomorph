@@ -194,13 +194,10 @@ object ProtobufF {
       case TMessage(name, fields, reserved) =>
         TMessage[B](
           name,
-          fields.map(
-            field =>
-              field match {
-                case OneOfField(n, tpe)                         => OneOfField(n, f(tpe))
-                case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
-            }
-          ),
+          fields.map {
+            case OneOfField(n, tpe)                         => OneOfField(n, f(tpe))
+            case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
+          },
           reserved
         )
       case TFileDescriptor(values, name, p) => TFileDescriptor(values.map(f), name, p)
