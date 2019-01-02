@@ -68,11 +68,7 @@ object ProtobufF {
       options: List[Option],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
-  final case class TMessage[A](
-      name: String,
-      fields: List[FieldF[A]],
-      reserved: List[List[String]])
-      extends ProtobufF[A]
+  final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
@@ -128,7 +124,7 @@ object ProtobufF {
           fields.map(
             field =>
               field match {
-                case OneOfField(n, tpe)                        => OneOfField(n, f(tpe))
+                case OneOfField(n, tpe)                         => OneOfField(n, f(tpe))
                 case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
             }
           ),
@@ -217,9 +213,8 @@ object ProtobufF {
     val options        = descriptor.getOptions
     val defaultOptions = List(("deprecated", options.getDeprecated))
 
-    val simpleFields: List[OneOfField[BaseDescriptor]] = descriptor.oneofs.map(oneOf =>
-    OneOfField[BaseDescriptor](oneOf.name, oneOf)
-    ).toList
+    val simpleFields: List[OneOfField[BaseDescriptor]] =
+      descriptor.oneofs.map(oneOf => OneOfField[BaseDescriptor](oneOf.name, oneOf)).toList
 
     val fields = descriptor.fields
       .filterNot(

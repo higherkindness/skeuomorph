@@ -47,7 +47,7 @@ class OptimizeSpec extends Specification with ScalaCheck {
 
   def checkRepeatedValue: Algebra[ProtobufF, Boolean] = Algebra {
     case ProtobufF.TMessage(_, fields, _) => fields.forall(field => field.tpe)
-    case ProtobufF.TRepeated(_)              => true
-    case _                                   => false
+    case ProtobufF.TRepeated(_)           => true
+    case _                                => false
   }
 }
