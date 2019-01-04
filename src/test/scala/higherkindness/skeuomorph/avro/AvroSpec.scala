@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package higherkindness.skeuomorph.avro
 
+import higherkindness.skeuomorph.instances._
+
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.specs2._
@@ -24,8 +26,6 @@ import qq.droste._
 import scala.collection.JavaConverters._
 
 class AvroSpec extends Specification with ScalaCheck {
-
-  import higherkindness.skeuomorph.instances._
 
   def is = s2"""
   Avro Schema

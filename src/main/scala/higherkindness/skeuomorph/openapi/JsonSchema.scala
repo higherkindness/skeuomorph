@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,16 @@
 
 package higherkindness.skeuomorph.openapi
 
-import cats.Functor
 import io.circe.Json
 import qq.droste._
 import qq.droste.data.Fix
+import qq.droste.macros.deriveTraverse
 
-sealed trait JsonSchemaF[A]
+import cats.instances.list._
+
+@deriveTraverse sealed trait JsonSchemaF[A]
 object JsonSchemaF {
-  final case class Property[A](name: String, tpe: A)
+  @deriveTraverse final case class Property[A](name: String, tpe: A)
 
   final case class IntegerF[A]()  extends JsonSchemaF[A]
   final case class LongF[A]()     extends JsonSchemaF[A]
@@ -40,26 +42,6 @@ object JsonSchemaF {
       extends JsonSchemaF[A]
   final case class ArrayF[A](values: A)     extends JsonSchemaF[A]
   final case class EnumF[A](cases: List[A]) extends JsonSchemaF[A]
-
-  implicit val jsonSchemaFunctor: Functor[JsonSchemaF] = new Functor[JsonSchemaF] {
-    def map[A, B](fa: JsonSchemaF[A])(f: A => B): JsonSchemaF[B] = fa match {
-      case IntegerF()  => IntegerF()
-      case LongF()     => LongF()
-      case FloatF()    => FloatF()
-      case DoubleF()   => DoubleF()
-      case StringF()   => StringF()
-      case ByteF()     => ByteF()
-      case BinaryF()   => BinaryF()
-      case BooleanF()  => BooleanF()
-      case DateF()     => DateF()
-      case DateTimeF() => DateTimeF()
-      case PasswordF() => PasswordF()
-      case ObjectF(name, properties, required) =>
-        ObjectF(name, properties.map(prop => Property(prop.name, f(prop.tpe))), required)
-      case ArrayF(values) => ArrayF(f(values))
-      case EnumF(cases)   => EnumF(cases.map(f))
-    }
-  }
 
   def render: Algebra[JsonSchemaF, Json] = Algebra {
     case IntegerF()  => Json.fromString("integer")

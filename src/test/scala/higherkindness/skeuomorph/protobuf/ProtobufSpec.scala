@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,14 +56,19 @@ class ProtobufSpec extends FlatSpec with Matchers {
     case ProtobufF.TBytes()    => fieldTest(desc, TYPE_BYTES)
     case o: ProtobufF.TOneOf[Boolean] =>
       desc match {
-        case oneofDescriptor: OneofDescriptor => o.invariants.length == oneofDescriptor.fields.length
+        case oneofDescriptor: OneofDescriptor => o.fields.length == oneofDescriptor.fields.length
         case _                                => false
       }
-//    case ProtobufF.TRepeated(_) =>
-//      desc match {
-//        case f: FieldDescriptor => f.isRepeated
-//        case _                  => false
-//      }
+    case _: ProtobufF.TMap[Boolean] =>
+      desc match {
+        case f: FieldDescriptor => f.isMapField
+        case _                  => false
+      }
+    case ProtobufF.TRepeated(_) =>
+      desc match {
+        case f: FieldDescriptor => f.isRepeated
+        case _                  => false
+      }
     case e: ProtobufF.TEnum[Boolean] =>
       desc match {
         case eDesc: EnumDescriptor => enumTest(e, eDesc)
@@ -81,8 +86,13 @@ class ProtobufSpec extends FlatSpec with Matchers {
       }
     case ProtobufF.TNamedType(n) =>
       desc match {
-        case f: FieldDescriptor => f.name == n
-        case _                  => false
+        case f: FieldDescriptor =>
+          f.scalaType match {
+            case ScalaType.Message(descriptor) => descriptor.fullName.contains(n)
+            case ScalaType.Enum(enumDesc)      => enumDesc.fullName.contains(n)
+            case _                             => false
+          }
+        case _ => false
       }
   }
 

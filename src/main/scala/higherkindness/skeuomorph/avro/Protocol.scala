@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -81,24 +81,24 @@ object Protocol {
   }
 
   def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
-    case MuF.TNull()                => tNull()
-    case MuF.TDouble()              => tDouble()
-    case MuF.TFloat()               => tFloat()
-    case MuF.TInt()                 => tInt()
-    case MuF.TLong()                => tLong()
-    case MuF.TBoolean()             => tBoolean()
-    case MuF.TString()              => tString()
-    case MuF.TByteArray()           => tBytes()
-    case MuF.TNamedType(name)       => tNamedType(name)
-    case MuF.TOption(value)         => tUnion(NonEmptyList(tNull[T]().embed, List(value)))
-    case MuF.TEither(left, right)   => tUnion(NonEmptyList(left, List(right)))
-    case MuF.TList(value)           => tArray(value)
-    case MuF.TMap(value)            => tMap(value)
+    case MuF.TNull()                => AvroF.`null`()
+    case MuF.TDouble()              => AvroF.double()
+    case MuF.TFloat()               => AvroF.float()
+    case MuF.TInt()                 => AvroF.int()
+    case MuF.TLong()                => AvroF.long()
+    case MuF.TBoolean()             => AvroF.boolean()
+    case MuF.TString()              => AvroF.string()
+    case MuF.TByteArray()           => AvroF.bytes()
+    case MuF.TNamedType(name)       => AvroF.namedType(name)
+    case MuF.TOption(value)         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
+    case MuF.TEither(left, right)   => AvroF.union(NonEmptyList(left, List(right)))
+    case MuF.TList(value)           => AvroF.array(value)
+    case MuF.TMap(_, value)         => AvroF.map(value)
     case MuF.TGeneric(_, _)         => ??? // WAT
     case MuF.TContaining(_)         => ??? // TBD
     case MuF.TRequired(t)           => T.coalgebra(t)
-    case MuF.TCoproduct(invariants) => TUnion(invariants)
-    case MuF.TSum(name, fields)     => TEnum(name, none[String], Nil, none[String], fields)
+    case MuF.TCoproduct(invariants) => AvroF.union(invariants)
+    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields)
     case MuF.TProduct(name, fields) =>
       TRecord(
         name,

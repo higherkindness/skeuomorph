@@ -14,7 +14,8 @@ val V = new {
   val droste           = "0.6.0"
   val kindProjector    = "0.9.9"
   val macroParadise    = "2.1.1"
-  val specs2           = "4.3.5"
+  val scalacheck       = "1.13.5"
+  val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
   val protoc           = "3.6.0"
   val protobuf         = "3.6.1"
   val scalapb          = "0.8.2"
@@ -101,13 +102,16 @@ lazy val commonSettings = Seq(
     "io.higherkindness"    %% "droste-macros"   % V.droste,
     "org.apache.avro"      % "avro"             % V.avro,
     "com.github.os72"      % "protoc-jar"       % V.protoc,
-     "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
+    "com.thesamet.scalapb" %% "scalapb-runtime" % V.scalapb,
     %%("cats-effect"),
     %%("circe-core", V.circe),
-    %%("specs2-core", V.specs2)       % Test,
+    %%("scalacheck", V.scalacheck) % Test,
+    %%("specs2-core"      , V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
     %%("scalatest")                   % Test, // TEMP
-    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test
+    "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll(
+      ExclusionRule(organization="org.scalacheck")
+    )
   ),
   orgProjectName := "Skeuomorph",
   orgUpdateDocFilesSetting += baseDirectory.value / "readme",

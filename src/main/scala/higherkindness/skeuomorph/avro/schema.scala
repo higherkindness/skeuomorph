@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,15 @@
 
 package higherkindness.skeuomorph.avro
 
-import cats.Functor
+import cats.kernel.Eq
 import cats.data.NonEmptyList
+import cats.instances.list._
+import cats.instances.option._
+import cats.instances.string._
+import cats.instances.int._
+import cats.syntax.eq._
+import qq.droste.{Algebra, Coalgebra}
+import qq.droste.macros.deriveTraverse
 import io.circe.Json
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
@@ -25,7 +32,7 @@ import qq.droste.{Algebra, Coalgebra}
 
 import scala.collection.JavaConverters._
 
-sealed trait AvroF[A]
+@deriveTraverse sealed trait AvroF[A]
 object AvroF {
 
   def order2Order(avroO: Schema.Field.Order): Order = avroO match {
@@ -54,9 +61,16 @@ object AvroF {
     case object Ascending  extends Order
     case object Descending extends Order
     case object Ignore     extends Order
+
+    implicit def orderEq: Eq[Order] = Eq.instance {
+      case (Ascending, Ascending)   => true
+      case (Descending, Descending) => true
+      case (Ignore, Ignore)         => true
+      case _                        => false
+    }
   }
 
-  final case class Field[A](
+  @deriveTraverse final case class Field[A](
       name: String,
       aliases: List[String],
       doc: Option[String],
@@ -64,89 +78,92 @@ object AvroF {
       tpe: A
   )
 
-  type TypeName = String
+  object Field {
+    implicit def fieldEq[T: Eq]: Eq[Field[T]] = Eq.instance {
+      case (Field(n, a, d, o, t), Field(n2, a2, d2, o2, t2)) => n === n2 && a === a2 && d === d2 && o === o2 && t === t2
+      case _                                                 => false
+    }
+  }
 
-  final case class TNull[A]()                    extends AvroF[A]
-  final case class TBoolean[A]()                 extends AvroF[A]
-  final case class TInt[A]()                     extends AvroF[A]
-  final case class TLong[A]()                    extends AvroF[A]
-  final case class TFloat[A]()                   extends AvroF[A]
-  final case class TDouble[A]()                  extends AvroF[A]
-  final case class TBytes[A]()                   extends AvroF[A]
-  final case class TString[A]()                  extends AvroF[A]
-  final case class TNamedType[A](name: TypeName) extends AvroF[A]
-  final case class TArray[A](item: A)            extends AvroF[A]
-  final case class TMap[A](values: A)            extends AvroF[A]
+  final case class TNull[A]()                  extends AvroF[A]
+  final case class TBoolean[A]()               extends AvroF[A]
+  final case class TInt[A]()                   extends AvroF[A]
+  final case class TLong[A]()                  extends AvroF[A]
+  final case class TFloat[A]()                 extends AvroF[A]
+  final case class TDouble[A]()                extends AvroF[A]
+  final case class TBytes[A]()                 extends AvroF[A]
+  final case class TString[A]()                extends AvroF[A]
+  final case class TNamedType[A](name: String) extends AvroF[A]
+  final case class TArray[A](item: A)          extends AvroF[A]
+  final case class TMap[A](values: A)          extends AvroF[A]
   final case class TRecord[A](
-      name: TypeName,
+      name: String,
       namespace: Option[String],
-      aliases: List[TypeName],
+      aliases: List[String],
       doc: Option[String],
       fields: List[Field[A]])
       extends AvroF[A]
   final case class TEnum[A](
-      name: TypeName,
+      name: String,
       namespace: Option[String],
-      aliases: List[TypeName],
+      aliases: List[String],
       doc: Option[String],
       symbols: List[String])
       extends AvroF[A]
-  final case class TUnion[A](options: NonEmptyList[A]) extends AvroF[A]
-  final case class TFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int)
-      extends AvroF[A]
+  final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
+  final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
+
+  implicit def eqAvroF[T: Eq]: Eq[AvroF[T]] = Eq.instance {
+    case (TNull(), TNull())                             => true
+    case (TBoolean(), TBoolean())                       => true
+    case (TInt(), TInt())                               => true
+    case (TLong(), TLong())                             => true
+    case (TFloat(), TFloat())                           => true
+    case (TDouble(), TDouble())                         => true
+    case (TBytes(), TBytes())                           => true
+    case (TString(), TString())                         => true
+    case (TNamedType(n), TNamedType(n2))                => n === n2
+    case (TArray(i), TArray(i2))                        => i === i2
+    case (TMap(v), TMap(v2))                            => v === v2
+    case (TUnion(o), TUnion(o2))                        => o === o2
+    case (TFixed(n, ns, a, s), TFixed(n2, ns2, a2, s2)) => n === n2 && ns === ns2 && a === a2 && s === s2
+    case (TRecord(n, ns, al, d, f), TRecord(n2, ns2, al2, d2, f2)) =>
+      n === n2 && ns === ns2 && al === al2 && d === d2 && f === f2
+    case (TEnum(n, ns, al, d, s), TEnum(n2, ns2, al2, d2, s2)) =>
+      n === n2 && ns === ns2 && al === al2 && d === d2 && s === s2
+    case _ => false
+  }
 
   /**
    * Helper methods to construct AvroF values.  These methods are to
    * avoid scala infering the case type instead of AvroF.
    */
-  def tNull[A](): AvroF[A]                    = TNull[A]()
-  def tBoolean[A](): AvroF[A]                 = TBoolean[A]()
-  def tInt[A](): AvroF[A]                     = TInt[A]()
-  def tLong[A](): AvroF[A]                    = TLong[A]()
-  def tFloat[A](): AvroF[A]                   = TFloat[A]()
-  def tDouble[A](): AvroF[A]                  = TDouble[A]()
-  def tBytes[A](): AvroF[A]                   = TBytes[A]()
-  def tString[A](): AvroF[A]                  = TString[A]()
-  def tNamedType[A](name: TypeName): AvroF[A] = TNamedType[A](name)
-  def tArray[A](item: A): AvroF[A]            = TArray[A](item)
-  def tMap[A](values: A): AvroF[A]            = TMap[A](values)
-  def tRecord[A](
-      name: TypeName,
+  def `null`[A](): AvroF[A]                = TNull[A]()
+  def boolean[A](): AvroF[A]               = TBoolean[A]()
+  def int[A](): AvroF[A]                   = TInt[A]()
+  def long[A](): AvroF[A]                  = TLong[A]()
+  def float[A](): AvroF[A]                 = TFloat[A]()
+  def double[A](): AvroF[A]                = TDouble[A]()
+  def bytes[A](): AvroF[A]                 = TBytes[A]()
+  def string[A](): AvroF[A]                = TString[A]()
+  def namedType[A](name: String): AvroF[A] = TNamedType[A](name)
+  def array[A](item: A): AvroF[A]          = TArray[A](item)
+  def map[A](values: A): AvroF[A]          = TMap[A](values)
+  def record[A](
+      name: String,
       namespace: Option[String],
-      aliases: List[TypeName],
+      aliases: List[String],
       doc: Option[String],
       fields: List[Field[A]]): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
-  def tEnum[A](
-      name: TypeName,
+  def enum[A](
+      name: String,
       namespace: Option[String],
-      aliases: List[TypeName],
+      aliases: List[String],
       doc: Option[String],
-      symbols: List[String]): AvroF[A]              = TEnum(name, namespace, aliases, doc, symbols)
-  def tUnion[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
-  def tFixed[A](name: TypeName, namespace: Option[String], aliases: List[TypeName], size: Int): AvroF[A] =
+      symbols: List[String]): AvroF[A]             = TEnum(name, namespace, aliases, doc, symbols)
+  def union[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
+  def fixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int): AvroF[A] =
     TFixed(name, namespace, aliases, size)
-
-  implicit val avroFunctor: Functor[AvroF] = new Functor[AvroF] {
-    def map[A, B](fa: AvroF[A])(f: A => B): AvroF[B] = fa match {
-      case AvroF.TNull()          => AvroF.TNull()
-      case AvroF.TBoolean()       => AvroF.TBoolean()
-      case AvroF.TInt()           => AvroF.TInt()
-      case AvroF.TLong()          => AvroF.TLong()
-      case AvroF.TFloat()         => AvroF.TFloat()
-      case AvroF.TDouble()        => AvroF.TDouble()
-      case AvroF.TBytes()         => AvroF.TBytes()
-      case AvroF.TString()        => AvroF.TString()
-      case AvroF.TNamedType(name) => AvroF.TNamedType(name)
-      case AvroF.TArray(item)     => AvroF.TArray(f(item))
-      case AvroF.TMap(values)     => AvroF.TMap(f(values))
-      case AvroF.TRecord(name, namespace, aliases, doc, fields) =>
-        AvroF.TRecord(name, namespace, aliases, doc, fields.map(field => field.copy(tpe = f(field.tpe))))
-      case AvroF.TEnum(name, namespace, aliases, doc, symbols) =>
-        AvroF.TEnum(name, namespace, aliases, doc, symbols)
-      case AvroF.TUnion(options)                        => AvroF.TUnion(options.map(f))
-      case AvroF.TFixed(name, namespace, aliases, size) => AvroF.TFixed(name, namespace, aliases, size)
-    }
-  }
 
   /**
    * Convert org.apache.avro.Schema to skeuomorph.avro.Schema

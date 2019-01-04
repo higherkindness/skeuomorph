@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,9 +65,7 @@ object ParseProto {
     )
 
     for {
-      _ <- Sync[F].adaptError(protoCompilation) {
-        case ex: Exception => ProtobufCompilationException(ex)
-      }
+      _ <- Sync[F].ensure[Int](protoCompilation)(ProtobufCompilationException())((exitCode: Int) => exitCode == 0)
       fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }

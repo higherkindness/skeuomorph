@@ -2,8 +2,16 @@ syntax = "proto3";
 
 package com.book;
 
-message Book {
-    repeated int64 isbn = 1;
-    string title = 2;
-    string author = 3;
+message Person {
+ string name = 1;
+
+ oneof avatar {
+    Test image_url = 2;
+    bytes image_data = 3;
+ }
+
+}
+
+message Test {
+    string a_string = 1;
 }

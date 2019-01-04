@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,13 +43,13 @@ object print {
       case TString()        => "string"
       case TBytes()         => "bytes"
       case TNamedType(name) => name
+      case TRepeated(value) => s"repeated $value"
+      case TMap(key, value) => s"map<$key, $value>"
 
-//      case TRepeated(value) => s"repeated $value"
-
-      case TFileDescriptor(values, _, packageName) => s"package $packageName \n ${values.mkString("\n")}"
+      case TFileDescriptor(values, _, packageName) => s"package $packageName; \n ${values.mkString("\n")}"
 
       case TEnum(name, symbols, options, aliases) =>
-        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value}").mkString("\n")
+        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
         val printSymbols = symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         s"""
@@ -61,7 +61,9 @@ object print {
       """.stripMargin
 
       case TMessage(name, fields, reserved) =>
-        val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
+        val printReserved: String = reserved
+          .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
+          .mkString("\n  ")
         def printOptions(options: List[Option]) =
           if (options.isEmpty)
             ""
@@ -70,7 +72,12 @@ object print {
 
         val printFields =
           fields
-            .map(f => s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};")
+            .map {
+              case f: Field[String] =>
+                s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
+              case oneOf: OneOfField[String] =>
+                s"${oneOf.tpe}"
+            }
             .mkString("\n  ")
         s"""
       |message $name {
@@ -79,7 +86,17 @@ object print {
       |}
       """.stripMargin
 
-      case TOneOf(invariants) => s"${invariants.mkString("\n")}"
+      case TOneOf(name, fields) =>
+        val printFields =
+          fields
+            .map(f => s"${f.tpe} ${f.name} = ${f.position};")
+            .mkString("\n  ")
+
+        s"""
+      |oneof $name {
+      |  $printFields
+      |}
+      """.stripMargin
     }
 
     Printer(scheme.cata(algebra))

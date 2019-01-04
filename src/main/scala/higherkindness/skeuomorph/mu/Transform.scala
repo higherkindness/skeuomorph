@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,28 +29,28 @@ object Transform {
    * transform Protobuf schema into Mu schema
    */
   def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
-    case ProtobufF.TDouble()        => TDouble()
-    case ProtobufF.TFloat()         => TFloat()
-    case ProtobufF.TInt32()         => TInt()
-    case ProtobufF.TInt64()         => TLong()
-    case ProtobufF.TUint32()        => TInt()
-    case ProtobufF.TUint64()        => TLong()
-    case ProtobufF.TSint32()        => TInt()
-    case ProtobufF.TSint64()        => TLong()
-    case ProtobufF.TFixed32()       => TInt()
-    case ProtobufF.TFixed64()       => TLong()
-    case ProtobufF.TSfixed32()      => TInt()
-    case ProtobufF.TSfixed64()      => TLong()
-    case ProtobufF.TBool()          => TBoolean()
-    case ProtobufF.TString()        => TString()
-    case ProtobufF.TBytes()         => TByteArray()
-    case ProtobufF.TNamedType(name) => TNamedType(name)
-//    case ProtobufF.TRepeated(value)           => TList(value)
-    case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
-    case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case ProtobufF.TFileDescriptor(values, _, _) =>
-      TContaining(values)
-    case ProtobufF.TOneOf(invariants) => TCoproduct(NonEmptyList(invariants.head, invariants.tail)) // TODO
+    case ProtobufF.TDouble()                     => TDouble()
+    case ProtobufF.TFloat()                      => TFloat()
+    case ProtobufF.TInt32()                      => TInt()
+    case ProtobufF.TInt64()                      => TLong()
+    case ProtobufF.TUint32()                     => TInt()
+    case ProtobufF.TUint64()                     => TLong()
+    case ProtobufF.TSint32()                     => TInt()
+    case ProtobufF.TSint64()                     => TLong()
+    case ProtobufF.TFixed32()                    => TInt()
+    case ProtobufF.TFixed64()                    => TLong()
+    case ProtobufF.TSfixed32()                   => TInt()
+    case ProtobufF.TSfixed64()                   => TLong()
+    case ProtobufF.TBool()                       => TBoolean()
+    case ProtobufF.TString()                     => TString()
+    case ProtobufF.TBytes()                      => TByteArray()
+    case ProtobufF.TNamedType(name)              => TNamedType(name)
+    case ProtobufF.TRepeated(value)              => TList(value)
+    case ProtobufF.TEnum(name, symbols, _, _)    => TSum(name, symbols.map(_._1))
+    case ProtobufF.TMessage(name, fields, _)     => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+    case ProtobufF.TFileDescriptor(values, _, _) => TContaining(values)
+    case ProtobufF.TOneOf(_, fields)             => TCoproduct(NonEmptyList(fields.head.tpe, fields.tail.map(_.tpe))) // TODO
+    case ProtobufF.TMap(key, values)             => TMap(Some(key), values)
   }
 
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
@@ -64,7 +64,7 @@ object Transform {
     case AvroF.TString()        => TString()
     case AvroF.TNamedType(name) => TNamedType(name)
     case AvroF.TArray(item)     => TList(item)
-    case AvroF.TMap(values)     => TMap(values)
+    case AvroF.TMap(values)     => TMap(None, values)
     case AvroF.TRecord(name, _, _, _, fields) =>
       TProduct(name, fields.map(f => Field(f.name, f.tpe)))
     case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)

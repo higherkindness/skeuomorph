@@ -18,7 +18,7 @@ Currently in skeuomorph there are schemas defined for different cases:
 | from\to       | **Avro**                  | **Protobuf**           | **mu**                             |
 |---------------|---------------------------|------------------------|------------------------------------|
 | **Avro**      |                           |                        | `avro.transCata(fromAvro)`         |
-| **Protobuf**  |                           |                        | `higherkindness.skeuomorph.protobuf.transCata(fromProtobuf)` |
+| **Protobuf**  |                           |                        | `protobuf.transCata(fromProtobuf)` |
 | **mu**        | `mu.transCata(fromMu)`    | `mu.transCata(fromMu)` |                                    |
 
 
