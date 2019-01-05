@@ -23,12 +23,6 @@ import com.google.protobuf.descriptor.DescriptorProto.ReservedRange
 import com.google.protobuf.descriptor.FieldDescriptorProto.{Label, Type}
 import com.google.protobuf.descriptor._
 import com.google.protobuf.descriptor.UninterpretedOption.NamePart
-import com.google.protobuf.ByteString
-import com.google.protobuf.descriptor.DescriptorProto.ReservedRange
-import com.google.protobuf.descriptor.FieldDescriptorProto.{Label, Type}
-import com.google.protobuf.descriptor._
-import com.google.protobuf.descriptor.UninterpretedOption.NamePart
-import higherkindness.skeuomorph.mu.MuF
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
@@ -219,7 +213,7 @@ object instances {
         nestedType = nestedTypes,
         enumType = enums,
         extensionRange = Seq(),
-        oneofDecl = oneOfs, // TODO
+        oneofDecl = oneOfs,
         options = None,
         reservedRange = reservedRange,
         reservedName = reservedNames

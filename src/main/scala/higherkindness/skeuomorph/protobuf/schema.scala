@@ -16,11 +16,11 @@
 
 package higherkindness.skeuomorph.protobuf
 
-import cats.Functor
+import cats.Applicative
 import cats.implicits._
-import cats.instances.int._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
+import qq.droste.util.DefaultTraverse
 import scalapb.descriptors.{ScalaType, _}
 
 sealed trait ProtobufF[A]
@@ -169,38 +169,53 @@ object ProtobufF {
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedType(f)
   }
 
-  implicit val protoFunctor: Functor[ProtobufF] = new Functor[ProtobufF] {
-    def map[A, B](fa: ProtobufF[A])(f: A => B): ProtobufF[B] = fa match {
-      case TDouble()                              => TDouble[B]()
-      case TFloat()                               => TFloat[B]()
-      case TInt32()                               => TInt32[B]()
-      case TInt64()                               => TInt64[B]()
-      case TUint32()                              => TUint32[B]()
-      case TUint64()                              => TUint64[B]()
-      case TSint32()                              => TSint32[B]()
-      case TSint64()                              => TSint64[B]()
-      case TFixed32()                             => TFixed32[B]()
-      case TFixed64()                             => TFixed64[B]()
-      case TSfixed32()                            => TSfixed32[B]()
-      case TSfixed64()                            => TSfixed64[B]()
-      case TBool()                                => TBool[B]()
-      case TString()                              => TString[B]()
-      case TBytes()                               => TBytes[B]()
-      case TNamedType(name)                       => TNamedType[B](name)
-      case TRepeated(value)                       => TRepeated[B](f(value))
-      case TOneOf(name, fields)                   => TOneOf[B](name, fields.map(field => field.copy(tpe = f(field.tpe))))
-      case TMap(keyTpe, value)                    => TMap[B](f(keyTpe), f(value))
-      case TEnum(name, symbols, options, aliases) => TEnum(name, symbols, options, aliases)
-      case TMessage(name, fields, reserved) =>
-        TMessage[B](
-          name,
-          fields.map {
-            case OneOfField(n, tpe)                         => OneOfField(n, f(tpe))
-            case Field(n, tpe, pos, opt, isRepeated, isMap) => Field(n, f(tpe), pos, opt, isRepeated, isMap)
-          },
-          reserved
-        )
-      case TFileDescriptor(values, name, p) => TFileDescriptor(values.map(f), name, p)
+  implicit val traverse: DefaultTraverse[ProtobufF] = new DefaultTraverse[ProtobufF] {
+    def traverse[G[_], A, B](fa: ProtobufF[A])(f: A => G[B])(implicit G: Applicative[G]): G[ProtobufF[B]] = {
+
+      def makeFieldB(field: Field[A]) = {
+        f(field.tpe)
+          .map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
+      }
+      def makeOneOfB(oneOf: OneOfField[A]) = {
+        f(oneOf.tpe).map(b => OneOfField[B](oneOf.name, b): FieldF[B])
+      }
+
+      def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] = {
+        fieldFList.traverse {
+          case field: Field[A] => makeFieldB(field).widen
+          case oneOf: OneOfField[A] => makeOneOfB(oneOf).widen
+        }
+      }
+
+      fa match {
+        case TDouble()                              => double[B]().pure[G]
+        case TFloat()                               => float[B]().pure[G]
+        case TInt32()                               => int32[B]().pure[G]
+        case TInt64()                               => int64[B]().pure[G]
+        case TUint32()                              => uint32[B]().pure[G]
+        case TUint64()                              => uint64[B]().pure[G]
+        case TSint32()                              => sint32[B]().pure[G]
+        case TSint64()                              => sint64[B]().pure[G]
+        case TFixed32()                             => fixed32[B]().pure[G]
+        case TFixed64()                             => fixed64[B]().pure[G]
+        case TSfixed32()                            => sfixed32[B]().pure[G]
+        case TSfixed64()                            => sfixed64[B]().pure[G]
+        case TBool()                                => bool[B]().pure[G]
+        case TString()                              => string[B]().pure[G]
+        case TBytes()                               => bytes[B]().pure[G]
+        case TNamedType(name)                       => namedType[B](name).pure[G]
+        case TRepeated(value)                       => f(value).map(TRepeated[B])
+        case TOneOf(name, fields)                   => fields.traverse(makeFieldB).map(bFields => TOneOf(name, bFields))
+        case TMap(keyTpe, value)                    => (f(keyTpe), f(value)).mapN(TMap[B])
+        case TEnum(name, symbols, options, aliases) => enum[B](name, symbols, options, aliases).pure[G]: G[ProtobufF[B]]
+        case TMessage(name, fields, reserved) =>
+          traverseFieldF(fields).map(bFields => TMessage[B](
+            name,
+            bFields,
+            reserved
+          ))
+        case TFileDescriptor(values, name, p) => values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
+      }
     }
   }
 
