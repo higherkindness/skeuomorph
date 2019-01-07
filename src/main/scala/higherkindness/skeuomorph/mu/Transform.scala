@@ -16,7 +16,6 @@
 
 package higherkindness.skeuomorph.mu
 
-import cats.data.NonEmptyList
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.protobuf.ProtobufF
 import qq.droste.Trans

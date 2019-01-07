@@ -90,6 +90,7 @@ object print {
         val printFields =
           fields
             .map(f => s"${f.tpe} ${f.name} = ${f.position};")
+            .toList
             .mkString("\n  ")
 
         s"""

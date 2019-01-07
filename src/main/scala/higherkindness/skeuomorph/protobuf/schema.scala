@@ -63,25 +63,25 @@ object ProtobufF {
 //    }
 //  }
 
-  final case class TDouble[A]()                                    extends ProtobufF[A]
-  final case class TFloat[A]()                                     extends ProtobufF[A]
-  final case class TInt32[A]()                                     extends ProtobufF[A]
-  final case class TInt64[A]()                                     extends ProtobufF[A]
-  final case class TUint32[A]()                                    extends ProtobufF[A]
-  final case class TUint64[A]()                                    extends ProtobufF[A]
-  final case class TSint32[A]()                                    extends ProtobufF[A]
-  final case class TSint64[A]()                                    extends ProtobufF[A]
-  final case class TFixed32[A]()                                   extends ProtobufF[A]
-  final case class TFixed64[A]()                                   extends ProtobufF[A]
-  final case class TSfixed32[A]()                                  extends ProtobufF[A]
-  final case class TSfixed64[A]()                                  extends ProtobufF[A]
-  final case class TBool[A]()                                      extends ProtobufF[A]
-  final case class TString[A]()                                    extends ProtobufF[A]
-  final case class TBytes[A]()                                     extends ProtobufF[A]
-  final case class TNamedType[A](name: String)                     extends ProtobufF[A]
-  final case class TRepeated[A](value: A)                          extends ProtobufF[A]
+  final case class TDouble[A]()                                            extends ProtobufF[A]
+  final case class TFloat[A]()                                             extends ProtobufF[A]
+  final case class TInt32[A]()                                             extends ProtobufF[A]
+  final case class TInt64[A]()                                             extends ProtobufF[A]
+  final case class TUint32[A]()                                            extends ProtobufF[A]
+  final case class TUint64[A]()                                            extends ProtobufF[A]
+  final case class TSint32[A]()                                            extends ProtobufF[A]
+  final case class TSint64[A]()                                            extends ProtobufF[A]
+  final case class TFixed32[A]()                                           extends ProtobufF[A]
+  final case class TFixed64[A]()                                           extends ProtobufF[A]
+  final case class TSfixed32[A]()                                          extends ProtobufF[A]
+  final case class TSfixed64[A]()                                          extends ProtobufF[A]
+  final case class TBool[A]()                                              extends ProtobufF[A]
+  final case class TString[A]()                                            extends ProtobufF[A]
+  final case class TBytes[A]()                                             extends ProtobufF[A]
+  final case class TNamedType[A](name: String)                             extends ProtobufF[A]
+  final case class TRepeated[A](value: A)                                  extends ProtobufF[A]
   final case class TOneOf[A](name: String, fields: NonEmptyList[Field[A]]) extends ProtobufF[A]
-  final case class TMap[A](keyTpe: A, value: A)                    extends ProtobufF[A]
+  final case class TMap[A](keyTpe: A, value: A)                            extends ProtobufF[A]
 
   final case class TEnum[A](
       name: String,
@@ -93,25 +93,25 @@ object ProtobufF {
 
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
-  def double[A](): ProtobufF[A]                                    = TDouble()
-  def float[A](): ProtobufF[A]                                     = TFloat()
-  def int32[A](): ProtobufF[A]                                     = TInt32()
-  def int64[A](): ProtobufF[A]                                     = TInt64()
-  def uint32[A](): ProtobufF[A]                                    = TUint32()
-  def uint64[A](): ProtobufF[A]                                    = TUint64()
-  def sint32[A](): ProtobufF[A]                                    = TSint32()
-  def sint64[A](): ProtobufF[A]                                    = TSint64()
-  def fixed32[A](): ProtobufF[A]                                   = TFixed32()
-  def fixed64[A](): ProtobufF[A]                                   = TFixed64()
-  def sfixed32[A](): ProtobufF[A]                                  = TSfixed32()
-  def sfixed64[A](): ProtobufF[A]                                  = TSfixed64()
-  def bool[A](): ProtobufF[A]                                      = TBool()
-  def string[A](): ProtobufF[A]                                    = TString()
-  def bytes[A](): ProtobufF[A]                                     = TBytes()
-  def namedType[A](name: String): ProtobufF[A]                     = TNamedType(name)
-  def repeated[A](value: A): ProtobufF[A]                          = TRepeated(value)
+  def double[A](): ProtobufF[A]                                            = TDouble()
+  def float[A](): ProtobufF[A]                                             = TFloat()
+  def int32[A](): ProtobufF[A]                                             = TInt32()
+  def int64[A](): ProtobufF[A]                                             = TInt64()
+  def uint32[A](): ProtobufF[A]                                            = TUint32()
+  def uint64[A](): ProtobufF[A]                                            = TUint64()
+  def sint32[A](): ProtobufF[A]                                            = TSint32()
+  def sint64[A](): ProtobufF[A]                                            = TSint64()
+  def fixed32[A](): ProtobufF[A]                                           = TFixed32()
+  def fixed64[A](): ProtobufF[A]                                           = TFixed64()
+  def sfixed32[A](): ProtobufF[A]                                          = TSfixed32()
+  def sfixed64[A](): ProtobufF[A]                                          = TSfixed64()
+  def bool[A](): ProtobufF[A]                                              = TBool()
+  def string[A](): ProtobufF[A]                                            = TString()
+  def bytes[A](): ProtobufF[A]                                             = TBytes()
+  def namedType[A](name: String): ProtobufF[A]                             = TNamedType(name)
+  def repeated[A](value: A): ProtobufF[A]                                  = TRepeated(value)
   def oneOf[A](name: String, fields: NonEmptyList[Field[A]]): ProtobufF[A] = TOneOf(name, fields)
-  def map[A](keyTpe: A, value: A): ProtobufF[A]                    = TMap(keyTpe, value)
+  def map[A](keyTpe: A, value: A): ProtobufF[A]                            = TMap(keyTpe, value)
   def enum[A](
       name: String,
       symbols: List[(String, Int)],
@@ -299,7 +299,7 @@ object ProtobufF {
     val options        = descriptor.getOptions
     val defaultOptions = List(("deprecated", options.getDeprecated))
 
-    val simpleFields: List[OneOfField[BaseDescriptor]] =
+    val oneOfFields: List[OneOfField[BaseDescriptor]] =
       descriptor.oneofs.map(oneOf => OneOfField[BaseDescriptor](oneOf.name, oneOf)).toList
 
     val fields = descriptor.fields
@@ -319,7 +319,7 @@ object ProtobufF {
       )
       .toList
 
-    fields ++ simpleFields
+    fields ++ oneOfFields
   }
 
   def getNestedType(f: FieldDescriptor): ProtobufF[BaseDescriptor] = {
