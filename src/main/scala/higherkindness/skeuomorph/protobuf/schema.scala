@@ -17,6 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import cats.Applicative
+import cats.data.NonEmptyList
 import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import qq.droste.Coalgebra
@@ -79,7 +80,7 @@ object ProtobufF {
   final case class TBytes[A]()                                     extends ProtobufF[A]
   final case class TNamedType[A](name: String)                     extends ProtobufF[A]
   final case class TRepeated[A](value: A)                          extends ProtobufF[A]
-  final case class TOneOf[A](name: String, fields: List[Field[A]]) extends ProtobufF[A]
+  final case class TOneOf[A](name: String, fields: NonEmptyList[Field[A]]) extends ProtobufF[A]
   final case class TMap[A](keyTpe: A, value: A)                    extends ProtobufF[A]
 
   final case class TEnum[A](
@@ -109,7 +110,7 @@ object ProtobufF {
   def bytes[A](): ProtobufF[A]                                     = TBytes()
   def namedType[A](name: String): ProtobufF[A]                     = TNamedType(name)
   def repeated[A](value: A): ProtobufF[A]                          = TRepeated(value)
-  def oneOf[A](name: String, fields: List[Field[A]]): ProtobufF[A] = TOneOf(name, fields)
+  def oneOf[A](name: String, fields: NonEmptyList[Field[A]]): ProtobufF[A] = TOneOf(name, fields)
   def map[A](keyTpe: A, value: A): ProtobufF[A]                    = TMap(keyTpe, value)
   def enum[A](
       name: String,
@@ -176,13 +177,12 @@ object ProtobufF {
         f(field.tpe)
           .map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
       }
-      def makeOneOfB(oneOf: OneOfField[A]) = {
+      def makeOneOfB(oneOf: OneOfField[A]) =
         f(oneOf.tpe).map(b => OneOfField[B](oneOf.name, b): FieldF[B])
-      }
 
       def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] = {
         fieldFList.traverse {
-          case field: Field[A] => makeFieldB(field).widen
+          case field: Field[A]      => makeFieldB(field).widen
           case oneOf: OneOfField[A] => makeOneOfB(oneOf).widen
         }
       }
@@ -209,11 +209,13 @@ object ProtobufF {
         case TMap(keyTpe, value)                    => (f(keyTpe), f(value)).mapN(TMap[B])
         case TEnum(name, symbols, options, aliases) => enum[B](name, symbols, options, aliases).pure[G]: G[ProtobufF[B]]
         case TMessage(name, fields, reserved) =>
-          traverseFieldF(fields).map(bFields => TMessage[B](
-            name,
-            bFields,
-            reserved
-          ))
+          traverseFieldF(fields).map(
+            bFields =>
+              TMessage[B](
+                name,
+                bFields,
+                reserved
+            ))
         case TFileDescriptor(values, name, p) => values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
       }
     }
@@ -287,8 +289,10 @@ object ProtobufF {
           f.isMapField
       )
     )
+    require(fields.nonEmpty, "Protobuf one-ofs cannot be formed with zero fields")
+    // Not sure how we ultimately want to do error handling here.
 
-    TOneOf[BaseDescriptor](oneOf.name, fields.toList)
+    TOneOf[BaseDescriptor](oneOf.name, NonEmptyList(fields.head, fields.tail.toList))
   }
 
   def fieldsFromDescriptor(descriptor: Descriptor): List[FieldF[BaseDescriptor]] = {
