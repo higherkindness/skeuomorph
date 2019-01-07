@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-// TODO: Re-implement these specs once deriveTraverse annotation works for ProtobufF
-//package higherkindness.skeuomorph.protobuf
-//
-//import higherkindness.skeuomorph.instances._
-//import org.typelevel.discipline.specs2.Discipline
-//import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
-//import cats.implicits._
-//import org.specs2._
-//
-//class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
-//
-//  def is = s2"""
-//  $traverse
-//  $functor
-//  $foldable
-//  """
-//
-//  val traverse =
-//    checkAll("Traverse[ProtobufF]", TraverseTests[ProtobufF].traverse[Int, Int, Int, Set[Int], Option, Option])
-//  val functor  = checkAll("Functor[ProtobufF]", FunctorTests[ProtobufF].functor[Int, Int, String])
-//  val foldable = checkAll("Foldable[ProtobufF]", FoldableTests[ProtobufF].foldable[Int, Int])
-//}
+package higherkindness.skeuomorph.protobuf
+
+import higherkindness.skeuomorph.instances._
+import org.typelevel.discipline.specs2.Discipline
+import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
+import cats.implicits._
+import org.specs2._
+
+class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
+
+  def is = s2"""
+  $traverse
+  $functor
+  $foldable
+  """
+
+  val traverse =
+    checkAll("Traverse[ProtobufF]", TraverseTests[ProtobufF].traverse[Int, Int, Int, Set[Int], Option, Option])
+  val functor  = checkAll("Functor[ProtobufF]", FunctorTests[ProtobufF].functor[Int, Int, String])
+  val foldable = checkAll("Foldable[ProtobufF]", FoldableTests[ProtobufF].foldable[Int, Int])
+}

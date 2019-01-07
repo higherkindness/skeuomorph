@@ -107,7 +107,10 @@ object instances {
       )
   }
 
-  def sampleFieldDescProto(packageName: String, messageName: String, oneOfIndex: Option[Int]): Arbitrary[FieldDescriptorProto] = Arbitrary {
+  def sampleFieldDescProto(
+      packageName: String,
+      messageName: String,
+      oneOfIndex: Option[Int]): Arbitrary[FieldDescriptorProto] = Arbitrary {
     for {
       name      <- nonEmptyString
       number    <- smallNumber
@@ -194,17 +197,16 @@ object instances {
 
   def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
     for {
-      name          <- nonEmptyString
-      oneOrZero     <- Gen.choose(0, 1)
-      oneOfs        <- Gen.lzy(Gen.containerOfN[Seq, OneofDescriptorProto](1, sampleOneOfDescriptor.arbitrary))
-      fields        <- Gen.lzy(
+      name      <- nonEmptyString
+      oneOrZero <- Gen.choose(0, 1)
+      oneOfs    <- Gen.lzy(Gen.containerOfN[Seq, OneofDescriptorProto](2, sampleOneOfDescriptor.arbitrary))
+      fields <- Gen.lzy(
         Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, name, None).arbitrary))
-      oneOfFields   <-  Gen.sequence[List[FieldDescriptorProto], FieldDescriptorProto](
-        oneOfs
-          .zipWithIndex
-          .map{case(oneOf, i) => sampleFieldDescProto(packageName, oneOf.getName, Some(i)).arbitrary}
+      oneOfFields <- Gen.sequence[List[FieldDescriptorProto], FieldDescriptorProto](
+        oneOfs.zipWithIndex
+          .map { case (oneOf, i) => sampleFieldDescProto(packageName, oneOf.getName, Some(i)).arbitrary }
       )
-      nestedTypes   <- Gen.lzy(
+      nestedTypes <- Gen.lzy(
         Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
       enums         <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
       reservedRange <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
