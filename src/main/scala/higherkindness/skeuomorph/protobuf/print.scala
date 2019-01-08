@@ -22,6 +22,7 @@ import qq.droste._
 object print {
 
   import ProtobufF._
+  import FieldF._
 
   def printOption(o: Option): String = s"${o.name} = ${o.value}"
 

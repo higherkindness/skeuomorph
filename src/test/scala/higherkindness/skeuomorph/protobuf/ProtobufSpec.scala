@@ -16,6 +16,7 @@
 
 package higherkindness.skeuomorph.protobuf
 
+import cats.Functor
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type._
 import org.scalacheck.Prop
@@ -33,90 +34,62 @@ class ProtobufSpec extends FlatSpec with Matchers {
   }
 
   def convertBaseDescriptor = Prop.forAll { fileDescriptor: FileDescriptor =>
-    val test = scheme.hylo(checkProto(fileDescriptor), ProtobufF.fromProtobuf)
+    val test: BaseDescriptor => Boolean = scheme.hylo(checkProto(fileDescriptor), ProtobufF.fromProtobuf)
 
     test(fileDescriptor)
   }
 
   def checkProto(desc: BaseDescriptor): Algebra[ProtobufF, Boolean] = Algebra {
-    case ProtobufF.TDouble()   => fieldTest(desc, TYPE_DOUBLE)
-    case ProtobufF.TFloat()    => fieldTest(desc, TYPE_FLOAT)
-    case ProtobufF.TInt32()    => fieldTest(desc, TYPE_INT32)
-    case ProtobufF.TInt64()    => fieldTest(desc, TYPE_INT64)
-    case ProtobufF.TUint32()   => fieldTest(desc, TYPE_UINT32)
-    case ProtobufF.TUint64()   => fieldTest(desc, TYPE_UINT64)
-    case ProtobufF.TSint32()   => fieldTest(desc, TYPE_SINT32)
-    case ProtobufF.TSint64()   => fieldTest(desc, TYPE_SINT64)
-    case ProtobufF.TFixed32()  => fieldTest(desc, TYPE_FIXED32)
-    case ProtobufF.TFixed64()  => fieldTest(desc, TYPE_FIXED64)
-    case ProtobufF.TSfixed32() => fieldTest(desc, TYPE_SFIXED32)
-    case ProtobufF.TSfixed64() => fieldTest(desc, TYPE_SFIXED64)
-    case ProtobufF.TBool()     => fieldTest(desc, TYPE_BOOL)
-    case ProtobufF.TString()   => fieldTest(desc, TYPE_STRING)
-    case ProtobufF.TBytes()    => fieldTest(desc, TYPE_BYTES)
-    case o: ProtobufF.TOneOf[Boolean] =>
-      desc match {
-        case oneofDescriptor: OneofDescriptor => o.fields.length == oneofDescriptor.fields.length
-        case _                                => false
-      }
-    case _: ProtobufF.TMap[Boolean] =>
-      desc match {
-        case f: FieldDescriptor => f.isMapField
-        case _                  => false
-      }
-    case ProtobufF.TRepeated(_) =>
-      desc match {
-        case f: FieldDescriptor => f.isRepeated
-        case _                  => false
-      }
-    case e: ProtobufF.TEnum[Boolean] =>
-      desc match {
-        case eDesc: EnumDescriptor => enumTest(e, eDesc)
-        case _                     => false
-      }
-    case m: ProtobufF.TMessage[Boolean] =>
-      desc match {
-        case mDesc: Descriptor => messageTest(m, mDesc)
-        case _                 => false
-      }
-    case f: ProtobufF.TFileDescriptor[Boolean] =>
-      desc match {
-        case fDesc: FileDescriptor => fileDescriptorTest(f, fDesc)
-        case _                     => false
-      }
-    case ProtobufF.TNamedType(n) =>
-      desc match {
-        case f: FieldDescriptor =>
-          f.scalaType match {
-            case ScalaType.Message(descriptor) => descriptor.fullName.contains(n)
-            case ScalaType.Enum(enumDesc)      => enumDesc.fullName.contains(n)
-            case _                             => false
-          }
-        case _ => false
-      }
+    case ProtobufF.TDouble()                   => fieldTest(desc, Left(TYPE_DOUBLE))
+    case ProtobufF.TFloat()                    => fieldTest(desc, Left(TYPE_FLOAT))
+    case ProtobufF.TInt32()                    => fieldTest(desc, Left(TYPE_INT32))
+    case ProtobufF.TInt64()                    => fieldTest(desc, Left(TYPE_INT64))
+    case ProtobufF.TUint32()                   => fieldTest(desc, Left(TYPE_UINT32))
+    case ProtobufF.TUint64()                   => fieldTest(desc, Left(TYPE_UINT64))
+    case ProtobufF.TSint32()                   => fieldTest(desc, Left(TYPE_SINT32))
+    case ProtobufF.TSint64()                   => fieldTest(desc, Left(TYPE_SINT64))
+    case ProtobufF.TFixed32()                  => fieldTest(desc, Left(TYPE_FIXED32))
+    case ProtobufF.TFixed64()                  => fieldTest(desc, Left(TYPE_FIXED64))
+    case ProtobufF.TSfixed32()                 => fieldTest(desc, Left(TYPE_SFIXED32))
+    case ProtobufF.TSfixed64()                 => fieldTest(desc, Left(TYPE_SFIXED64))
+    case ProtobufF.TBool()                     => fieldTest(desc, Left(TYPE_BOOL))
+    case ProtobufF.TString()                   => fieldTest(desc, Left(TYPE_STRING))
+    case ProtobufF.TBytes()                    => fieldTest(desc, Left(TYPE_BYTES))
+    case ProtobufF.TOneOf(_, _)                => true
+    case _: ProtobufF.TMap[Boolean]            => true
+    case ProtobufF.TRepeated(_)                => true
+    case e: ProtobufF.TEnum[Boolean]           => fieldTest(desc, Right(e))
+    case m @ ProtobufF.TMessage(_, _, _)       => fieldTest(desc, Right(m))
+    case f: ProtobufF.TFileDescriptor[Boolean] => f.values.forall(v => v)
+    case ProtobufF.TNamedType(_)               => true
   }
 
-  def fieldTest(fieldDesc: BaseDescriptor, targetType: Type): Boolean =
+  def fieldTest(fieldDesc: BaseDescriptor, target: Either[Type, ProtobufF[Boolean]]): Boolean =
     fieldDesc match {
-      case f: FieldDescriptor => f.asProto.getType == targetType
-      case _                  => false
+      case f: FileDescriptor =>
+        (f.enums ++ f.messages).forall(
+          d =>
+            // These subsequent hylomorphisms ensure we actually test leaf nodes
+            scheme.hylo(checkProto(d), ProtobufF.fromProtobuf)(implicitly[Functor[ProtobufF]])(d))
+      case d: Descriptor =>
+        target match {
+          case Right(m: ProtobufF.TMessage[Boolean]) =>
+            m.name == d.name &&
+              d.fields.forall(f =>
+                scheme.hylo(checkProto(f), ProtobufF.fromProtobuf)(implicitly[Functor[ProtobufF]])(f))
+          case _ => true
+        }
+      case e: EnumDescriptor =>
+        target match {
+          case Right(tEnum: ProtobufF.TEnum[Boolean]) =>
+            e.name == tEnum.name &&
+              e.values.length == tEnum.symbols.length + tEnum.aliases.length &&
+              tEnum.symbols.head._2 == 0 // The first Enum must start with 0 according to protobuf
+          case _ => false
+        }
+      case f: FieldDescriptor =>
+        val Left(targetType) = target
+        targetType == f.asProto.getType
+      case _ => true
     }
-
-  def enumTest[B](protoEnum: ProtobufF.TEnum[B], enumDesc: EnumDescriptor): Boolean = {
-    // Assuming we don't care about order
-    val protoSymbols = protoEnum.symbols.toSet
-    val nameBool     = protoEnum.name == enumDesc.name
-    val symbolsBool  = protoSymbols.diff(enumDesc.values.map(evd => (evd.name, evd.number)).toSet) == Set.empty
-    val optionsBool  = true // TODO
-    val aliasBool    = true // TODO
-
-    nameBool && symbolsBool && optionsBool && aliasBool
-  }
-
-  def messageTest[B](m: ProtobufF.TMessage[B], messageDesc: Descriptor): Boolean =
-    messageDesc.fullName == m.name &&
-      m.fields.length == messageDesc.fields.length
-
-  def fileDescriptorTest[B](f: ProtobufF.TFileDescriptor[B], fileDesc: FileDescriptor): Boolean =
-    fileDesc.enums.length + fileDesc.messages.length == f.values.length
 }

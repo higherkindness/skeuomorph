@@ -17,6 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.protobuf.ProtobufF.{TMessage, TRepeated}
+import higherkindness.skeuomorph.protobuf.FieldF._
 import qq.droste.{scheme, Basis, Trans}
 
 object Optimize {
@@ -38,9 +39,9 @@ object Optimize {
   def repeatedTypesTrans[T](implicit T: Basis[ProtobufF, T]): Trans[ProtobufF, ProtobufF, T] = Trans {
     case TMessage(n, fields: List[FieldF[T]], reserved) =>
       val listFields: List[FieldF[T]] = fields.map {
-        case f: ProtobufF.Field[T] =>
+        case f: Field[T] =>
           if (f.isRepeated && !f.isMapField) // Map fields cannot be repeated according to the proto spec
-            ProtobufF.Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated, f.isMapField)
+            Field(f.name, T.algebra(TRepeated(f.tpe)), f.position, f.options, f.isRepeated, f.isMapField)
           else f
         case other => other
       }

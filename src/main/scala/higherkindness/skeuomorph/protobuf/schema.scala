@@ -21,7 +21,7 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
 import com.google.protobuf.descriptor.UninterpretedOption.NamePart
-import higherkindness.skeuomorph.protobuf.ProtobufF.{Field, OneOfField}
+import higherkindness.skeuomorph.protobuf.ProtobufF.Option
 import qq.droste.Coalgebra
 import qq.droste.util.DefaultTraverse
 import scalapb.descriptors.{ScalaType, _}
@@ -32,6 +32,17 @@ sealed trait FieldF[A] {
 }
 
 object FieldF {
+  final case class Field[A](
+      name: String,
+      tpe: A,
+      position: Int,
+      options: List[Option],
+      isRepeated: Boolean,
+      isMapField: Boolean)
+      extends FieldF[A]
+
+  final case class OneOfField[A](name: String, tpe: A) extends FieldF[A]
+
   implicit def fieldEq[T: Eq]: Eq[FieldF[T]] = Eq.instance {
     case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
       n === n2 && t === t2 && p === p2 && o === o2 && r === r2 && m === m2
@@ -44,16 +55,6 @@ object FieldF {
 sealed trait ProtobufF[A]
 
 object ProtobufF {
-  final case class Field[A](
-      name: String,
-      tpe: A,
-      position: Int,
-      options: List[Option],
-      isRepeated: Boolean,
-      isMapField: Boolean)
-      extends FieldF[A]
-
-  final case class OneOfField[A](name: String, tpe: A) extends FieldF[A]
 
   final case class Option(name: String, value: String)
   object Option {
@@ -73,25 +74,25 @@ object ProtobufF {
       nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
   }
 
-  final case class TDouble[A]()                                            extends ProtobufF[A]
-  final case class TFloat[A]()                                             extends ProtobufF[A]
-  final case class TInt32[A]()                                             extends ProtobufF[A]
-  final case class TInt64[A]()                                             extends ProtobufF[A]
-  final case class TUint32[A]()                                            extends ProtobufF[A]
-  final case class TUint64[A]()                                            extends ProtobufF[A]
-  final case class TSint32[A]()                                            extends ProtobufF[A]
-  final case class TSint64[A]()                                            extends ProtobufF[A]
-  final case class TFixed32[A]()                                           extends ProtobufF[A]
-  final case class TFixed64[A]()                                           extends ProtobufF[A]
-  final case class TSfixed32[A]()                                          extends ProtobufF[A]
-  final case class TSfixed64[A]()                                          extends ProtobufF[A]
-  final case class TBool[A]()                                              extends ProtobufF[A]
-  final case class TString[A]()                                            extends ProtobufF[A]
-  final case class TBytes[A]()                                             extends ProtobufF[A]
-  final case class TNamedType[A](name: String)                             extends ProtobufF[A]
-  final case class TRepeated[A](value: A)                                  extends ProtobufF[A]
-  final case class TOneOf[A](name: String, fields: NonEmptyList[Field[A]]) extends ProtobufF[A]
-  final case class TMap[A](keyTpe: A, value: A)                            extends ProtobufF[A]
+  final case class TDouble[A]()                                                   extends ProtobufF[A]
+  final case class TFloat[A]()                                                    extends ProtobufF[A]
+  final case class TInt32[A]()                                                    extends ProtobufF[A]
+  final case class TInt64[A]()                                                    extends ProtobufF[A]
+  final case class TUint32[A]()                                                   extends ProtobufF[A]
+  final case class TUint64[A]()                                                   extends ProtobufF[A]
+  final case class TSint32[A]()                                                   extends ProtobufF[A]
+  final case class TSint64[A]()                                                   extends ProtobufF[A]
+  final case class TFixed32[A]()                                                  extends ProtobufF[A]
+  final case class TFixed64[A]()                                                  extends ProtobufF[A]
+  final case class TSfixed32[A]()                                                 extends ProtobufF[A]
+  final case class TSfixed64[A]()                                                 extends ProtobufF[A]
+  final case class TBool[A]()                                                     extends ProtobufF[A]
+  final case class TString[A]()                                                   extends ProtobufF[A]
+  final case class TBytes[A]()                                                    extends ProtobufF[A]
+  final case class TNamedType[A](name: String)                                    extends ProtobufF[A]
+  final case class TRepeated[A](value: A)                                         extends ProtobufF[A]
+  final case class TOneOf[A](name: String, fields: NonEmptyList[FieldF.Field[A]]) extends ProtobufF[A]
+  final case class TMap[A](keyTpe: A, value: A)                                   extends ProtobufF[A]
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
@@ -101,31 +102,31 @@ object ProtobufF {
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)             extends ProtobufF[A]
 
-  def double[A](): ProtobufF[A]                                            = TDouble()
-  def float[A](): ProtobufF[A]                                             = TFloat()
-  def int32[A](): ProtobufF[A]                                             = TInt32()
-  def int64[A](): ProtobufF[A]                                             = TInt64()
-  def uint32[A](): ProtobufF[A]                                            = TUint32()
-  def uint64[A](): ProtobufF[A]                                            = TUint64()
-  def sint32[A](): ProtobufF[A]                                            = TSint32()
-  def sint64[A](): ProtobufF[A]                                            = TSint64()
-  def fixed32[A](): ProtobufF[A]                                           = TFixed32()
-  def fixed64[A](): ProtobufF[A]                                           = TFixed64()
-  def sfixed32[A](): ProtobufF[A]                                          = TSfixed32()
-  def sfixed64[A](): ProtobufF[A]                                          = TSfixed64()
-  def bool[A](): ProtobufF[A]                                              = TBool()
-  def string[A](): ProtobufF[A]                                            = TString()
-  def bytes[A](): ProtobufF[A]                                             = TBytes()
-  def namedType[A](name: String): ProtobufF[A]                             = TNamedType(name)
-  def repeated[A](value: A): ProtobufF[A]                                  = TRepeated(value)
-  def oneOf[A](name: String, fields: NonEmptyList[Field[A]]): ProtobufF[A] = TOneOf(name, fields)
-  def map[A](keyTpe: A, value: A): ProtobufF[A]                            = TMap(keyTpe, value)
+  def double[A](): ProtobufF[A]                                                   = TDouble()
+  def float[A](): ProtobufF[A]                                                    = TFloat()
+  def int32[A](): ProtobufF[A]                                                    = TInt32()
+  def int64[A](): ProtobufF[A]                                                    = TInt64()
+  def uint32[A](): ProtobufF[A]                                                   = TUint32()
+  def uint64[A](): ProtobufF[A]                                                   = TUint64()
+  def sint32[A](): ProtobufF[A]                                                   = TSint32()
+  def sint64[A](): ProtobufF[A]                                                   = TSint64()
+  def fixed32[A](): ProtobufF[A]                                                  = TFixed32()
+  def fixed64[A](): ProtobufF[A]                                                  = TFixed64()
+  def sfixed32[A](): ProtobufF[A]                                                 = TSfixed32()
+  def sfixed64[A](): ProtobufF[A]                                                 = TSfixed64()
+  def bool[A](): ProtobufF[A]                                                     = TBool()
+  def string[A](): ProtobufF[A]                                                   = TString()
+  def bytes[A](): ProtobufF[A]                                                    = TBytes()
+  def namedType[A](name: String): ProtobufF[A]                                    = TNamedType(name)
+  def repeated[A](value: A): ProtobufF[A]                                         = TRepeated(value)
+  def oneOf[A](name: String, fields: NonEmptyList[FieldF.Field[A]]): ProtobufF[A] = TOneOf(name, fields)
+  def map[A](keyTpe: A, value: A): ProtobufF[A]                                   = TMap(keyTpe, value)
   def enum[A](
       name: String,
       symbols: List[(String, Int)],
       options: List[Option],
       aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
-  def message[A](name: String, fields: List[Field[A]], reserved: List[List[String]]): ProtobufF[A] =
+  def message[A](name: String, fields: List[FieldF.Field[A]], reserved: List[List[String]]): ProtobufF[A] =
     TMessage(name, fields, reserved)
 
   implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
@@ -154,17 +155,17 @@ object ProtobufF {
   implicit val traverse: DefaultTraverse[ProtobufF] = new DefaultTraverse[ProtobufF] {
     def traverse[G[_], A, B](fa: ProtobufF[A])(f: A => G[B])(implicit G: Applicative[G]): G[ProtobufF[B]] = {
 
-      def makeFieldB(field: Field[A]) =
+      def makeFieldB(field: FieldF.Field[A]) =
         f(field.tpe).map(b =>
-          Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
+          FieldF.Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
 
-      def makeOneOfB(oneOf: OneOfField[A]) =
-        f(oneOf.tpe).map(b => OneOfField[B](oneOf.name, b): FieldF[B])
+      def makeOneOfB(oneOf: FieldF.OneOfField[A]) =
+        f(oneOf.tpe).map(b => FieldF.OneOfField[B](oneOf.name, b): FieldF[B])
 
       def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] =
         fieldFList.traverse {
-          case field: Field[A]      => makeFieldB(field).widen
-          case oneOf: OneOfField[A] => makeOneOfB(oneOf).widen
+          case field: FieldF.Field[A]      => makeFieldB(field).widen
+          case oneOf: FieldF.OneOfField[A] => makeOneOfB(oneOf).widen
         }
 
       fa match {
@@ -214,8 +215,8 @@ object ProtobufF {
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FLOAT    => TFloat()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT32    => TInt32()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT64    => TInt64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED32 => TSfixed32()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED64 => TSfixed64()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
     case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
@@ -269,7 +270,7 @@ object ProtobufF {
   def oneOfFromDescriptor(oneOf: OneofDescriptor): TOneOf[BaseDescriptor] = {
     val fields = oneOf.fields.map(
       f =>
-        Field[BaseDescriptor](
+        FieldF.Field[BaseDescriptor](
           f.name,
           f,
           f.number,
@@ -287,8 +288,8 @@ object ProtobufF {
     val options        = descriptor.getOptions
     val defaultOptions = List(("deprecated", options.getDeprecated))
 
-    val oneOfFields: List[OneOfField[BaseDescriptor]] =
-      descriptor.oneofs.map(oneOf => OneOfField[BaseDescriptor](oneOf.name, oneOf)).toList
+    val oneOfFields: List[FieldF.OneOfField[BaseDescriptor]] =
+      descriptor.oneofs.map(oneOf => FieldF.OneOfField[BaseDescriptor](oneOf.name, oneOf)).toList
 
     val fields = descriptor.fields
       .filterNot(
@@ -296,7 +297,7 @@ object ProtobufF {
       )
       .map(
         fieldDesc =>
-          Field[BaseDescriptor](
+          FieldF.Field[BaseDescriptor](
             fieldDesc.name,
             fieldDesc,
             fieldDesc.number,

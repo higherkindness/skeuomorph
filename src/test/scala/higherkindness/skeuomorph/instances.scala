@@ -28,7 +28,7 @@ import org.scalacheck._
 import org.scalacheck.cats.implicits._
 import mu.MuF
 import avro.AvroF
-import protobuf.ProtobufF
+import protobuf.{FieldF, ProtobufF}
 import qq.droste.Basis
 import scalapb.UnknownFieldSet
 import scalapb.descriptors.FileDescriptor
@@ -72,8 +72,8 @@ object instances {
   lazy val labelGenerator: Gen[Label] = Gen.oneOf(Seq(Label.LABEL_REPEATED))
 
   /* Type.TYPE_ENUM and Type.TYPE_MESSAGE are valid types but if added to these generators
-    they break the scalaPB parser. Type.TYPE_GROUP is not valid in Proto3 and therefore should
-    not be generated */
+    they break the scalaPB parser for some reason. Type.TYPE_GROUP is not valid in Proto3
+    and therefore should not be generated. */
   lazy val fieldTypeGenerator: Gen[FieldDescriptorProto.Type] = Gen.oneOf(
     Seq(
       Type.TYPE_DOUBLE,
@@ -161,15 +161,14 @@ object instances {
     } yield new EnumValueOptions(deprecated, uninterpretedOption, UnknownFieldSet())
   }
 
-  lazy val sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
+  def sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
     for {
       name           <- nonEmptyString
-      number         <- smallNumber
       enumValOptions <- Gen.option(enumValueOptions.arbitrary)
     } yield
       new EnumValueDescriptorProto(
         name = Some(name),
-        number = Some(number),
+        number = None, // To be filled in by sequence index later
         options = enumValOptions
       )
   }
@@ -180,11 +179,12 @@ object instances {
       valueDescriptorLength <- Gen.choose(1, 3)
       enumValues <- Gen.lzy(
         Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
+      enumValuesWithNumber = enumValues.zipWithIndex.map { case (enum, i) => enum.copy(number = Some(i)) }
       enumOptions <- Gen.option(enumOptions.arbitrary)
     } yield
       new EnumDescriptorProto(
         name = Some(name),
-        value = enumValues,
+        value = enumValuesWithNumber,
         options = enumOptions
       )
   }
@@ -280,12 +280,12 @@ object instances {
       )
     )
 
-    val sampleField: Gen[ProtobufF.Field[T]] = {
+    val sampleField: Gen[FieldF.Field[T]] = {
       for {
         name     <- nonEmptyString
         tpe      <- innerTypes
         position <- smallNumber
-      } yield ProtobufF.Field(name, B.algebra(tpe), position, List(), withRepeat, isMapField = false)
+      } yield FieldF.Field(name, B.algebra(tpe), position, List(), withRepeat, isMapField = false)
     }
 
     for {
@@ -487,7 +487,7 @@ object instances {
               Gen.listOf(genOption),
               sampleBool,
               sampleBool
-            ).mapN(ProtobufF.Field.apply[T])
+            ).mapN(FieldF.Field.apply[T])
           ),
           Gen.listOf(Gen.listOf(nonEmptyString))
         ).mapN(ProtobufF.message[T])
