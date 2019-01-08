@@ -61,7 +61,7 @@ object ProtobufF {
       case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
     }
 
-    def makeOpt[A, B](a: A, defaultFlags: List[(String, B)], f: A => Seq[UninterpretedOption]): List[Option] =
+    def makeOptions[A, B](a: A, defaultFlags: List[(String, B)], f: A => Seq[UninterpretedOption]): List[Option] =
       (defaultFlags.map(e => (e._1, s"${e._2}")) ++ uninterpretedOptions(a, f)).map {
         case (name, value) => Option(name, value)
       }
@@ -99,7 +99,7 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
-  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
+  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)             extends ProtobufF[A]
 
   def double[A](): ProtobufF[A]                                            = TDouble()
   def float[A](): ProtobufF[A]                                             = TFloat()
@@ -129,33 +129,34 @@ object ProtobufF {
     TMessage(name, fields, reserved)
 
   implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
-    case (TDouble(), TDouble())          => true
-    case (TFloat(), TFloat())            => true
-    case (TInt32(), TInt32())            => true
-    case (TInt64(), TInt64())            => true
-    case (TUint32(), TUint32())          => true
-    case (TUint64(), TUint64())          => true
-    case (TSint32(), TSint32())          => true
-    case (TSint64(), TSint64())          => true
-    case (TFixed32(), TFixed32())        => true
-    case (TFixed64(), TFixed64())        => true
-    case (TSfixed32(), TSfixed32())      => true
-    case (TSfixed64(), TSfixed64())      => true
-    case (TBool(), TBool())              => true
-    case (TString(), TString())          => true
-    case (TBytes(), TBytes())            => true
-    case (TNamedType(n), TNamedType(n2)) => n === n2
-    case (TRepeated(v), TRepeated(v2))   => v === v2
+    case (TDouble(), TDouble())                     => true
+    case (TFloat(), TFloat())                       => true
+    case (TInt32(), TInt32())                       => true
+    case (TInt64(), TInt64())                       => true
+    case (TUint32(), TUint32())                     => true
+    case (TUint64(), TUint64())                     => true
+    case (TSint32(), TSint32())                     => true
+    case (TSint64(), TSint64())                     => true
+    case (TFixed32(), TFixed32())                   => true
+    case (TFixed64(), TFixed64())                   => true
+    case (TSfixed32(), TSfixed32())                 => true
+    case (TSfixed64(), TSfixed64())                 => true
+    case (TBool(), TBool())                         => true
+    case (TString(), TString())                     => true
+    case (TBytes(), TBytes())                       => true
+    case (TNamedType(n), TNamedType(n2))            => n === n2
+    case (TRepeated(v), TRepeated(v2))              => v === v2
     case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2)) => n === n2 && s === s2 && o === o2 && a === a2
-    case (TMessage(n, f, r), TMessage(n2, f2, r2)) => n === n2 && f === f2 && r === r2
-    case _ => false
+    case (TMessage(n, f, r), TMessage(n2, f2, r2))  => n === n2 && f === f2 && r === r2
+    case _                                          => false
   }
 
   implicit val traverse: DefaultTraverse[ProtobufF] = new DefaultTraverse[ProtobufF] {
     def traverse[G[_], A, B](fa: ProtobufF[A])(f: A => G[B])(implicit G: Applicative[G]): G[ProtobufF[B]] = {
 
       def makeFieldB(field: Field[A]) =
-        f(field.tpe).map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
+        f(field.tpe).map(b =>
+          Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
 
       def makeOneOfB(oneOf: OneOfField[A]) =
         f(oneOf.tpe).map(b => OneOfField[B](oneOf.name, b): FieldF[B])
@@ -194,7 +195,7 @@ object ProtobufF {
                 name,
                 bFields,
                 reserved
-              ))
+            ))
         case TFileDescriptor(values, name, p) => values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
       }
     }
@@ -241,7 +242,7 @@ object ProtobufF {
       e.name,
       values,
       Option
-        .makeOpt(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
+        .makeOptions(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
       aliases
     )
   }
@@ -299,7 +300,7 @@ object ProtobufF {
             fieldDesc.name,
             fieldDesc,
             fieldDesc.number,
-            Option.makeOpt(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+            Option.makeOptions(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
             fieldDesc.isRepeated,
             fieldDesc.isMapField
         )
