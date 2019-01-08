@@ -108,7 +108,6 @@ lazy val commonSettings = Seq(
     %%("scalacheck", V.scalacheck) % Test,
     %%("specs2-core"      , V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    %%("scalatest")                   % Test, // TEMP
     "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll(
       ExclusionRule(organization="org.scalacheck")
     )

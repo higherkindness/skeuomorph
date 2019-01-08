@@ -20,18 +20,20 @@ import cats.Functor
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type._
 import org.scalacheck.Prop
-import org.scalatest.{FlatSpec, Matchers}
 import scalapb.descriptors._
 import qq.droste._
-import org.scalatest.prop.Checkers._
+import org.specs2.{ScalaCheck, Specification}
 
-class ProtobufSpec extends FlatSpec with Matchers {
+class ProtobufSpec extends Specification with ScalaCheck {
 
   import higherkindness.skeuomorph.instances._
 
-  "ProtobufF.fromProtobuf" should "translate proto files" in {
-    check(convertBaseDescriptor)
-  }
+  def is = s2"""
+  Protobuf Schema
+
+  It should be possible to create a ProtobufF from a Base Descriptor. $convertBaseDescriptor
+
+  """
 
   def convertBaseDescriptor = Prop.forAll { fileDescriptor: FileDescriptor =>
     val test: BaseDescriptor => Boolean = scheme.hylo(checkProto(fileDescriptor), ProtobufF.fromProtobuf)
@@ -84,7 +86,7 @@ class ProtobufSpec extends FlatSpec with Matchers {
           case Right(tEnum: ProtobufF.TEnum[Boolean]) =>
             e.name == tEnum.name &&
               e.values.length == tEnum.symbols.length + tEnum.aliases.length &&
-              tEnum.symbols.head._2 == 0 // The first Enum must start with 0 according to protobuf
+              tEnum.symbols.head._2 == 0
           case _ => false
         }
       case f: FieldDescriptor =>
