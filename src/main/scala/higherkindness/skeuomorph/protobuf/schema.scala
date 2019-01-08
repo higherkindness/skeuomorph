@@ -20,17 +20,17 @@ import cats.{Applicative, Eq}
 import cats.data.NonEmptyList
 import cats.implicits._
 import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
+import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 import higherkindness.skeuomorph.protobuf.ProtobufF.{Field, OneOfField}
 import qq.droste.Coalgebra
 import qq.droste.util.DefaultTraverse
 import scalapb.descriptors.{ScalaType, _}
 
-sealed trait ProtobufF[A]
-
 sealed trait FieldF[A] {
   val name: String
   val tpe: A
 }
+
 object FieldF {
   implicit def fieldEq[T: Eq]: Eq[FieldF[T]] = Eq.instance {
     case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
@@ -40,6 +40,8 @@ object FieldF {
     case _ => false
   }
 }
+
+sealed trait ProtobufF[A]
 
 object ProtobufF {
   final case class Field[A](
@@ -58,6 +60,17 @@ object ProtobufF {
     implicit val optionEq: Eq[Option] = Eq.instance {
       case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
     }
+
+    def makeOpt[A, B](a: A, defaultFlags: List[(String, B)], f: A => Seq[UninterpretedOption]): List[Option] =
+      (defaultFlags.map(e => (e._1, s"${e._2}")) ++ uninterpretedOptions(a, f)).map {
+        case (name, value) => Option(name, value)
+      }
+
+    private def uninterpretedOptions[A](a: A, f: A => Seq[UninterpretedOption]): Seq[(String, String)] =
+      f(a).flatMap(o => o.identifierValue.map((toString(o.name), _)))
+
+    private def toString(nameParts: Seq[NamePart]): String =
+      nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
   }
 
   final case class TDouble[A]()                                            extends ProtobufF[A]
@@ -79,7 +92,6 @@ object ProtobufF {
   final case class TRepeated[A](value: A)                                  extends ProtobufF[A]
   final case class TOneOf[A](name: String, fields: NonEmptyList[Field[A]]) extends ProtobufF[A]
   final case class TMap[A](keyTpe: A, value: A)                            extends ProtobufF[A]
-
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
@@ -87,7 +99,6 @@ object ProtobufF {
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
-
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
   def double[A](): ProtobufF[A]                                            = TDouble()
@@ -135,54 +146,25 @@ object ProtobufF {
     case (TBytes(), TBytes())            => true
     case (TNamedType(n), TNamedType(n2)) => n === n2
     case (TRepeated(v), TRepeated(v2))   => v === v2
-
-    case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2)) =>
-      n === n2 && s === s2 && o === o2 && a === a2
+    case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2)) => n === n2 && s === s2 && o === o2 && a === a2
     case (TMessage(n, f, r), TMessage(n2, f2, r2)) => n === n2 && f === f2 && r === r2
-
     case _ => false
-  }
-
-  def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra {
-    case f: FileDescriptor                                                            => fileFromDescriptor(f)
-    case e: EnumDescriptor                                                            => enumFromDescriptor(e)
-    case o: OneofDescriptor                                                           => makeTOneOf(o)
-    case d: Descriptor                                                                => messageFromDescriptor(d)
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED32  => TFixed32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED64  => TFixed64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FLOAT    => TFloat()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT32    => TInt32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT64    => TInt64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedType(f)
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedType(f)
   }
 
   implicit val traverse: DefaultTraverse[ProtobufF] = new DefaultTraverse[ProtobufF] {
     def traverse[G[_], A, B](fa: ProtobufF[A])(f: A => G[B])(implicit G: Applicative[G]): G[ProtobufF[B]] = {
 
-      def makeFieldB(field: Field[A]) = {
-        f(field.tpe)
-          .map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
-      }
+      def makeFieldB(field: Field[A]) =
+        f(field.tpe).map(b => Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
+
       def makeOneOfB(oneOf: OneOfField[A]) =
         f(oneOf.tpe).map(b => OneOfField[B](oneOf.name, b): FieldF[B])
 
-      def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] = {
+      def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] =
         fieldFList.traverse {
           case field: Field[A]      => makeFieldB(field).widen
           case oneOf: OneOfField[A] => makeOneOfB(oneOf).widen
         }
-      }
 
       fa match {
         case TDouble()                              => double[B]().pure[G]
@@ -212,25 +194,34 @@ object ProtobufF {
                 name,
                 bFields,
                 reserved
-            ))
+              ))
         case TFileDescriptor(values, name, p) => values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
       }
     }
   }
 
-  object Options {
-    import com.google.protobuf.descriptor.UninterpretedOption.NamePart
-
-    def options[A, B](a: A, defaultFlags: List[(String, B)], f: A => Seq[UninterpretedOption]): List[Option] =
-      (defaultFlags.map(e => (e._1, s"${e._2}")) ++ uninterpretedOptions(a, f)).map {
-        case (name, value) => Option(name, value)
-      }
-
-    private def uninterpretedOptions[A](a: A, f: A => Seq[UninterpretedOption]): Seq[(String, String)] =
-      f(a).flatMap(o => o.identifierValue.map((toString(o.name), _)))
-
-    private def toString(nameParts: Seq[NamePart]): String =
-      nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
+  def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra {
+    case f: FileDescriptor                                                            => fileFromDescriptor(f)
+    case e: EnumDescriptor                                                            => enumFromDescriptor(e)
+    case o: OneofDescriptor                                                           => oneOfFromDescriptor(o)
+    case d: Descriptor                                                                => messageFromDescriptor(d)
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED32  => TFixed32()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED64  => TFixed64()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FLOAT    => TFloat()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT32    => TInt32()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT64    => TInt64()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED32 => TFixed32()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED64 => TFixed64()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedType(f)
+    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedType(f)
   }
 
   def fileFromDescriptor(fileDescriptor: FileDescriptor): TFileDescriptor[BaseDescriptor] = {
@@ -249,8 +240,8 @@ object ProtobufF {
     TEnum(
       e.name,
       values,
-      Options
-        .options(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
+      Option
+        .makeOpt(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
       aliases
     )
   }
@@ -274,7 +265,7 @@ object ProtobufF {
     TMessage[BaseDescriptor](descriptor.name, fields, reserved)
   }
 
-  def makeTOneOf(oneOf: OneofDescriptor): TOneOf[BaseDescriptor] = {
+  def oneOfFromDescriptor(oneOf: OneofDescriptor): TOneOf[BaseDescriptor] = {
     val fields = oneOf.fields.map(
       f =>
         Field[BaseDescriptor](
@@ -287,7 +278,6 @@ object ProtobufF {
       )
     )
     require(fields.nonEmpty, "Protobuf one-ofs cannot be formed with zero fields")
-    // Not sure how we ultimately want to do error handling here.
 
     TOneOf[BaseDescriptor](oneOf.name, NonEmptyList(fields.head, fields.tail.toList))
   }
@@ -309,7 +299,7 @@ object ProtobufF {
             fieldDesc.name,
             fieldDesc,
             fieldDesc.number,
-            Options.options(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
+            Option.makeOpt(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
             fieldDesc.isRepeated,
             fieldDesc.isMapField
         )
