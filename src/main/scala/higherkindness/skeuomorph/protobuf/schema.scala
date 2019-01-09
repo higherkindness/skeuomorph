@@ -126,7 +126,7 @@ object ProtobufF {
       symbols: List[(String, Int)],
       options: List[Option],
       aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
-  def message[A](name: String, fields: List[FieldF.Field[A]], reserved: List[List[String]]): ProtobufF[A] =
+  def message[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]): ProtobufF[A] =
     TMessage(name, fields, reserved)
 
   implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
@@ -316,7 +316,8 @@ object ProtobufF {
       case ScalaType.Message(descriptor) if f.isMapField => getMapTypes(descriptor)
       case ScalaType.Message(descriptor)                 => TNamedType(descriptor.name)
       case ScalaType.Enum(enumDesc)                      => TNamedType(enumDesc.name)
-      case _: ScalaType                                  => TNamedType("Unknown") // TODO: what should be done here?
+      // TODO: this should be unreachable, but what should be done here?
+      case _: ScalaType                                  => TNamedType("Unknown")
     }
   }
 
