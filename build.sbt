@@ -105,6 +105,7 @@ lazy val commonSettings = Seq(
     "com.google.protobuf" % "protobuf-java"  % V.protobuf,
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
+    %%("iota-core"),
     %%("scalacheck", V.scalacheck)    % Test,
     %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
