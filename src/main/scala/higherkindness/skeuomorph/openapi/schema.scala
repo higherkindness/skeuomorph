@@ -72,7 +72,7 @@ object schema {
 
   final case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
 
-  final case class MediaType[A](schema: Either[JsonSchemaF[A], Reference], encoding: Map[String, Encoding[A]])
+  final case class MediaType[A](schema: Either[Type[A], Reference], encoding: Map[String, Encoding[A]])
 
   final case class Encoding[A](
       contentType: String,
@@ -94,6 +94,6 @@ object schema {
 
   final case class Reference(ref: String) // $ref
 
-  final case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
+  final case class Header[A](description: String, schema: Either[Type[A], Reference])
 
 }
