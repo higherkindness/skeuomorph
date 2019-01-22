@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+package com.book;
+
+message Author {
+    required string name = 1;
+    optional string nick = 2;
+}

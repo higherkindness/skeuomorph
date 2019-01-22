@@ -16,9 +16,8 @@
 
 package higherkindness.skeuomorph
 
-import java.io.FileInputStream
-
 import cats.effect.IO
+import higherkindness.skeuomorph.protobuf.ParseProto.ProtoSource
 import scalapb.descriptors.{BaseDescriptor, FileDescriptor}
 import protobuf.Optimize._
 import mu.Optimize._
@@ -33,7 +32,7 @@ object Playground extends App {
 
   val readFile: IO[FileDescriptor] = ParseProto
     .parseProto[IO]
-    .parse(new FileInputStream("/Users/rebeccamark/sasquatch/skeuomorph/src/main/resources/sampleProto.proto"))
+    .parse(ProtoSource("sampleProto.proto", "/Users/rafaparadela/code/47/skeuomorph/src/main/resources"))
 
   val fileDescriptor: FileDescriptor = readFile.unsafeRunSync()
 

@@ -1,24 +1,24 @@
-syntax = "proto3";
+syntax = "proto2";
 
 package com.book;
 
-import "author3.proto";
+import "author2.proto";
 
 message Book {
     reserved 4, 8;
     reserved 12 to 15;
-    int64 isbn = 1;
-    string title = 2;
+    required int64 isbn = 1;
+    required string title = 2;
     repeated Author author = 3;
-    BindingType binding_type = 9;
+    required BindingType binding_type = 9;
 }
 
 message GetBookRequest {
-    int64 isbn = 1;
+    required int64 isbn = 1;
 }
 
 message GetBookViaAuthor {
-    Author author = 1;
+    required Author author = 1;
 }
 
 service BookService {
@@ -29,7 +29,7 @@ service BookService {
 }
 
 message BookStore {
-    string name = 1;
+    required string name = 1;
     map<int64, string> books = 2;
     repeated Genre genres = 3;
 

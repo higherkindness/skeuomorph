@@ -16,9 +16,8 @@
 
 package higherkindness.skeuomorph.protobuf
 
-import java.io.FileInputStream
-import java.time.Instant
-
+import com.google.protobuf.descriptor.FileDescriptorProto
+import scalapb.descriptors.FileDescriptor
 import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -26,61 +25,48 @@ import com.github.os72.protocjar.Protoc
 import com.google.protobuf.descriptor.FileDescriptorSet
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
-import org.apache.commons.compress.utils.IOUtils
-import scalapb.descriptors.FileDescriptor
 
 object ParseProto {
 
-  implicit def parseProto[F[_]]: Parser[F, FileInputStream, FileDescriptor] =
-    new Parser[F, FileInputStream, FileDescriptor] {
-      override def parse(input: FileInputStream)(implicit S: Sync[F]): F[FileDescriptor] =
-        transpile(input)
+  case class ProtoSource(filename: String, path: String)
+
+  implicit def parseProto[F[_]]: Parser[F, ProtoSource, FileDescriptor] =
+    new Parser[F, ProtoSource, FileDescriptor] {
+      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[FileDescriptor] =
+        runProtoc(input)
     }
 
-  private def transpile[F[_]: Sync](protoFileStream: FileInputStream): F[FileDescriptor] = {
-    val tmpPathPrefix = "/tmp"
-    val tmpFileName   = s"$tmpPathPrefix/${Instant.now.toEpochMilli}.proto"
-
-    fileHandle(tmpFileName)
-      .flatMap(fileOutputStream[F])
-      .use { fos =>
-        for {
-          _              <- Sync[F].delay(IOUtils.copy(protoFileStream, fos))
-          fileDescriptor <- runProtoc(tmpFileName, tmpPathPrefix)
-        } yield fileDescriptor
-      }
-  }
-
-  private def runProtoc[F[_]: Sync](protoFileName: String, pathToProtoFile: String): F[FileDescriptor] = {
-    val descriptorFileName = s"$protoFileName.desc"
-    val protoCompilation = Sync[F].delay(
+  private def runProtoc[F[_]: Sync](input: ProtoSource): F[FileDescriptor] = {
+    val descriptorFileName = s"${input.filename}.desc"
+    val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
         Array(
+          "--plugin=protoc-gen-proto2_to_proto3",
           "--include_imports",
-          s"--descriptor_set_out=$descriptorFileName",
-          s"--proto_path=$pathToProtoFile",
-          protoFileName
+          s"--descriptor_set_out=${input.filename}.desc",
+          s"--proto_path=${input.path}",
+          input.filename
         )
       )
     )
 
     for {
       _ <- Sync[F].ensure[Int](protoCompilation)(ProtobufCompilationException())((exitCode: Int) => exitCode == 0)
-      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
+      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName, input.filename)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
     } yield fileDescriptor
   }
 
-  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptor] =
+  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String, protoFileName: String): F[FileDescriptor] =
     fileInputStream(descriptorFileName)
       .use { fis =>
-        for {
-          scalaFileDescriptorSet <- Sync[F].delay(FileDescriptorSet.parseFrom(fis))
-          fileDescProto = scalaFileDescriptorSet.file.head // Is there a condition under which there would be more than one?
-        } yield fileDescProto
+        Sync[F].delay(FileDescriptorSet.parseFrom(fis).file)
       }
       .map { fileDescriptorProto =>
-        FileDescriptor.buildFrom(fileDescriptorProto, Nil)
+        val (descriptions, dependencies): (Seq[FileDescriptorProto], Seq[FileDescriptorProto]) =
+          fileDescriptorProto.partition(_.name.fold(false)(_ == protoFileName))
+
+        FileDescriptor.buildFrom(descriptions.head, dependencies.map(FileDescriptor.buildFrom(_, Nil)))
       }
 }
