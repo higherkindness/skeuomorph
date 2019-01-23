@@ -16,10 +16,13 @@
 
 package higherkindness.skeuomorph.uast
 
+import qq.droste.Delay
 import iota.{CopK, TListK}
-import cats.Traverse
+import cats._
 
 object derivation {
   implicit def copkTraverse[LL <: TListK](implicit M: TraverseMaterializer[LL]): Traverse[CopK[LL, ?]] =
+    M.materialize(offset = 0)
+  implicit def copkEqual[LL <: TListK](implicit M: EqKMaterializer[LL]): Delay[Eq, CopK[LL, ?]] =
     M.materialize(offset = 0)
 }
