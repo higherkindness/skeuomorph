@@ -21,7 +21,6 @@ import iota.TListK.:::
 import org.apache.avro.Schema
 import org.apache.avro.Schema.{Type => SType}
 import qq.droste.Coalgebra
-import qq.droste.syntax.embed._
 import uast.types._
 
 package object avro {
@@ -62,15 +61,15 @@ package object avro {
 
     def fromAvro: Coalgebra[Type, Schema] = Coalgebra { sch =>
       sch.getType match {
-        case t if t == SType.NULL    => `null`[Type, Schema].embed
-        case t if t == SType.BOOLEAN => boolean[Type, Schema].embed
-        case t if t == SType.INT     => int[Type, Schema].embed
-        case t if t == SType.LONG    => long[Type, Schema].embed
-        case t if t == SType.FLOAT   => float[Type, Schema].embed
-        case t if t == SType.DOUBLE  => double[Type, Schema].embed
-        case t if t == SType.BYTES   => byte[Type, Schema].embed
-        case t if t == SType.STRING  => string[Type, Schema].embed
-        case t if t == SType.MAP => map[Type, Schema](_, _)
+        case t if t == SType.NULL    => `null`[Type, Schema]
+        case t if t == SType.BOOLEAN => boolean[Type, Schema]
+        case t if t == SType.INT     => int[Type, Schema]
+        case t if t == SType.LONG    => long[Type, Schema]
+        case t if t == SType.FLOAT   => float[Type, Schema]
+        case t if t == SType.DOUBLE  => double[Type, Schema]
+        case t if t == SType.BYTES   => byte[Type, Schema]
+        case t if t == SType.STRING  => string[Type, Schema]
+        case t if t == SType.MAP     => map[Type, Schema](Schema.create(SType.STRING), sch.getValueType)
       }
     }
   }
