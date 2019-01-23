@@ -45,6 +45,7 @@ object types {
   @deriveTraverse final case class TRecord[A](name: String, fields: List[Field[A]])
   @deriveTraverse final case class TEnum[A](name: String, symbols: List[String])
   @deriveTraverse final case class TUnion[A](options: NonEmptyList[A])
+  @deriveTraverse final case class TByte[A]()
 
   def `null`[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TNull, F]): F[A]       = I.inj(TNull[A]())
   def boolean[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TBoolean, F]): F[A]   = I.inj(TBoolean[A]())
@@ -74,6 +75,7 @@ object types {
   def list[F[α] <: CopK[_, α], A](value: A)(implicit I: CopK.Inject[TList, F]): F[A] = I.inj(TList[A](value))
   def generic[F[α] <: CopK[_, α], A](generic: A, params: List[A])(implicit I: CopK.Inject[TGeneric, F]): F[A] =
     I.inj(TGeneric[A](generic, params))
+  def byte[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TByte, F]): F[A]            = I.inj(TByte[A]())
 
   // def desugarList[F[α] <: CopK[_, α], A](
   //     implicit
