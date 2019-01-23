@@ -34,14 +34,6 @@ sealed trait TraverseMaterializer[LL <: TListK] {
 
 object TraverseMaterializer {
 
-  def mkInject[F[_], LL <: TListK](i: Int): CopK.Inject[F, CopK[LL, ?]] = {
-    CopK.Inject.injectFromInjectL[F, LL](
-      CopK.InjectL.makeInjectL[F, LL](
-        new TListK.Pos[LL, F] { val index: Int = i }
-      )
-    )
-  }
-
   implicit def base[F[_]](
       implicit F: Traverse[F]
   ): TraverseMaterializer[F ::: TNilK] = new TraverseMaterializer[F ::: TNilK] {
