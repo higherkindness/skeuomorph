@@ -16,7 +16,7 @@
 
 package higherkindness.skeuomorph.mu
 
-import higherkindness.skeuomorph.avro.AvroF
+import higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.protobuf.ProtobufF
 import qq.droste.Trans
 
@@ -51,24 +51,25 @@ object Transform {
     case ProtobufF.TMessage(name, fields, _)  => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
   }
 
-  def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
-    case AvroF.TNull()          => TNull()
-    case AvroF.TBoolean()       => TBoolean()
-    case AvroF.TInt()           => TInt()
-    case AvroF.TLong()          => TLong()
-    case AvroF.TFloat()         => TFloat()
-    case AvroF.TDouble()        => TDouble()
-    case AvroF.TBytes()         => TByteArray()
-    case AvroF.TString()        => TString()
-    case AvroF.TNamedType(name) => TNamedType(name)
-    case AvroF.TArray(item)     => TList(item)
-    case AvroF.TMap(values)     => TMap(values)
-    case AvroF.TRecord(name, _, _, _, fields) =>
-      TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
-    case AvroF.TUnion(options)               => TCoproduct(options)
-    case AvroF.TFixed(_, _, _, _) =>
-      ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
-  }
+  def transformAvro[A]: Trans[avro.Type, MuF, A] = ???
+  //Trans {
+  //   case AvroF.TNull()          => TNull()
+  //   case AvroF.TBoolean()       => TBoolean()
+  //   case AvroF.TInt()           => TInt()
+  //   case AvroF.TLong()          => TLong()
+  //   case AvroF.TFloat()         => TFloat()
+  //   case AvroF.TDouble()        => TDouble()
+  //   case AvroF.TBytes()         => TByteArray()
+  //   case AvroF.TString()        => TString()
+  //   case AvroF.TNamedType(name) => TNamedType(name)
+  //   case AvroF.TArray(item)     => TList(item)
+  //   case AvroF.TMap(values)     => TMap(values)
+  //   case AvroF.TRecord(name, _, _, _, fields) =>
+  //     TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+  //   case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
+  //   case AvroF.TUnion(options)               => TCoproduct(options)
+  //   case AvroF.TFixed(_, _, _, _) =>
+  //     ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
+  // }
 
 }

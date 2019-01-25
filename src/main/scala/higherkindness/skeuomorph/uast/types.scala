@@ -75,7 +75,7 @@ object types {
   def list[F[α] <: CopK[_, α], A](value: A)(implicit I: CopK.Inject[TList, F]): F[A] = I.inj(TList[A](value))
   def generic[F[α] <: CopK[_, α], A](generic: A, params: List[A])(implicit I: CopK.Inject[TGeneric, F]): F[A] =
     I.inj(TGeneric[A](generic, params))
-  def byte[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TByte, F]): F[A]            = I.inj(TByte[A]())
+  def byte[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TByte, F]): F[A] = I.inj(TByte[A]())
 
   // def desugarList[F[α] <: CopK[_, α], A](
   //     implicit

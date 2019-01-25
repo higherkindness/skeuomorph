@@ -16,12 +16,16 @@
 
 package higherkindness.skeuomorph
 
+import cats.data.NonEmptyList
+import io.circe.Json
 import iota.{TListK => _, _}
 import iota.TListK.:::
 import org.apache.avro.Schema
 import org.apache.avro.Schema.{Type => SType}
-import qq.droste.Coalgebra
+import qq.droste.{Algebra, Coalgebra}
 import uast.types._
+
+import scala.collection.JavaConverters._
 
 package object avro {
 
@@ -70,7 +74,47 @@ package object avro {
         case t if t == SType.BYTES   => byte[Type, Schema]
         case t if t == SType.STRING  => string[Type, Schema]
         case t if t == SType.MAP     => map[Type, Schema](Schema.create(SType.STRING), sch.getValueType)
+        case t if t == SType.ENUM    => enum[Type, Schema](sch.getName, sch.getAliases.asScala.toList)
+        case t if t == SType.UNION   => union[Type, Schema](NonEmptyList.fromListUnsafe(sch.getTypes.asScala.toList))
+        case t if t == SType.FIXED   => fixed[Type, Schema](sch.getName, sch.getFixedSize)
       }
+    }
+
+    private[this] def field2Obj(f: Field[Json]): Json =
+      Json.obj(
+        "name" -> Json.fromString(f.name),
+        "type" -> f.tpe
+      )
+
+    def toJson: Algebra[Type, Json] = Algebra {
+      case InjNull(_)    => Json.Null
+      case InjBoolean(_) => Json.fromString("boolean")
+      case InjInt(_)     => Json.fromString("integer")
+      case InjLong(_)    => Json.fromString("long")
+      case InjFloat(_)   => Json.fromString("float")
+      case InjDouble(_)  => Json.fromString("double")
+      case InjBytes(_)   => Json.fromString("bytes")
+      case InjString(_)  => Json.fromString("string")
+      case InjMap(TMap(keys, values)) =>
+        Json.obj(
+          "type" -> Json.fromString("map"),
+          "items" -> keys.asArray
+            .flatMap(k => values.asArray.map(v => k.map(_.toString).zip(v)))
+            .fold(Json.arr(Seq.empty[Json]: _*))(v => Json.arr(v.toSeq.map(Json.obj(_)): _*))
+        )
+      case InjRecord(TRecord(name, fields)) =>
+        Json.obj(
+          "type"   -> Json.fromString("record"),
+          "name"   -> Json.fromString(name),
+          "fields" -> Json.arr(fields.map(field2Obj): _*))
+      case InjEnum(TEnum(_, _))      => ???
+      case InjUnion(TUnion(options)) => Json.arr(options.toList: _*)
+      case InjFixed(TFixed(name, size)) =>
+        Json.obj(
+          "type" -> Json.fromString("fixed"),
+          "name" -> Json.fromString(name),
+          "size" -> Json.fromInt(size)
+        )
     }
   }
 }
