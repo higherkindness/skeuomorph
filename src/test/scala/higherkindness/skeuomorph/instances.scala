@@ -30,8 +30,8 @@ import mu.MuF
 import avro.AvroF
 import protobuf.{FieldF, ProtobufF}
 import qq.droste.Basis
-import scalapb.UnknownFieldSet
-import scalapb.descriptors.FileDescriptor
+//import scalapb.UnknownFieldSet
+//import scalapb.descriptors.FileDescriptor
 
 import scala.collection.JavaConverters._
 

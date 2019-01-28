@@ -20,7 +20,7 @@ import cats.Functor
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type
 import com.google.protobuf.descriptor.FieldDescriptorProto.Type._
 import org.scalacheck.Prop
-import scalapb.descriptors._
+//import scalapb.descriptors._
 import qq.droste._
 import org.specs2.{ScalaCheck, Specification}
 

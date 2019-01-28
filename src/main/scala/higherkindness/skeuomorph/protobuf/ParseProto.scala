@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import com.google.protobuf.descriptor.FileDescriptorProto
-import scalapb.descriptors.FileDescriptor
+//import scalapb.descriptors.FileDescriptor
 import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
@@ -58,7 +58,7 @@ object ParseProto {
     } yield fileDescriptor
   }
 
-  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String, protoFileName: String): F[FileDescriptor] =
+  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String, protoFileName: String): F[FileDescriptorProto] =
     fileInputStream(descriptorFileName)
       .use { fis =>
         Sync[F].delay(FileDescriptorSet.parseFrom(fis).file)
@@ -67,6 +67,30 @@ object ParseProto {
         val (descriptions, dependencies): (Seq[FileDescriptorProto], Seq[FileDescriptorProto]) =
           fileDescriptorProto.partition(_.name.fold(false)(_ == protoFileName))
 
-        FileDescriptor.buildFrom(descriptions.head, dependencies.map(FileDescriptor.buildFrom(_, Nil)))
+        println("@@@@@@@@@@@@@@@@@@@@@@")
+        fileDescriptorProto.foreach(println(_))
+
+        println("£££££££££££££££££££££££")
+        dependencies.foreach(println(_))
+
+        val edited: Seq[FileDescriptor] = dependencies.map(FileDescriptor.buildFrom(_, Nil))
+        println("£££££££££££££££££££££££")
+        edited.foreach(f => println(f.messages))
+        println("£££££££££££££££££££££££")
+        edited.foreach(f => println(f.enums))
+        println("£££££££££££££££££££££££")
+        edited.foreach(f => println(f.asProto))
+
+        val a: FileDescriptor =
+          FileDescriptor.buildFrom(descriptions.head, dependencies.map(FileDescriptor.buildFrom(_, Nil)))
+
+        println("********************")
+        println(descriptions.head)
+        println("********************")
+        println(a.messages)
+        println(a.enums)
+        println(a.asProto)
+
+        a
       }
 }

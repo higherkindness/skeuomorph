@@ -24,7 +24,7 @@ import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 import higherkindness.skeuomorph.protobuf.ProtobufF.Option
 import qq.droste.Coalgebra
 import qq.droste.util.DefaultTraverse
-import scalapb.descriptors.{ScalaType, _}
+//import scalapb.descriptors.{ScalaType, _}
 
 sealed trait FieldF[A] {
   val name: String
@@ -317,7 +317,7 @@ object ProtobufF {
       case ScalaType.Message(descriptor)                 => TNamedType(descriptor.name)
       case ScalaType.Enum(enumDesc)                      => TNamedType(enumDesc.name)
       // TODO: this should be unreachable, but what should be done here?
-      case _: ScalaType                                  => TNamedType("Unknown")
+      case _: ScalaType => TNamedType("Unknown")
     }
   }
 
