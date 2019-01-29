@@ -19,10 +19,6 @@ package higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.protobuf
 import higherkindness.skeuomorph.protobuf.ProtobufF
 import higherkindness.skeuomorph.avro
-import higherkindness.skeuomorph.avro.AvroF
-import higherkindness.skeuomorph.mu.Service.OperationType
-import higherkindness.skeuomorph.mu.Transform.transformAvro
-import higherkindness.skeuomorph.mu.Transform.transformProto
 import qq.droste._
 
 sealed trait SerializationType extends Product with Serializable
@@ -44,48 +40,26 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Service]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
+  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[avro.Type, T], U: Basis[MuF, U]): Protocol[U] =
+    ???
+  // {
+  //   val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
+  //   val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
+  //     msg =>
+  //       Service.Operation(
+  //         msg.name,
+  //         toFreestyle(msg.request),
+  //         toFreestyle(msg.response)
+  //     )
 
-    val toMu: T => U = scheme.cata(transformAvro[U].algebra)
-    val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
-      msg =>
-        Service.Operation(
-          msg.name,
-          request = OperationType(toMu(msg.request), false),
-          response = OperationType(toMu(msg.response), false)
-      )
-
-    Protocol(
-      proto.name,
-      proto.namespace,
-      Nil,
-      proto.types.map(toMu),
-      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
-    )
-  }
-
-  def fromProtobufProto[T, U](
-      protocol: protobuf.Protocol[T])(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
-    val toMu: T => U = scheme.cata(transformProto[U].algebra)
-    val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
-      msg =>
-        Service.Operation(
-          name = msg.name,
-          request = OperationType(toMu(msg.request), msg.requestStreaming),
-          response = OperationType(toMu(msg.response), msg.responseStreaming)
-      )
-
-    new Protocol[U](
-      name = protocol.name,
-      pkg = Option(protocol.pkg),
-      options = protocol.options,
-      declarations = protocol.declarations.map(toMu),
-      services = protocol.services
-        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation)))
-    )
-
-  }
-
+  //   Protocol(
+  //     proto.name,
+  //     proto.namespace,
+  //     Nil,
+  //     proto.types.map(toFreestyle),
+  //     List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
+  //   )
+  // }
 }
 
 final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
