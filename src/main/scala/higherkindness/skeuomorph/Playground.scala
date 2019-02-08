@@ -19,18 +19,13 @@ package higherkindness.skeuomorph
 import cats.effect.IO
 import com.google.protobuf.DescriptorProtos.{FileDescriptorProto, FileDescriptorSet}
 import scala.collection.JavaConverters._
-//import com.google.protobuf.descriptor.DescriptorProto.ReservedRange
-//import com.google.protobuf.descriptor.FieldDescriptorProto.Label._
-//import com.google.protobuf.descriptor.FieldDescriptorProto.Type._
 //import higherkindness.skeuomorph.protobuf.ParseProto.ProtoSource
-//import scalapb.descriptors.{BaseDescriptor, FileDescriptor}
-//import protobuf.Optimize._
-//import mu.Optimize._
-//import scalapb.UnknownFieldSet
+import protobuf.Optimize._
+import mu.Optimize._
 
 object Playground extends App {
   // An example of the contract Skeuomorph will support
-//  import higherkindness.skeuomorph.mu.{MuF, Transform}
+  import higherkindness.skeuomorph.mu.{MuF, Transform}
   import higherkindness.skeuomorph.protobuf._
   import qq.droste.data.Mu
   import qq.droste.data.Mu._
@@ -45,16 +40,18 @@ object Playground extends App {
   val nativeDescriptors: List[NativeDescriptor] =
     content.getFileList.asScala.toList.map(d => NativeDescriptor(d, descriptors))
 
+  val optimizeProtobufF: Mu[ProtobufF] => Mu[ProtobufF] = repeatedTypes
+
   val parseProto: NativeDescriptor => Mu[ProtobufF] =
-    scheme.ana(ProtobufF.fromProtobuf) // andThen optimizeProtobufF
+    scheme.ana(ProtobufF.fromProtobuf) andThen optimizeProtobufF
 
-  val printProto: Mu[ProtobufF] => String =
-    print.printSchema.print _
+//  val printProto: Mu[ProtobufF] => String =
+//    print.printSchema.print _
 
-  val roundTrip: List[String] = nativeDescriptors.map(d => printProto(parseProto(d)))
+//  val roundTrip: List[String] = nativeDescriptors.map(d => printProto(parseProto(d)))
 
   // Render Proto file
-  roundTrip.foreach(println)
+//  roundTrip.foreach(println)
 //  val readFile: IO[FileDescriptorSet] = ParseProto
 //    .parseProto[IO]
 //    .parse(ProtoSource("sampleProto.proto", "/Users/rafaparadela/code/47/skeuomorph/src/main/resources"))
@@ -75,15 +72,16 @@ object Playground extends App {
 //  // Render Proto file
 ////  println(roundTrip)
 //
-//  val protoToMu: Mu[ProtobufF] => Mu[MuF] =
-//    scheme.cata(Transform.transformProto.algebra) andThen nestedNamedTypes andThen knownCoproductTypes
-//
-//  val transform: BaseDescriptor => Mu[MuF] = parseProto andThen protoToMu
-//
-//  val printAsScala: Mu[MuF] => String =
-//    higherkindness.skeuomorph.mu.print.schema.print _
-//
-//  // Render Scala
-////  println(printAsScala(transform(fileDescriptor)))
+  val protoToMu: Mu[ProtobufF] => Mu[MuF] =
+    scheme.cata(Transform.transformProto.algebra) andThen nestedNamedTypes andThen knownCoproductTypes
+
+  val transform: NativeDescriptor => Mu[MuF] = parseProto andThen protoToMu
+
+  val printAsScala: Mu[MuF] => String =
+    higherkindness.skeuomorph.mu.print.schema.print _
+
+  // Render Scala
+  val t: List[String] = nativeDescriptors.map(n => printAsScala(transform(n)))
+  t.foreach(println)
 
 }
