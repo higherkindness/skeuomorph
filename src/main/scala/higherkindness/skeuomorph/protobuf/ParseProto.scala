@@ -16,27 +16,25 @@
 
 package higherkindness.skeuomorph.protobuf
 
-import com.google.protobuf.descriptor.FileDescriptorProto
-//import scalapb.descriptors.FileDescriptor
 import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.github.os72.protocjar.Protoc
-import com.google.protobuf.descriptor.FileDescriptorSet
 import higherkindness.skeuomorph.FileUtils._
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import higherkindness.skeuomorph.{Parser, _}
 
 object ParseProto {
 
   case class ProtoSource(filename: String, path: String)
 
-  implicit def parseProto[F[_]]: Parser[F, ProtoSource, FileDescriptor] =
-    new Parser[F, ProtoSource, FileDescriptor] {
-      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[FileDescriptor] =
+  implicit def parseProto[F[_]]: Parser[F, ProtoSource, FileDescriptorSet] =
+    new Parser[F, ProtoSource, FileDescriptorSet] {
+      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[FileDescriptorSet] =
         runProtoc(input)
     }
 
-  private def runProtoc[F[_]: Sync](input: ProtoSource): F[FileDescriptor] = {
+  private def runProtoc[F[_]: Sync](input: ProtoSource): F[FileDescriptorSet] = {
     val descriptorFileName = s"${input.filename}.desc"
     val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
@@ -52,45 +50,12 @@ object ParseProto {
 
     for {
       _ <- Sync[F].ensure[Int](protoCompilation)(ProtobufCompilationException())((exitCode: Int) => exitCode == 0)
-      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName, input.filename)) {
+      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
     } yield fileDescriptor
   }
 
-  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String, protoFileName: String): F[FileDescriptorProto] =
-    fileInputStream(descriptorFileName)
-      .use { fis =>
-        Sync[F].delay(FileDescriptorSet.parseFrom(fis).file)
-      }
-      .map { fileDescriptorProto =>
-        val (descriptions, dependencies): (Seq[FileDescriptorProto], Seq[FileDescriptorProto]) =
-          fileDescriptorProto.partition(_.name.fold(false)(_ == protoFileName))
-
-        println("@@@@@@@@@@@@@@@@@@@@@@")
-        fileDescriptorProto.foreach(println(_))
-
-        println("£££££££££££££££££££££££")
-        dependencies.foreach(println(_))
-
-        val edited: Seq[FileDescriptor] = dependencies.map(FileDescriptor.buildFrom(_, Nil))
-        println("£££££££££££££££££££££££")
-        edited.foreach(f => println(f.messages))
-        println("£££££££££££££££££££££££")
-        edited.foreach(f => println(f.enums))
-        println("£££££££££££££££££££££££")
-        edited.foreach(f => println(f.asProto))
-
-        val a: FileDescriptor =
-          FileDescriptor.buildFrom(descriptions.head, dependencies.map(FileDescriptor.buildFrom(_, Nil)))
-
-        println("********************")
-        println(descriptions.head)
-        println("********************")
-        println(a.messages)
-        println(a.enums)
-        println(a.asProto)
-
-        a
-      }
+  private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptorSet] =
+    fileInputStream(descriptorFileName).use(fis => Sync[F].delay(FileDescriptorSet.parseFrom(fis)))
 }

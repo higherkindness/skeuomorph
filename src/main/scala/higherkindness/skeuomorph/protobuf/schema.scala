@@ -19,12 +19,9 @@ package higherkindness.skeuomorph.protobuf
 import cats.{Applicative, Eq}
 import cats.data.NonEmptyList
 import cats.implicits._
-import com.google.protobuf.descriptor.{EnumOptions, FieldDescriptorProto, UninterpretedOption}
-import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 import higherkindness.skeuomorph.protobuf.ProtobufF.Option
 import qq.droste.Coalgebra
 import qq.droste.util.DefaultTraverse
-//import scalapb.descriptors.{ScalaType, _}
 
 sealed trait FieldF[A] {
   val name: String
@@ -61,17 +58,6 @@ object ProtobufF {
     implicit val optionEq: Eq[Option] = Eq.instance {
       case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
     }
-
-    def makeOptions[A, B](a: A, defaultFlags: List[(String, B)], f: A => Seq[UninterpretedOption]): List[Option] =
-      (defaultFlags.map(e => (e._1, s"${e._2}")) ++ uninterpretedOptions(a, f)).map {
-        case (name, value) => Option(name, value)
-      }
-
-    private def uninterpretedOptions[A](a: A, f: A => Seq[UninterpretedOption]): Seq[(String, String)] =
-      f(a).flatMap(o => o.identifierValue.map((toString(o.name), _)))
-
-    private def toString(nameParts: Seq[NamePart]): String =
-      nameParts.foldLeft("")((l, r) => if (r.isExtension) s"$l.($r)" else s"$l.$r")
   }
 
   final case class TDouble[A]()                                                   extends ProtobufF[A]
@@ -202,136 +188,44 @@ object ProtobufF {
     }
   }
 
-  def fromProtobuf: Coalgebra[ProtobufF, BaseDescriptor] = Coalgebra {
-    case f: FileDescriptor                                                            => fileFromDescriptor(f)
-    case e: EnumDescriptor                                                            => enumFromDescriptor(e)
-    case o: OneofDescriptor                                                           => oneOfFromDescriptor(o)
-    case d: Descriptor                                                                => messageFromDescriptor(d)
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BOOL     => TBool()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_BYTES    => TBytes()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_DOUBLE   => TDouble()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED32  => TFixed32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FIXED64  => TFixed64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_FLOAT    => TFloat()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT32    => TInt32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_INT64    => TInt64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED32 => TSfixed32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SFIXED64 => TSfixed64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT32   => TSint32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_SINT64   => TSint64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_STRING   => TString()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT32   => TUint32()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_UINT64   => TUint64()
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_MESSAGE  => getNestedType(f)
-    case f: FieldDescriptor if f.protoType == FieldDescriptorProto.Type.TYPE_ENUM     => getNestedType(f)
+  def fromProtobuf: Coalgebra[ProtobufF, NativeDescriptor] = Coalgebra {
+    case f: NativeFile     => fileFromDescriptor(f)
+    case e: NativeEnum     => enumFromDescriptor(e)
+    case o: NativeOneOf    => oneOfFromDescriptor(o)
+    case d: NativeMessage  => messageFromDescriptor(d)
+    case _: NativeBool     => TBool()
+    case _: NativeBytes    => TBytes()
+    case _: NativeDouble   => TDouble()
+    case _: NativeFixed32  => TFixed32()
+    case _: NativeFixed64  => TFixed64()
+    case _: NativeFloat    => TFloat()
+    case _: NativeInt32    => TInt32()
+    case _: NativeInt64    => TInt64()
+    case _: NativeSfixed32 => TSfixed32()
+    case _: NativeSfixed64 => TSfixed64()
+    case _: NativeSint32   => TSint32()
+    case _: NativeSint64   => TSint64()
+    case _: NativeString   => TString()
+    case _: NativeUint32   => TUint32()
+    case _: NativeUint64   => TUint64()
   }
 
-  def fileFromDescriptor(fileDescriptor: FileDescriptor): TFileDescriptor[BaseDescriptor] = {
-    TFileDescriptor(
-      fileDescriptor.messages.toList ++ fileDescriptor.enums.toList,
-      fileDescriptor.fullName,
-      fileDescriptor.packageName
-    )
-  }
+  def fileFromDescriptor(fd: NativeFile): TFileDescriptor[NativeDescriptor] =
+    TFileDescriptor(fd.values, fd.name, fd.`package`)
 
-  def enumFromDescriptor(e: EnumDescriptor): TEnum[BaseDescriptor] = {
-    val defaultOptions                       = List(("allow_alias", e.getOptions.getAllowAlias), ("deprecated", e.getOptions.getDeprecated))
-    val valuesAndAliases: Seq[(String, Int)] = e.values.map(value => (value.name, value.number))
-    val (values, aliases)                    = partitionValuesAliases(valuesAndAliases)
+  def enumFromDescriptor(e: NativeEnum): TEnum[NativeDescriptor] =
+    TEnum(e.name, e.symbols, e.options.map(toTOption), e.aliases)
 
-    TEnum(
-      e.name,
-      values,
-      Option
-        .makeOptions(e.getOptions, defaultOptions, (enumDescriptor: EnumOptions) => enumDescriptor.uninterpretedOption),
-      aliases
-    )
-  }
+  def oneOfFromDescriptor(o: NativeOneOf): TOneOf[NativeDescriptor] =
+    TOneOf[NativeDescriptor](o.name, o.fields.map(toField))
 
-  def partitionValuesAliases(valuesAndAliases: Seq[(String, Int)]): (List[(String, Int)], List[(String, Int)]) = {
-    val (hasAlias, noAlias) = valuesAndAliases
-      .groupBy(_._2)
-      .values
-      .partition(_.lengthCompare(1) > 0)
+  def messageFromDescriptor(msg: NativeMessage): TMessage[NativeDescriptor] =
+    TMessage[NativeDescriptor](msg.name, msg.fields.collect { case b: NativeField => toField(b) }, msg.reserved)
 
-    val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
-    val values                   = separateValueFromAliases.map(_._1) ++ noAlias.flatten
-    val aliases                  = separateValueFromAliases.flatMap(_._2)
-    (values.toList.sortBy(_._2), aliases.toList) // Sorted b/c Enums must always start with their 0 value field
-  }
+  def toField(f: NativeField): FieldF.Field[NativeDescriptor] =
+    FieldF.Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)
 
-  def messageFromDescriptor(descriptor: Descriptor): TMessage[BaseDescriptor] = {
-    val fields: List[FieldF[BaseDescriptor]] = fieldsFromDescriptor(descriptor)
-    val reserved: List[List[String]] =
-      descriptor.asProto.reservedRange.map(range => (range.getStart until range.getEnd).map(_.toString).toList).toList
-    TMessage[BaseDescriptor](descriptor.name, fields, reserved)
-  }
+  def toTOption(no: NativeOption): ProtobufF.Option =
+    ProtobufF.Option(no.name, no.value)
 
-  def oneOfFromDescriptor(oneOf: OneofDescriptor): TOneOf[BaseDescriptor] = {
-    val fields = oneOf.fields.map(
-      f =>
-        FieldF.Field[BaseDescriptor](
-          f.name,
-          f,
-          f.number,
-          List(),
-          f.isRepeated,
-          f.isMapField
-      )
-    )
-    require(fields.nonEmpty, "Protobuf one-ofs cannot be formed with zero fields")
-
-    TOneOf[BaseDescriptor](oneOf.name, NonEmptyList(fields.head, fields.tail.toList))
-  }
-
-  def fieldsFromDescriptor(descriptor: Descriptor): List[FieldF[BaseDescriptor]] = {
-    val options        = descriptor.getOptions
-    val defaultOptions = List(("deprecated", options.getDeprecated))
-
-    val oneOfFields: List[FieldF.OneOfField[BaseDescriptor]] =
-      descriptor.oneofs.map(oneOf => FieldF.OneOfField[BaseDescriptor](oneOf.name, oneOf)).toList
-
-    val fields = descriptor.fields
-      .filterNot(
-        fieldDesc => descriptor.oneofs.flatMap(_.fields.map(_.number)).contains(fieldDesc.number)
-      )
-      .map(
-        fieldDesc =>
-          FieldF.Field[BaseDescriptor](
-            fieldDesc.name,
-            fieldDesc,
-            fieldDesc.number,
-            Option.makeOptions(descriptor, defaultOptions, (d: Descriptor) => d.getOptions.uninterpretedOption),
-            fieldDesc.isRepeated,
-            fieldDesc.isMapField
-        )
-      )
-      .toList
-
-    fields ++ oneOfFields
-  }
-
-  def getNestedType(f: FieldDescriptor): ProtobufF[BaseDescriptor] = {
-    f.scalaType match {
-      case ScalaType.Message(descriptor) if f.isMapField => getMapTypes(descriptor)
-      case ScalaType.Message(descriptor)                 => TNamedType(descriptor.name)
-      case ScalaType.Enum(enumDesc)                      => TNamedType(enumDesc.name)
-      // TODO: this should be unreachable, but what should be done here?
-      case _: ScalaType => TNamedType("Unknown")
-    }
-  }
-
-  /** Protobuf represents a .proto file's map<keyType, valueType>
-   * as a Descriptor that it creates itself, which is not available at the top level
-   * of a file. We need to parse that synthetic descriptor to get at its inner fields,
-   * which represent the key and value of a scala map */
-  def getMapTypes(syntheticDesc: Descriptor): TMap[BaseDescriptor] = {
-    val keyValueFields = fieldsFromDescriptor(syntheticDesc)
-    require(
-      keyValueFields.length == 2,
-      s"Message did not contain exactly two fields corresponding to the key and value of a Map"
-    )
-    val key :: value :: Nil = keyValueFields
-    TMap(key.tpe, value.tpe)
-  }
 }
