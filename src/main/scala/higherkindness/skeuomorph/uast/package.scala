@@ -28,4 +28,7 @@ package object uast {
     )
   }
 
+  type ACopK[a]                     = CopK[_, a]
+  type :<<:[F[_], G[a] <: ACopK[a]] = CopK.Inject[F, G]
+
 }

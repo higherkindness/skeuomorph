@@ -35,6 +35,8 @@ object types {
   @deriveTraverse final case class TDate[A]()
   @deriveTraverse final case class TDateTime[A]()
   @deriveTraverse final case class TPassword[A]()
+  @deriveTraverse final case class TByte[A]()
+  @deriveTraverse final case class TByteArray[A]()
   @deriveTraverse final case class TNamedType[A](name: String)
   @deriveTraverse final case class TMap[A](keys: A, values: A) // sugar over Generic(NamedType("Map"), A, A)
   @deriveTraverse final case class TFixed[A](name: String, size: Int)
@@ -45,18 +47,19 @@ object types {
   @deriveTraverse final case class TRecord[A](name: String, fields: List[Field[A]])
   @deriveTraverse final case class TEnum[A](name: String, symbols: List[String])
   @deriveTraverse final case class TUnion[A](options: NonEmptyList[A])
-  @deriveTraverse final case class TByte[A]()
 
-  def `null`[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TNull, F]): F[A]       = I.inj(TNull[A]())
-  def boolean[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TBoolean, F]): F[A]   = I.inj(TBoolean[A]())
-  def int[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TInt, F]): F[A]           = I.inj(TInt[A]())
-  def long[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TLong, F]): F[A]         = I.inj(TLong[A]())
-  def float[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TFloat, F]): F[A]       = I.inj(TFloat[A]())
-  def double[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TDouble, F]): F[A]     = I.inj(TDouble[A]())
-  def string[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TString, F]): F[A]     = I.inj(TString[A]())
-  def date[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TDate, F]): F[A]         = I.inj(TDate[A]())
-  def dateTime[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TDateTime, F]): F[A] = I.inj(TDateTime[A]())
-  def password[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TPassword, F]): F[A] = I.inj(TPassword[A]())
+  def `null`[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TNull, F]): F[A]         = I.inj(TNull[A]())
+  def boolean[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TBoolean, F]): F[A]     = I.inj(TBoolean[A]())
+  def int[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TInt, F]): F[A]             = I.inj(TInt[A]())
+  def long[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TLong, F]): F[A]           = I.inj(TLong[A]())
+  def float[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TFloat, F]): F[A]         = I.inj(TFloat[A]())
+  def double[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TDouble, F]): F[A]       = I.inj(TDouble[A]())
+  def string[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TString, F]): F[A]       = I.inj(TString[A]())
+  def date[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TDate, F]): F[A]           = I.inj(TDate[A]())
+  def dateTime[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TDateTime, F]): F[A]   = I.inj(TDateTime[A]())
+  def password[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TPassword, F]): F[A]   = I.inj(TPassword[A]())
+  def byte[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TByte, F]): F[A]           = I.inj(TByte[A]())
+  def byteArray[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TByteArray, F]): F[A] = I.inj(TByteArray[A]())
   def namedType[F[α] <: CopK[_, α], A](name: String)(implicit I: CopK.Inject[TNamedType, F]): F[A] =
     I.inj(TNamedType[A](name))
   def map[F[α] <: CopK[_, α], A](keys: A, values: A)(implicit I: CopK.Inject[TMap, F]): F[A] =
@@ -75,7 +78,6 @@ object types {
   def list[F[α] <: CopK[_, α], A](value: A)(implicit I: CopK.Inject[TList, F]): F[A] = I.inj(TList[A](value))
   def generic[F[α] <: CopK[_, α], A](generic: A, params: List[A])(implicit I: CopK.Inject[TGeneric, F]): F[A] =
     I.inj(TGeneric[A](generic, params))
-  def byte[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TByte, F]): F[A] = I.inj(TByte[A]())
 
   // def desugarList[F[α] <: CopK[_, α], A](
   //     implicit

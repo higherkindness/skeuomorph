@@ -14,11 +14,16 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph
+package mu
 
+import cats.Functor
 import cats.data.NonEmptyList
-import higherkindness.skeuomorph.mu.MuF._
 import qq.droste._
+
+import uast._
+import uast.types._
+import uast.derivation._
 
 /**
  * Optimize object contains transformations in same schema
@@ -42,24 +47,46 @@ object Optimize {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
-    case TProduct(name, fields) =>
-      def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
-      TProduct[T](
-        name,
-        fields.map(nameTypes)
-      )
+  def nestedNamedTypesTrans[F[α] <: ACopK[α]: Functor, T](
+      implicit
+      P: TRecord :<<: F,
+      E: TEnum :<<: F,
+      N: TNamedType :<<: F,
+      T: Basis[F, T]): Trans[F, F, T] = Trans {
+    case P(TRecord(name, fields)) =>
+      def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes.apply(f.tpe))
+      P.inj(
+        TRecord[T](
+          name,
+          fields.map(nameTypes)
+        ))
     case other => other
   }
 
-  def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
-    case TProduct(name, _) => TNamedType[T](name)
-    case TSum(name, _)     => TNamedType[T](name)
-    case other             => other
+  def namedTypesTrans[F[α] <: ACopK[α], T](
+      implicit
+      P: TRecord :<<: F,
+      S: TEnum :<<: F,
+      N: TNamedType :<<: F
+  ): Trans[F, F, T] = Trans {
+    case P(TRecord(name, _)) => namedType[F, T](name)
+    case S(TEnum(name, _))   => namedType[F, T](name)
+    case other               => other
   }
 
-  def namedTypes[T: Basis[MuF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-  def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+  def namedTypes[F[α] <: ACopK[α]: Functor, T: Basis[F, ?]](
+      implicit
+      P: TRecord :<<: F,
+      S: TEnum :<<: F,
+      N: TNamedType :<<: F
+  ): T => T = scheme.cata(namedTypesTrans[F, T].algebra)
+
+  def nestedNamedTypes[F[α] <: ACopK[α]: Functor, T: Basis[F, ?]](
+      implicit
+      P: TRecord :<<: F,
+      S: TEnum :<<: F,
+      N: TNamedType :<<: F
+  ): T => T = scheme.cata(nestedNamedTypesTrans[F, T].algebra)
 
   /**
    * micro-optimization to convert known coproducts to named types
@@ -78,15 +105,22 @@ object Optimize {
    * case class Product(field1: Either[Int, String], field2: Option[Int])
    * }}}
    */
-  def knownCoproductTypesTrans[T](implicit B: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
-    case TCoproduct(NonEmptyList(x, List(y))) =>
+  def knownCoproductTypesTrans[F[α] <: ACopK[α], T](
+      implicit
+      U: TUnion :<<: F,
+      O: TOption :<<: F,
+      E: TEither :<<: F,
+      N: TNull :<<: F,
+      B: Basis[F, T]
+  ): Trans[F, F, T] = Trans {
+    case U(TUnion(NonEmptyList(x, List(y)))) =>
       (B.coalgebra(x), B.coalgebra(y)) match {
-        case (_, TNull()) => TOption[T](x)
-        case (TNull(), _) => TOption[T](y)
-        case _            => TEither[T](x, y)
+        case (_, N(_)) => O.inj(TOption[T](x))
+        case (N(_), _) => O.inj(TOption[T](y))
+        case _         => E.inj(TEither[T](x, y))
       }
     case other => other
   }
 
-  def knownCoproductTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
+  def knownCoproductTypes[T: Basis[mu.Type, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
 }

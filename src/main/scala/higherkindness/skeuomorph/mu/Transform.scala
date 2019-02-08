@@ -14,47 +14,61 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph
+package mu
 
+import cats.implicits._
 import higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.protobuf.ProtobufF
-import qq.droste.Trans
+import qq.droste._
 
 object Transform {
 
-  import MuF._
+//  import MuF._
 
   /**
    * transform Protobuf schema into Mu schema
    */
-  def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
-    case ProtobufF.TNull()                       => TNull()
-    case ProtobufF.TDouble()                     => TDouble()
-    case ProtobufF.TFloat()                      => TFloat()
-    case ProtobufF.TInt32()                      => TInt()
-    case ProtobufF.TInt64()                      => TLong()
-    case ProtobufF.TUint32()                     => TInt()
-    case ProtobufF.TUint64()                     => TLong()
-    case ProtobufF.TSint32()                     => TInt()
-    case ProtobufF.TSint64()                     => TLong()
-    case ProtobufF.TFixed32()                    => TInt()
-    case ProtobufF.TFixed64()                    => TLong()
-    case ProtobufF.TSfixed32()                   => TInt()
-    case ProtobufF.TSfixed64()                   => TLong()
-    case ProtobufF.TBool()                       => TBoolean()
-    case ProtobufF.TString()                     => TString()
-    case ProtobufF.TBytes()                      => TByteArray()
-    case ProtobufF.TNamedType(name)              => TNamedType(name)
-    case ProtobufF.TRepeated(value)              => TList(value)
-    case ProtobufF.TEnum(name, symbols, _, _)    => TSum(name, symbols.map(_._1))
-    case ProtobufF.TMessage(name, fields, _)     => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case ProtobufF.TFileDescriptor(values, _, _) => TContaining(values)
-    case ProtobufF.TOneOf(_, fields)             => TCoproduct(fields.map(_.tpe))
-    case ProtobufF.TMap(key, values)             => TMap(Some(key), values)
+  def transformProto[A]: Trans[ProtobufF, mu.Type, A] = ???
+  // Trans {
+  //   case ProtobufF.TDouble()                  => TDouble()
+  //   case ProtobufF.TFloat()                   => TFloat()
+  //   case ProtobufF.TInt32()                   => TInt()
+  //   case ProtobufF.TInt64()                   => TLong()
+  //   case ProtobufF.TUint32()                  => TInt()
+  //   case ProtobufF.TUint64()                  => TLong()
+  //   case ProtobufF.TSint32()                  => TInt()
+  //   case ProtobufF.TSint64()                  => TLong()
+  //   case ProtobufF.TFixed32()                 => TInt()
+  //   case ProtobufF.TFixed64()                 => TLong()
+  //   case ProtobufF.TSfixed32()                => TInt()
+  //   case ProtobufF.TSfixed64()                => TLong()
+  //   case ProtobufF.TBool()                    => TBoolean()
+  //   case ProtobufF.TString()                  => TString()
+  //   case ProtobufF.TBytes()                   => TByteArray()
+  //   case ProtobufF.TNamedType(name)           => TNamedType(name)
+  //   case ProtobufF.TOptional(value)           => TOption(value)
+  //   case ProtobufF.TRepeated(value)           => TList(value)
+  //   case ProtobufF.TRequired(value)           => TRequired(value)
+  //   case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
+  //   case ProtobufF.TMessage(name, fields, _)  => TRecord(name, fields.map(f => Field(f.name, f.tpe)))
+  // }
+
+  def transformAvro[A]: TransM[Option, avro.Type, mu.Type, A] = TransM {
+    case avro.InjNull(a)      => mu.InjNull(a).some
+    case avro.InjBoolean(a)   => mu.InjBoolean(a).some
+    case avro.InjInt(a)       => mu.InjInt(a).some
+    case avro.InjLong(a)      => mu.InjLong(a).some
+    case avro.InjFloat(a)     => mu.InjFloat(a).some
+    case avro.InjDouble(a)    => mu.InjDouble(a).some
+    case avro.InjByteArray(a) => mu.InjByteArray(a).some
+    case avro.InjString(a)    => mu.InjString(a).some
+    case avro.InjMap(a)       => mu.InjMap(a).some
+    case avro.InjRecord(a)    => mu.InjRecord(a).some
+    case avro.InjEnum(a)      => mu.InjEnum(a).some
+    case avro.InjUnion(a)     => mu.InjUnion(a).some
+    case avro.InjFixed(_)     => none[mu.Type[A]]
   }
-
-
-  def transformAvro[A]: Trans[avro.Type, MuF, A] = ???
   //Trans {
   //   case AvroF.TNull()          => TNull()
   //   case AvroF.TBoolean()       => TBoolean()
@@ -68,7 +82,7 @@ object Transform {
   //   case AvroF.TArray(item)     => TList(item)
   //   case AvroF.TMap(values)     => TMap(values)
   //   case AvroF.TRecord(name, _, _, _, fields) =>
-  //     TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+  //     TRecord(name, fields.map(f => Field(f.name, f.tpe)))
   //   case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
   //   case AvroF.TUnion(options)               => TCoproduct(options)
   //   case AvroF.TFixed(_, _, _, _) =>

@@ -36,7 +36,7 @@ package object avro {
       TLong :::
       TFloat :::
       TDouble :::
-      TByte :::
+      TByteArray :::
       TString :::
       TMap :::
       TRecord :::
@@ -47,19 +47,19 @@ package object avro {
     A
   ]
 
-  implicit val InjNull: CopK.Inject[TNull, Type]       = CopK.Inject[TNull, Type]
-  implicit val InjBoolean: CopK.Inject[TBoolean, Type] = CopK.Inject[TBoolean, Type]
-  implicit val InjInt: CopK.Inject[TInt, Type]         = CopK.Inject[TInt, Type]
-  implicit val InjLong: CopK.Inject[TLong, Type]       = CopK.Inject[TLong, Type]
-  implicit val InjFloat: CopK.Inject[TFloat, Type]     = CopK.Inject[TFloat, Type]
-  implicit val InjDouble: CopK.Inject[TDouble, Type]   = CopK.Inject[TDouble, Type]
-  implicit val InjBytes: CopK.Inject[TByte, Type]      = CopK.Inject[TByte, Type]
-  implicit val InjString: CopK.Inject[TString, Type]   = CopK.Inject[TString, Type]
-  implicit val InjMap: CopK.Inject[TMap, Type]         = CopK.Inject[TMap, Type]
-  implicit val InjRecord: CopK.Inject[TRecord, Type]   = CopK.Inject[TRecord, Type]
-  implicit val InjEnum: CopK.Inject[TEnum, Type]       = CopK.Inject[TEnum, Type]
-  implicit val InjUnion: CopK.Inject[TUnion, Type]     = CopK.Inject[TUnion, Type]
-  implicit val InjFixed: CopK.Inject[TFixed, Type]     = CopK.Inject[TFixed, Type]
+  implicit val InjNull: CopK.Inject[TNull, Type]           = CopK.Inject[TNull, Type]
+  implicit val InjBoolean: CopK.Inject[TBoolean, Type]     = CopK.Inject[TBoolean, Type]
+  implicit val InjInt: CopK.Inject[TInt, Type]             = CopK.Inject[TInt, Type]
+  implicit val InjLong: CopK.Inject[TLong, Type]           = CopK.Inject[TLong, Type]
+  implicit val InjFloat: CopK.Inject[TFloat, Type]         = CopK.Inject[TFloat, Type]
+  implicit val InjDouble: CopK.Inject[TDouble, Type]       = CopK.Inject[TDouble, Type]
+  implicit val InjByteArray: CopK.Inject[TByteArray, Type] = CopK.Inject[TByteArray, Type]
+  implicit val InjString: CopK.Inject[TString, Type]       = CopK.Inject[TString, Type]
+  implicit val InjMap: CopK.Inject[TMap, Type]             = CopK.Inject[TMap, Type]
+  implicit val InjRecord: CopK.Inject[TRecord, Type]       = CopK.Inject[TRecord, Type]
+  implicit val InjEnum: CopK.Inject[TEnum, Type]           = CopK.Inject[TEnum, Type]
+  implicit val InjUnion: CopK.Inject[TUnion, Type]         = CopK.Inject[TUnion, Type]
+  implicit val InjFixed: CopK.Inject[TFixed, Type]         = CopK.Inject[TFixed, Type]
 
   object Type {
 
@@ -71,7 +71,7 @@ package object avro {
         case t if t == SType.LONG    => long[Type, Schema]
         case t if t == SType.FLOAT   => float[Type, Schema]
         case t if t == SType.DOUBLE  => double[Type, Schema]
-        case t if t == SType.BYTES   => byte[Type, Schema]
+        case t if t == SType.BYTES   => byteArray[Type, Schema]
         case t if t == SType.STRING  => string[Type, Schema]
         case t if t == SType.MAP     => map[Type, Schema](Schema.create(SType.STRING), sch.getValueType)
         case t if t == SType.ENUM    => enum[Type, Schema](sch.getName, sch.getAliases.asScala.toList)
@@ -87,14 +87,14 @@ package object avro {
       )
 
     def toJson: Algebra[Type, Json] = Algebra {
-      case InjNull(_)    => Json.Null
-      case InjBoolean(_) => Json.fromString("boolean")
-      case InjInt(_)     => Json.fromString("integer")
-      case InjLong(_)    => Json.fromString("long")
-      case InjFloat(_)   => Json.fromString("float")
-      case InjDouble(_)  => Json.fromString("double")
-      case InjBytes(_)   => Json.fromString("bytes")
-      case InjString(_)  => Json.fromString("string")
+      case InjNull(_)      => Json.Null
+      case InjBoolean(_)   => Json.fromString("boolean")
+      case InjInt(_)       => Json.fromString("integer")
+      case InjLong(_)      => Json.fromString("long")
+      case InjFloat(_)     => Json.fromString("float")
+      case InjDouble(_)    => Json.fromString("double")
+      case InjByteArray(_) => Json.fromString("bytes")
+      case InjString(_)    => Json.fromString("string")
       case InjMap(TMap(keys, values)) =>
         Json.obj(
           "type" -> Json.fromString("map"),

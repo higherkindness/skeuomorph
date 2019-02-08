@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.avro
 
 import higherkindness.skeuomorph.mu
-import higherkindness.skeuomorph.mu.{MuF, SerializationType}
+import higherkindness.skeuomorph.mu.SerializationType
 import higherkindness.skeuomorph.uast.derivation._
 import io.circe.Json
 import org.apache.avro.{Schema, Protocol => AvroProtocol}
@@ -77,10 +77,9 @@ object Protocol {
     )
   }
 
+  def fromFreesFSchema[T](implicit T: Basis[Type, T]): Trans[mu.Type, Type, T] = ???
 
-  def fromFreesFSchema[T](implicit T: Basis[Type, T]): Trans[MuF, Type, T] = ???
-
-//  def fromFreesFSchema[T](implicit T: Basis[Type, T]): Trans[MuF, Type, T] = Trans {
+//  def fromFreesFSchema[T](implicit T: Basis[Type, T]): Trans[mu.Type, Type, T] = Trans {
 //    case MuF.TNull()                => AvroF.`null`()
 //    case MuF.TDouble()              => AvroF.double()
 //    case MuF.TFloat()               => AvroF.float()
@@ -98,7 +97,7 @@ object Protocol {
 //    case MuF.TRequired(t)           => T.coalgebra(t)
 //    case MuF.TCoproduct(invariants) => AvroF.union(invariants)
 //    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields)
-//    case MuF.TProduct(name, fields) =>
+//    case MuF.TRecord(name, fields) =>
 //      TRecord(
 //        name,
 //        none[String],
@@ -107,7 +106,7 @@ object Protocol {
 //        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
 //  }
 
-  def fromFreesFProtocol[T, U](proto: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[Type, U]): Protocol[U] = {
+  def fromFreesFProtocol[T, U](proto: mu.Protocol[T])(implicit T: Basis[mu.Type, T], U: Basis[Type, U]): Protocol[U] = {
     def fromFreestyle: T => U = scheme.cata(fromFreesFSchema.algebra)
     val services: List[Message[U]] = proto.services
       .filter(_.serializationType == SerializationType.Avro)

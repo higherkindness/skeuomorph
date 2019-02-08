@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph
+package mu
 
 import higherkindness.skeuomorph.protobuf
 import higherkindness.skeuomorph.protobuf.ProtobufF
@@ -40,7 +41,8 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Service]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](proto: avro.Protocol[T])(implicit T: Basis[avro.Type, T], U: Basis[MuF, U]): Protocol[U] =
+  def fromAvroProtocol[T, U](
+      proto: avro.Protocol[T])(implicit T: Basis[avro.Type, T], U: Basis[mu.Type, U]): Protocol[U] =
     ???
   // {
   //   val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
