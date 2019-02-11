@@ -21,20 +21,21 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.github.os72.protocjar.Protoc
 import higherkindness.skeuomorph.FileUtils._
-import com.google.protobuf.DescriptorProtos.FileDescriptorSet
+import com.google.protobuf.DescriptorProtos.{FileDescriptorProto, FileDescriptorSet}
 import higherkindness.skeuomorph.{Parser, _}
+import scala.collection.JavaConverters._
 
 object ParseProto {
 
   case class ProtoSource(filename: String, path: String)
 
-  implicit def parseProto[F[_]]: Parser[F, ProtoSource, FileDescriptorSet] =
-    new Parser[F, ProtoSource, FileDescriptorSet] {
-      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[FileDescriptorSet] =
+  implicit def parseProto[F[_]]: Parser[F, ProtoSource, List[NativeDescriptor]] =
+    new Parser[F, ProtoSource, List[NativeDescriptor]] {
+      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[List[NativeDescriptor]] =
         runProtoc(input)
     }
 
-  private def runProtoc[F[_]: Sync](input: ProtoSource): F[FileDescriptorSet] = {
+  private def runProtoc[F[_]: Sync](input: ProtoSource): F[List[NativeDescriptor]] = {
     val descriptorFileName = s"${input.filename}.desc"
     val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
@@ -53,9 +54,19 @@ object ParseProto {
       fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
-    } yield fileDescriptor
+      nativeDescriptors <- Sync[F].adaptError(getNativeDescriptors[F](fileDescriptor)) {
+        case ex: Exception => ProtobufNativeException(ex)
+      }
+    } yield nativeDescriptors
   }
 
   private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptorSet] =
     fileInputStream(descriptorFileName).use(fis => Sync[F].delay(FileDescriptorSet.parseFrom(fis)))
+
+  private def getNativeDescriptors[F[_]: Sync](source: FileDescriptorSet): F[List[NativeDescriptor]] = {
+    Sync[F].delay {
+      val descriptors: List[FileDescriptorProto] = source.getFileList.asScala.toList
+      descriptors.map(d => NativeDescriptor(d, descriptors))
+    }
+  }
 }

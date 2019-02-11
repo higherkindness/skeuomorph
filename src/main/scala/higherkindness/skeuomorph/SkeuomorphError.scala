@@ -21,14 +21,16 @@ trait SkeuomorphError extends Exception {
 }
 
 case class ProtobufCompilationException() extends SkeuomorphError {
-
-  override val message: String = s"Protoc failed to compile protobuf file"
-
+  override val message: String    = s"Protoc failed to compile protobuf file"
   override def getMessage: String = message
 }
 
 case class ProtobufParsingException(originalError: Exception) extends SkeuomorphError {
-  override val message = s"Failed to parse compiled proto file with error: ${originalError.getMessage}"
+  override val message            = s"Failed to parse compiled proto file with error: ${originalError.getMessage}"
+  override def getMessage: String = message
+}
 
+case class ProtobufNativeException(originalError: Exception) extends SkeuomorphError {
+  override val message            = s"Failed to transform into Native descriptors with error: ${originalError.getMessage}"
   override def getMessage: String = message
 }

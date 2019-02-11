@@ -141,11 +141,11 @@ object ProtobufF {
   implicit val traverse: DefaultTraverse[ProtobufF] = new DefaultTraverse[ProtobufF] {
     def traverse[G[_], A, B](fa: ProtobufF[A])(f: A => G[B])(implicit G: Applicative[G]): G[ProtobufF[B]] = {
 
-      def makeFieldB(field: FieldF.Field[A]) =
+      def makeFieldB(field: FieldF.Field[A]): G[FieldF.Field[B]] =
         f(field.tpe).map(b =>
           FieldF.Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
 
-      def makeOneOfB(oneOf: FieldF.OneOfField[A]) =
+      def makeOneOfB(oneOf: FieldF.OneOfField[A]): G[FieldF[B]] =
         f(oneOf.tpe).map(b => FieldF.OneOfField[B](oneOf.name, b): FieldF[B])
 
       def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] =
@@ -176,38 +176,36 @@ object ProtobufF {
         case TMap(keyTpe, value)                    => (f(keyTpe), f(value)).mapN(TMap[B])
         case TEnum(name, symbols, options, aliases) => enum[B](name, symbols, options, aliases).pure[G]: G[ProtobufF[B]]
         case TMessage(name, fields, reserved) =>
-          traverseFieldF(fields).map(
-            bFields =>
-              TMessage[B](
-                name,
-                bFields,
-                reserved
-            ))
-        case TFileDescriptor(values, name, p) => values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
+          traverseFieldF(fields).map(bFields => TMessage[B](name, bFields, reserved))
+        case TFileDescriptor(values, name, p) =>
+          values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
       }
     }
   }
 
   def fromProtobuf: Coalgebra[ProtobufF, NativeDescriptor] = Coalgebra {
-    case f: NativeFile     => fileFromDescriptor(f)
-    case e: NativeEnum     => enumFromDescriptor(e)
-    case o: NativeOneOf    => oneOfFromDescriptor(o)
-    case d: NativeMessage  => messageFromDescriptor(d)
-    case _: NativeBool     => TBool()
-    case _: NativeBytes    => TBytes()
-    case _: NativeDouble   => TDouble()
-    case _: NativeFixed32  => TFixed32()
-    case _: NativeFixed64  => TFixed64()
-    case _: NativeFloat    => TFloat()
-    case _: NativeInt32    => TInt32()
-    case _: NativeInt64    => TInt64()
-    case _: NativeSfixed32 => TSfixed32()
-    case _: NativeSfixed64 => TSfixed64()
-    case _: NativeSint32   => TSint32()
-    case _: NativeSint64   => TSint64()
-    case _: NativeString   => TString()
-    case _: NativeUint32   => TUint32()
-    case _: NativeUint64   => TUint64()
+    case f: NativeFile      => fileFromDescriptor(f)
+    case e: NativeEnum      => enumFromDescriptor(e)
+    case o: NativeOneOf     => oneOfFromDescriptor(o)
+    case d: NativeMessage   => messageFromDescriptor(d)
+    case r: NativeRepeated  => repeatedFromDescriptor(r)
+    case m: NativeMap       => mapDescriptor(m)
+    case n: NativeNamedType => namedFromDescriptor(n)
+    case _: NativeBool      => TBool()
+    case _: NativeBytes     => TBytes()
+    case _: NativeDouble    => TDouble()
+    case _: NativeFixed32   => TFixed32()
+    case _: NativeFixed64   => TFixed64()
+    case _: NativeFloat     => TFloat()
+    case _: NativeInt32     => TInt32()
+    case _: NativeInt64     => TInt64()
+    case _: NativeSfixed32  => TSfixed32()
+    case _: NativeSfixed64  => TSfixed64()
+    case _: NativeSint32    => TSint32()
+    case _: NativeSint64    => TSint64()
+    case _: NativeString    => TString()
+    case _: NativeUint32    => TUint32()
+    case _: NativeUint64    => TUint64()
   }
 
   def fileFromDescriptor(fd: NativeFile): TFileDescriptor[NativeDescriptor] =
@@ -217,13 +215,31 @@ object ProtobufF {
     TEnum(e.name, e.symbols, e.options.map(toTOption), e.aliases)
 
   def oneOfFromDescriptor(o: NativeOneOf): TOneOf[NativeDescriptor] =
-    TOneOf[NativeDescriptor](o.name, o.fields.map(toField))
+    TOneOf[NativeDescriptor](
+      o.name,
+      o.fields.map(
+        f =>
+          FieldF
+            .Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)))
 
   def messageFromDescriptor(msg: NativeMessage): TMessage[NativeDescriptor] =
-    TMessage[NativeDescriptor](msg.name, msg.fields.collect { case b: NativeField => toField(b) }, msg.reserved)
+    TMessage[NativeDescriptor](msg.name, msg.fields.collect(toFieldF), msg.reserved)
 
-  def toField(f: NativeField): FieldF.Field[NativeDescriptor] =
-    FieldF.Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)
+  def repeatedFromDescriptor(r: NativeRepeated): TRepeated[NativeDescriptor] =
+    TRepeated[NativeDescriptor](r.value)
+
+  def mapDescriptor(m: NativeMap): TMap[NativeDescriptor] =
+    TMap[NativeDescriptor](m.keyTpe, m.value)
+
+  def namedFromDescriptor(n: NativeNamedType): TNamedType[NativeDescriptor] =
+    TNamedType[NativeDescriptor](n.name)
+
+  def toFieldF: PartialFunction[NativeFieldF, FieldF[NativeDescriptor]] = {
+    case f: NativeField =>
+      FieldF.Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)
+    case f: NativeOneOfField =>
+      FieldF.OneOfField[NativeDescriptor](f.name, f.tpe)
+  }
 
   def toTOption(no: NativeOption): ProtobufF.Option =
     ProtobufF.Option(no.name, no.value)

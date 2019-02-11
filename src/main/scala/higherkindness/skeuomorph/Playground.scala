@@ -17,10 +17,6 @@
 package higherkindness.skeuomorph
 
 import cats.effect.IO
-import com.google.protobuf.DescriptorProtos.{FileDescriptorProto, FileDescriptorSet}
-import scala.collection.JavaConverters._
-//import higherkindness.skeuomorph.protobuf.ParseProto.ProtoSource
-import protobuf.Optimize._
 import mu.Optimize._
 
 object Playground extends App {
@@ -31,47 +27,23 @@ object Playground extends App {
   import qq.droste.data.Mu._
   import qq.droste.scheme
 
-  val readFile: IO[FileDescriptorSet] = ParseProto
+  val readFile: IO[List[NativeDescriptor]] = ParseProto
     .parseProto[IO]
     .parse(ParseProto.ProtoSource("sampleProto.proto", "/Users/rafaparadela/code/47/skeuomorph/src/main/resources"))
 
-  val content: FileDescriptorSet             = readFile.unsafeRunSync()
-  val descriptors: List[FileDescriptorProto] = content.getFileList.asScala.toList
-  val nativeDescriptors: List[NativeDescriptor] =
-    content.getFileList.asScala.toList.map(d => NativeDescriptor(d, descriptors))
-
-  val optimizeProtobufF: Mu[ProtobufF] => Mu[ProtobufF] = repeatedTypes
+  val nativeDescriptors: List[NativeDescriptor] = readFile.unsafeRunSync()
 
   val parseProto: NativeDescriptor => Mu[ProtobufF] =
-    scheme.ana(ProtobufF.fromProtobuf) andThen optimizeProtobufF
+    scheme.ana(ProtobufF.fromProtobuf)
 
-//  val printProto: Mu[ProtobufF] => String =
-//    print.printSchema.print _
+  val printProto: Mu[ProtobufF] => String =
+    print.printSchema.print _
 
-//  val roundTrip: List[String] = nativeDescriptors.map(d => printProto(parseProto(d)))
+  val roundTrip: List[String] = nativeDescriptors.map(d => printProto(parseProto(d)))
 
-  // Render Proto file
-//  roundTrip.foreach(println)
-//  val readFile: IO[FileDescriptorSet] = ParseProto
-//    .parseProto[IO]
-//    .parse(ProtoSource("sampleProto.proto", "/Users/rafaparadela/code/47/skeuomorph/src/main/resources"))
-//
-//  val fileDescriptor: FileDescriptor = readFile.unsafeRunSync()
-//
-//  // This step is new and is actually important for creating valid data
-//  val optimizeProtobufF: Mu[ProtobufF] => Mu[ProtobufF] = repeatedTypes
-//
-//  val parseProto: BaseDescriptor => Mu[ProtobufF] =
-//    scheme.ana(ProtobufF.fromProtobuf) andThen optimizeProtobufF
-//
-//  val printProto: Mu[ProtobufF] => String =
-//    print.printSchema.print _
-//
-//  val roundTrip: String = printProto(parseProto(fileDescriptor))
-//
-//  // Render Proto file
-////  println(roundTrip)
-//
+//   Render Proto file
+  roundTrip.foreach(println)
+
   val protoToMu: Mu[ProtobufF] => Mu[MuF] =
     scheme.cata(Transform.transformProto.algebra) andThen nestedNamedTypes andThen knownCoproductTypes
 
@@ -81,7 +53,6 @@ object Playground extends App {
     higherkindness.skeuomorph.mu.print.schema.print _
 
   // Render Scala
-  val t: List[String] = nativeDescriptors.map(n => printAsScala(transform(n)))
-  t.foreach(println)
+  nativeDescriptors.map(n => printAsScala(transform(n))).foreach(println)
 
 }
