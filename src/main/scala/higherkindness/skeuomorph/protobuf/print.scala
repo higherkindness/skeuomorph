@@ -28,6 +28,7 @@ object print {
 
   def printSchema[T: Basis[ProtobufF, ?]]: Printer[T] = {
     val algebra: Algebra[ProtobufF, String] = Algebra {
+      case TNull()          => "null"
       case TDouble()        => "double"
       case TFloat()         => "float"
       case TInt32()         => "int32"

@@ -42,6 +42,8 @@ final case class NativeOneOfField(name: String, tpe: NativeOneOf) extends Native
 
 sealed trait NativeDescriptor
 
+final case class NativeNull() extends NativeDescriptor
+
 final case class NativeDouble() extends NativeDescriptor
 
 final case class NativeFloat() extends NativeDescriptor
@@ -100,128 +102,134 @@ final case class NativeOption(name: String, value: String)
 
 object NativeDescriptor {
 
-  def apply(file: FileDescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {
+  def apply(file: FileDescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor =
+    NativeFile(
+      file.getMessageTypeList.j2s.map(d => toNativeMessage(d, files)) ++
+        file.getEnumTypeList.j2s.map(toNativeEnum),
+      file.getName,
+      file.getPackage)
 
-    def toNativeMessage(descriptor: DescriptorProto): NativeDescriptor = {
-      val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s
-      val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.j2s
-      val oneOfFields: List[NativeFieldF] =
-        fromOneofDescriptorsProto(protoOneOf, protoFields, descriptor)
-      val oneOfNumbers: List[Int] =
-        oneOfFields.map(_.tpe).collect { case o: NativeOneOf => o.fields.toList.map(_.position) }.flatten
-      val fields: List[NativeFieldF] =
-        protoFields.filterNot(f => oneOfNumbers.contains(f.getNumber)).map(f => fromFieldDescriptorProto(f, descriptor))
+  def toNativeMessage(descriptor: DescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {
+    val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s
+    val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.j2s
+    val oneOfFields: List[NativeFieldF] =
+      fromOneofDescriptorsProto(protoOneOf, protoFields, descriptor, files)
+    val oneOfNumbers: List[Int] =
+      oneOfFields.map(_.tpe).collect { case o: NativeOneOf => o.fields.toList.map(_.position) }.flatten
+    val fields: List[NativeFieldF] =
+      protoFields
+        .filterNot(f => oneOfNumbers.contains(f.getNumber))
+        .map(f => fromFieldDescriptorProto(f, descriptor, files))
 
-      NativeMessage(
-        name = descriptor.getName,
-        fields = fields ++ oneOfFields,
-        reserved =
-          descriptor.getReservedRangeList.j2s.map(range => (range.getStart until range.getEnd).map(_.toString).toList),
-        nested = descriptor.getNestedTypeList.j2s.map(d => toNativeMessage(d))
-      )
+    NativeMessage(
+      name = descriptor.getName,
+      fields = fields ++ oneOfFields,
+      reserved =
+        descriptor.getReservedRangeList.j2s.map(range => (range.getStart until range.getEnd).map(_.toString).toList),
+      nested = descriptor.getNestedTypeList.j2s.map(d => toNativeMessage(d, files))
+    )
+  }
+
+  def toNativeEnum(enum: EnumDescriptorProto): NativeDescriptor = {
+    val (values, aliases) = partitionValuesAliases(enum.getValueList.j2s)
+
+    NativeEnum(
+      name = enum.getName,
+      symbols = values,
+      options = fromFieldOptionsEnum(enum.getOptions),
+      aliases = aliases)
+  }
+
+  def partitionValuesAliases(
+      valuesAndAliases: List[EnumValueDescriptorProto]): (List[(String, Int)], List[(String, Int)]) = {
+    val (hasAlias, noAlias)      = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
+    val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
+    (
+      (separateValueFromAliases.map(_._1) ++ noAlias.flatten).toList
+        .sortBy(_.getNumber)
+        .map(i => (i.getName, i.getNumber)),
+      separateValueFromAliases.flatMap(_._2).toList.map(i => (i.getName, i.getNumber)))
+  }
+
+  def fromFieldDescriptorProto(
+      field: FieldDescriptorProto,
+      source: DescriptorProto,
+      files: List[FileDescriptorProto]): NativeFieldF =
+    (field.getLabel.isRepeated, isMap(field, source)) match {
+      case (true, false) =>
+        NativeField(
+          name = field.getName,
+          position = field.getNumber,
+          tpe = NativeRepeated(fromFieldType(field, files)),
+          options = fromFieldOptionsMsg(field.getOptions),
+          isRepeated = true,
+          isMapField = false
+        )
+      case (_, true) =>
+        NativeField(
+          name = field.getName,
+          position = field.getNumber,
+          tpe = getNativeMap(field.getName, source, files),
+          options = fromFieldOptionsMsg(field.getOptions),
+          isRepeated = false,
+          isMapField = true
+        )
+      case _ =>
+        NativeField(
+          name = field.getName,
+          position = field.getNumber,
+          tpe = fromFieldType(field, files),
+          options = fromFieldOptionsMsg(field.getOptions),
+          isRepeated = field.getLabel.isRepeated,
+          isMapField = isMap(field, source)
+        )
     }
 
-    def toNativeEnum(enum: EnumDescriptorProto): NativeDescriptor = {
-      val (values, aliases) = partitionValuesAliases(enum.getValueList.j2s)
+  def isMap(field: FieldDescriptorProto, source: DescriptorProto): Boolean =
+    source.getNestedTypeList.j2s.exists(
+      e =>
+        e.getOptions.getMapEntry &&
+          matchNameEntry(field.getName, e) &&
+          takeOnlyMapEntries(e.getFieldList.j2s))
 
-      NativeEnum(
-        name = enum.getName,
-        symbols = values,
-        options = fromFieldOptionsEnum(enum.getOptions),
-        aliases = aliases)
+  def getNativeMap(name: String, source: DescriptorProto, files: List[FileDescriptorProto]): NativeMap =
+    (for {
+      maybeMsg <- source.getNestedTypeList.j2s
+        .find(e => e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.j2s))
+      maybeKey   <- getMapField(maybeMsg, "key")
+      maybeValue <- getMapField(maybeMsg, "value")
+    } yield NativeMap(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)))
+      .getOrElse(throw new Exception(s"Could not find map entry for: $name"))
+
+  def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
+    msg.getFieldList.j2s.find(_.getName == name)
+
+  def takeOnlyMapEntries(fields: List[FieldDescriptorProto]): Boolean =
+    fields.count(f => (f.getNumber == 1 && f.getName == "key") || (f.getNumber == 2 && f.getName == "value")) == 2
+
+  def matchNameEntry(name: String, source: DescriptorProto): Boolean =
+    source.getName.toLowerCase == s"${name}Entry".toLowerCase
+
+  def fromOneofDescriptorsProto(
+      oneOfFields: List[OneofDescriptorProto],
+      fields: List[FieldDescriptorProto],
+      source: DescriptorProto,
+      files: List[FileDescriptorProto]): List[NativeFieldF] = oneOfFields.zipWithIndex.map {
+    case (oneof, index) => {
+      val nativeFields: List[NativeField] =
+        fields
+          .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
+          .map(fromFieldDescriptorProto(_, source, files))
+          .collect { case b: NativeField => b }
+
+      NativeOneOfField(
+        name = oneof.getName,
+        tpe = NativeOneOf(name = oneof.getName, fields = NonEmptyList(nativeFields.head, nativeFields.tail)))
     }
+  }
 
-    def partitionValuesAliases(
-        valuesAndAliases: List[EnumValueDescriptorProto]): (List[(String, Int)], List[(String, Int)]) = {
-      val (hasAlias, noAlias)      = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
-      val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
-      (
-        (separateValueFromAliases.map(_._1) ++ noAlias.flatten).toList
-          .sortBy(_.getNumber)
-          .map(i => (i.getName, i.getNumber)),
-        separateValueFromAliases.flatMap(_._2).toList.map(i => (i.getName, i.getNumber)))
-    }
-
-    def toMaybeNativeEnum(field: FieldDescriptorProto): Option[EnumDescriptorProto] =
-      findEnum(field.getTypeName, files)
-
-    def toMaybeNativeMessage(field: FieldDescriptorProto): Option[DescriptorProto] =
-      findMessage(field.getTypeName, files)
-
-    def fromFieldDescriptorProto(field: FieldDescriptorProto, source: DescriptorProto): NativeFieldF =
-      (field.getLabel.isRepeated, isMap(field, source)) match {
-        case (true, false) =>
-          NativeField(
-            name = field.getName,
-            position = field.getNumber,
-            tpe = NativeRepeated(fromFieldType(field)),
-            options = fromFieldOptionsMsg(field.getOptions),
-            isRepeated = true,
-            isMapField = false
-          )
-        case (_, true) =>
-          NativeField(
-            name = field.getName,
-            position = field.getNumber,
-            tpe = getNativeMap(field.getName, source),
-            options = fromFieldOptionsMsg(field.getOptions),
-            isRepeated = false,
-            isMapField = true
-          )
-        case _ =>
-          NativeField(
-            name = field.getName,
-            position = field.getNumber,
-            tpe = fromFieldType(field),
-            options = fromFieldOptionsMsg(field.getOptions),
-            isRepeated = field.getLabel.isRepeated,
-            isMapField = isMap(field, source)
-          )
-      }
-
-    def isMap(field: FieldDescriptorProto, source: DescriptorProto): Boolean =
-      source.getNestedTypeList.j2s.exists(
-        e =>
-          e.getOptions.getMapEntry &&
-            matchNameEntry(field.getName, e) &&
-            takeOnlyMapEntries(e.getFieldList.j2s))
-
-    def getNativeMap(name: String, source: DescriptorProto): NativeMap =
-      (for {
-        maybeMsg <- source.getNestedTypeList.j2s
-          .find(e => e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.j2s))
-        maybeKey   <- getMapField(maybeMsg, "key")
-        maybeValue <- getMapField(maybeMsg, "value")
-      } yield NativeMap(fromFieldType(maybeKey), fromFieldType(maybeValue)))
-        .getOrElse(throw new Exception(s"Could not find map entry for: $name"))
-
-    def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
-      msg.getFieldList.j2s.find(_.getName == name)
-
-    def takeOnlyMapEntries(fields: List[FieldDescriptorProto]): Boolean =
-      fields.count(f => (f.getNumber == 1 && f.getName == "key") || (f.getNumber == 2 && f.getName == "value")) == 2
-
-    def matchNameEntry(name: String, source: DescriptorProto): Boolean =
-      source.getName.toLowerCase == s"${name}Entry".toLowerCase
-
-    def fromOneofDescriptorsProto(
-        oneOfFields: List[OneofDescriptorProto],
-        fields: List[FieldDescriptorProto],
-        source: DescriptorProto): List[NativeFieldF] = oneOfFields.zipWithIndex.map {
-      case (oneof, index) => {
-        val nativeFields: List[NativeField] =
-          fields
-            .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
-            .map(fromFieldDescriptorProto(_, source))
-            .collect { case b: NativeField => b }
-
-        NativeOneOfField(
-          name = oneof.getName,
-          tpe = NativeOneOf(name = oneof.getName, fields = NonEmptyList(nativeFields.head, nativeFields.tail)))
-      }
-    }
-
-    def fromFieldType(field: FieldDescriptorProto): NativeDescriptor = field.getType match {
+  def fromFieldType(field: FieldDescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor =
+    field.getType match {
       case Type.TYPE_BOOL     => NativeBool()
       case Type.TYPE_BYTES    => NativeBytes()
       case Type.TYPE_DOUBLE   => NativeDouble()
@@ -238,62 +246,51 @@ object NativeDescriptor {
       case Type.TYPE_UINT32   => NativeInt32()
       case Type.TYPE_UINT64   => NativeInt64()
       case Type.TYPE_ENUM =>
-        toMaybeNativeEnum(field) match {
-          case Some(enum) => NativeNamedType(enum.getName)
-          case _          => throw new Exception(s"Could not find enum: ${field.getTypeName}")
-        }
+        findEnum(field.getTypeName, files)
+          .fold[NativeDescriptor](NativeNull())(e => NativeNamedType(e.getName))
       case Type.TYPE_MESSAGE =>
-        toMaybeNativeMessage(field) match {
-          case Some(msg) => NativeNamedType(msg.getName)
-          case _         => throw new Exception(s"Could not find message: ${field.getTypeName}")
-        }
-      case _ => throw new Exception(s"Unsupported type: ${field.getType}")
+        findMessage(field.getTypeName, files)
+          .fold[NativeDescriptor](NativeNull())(e => NativeNamedType(e.getName))
+      case _ => NativeNull()
     }
 
-    def fromFieldOptionsMsg(options: FieldOptions): List[NativeOption] =
-      NativeOption("deprecated", options.getDeprecated.toString) ::
-        options.getUninterpretedOptionList.j2s.map(t => NativeOption(toString(t.getNameList.j2s), t.getIdentifierValue))
+  def fromFieldOptionsMsg(options: FieldOptions): List[NativeOption] =
+    NativeOption("deprecated", options.getDeprecated.toString) ::
+      options.getUninterpretedOptionList.j2s.map(t => NativeOption(toString(t.getNameList.j2s), t.getIdentifierValue))
 
-    def fromFieldOptionsEnum(options: EnumOptions): List[NativeOption] = {
-      List(
-        NativeOption("allow_alias", options.getAllowAlias.toString),
-        NativeOption("deprecated", options.getDeprecated.toString)) ++
-        options.getUninterpretedOptionList.j2s.map(t => NativeOption(toString(t.getNameList.j2s), t.getIdentifierValue))
-    }
+  def fromFieldOptionsEnum(options: EnumOptions): List[NativeOption] = {
+    List(
+      NativeOption("allow_alias", options.getAllowAlias.toString),
+      NativeOption("deprecated", options.getDeprecated.toString)) ++
+      options.getUninterpretedOptionList.j2s.map(t => NativeOption(toString(t.getNameList.j2s), t.getIdentifierValue))
+  }
 
-    def toString(nameParts: Seq[NamePart]): String =
-      nameParts.foldLeft("")((l, r) => if (r.getIsExtension) s"$l.($r)" else s"$l.$r")
+  def toString(nameParts: Seq[NamePart]): String =
+    nameParts.foldLeft("")((l, r) => if (r.getIsExtension) s"$l.($r)" else s"$l.$r")
 
-    def findMessage(name: String, files: List[FileDescriptorProto]): Option[DescriptorProto] = {
-      case class NamedMessage(fullName: String, msg: DescriptorProto)
-      val all: List[NamedMessage] = files.flatMap(f =>
-        f.getMessageTypeList.j2s.flatMap(m =>
-          NamedMessage(s".${f.getPackage}.${m.getName}", m) :: m.getNestedTypeList.j2s.map(n =>
-            NamedMessage(s".${f.getPackage}.${m.getName}.${n.getName}", n))))
-      all.find(_.fullName == name).map(_.msg)
-    }
+  def findMessage(name: String, files: List[FileDescriptorProto]): Option[DescriptorProto] = {
+    case class NamedMessage(fullName: String, msg: DescriptorProto)
+    val all: List[NamedMessage] = files.flatMap(f =>
+      f.getMessageTypeList.j2s.flatMap(m =>
+        NamedMessage(s".${f.getPackage}.${m.getName}", m) :: m.getNestedTypeList.j2s.map(n =>
+          NamedMessage(s".${f.getPackage}.${m.getName}.${n.getName}", n))))
+    all.find(_.fullName == name).map(_.msg)
+  }
 
-    def findEnum(name: String, files: List[FileDescriptorProto]): Option[EnumDescriptorProto] = {
-      case class NamedEnum(fullName: String, msg: EnumDescriptorProto)
-      files
-        .flatMap(f => f.getEnumTypeList.j2s.map(m => NamedEnum(s".${f.getPackage}.${m.getName}", m)))
-        .find(_.fullName == name)
-        .map(_.msg)
-    }
+  def findEnum(name: String, files: List[FileDescriptorProto]): Option[EnumDescriptorProto] = {
+    case class NamedEnum(fullName: String, msg: EnumDescriptorProto)
+    files
+      .flatMap(f => f.getEnumTypeList.j2s.map(m => NamedEnum(s".${f.getPackage}.${m.getName}", m)))
+      .find(_.fullName == name)
+      .map(_.msg)
+  }
 
-    implicit class LabelOps(self: Label) {
-      def isRepeated: Boolean = self.name() == "LABEL_REPEATED"
-    }
+  implicit class LabelOps(self: Label) {
+    def isRepeated: Boolean = self.name() == "LABEL_REPEATED"
+  }
 
-    implicit class JavaListOps[B](self: util.List[B]) {
-      def j2s: List[B] = self.asScala.toList
-    }
-
-    val values: List[NativeDescriptor] =
-      file.getMessageTypeList.j2s.map(toNativeMessage) ++
-        file.getEnumTypeList.j2s.map(toNativeEnum)
-
-    NativeFile(values, file.getName, file.getPackage)
+  implicit class JavaListOps[B](self: util.List[B]) {
+    def j2s: List[B] = self.asScala.toList
   }
 
 }

@@ -20,8 +20,9 @@ import cats.{Applicative, Eq}
 import cats.data.NonEmptyList
 import cats.implicits._
 import higherkindness.skeuomorph.protobuf.ProtobufF.Option
-import qq.droste.Coalgebra
+import qq.droste.{Algebra, Coalgebra}
 import qq.droste.util.DefaultTraverse
+import io.circe.Json
 
 sealed trait FieldF[A] {
   val name: String
@@ -60,6 +61,7 @@ object ProtobufF {
     }
   }
 
+  final case class TNull[A]()                                                     extends ProtobufF[A]
   final case class TDouble[A]()                                                   extends ProtobufF[A]
   final case class TFloat[A]()                                                    extends ProtobufF[A]
   final case class TInt32[A]()                                                    extends ProtobufF[A]
@@ -88,6 +90,7 @@ object ProtobufF {
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)             extends ProtobufF[A]
 
+  def `null`[A](): ProtobufF[A]                                                   = TNull()
   def double[A](): ProtobufF[A]                                                   = TDouble()
   def float[A](): ProtobufF[A]                                                    = TFloat()
   def int32[A](): ProtobufF[A]                                                    = TInt32()
@@ -116,6 +119,7 @@ object ProtobufF {
     TMessage(name, fields, reserved)
 
   implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
+    case (TNull(), TNull())                         => true
     case (TDouble(), TDouble())                     => true
     case (TFloat(), TFloat())                       => true
     case (TInt32(), TInt32())                       => true
@@ -155,6 +159,7 @@ object ProtobufF {
         }
 
       fa match {
+        case TNull()                                => `null`[B]().pure[G]
         case TDouble()                              => double[B]().pure[G]
         case TFloat()                               => float[B]().pure[G]
         case TInt32()                               => int32[B]().pure[G]
@@ -191,6 +196,7 @@ object ProtobufF {
     case r: NativeRepeated  => repeatedFromDescriptor(r)
     case m: NativeMap       => mapDescriptor(m)
     case n: NativeNamedType => namedFromDescriptor(n)
+    case _: NativeNull      => TNull()
     case _: NativeBool      => TBool()
     case _: NativeBytes     => TBytes()
     case _: NativeDouble    => TDouble()
@@ -243,5 +249,88 @@ object ProtobufF {
 
   def toTOption(no: NativeOption): ProtobufF.Option =
     ProtobufF.Option(no.name, no.value)
+
+  def toJson: Algebra[ProtobufF, Json] = Algebra {
+    case TNull()          => Json.Null
+    case TDouble()        => Json.fromString("Double")
+    case TFloat()         => Json.fromString("Float")
+    case TInt32()         => Json.fromString("Int")
+    case TInt64()         => Json.fromString("Int")
+    case TUint32()        => Json.fromString("Int")
+    case TUint64()        => Json.fromString("Int")
+    case TSint32()        => Json.fromString("Int")
+    case TSint64()        => Json.fromString("Int")
+    case TFixed32()       => Json.fromString("Int")
+    case TFixed64()       => Json.fromString("Int")
+    case TSfixed32()      => Json.fromString("Int")
+    case TSfixed64()      => Json.fromString("Int")
+    case TBool()          => Json.fromString("Boolean")
+    case TString()        => Json.fromString("String")
+    case TBytes()         => Json.fromString("Bytes")
+    case TNamedType(name) => Json.fromString(name)
+    case TRepeated(value) =>
+      Json.obj(
+        "type"  -> Json.fromString("repeated"),
+        "items" -> value
+      )
+    case TOneOf(name, fields) =>
+      Json.obj(
+        "name"   -> Json.fromString(name),
+        "fields" -> Json.arr(fields.toList.map(field2Json): _*)
+      )
+    case TMap(keyTpe, value) =>
+      Json.obj(
+        "key"   -> keyTpe,
+        "value" -> value
+      )
+    case TEnum(name, symbols, options, aliases) =>
+      Json.obj(
+        "name" -> Json.fromString(name),
+        "symbols" -> Json.arr(
+          symbols.map(s => Json.obj("key" -> Json.fromString(s._1), "value" -> Json.fromInt(s._2))): _*),
+        "options" -> Json.arr(options.map(optionJson): _*),
+        "aliases" -> Json.arr(
+          aliases.map(s => Json.obj("key" -> Json.fromString(s._1), "value" -> Json.fromInt(s._2))): _*)
+      )
+    case TMessage(name, fields, reserved) =>
+      Json.obj(
+        "name"     -> Json.fromString(name),
+        "fields"   -> Json.arr(fields.map(fieldF2Json): _*),
+        "reserved" -> Json.arr(reserved.map(l => Json.arr(l.map(Json.fromString): _*)): _*)
+      )
+    case TFileDescriptor(values, name, pkg) =>
+      Json.obj(
+        "values"  -> Json.arr(values: _*),
+        "name"    -> Json.fromString(name),
+        "package" -> Json.fromString(pkg)
+      )
+  }
+
+  def fieldF2Json(f: FieldF[Json]): Json = f match {
+    case ff: FieldF.Field[Json]      => field2Json(ff)
+    case ff: FieldF.OneOfField[Json] => fieldOneOfField2Json(ff)
+  }
+
+  def field2Json(f: FieldF.Field[Json]): Json =
+    Json.obj(
+      "name"       -> Json.fromString(f.name),
+      "type"       -> f.tpe,
+      "position"   -> Json.fromInt(f.position),
+      "options"    -> Json.arr(f.options.map(optionJson): _*),
+      "isRepeated" -> Json.fromBoolean(f.isRepeated),
+      "isMapField" -> Json.fromBoolean(f.isMapField)
+    )
+
+  def fieldOneOfField2Json(f: FieldF.OneOfField[Json]): Json =
+    Json.obj(
+      "name" -> Json.fromString(f.name),
+      "type" -> f.tpe
+    )
+
+  def optionJson(o: Option): Json =
+    Json.obj(
+      "name"  -> Json.fromString(o.name),
+      "value" -> Json.fromString(o.value),
+    )
 
 }

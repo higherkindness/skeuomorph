@@ -36,14 +36,6 @@ object Playground extends App {
   val parseProto: NativeDescriptor => Mu[ProtobufF] =
     scheme.ana(ProtobufF.fromProtobuf)
 
-  val printProto: Mu[ProtobufF] => String =
-    print.printSchema.print _
-
-  val roundTrip: List[String] = nativeDescriptors.map(d => printProto(parseProto(d)))
-
-//   Render Proto file
-  roundTrip.foreach(println)
-
   val protoToMu: Mu[ProtobufF] => Mu[MuF] =
     scheme.cata(Transform.transformProto.algebra) andThen nestedNamedTypes andThen knownCoproductTypes
 
@@ -54,5 +46,6 @@ object Playground extends App {
 
   // Render Scala
   nativeDescriptors.map(n => printAsScala(transform(n))).foreach(println)
+
 
 }

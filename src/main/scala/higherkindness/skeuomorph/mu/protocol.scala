@@ -16,9 +16,12 @@
 
 package higherkindness.skeuomorph.mu
 
+import higherkindness.skeuomorph.protobuf
+import higherkindness.skeuomorph.protobuf.ProtobufF
 import higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.mu.Transform.transformAvro
+import higherkindness.skeuomorph.mu.Transform.transformProto
 import qq.droste._
 
 sealed trait SerializationType extends Product with Serializable
@@ -59,6 +62,29 @@ object Protocol {
       List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
     )
   }
+
+  def fromProtobufProto[T, U](
+      protocol: protobuf.Protocol[T])(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
+    val toFreestyle: T => U = scheme.cata(transformProto[U].algebra)
+    val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
+      msg =>
+        Service.Operation(
+          msg.name,
+          toFreestyle(msg.request),
+          toFreestyle(msg.response)
+      )
+
+    new Protocol[U](
+      name = protocol.name,
+      pkg = Option(protocol.pkg),
+      options = protocol.options,
+      declarations = protocol.declarations.map(toFreestyle),
+      services =
+        protocol.services.map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation)))
+    )
+
+  }
+
 }
 
 final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])

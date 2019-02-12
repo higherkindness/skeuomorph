@@ -28,6 +28,7 @@ object Transform {
    * transform Protobuf schema into Mu schema
    */
   def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
+    case ProtobufF.TNull()                       => TNull()
     case ProtobufF.TDouble()                     => TDouble()
     case ProtobufF.TFloat()                      => TFloat()
     case ProtobufF.TInt32()                      => TInt()
