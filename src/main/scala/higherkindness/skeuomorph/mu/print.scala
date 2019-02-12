@@ -73,10 +73,10 @@ object print {
    */
   def protoTuple[T](
       proto: Protocol[T]
-  ): (Option[String], List[(String, String)], String, List[T], List[Service[T]]) =
+  ): (Option[String], List[(String, String)], String, List[String], List[T], List[Service[T]]) =
     proto match {
-      case Protocol(name, pkg, options, declarations, services) =>
-        (pkg, options, name, declarations, services)
+      case Protocol(name, pkg, options, declarations, services, dependencies) =>
+        (pkg, options, name, dependencies, declarations, services)
     }
 
   /**
@@ -136,6 +136,9 @@ object print {
   def option: Printer[(String, String)] =
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
 
+  def dependency: Printer[String] =
+    konst("import ") *< string >* konst("._")
+
   def proto[T](implicit T: Basis[MuF, T]): Printer[Protocol[T]] = {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
@@ -143,6 +146,7 @@ object print {
       (konst("package ") *< optional(string) >* newLine >* newLine),
       sepBy(option, lineFeed),
       (konst("object ") *< string >* konst(" { ") >* newLine >* newLine),
+      sepBy(dependency, lineFeed) >* newLine >* newLine,
       (sepBy(schema, lineFeed) >* newLine),
       (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))
     ).contramapN(protoTuple)

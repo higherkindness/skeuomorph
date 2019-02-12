@@ -36,7 +36,8 @@ final case class Protocol[T](
     pkg: Option[String],
     options: List[(String, String)],
     declarations: List[T],
-    services: List[Service[T]]
+    services: List[Service[T]],
+    dependencies: List[String]
 )
 object Protocol {
 
@@ -59,7 +60,8 @@ object Protocol {
       proto.namespace,
       Nil,
       proto.types.map(toFreestyle),
-      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
+      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation))),
+      Nil
     )
   }
 
@@ -79,8 +81,9 @@ object Protocol {
       pkg = Option(protocol.pkg),
       options = protocol.options,
       declarations = protocol.declarations.map(toFreestyle),
-      services =
-        protocol.services.map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation)))
+      services = protocol.services
+        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation))),
+      dependencies = protocol.imports
     )
 
   }

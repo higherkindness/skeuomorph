@@ -96,18 +96,48 @@ final case class NativeMessage(
     nested: List[NativeDescriptor])
     extends NativeDescriptor
 
-final case class NativeFile(values: List[NativeDescriptor], name: String, `package`: String) extends NativeDescriptor
+final case class NativeFile(
+    values: List[NativeDescriptor],
+    name: String,
+    `package`: String,
+    imports: List[String],
+    services: List[NativeService])
+    extends NativeDescriptor
 
 final case class NativeOption(name: String, value: String)
 
+final case class NativeService(name: String, operations: List[NativeOperation])
+
+final case class NativeOperation(name: String, request: NativeDescriptor, response: NativeDescriptor)
+
 object NativeDescriptor {
 
-  def apply(file: FileDescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor =
+  def apply(file: FileDescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {
     NativeFile(
       file.getMessageTypeList.j2s.map(d => toNativeMessage(d, files)) ++
         file.getEnumTypeList.j2s.map(toNativeEnum),
-      file.getName,
-      file.getPackage)
+      formatName(file.getName),
+      file.getPackage,
+      file.getDependencyList.j2s,
+      file.getServiceList.j2s.map(s => toNativeService(s, files))
+    )
+  }
+
+  def formatName(name: String): String = name.replace(".proto", "")
+
+  def toNativeService(s: ServiceDescriptorProto, files: List[FileDescriptorProto]): NativeService =
+    NativeService(s.getName, s.getMethodList.j2s.map(o => toNativeOperation(o, files)))
+
+  def toNativeOperation(o: MethodDescriptorProto, files: List[FileDescriptorProto]): NativeOperation =
+    NativeOperation(
+      name = o.getName,
+      request = findMessage(o.getInputType, files)
+        .map(msg => toNativeMessage(msg, files))
+        .getOrElse(NativeNull()),
+      response = findMessage(o.getOutputType, files)
+        .map(msg => toNativeMessage(msg, files))
+        .getOrElse(NativeNull())
+    )
 
   def toNativeMessage(descriptor: DescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s

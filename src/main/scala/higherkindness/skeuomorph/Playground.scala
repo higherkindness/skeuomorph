@@ -17,15 +17,13 @@
 package higherkindness.skeuomorph
 
 import cats.effect.IO
-import mu.Optimize._
 
 object Playground extends App {
   // An example of the contract Skeuomorph will support
-  import higherkindness.skeuomorph.mu.{MuF, Transform}
+  import higherkindness.skeuomorph.mu.MuF
   import higherkindness.skeuomorph.protobuf._
   import qq.droste.data.Mu
   import qq.droste.data.Mu._
-  import qq.droste.scheme
 
   val readFile: IO[List[NativeDescriptor]] = ParseProto
     .parseProto[IO]
@@ -33,19 +31,24 @@ object Playground extends App {
 
   val nativeDescriptors: List[NativeDescriptor] = readFile.unsafeRunSync()
 
-  val parseProto: NativeDescriptor => Mu[ProtobufF] =
-    scheme.ana(ProtobufF.fromProtobuf)
+  val parseNative: NativeFile => Protocol[Mu[ProtobufF]] = { f: NativeFile =>
+    Protocol.fromProto(f)
+  }
 
-  val protoToMu: Mu[ProtobufF] => Mu[MuF] =
-    scheme.cata(Transform.transformProto.algebra) andThen nestedNamedTypes andThen knownCoproductTypes
+  val parseProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
+    mu.Protocol.fromProtobufProto(p)
+  }
 
-  val transform: NativeDescriptor => Mu[MuF] = parseProto andThen protoToMu
+  val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
+    higherkindness.skeuomorph.mu.print.proto.print(p)
+  }
 
-  val printAsScala: Mu[MuF] => String =
-    higherkindness.skeuomorph.mu.print.schema.print _
+  val parseProto = parseNative andThen parseProtocol andThen printProtocol
 
-  // Render Scala
-  nativeDescriptors.map(n => printAsScala(transform(n))).foreach(println)
-
+  nativeDescriptors
+    .collect {
+      case f: NativeFile => parseProto(f)
+    }
+    .foreach(println)
 
 }
