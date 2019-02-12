@@ -18,20 +18,13 @@ package higherkindness.skeuomorph
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import com.google.protobuf.ByteString
-import com.google.protobuf.descriptor.DescriptorProto.ReservedRange
-import com.google.protobuf.descriptor.FieldDescriptorProto.{Label, Type}
-import com.google.protobuf.descriptor._
-import com.google.protobuf.descriptor.UninterpretedOption.NamePart
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
 import mu.MuF
 import avro.AvroF
-import protobuf.{FieldF, ProtobufF}
+import protobuf._
 import qq.droste.Basis
-//import scalapb.UnknownFieldSet
-//import scalapb.descriptors.FileDescriptor
 
 import scala.collection.JavaConverters._
 
@@ -42,220 +35,85 @@ object instances {
 
   lazy val sampleBool: Gen[Boolean] = Gen.oneOf(true, false)
 
-  lazy val uninterpretedOptionNamePart = Arbitrary {
+  lazy val sampleNativeOneOfField: Gen[NativeOneOfField] = for {
+    name <- nonEmptyString
+    tpe  <- sampleNativeOneOf
+  } yield NativeOneOfField(name, tpe)
+
+  lazy val sampleNativeOneOf: Gen[NativeOneOf] = for {
+    name <- nonEmptyString
+    tpes <- Gen.listOfN(3, sampleNativeField)
+  } yield NativeOneOf(name, NonEmptyList.fromListUnsafe(tpes))
+
+  lazy val sampleNativeField: Gen[NativeField] =
     for {
-      name <- nonEmptyString
-      isExtension = false // These generators will not support Extensions as that is a Proto2 concept
-    } yield new NamePart(name, isExtension)
-  }
+      name       <- nonEmptyString
+      tpe        <- fieldTypeGenerator
+      position   <- smallNumber
+      allowAlias <- sampleBool
+      deprecated <- sampleBool
+      options = List(NativeOption("allow_alias", allowAlias.toString), NativeOption("deprecated", deprecated.toString))
+      isRepeated <- sampleBool
+      isMap      <- sampleBool
+    } yield NativeField(name, tpe, position, options, isRepeated, isMap)
 
-  val uninterpretedOptionSample: Arbitrary[UninterpretedOption] = Arbitrary {
-    for {
-      name             <- Gen.containerOfN[Seq, NamePart](2, uninterpretedOptionNamePart.arbitrary)
-      identifierValue  <- nonEmptyString
-      positiveIntValue <- Gen.option(smallNumber.map(_.toLong))
-      negativeIntValue <- Gen.option(smallNumber.map(_.toLong * -1))
-      doubleValue      <- Gen.option(Gen.oneOf(2.0, 3.0))
-      stringValue      <- Gen.option(nonEmptyString.map(s => ByteString.copyFrom(s.getBytes("UTF-8"))))
-    } yield
-      new UninterpretedOption(
-        name = name,
-        identifierValue = Some(identifierValue),
-        positiveIntValue = positiveIntValue,
-        negativeIntValue = negativeIntValue,
-        doubleValue = doubleValue,
-        stringValue = stringValue,
-        aggregateValue = None
-      )
-  }
-
-  lazy val labelGenerator: Gen[Label] = Gen.oneOf(Seq(Label.LABEL_REPEATED))
-
-  /* Type.TYPE_ENUM and Type.TYPE_MESSAGE are valid types but if added to these generators
-    they break the scalaPB parser for some reason. Type.TYPE_GROUP is not valid in Proto3
-    and therefore should not be generated. */
-  lazy val fieldTypeGenerator: Gen[FieldDescriptorProto.Type] = Gen.oneOf(
+  lazy val fieldTypeGenerator: Gen[NativeDescriptor] = Gen.oneOf(
     Seq(
-      Type.TYPE_DOUBLE,
-      Type.TYPE_FLOAT,
-      Type.TYPE_INT32,
-      Type.TYPE_INT64,
-      Type.TYPE_UINT32,
-      Type.TYPE_UINT64,
-      Type.TYPE_SINT32,
-      Type.TYPE_SINT64,
-      Type.TYPE_FIXED32,
-      Type.TYPE_FIXED64,
-      Type.TYPE_SFIXED32,
-      Type.TYPE_SFIXED64,
-      Type.TYPE_BOOL,
-      Type.TYPE_STRING,
-      Type.TYPE_BYTES
+      NativeDouble(),
+      NativeFloat(),
+      NativeInt32(),
+      NativeInt64(),
+      NativeUint32(),
+      NativeUint64(),
+      NativeSint32(),
+      NativeSint64(),
+      NativeFixed32(),
+      NativeFixed64(),
+      NativeSfixed32(),
+      NativeSfixed64(),
+      NativeBool(),
+      NativeString(),
+      NativeBytes()
+    ))
+
+  lazy val sampleNativeEnum: Gen[NativeEnum] = for {
+    name                  <- nonEmptyString
+    valueDescriptorLength <- Gen.choose(1, 3)
+    enumValues            <- Gen.lzy(Gen.containerOfN[List, String](valueDescriptorLength, nonEmptyString))
+    symbols = enumValues.zipWithIndex
+    enumAliases <- Gen.lzy(Gen.containerOfN[List, String](valueDescriptorLength, nonEmptyString))
+    aliases = enumAliases.zipWithIndex
+    allowAlias <- sampleBool
+    deprecated <- sampleBool
+    options = List(NativeOption("allow_alias", allowAlias.toString), NativeOption("deprecated", deprecated.toString))
+  } yield
+    NativeEnum(
+      name = name,
+      symbols = symbols,
+      options = options,
+      aliases = aliases
     )
-  )
 
-  lazy val sampleFieldOptions: Arbitrary[FieldOptions] = Arbitrary {
+  def sampleNativeMessage(packageName: String): Gen[NativeMessage] =
     for {
-      lazyf                <- Gen.option(Arbitrary.arbBool.arbitrary)
-      deprecated           <- Gen.option(Arbitrary.arbBool.arbitrary)
-      uninterpretedOptions <- Gen.containerOfN[Seq, UninterpretedOption](1, uninterpretedOptionSample.arbitrary)
-    } yield
-      new FieldOptions(
-        `lazy` = lazyf,
-        deprecated = deprecated,
-        uninterpretedOption = uninterpretedOptions
-      )
-  }
+      name        <- nonEmptyString
+      oneOrZero   <- Gen.choose(0, 1)
+      fields      <- Gen.listOfN(2, sampleNativeField)
+      oneOfFields <- Gen.listOfN(1, sampleNativeOneOfField)
+      reserved    <- smallNumber
+      ranges = List(List(reserved, reserved + 1).map(_.toString), List(reserved + 10, reserved + 12).map(_.toString))
+      nestedTypes <- Gen.lzy(Gen.containerOfN[List, NativeMessage](oneOrZero, sampleNativeMessage(packageName)))
+    } yield NativeMessage(name = name, fields = fields ++ oneOfFields, reserved = ranges, nested = nestedTypes)
 
-  def sampleFieldDescProto(
-      packageName: String,
-      messageName: String,
-      oneOfIndex: Option[Int]): Arbitrary[FieldDescriptorProto] = Arbitrary {
-    for {
-      name      <- nonEmptyString
-      number    <- smallNumber
-      label     <- labelGenerator
-      fieldType <- Gen.lzy(fieldTypeGenerator)
-      options   <- Gen.lzy(Gen.option(sampleFieldOptions.arbitrary))
-    } yield
-      new FieldDescriptorProto(
-        Some(name),
-        Some(number),
-        Some(label),
-        Some(fieldType),
-        typeName = Some(s".$packageName.$messageName"),
-        extendee = None,
-        defaultValue = None,
-        oneofIndex = oneOfIndex,
-        Some(name),
-        options
-      )
-  }
+  lazy val nativeFileGen: Gen[NativeFile] = for {
+    name                 <- nonEmptyString
+    packageN             <- nonEmptyString
+    messageAndEnumLength <- Gen.choose(1, 5)
+    messages             <- Gen.lzy(Gen.containerOfN[List, NativeDescriptor](messageAndEnumLength, sampleNativeMessage(packageN)))
+    enums                <- Gen.lzy(Gen.containerOfN[Seq, NativeDescriptor](messageAndEnumLength, sampleNativeEnum))
+  } yield NativeFile(name = name, `package` = packageN, values = messages ++ enums)
 
-  // Note: there are some constraints for reserved ranges that are not currently reflected in the generators
-  lazy val sampleReservedRangeProto: Arbitrary[ReservedRange] = Arbitrary {
-    for {
-      maybeStart <- Gen.option(smallNumber)
-      maybeEnd = maybeStart.map(_ + 1)
-    } yield new ReservedRange(maybeStart, maybeEnd)
-  }
-
-  lazy val enumOptions: Arbitrary[EnumOptions] = Arbitrary {
-    for {
-      allowAlias          <- Gen.option(sampleBool)
-      deprecated          <- Gen.option(sampleBool)
-      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
-    } yield
-      new EnumOptions(
-        allowAlias,
-        deprecated,
-        uninterpretedOption,
-        UnknownFieldSet()
-      )
-  }
-
-  lazy val enumValueOptions: Arbitrary[EnumValueOptions] = Arbitrary {
-    for {
-      deprecated          <- Gen.option(sampleBool)
-      uninterpretedOption <- Gen.containerOfN[Seq, UninterpretedOption](2, uninterpretedOptionSample.arbitrary)
-    } yield new EnumValueOptions(deprecated, uninterpretedOption, UnknownFieldSet())
-  }
-
-  def sampleEnumValueDescriptor: Arbitrary[EnumValueDescriptorProto] = Arbitrary {
-    for {
-      name           <- nonEmptyString
-      enumValOptions <- Gen.option(enumValueOptions.arbitrary)
-    } yield
-      new EnumValueDescriptorProto(
-        name = Some(name),
-        number = None, // To be filled in by sequence index later
-        options = enumValOptions
-      )
-  }
-
-  lazy val sampleEnumDescriptor: Arbitrary[EnumDescriptorProto] = Arbitrary {
-    for {
-      name                  <- nonEmptyString
-      valueDescriptorLength <- Gen.choose(1, 3)
-      enumValues <- Gen.lzy(
-        Gen.containerOfN[Seq, EnumValueDescriptorProto](valueDescriptorLength, sampleEnumValueDescriptor.arbitrary))
-      enumValuesWithNumber = enumValues.zipWithIndex.map { case (enum, i) => enum.copy(number = Some(i)) }
-      enumOptions <- Gen.option(enumOptions.arbitrary)
-    } yield
-      new EnumDescriptorProto(
-        name = Some(name),
-        value = enumValuesWithNumber,
-        options = enumOptions
-      )
-  }
-
-  lazy val sampleOneOfDescriptor: Arbitrary[OneofDescriptorProto] = Arbitrary {
-    for {
-      name <- nonEmptyString
-    } yield new OneofDescriptorProto(name = Some(name), options = None)
-  }
-
-  def sampleDescriptorProto(packageName: String): Arbitrary[DescriptorProto] = Arbitrary {
-    for {
-      name      <- nonEmptyString
-      oneOrZero <- Gen.choose(0, 1)
-      oneOfs    <- Gen.lzy(Gen.containerOfN[Seq, OneofDescriptorProto](2, sampleOneOfDescriptor.arbitrary))
-      fields <- Gen.lzy(
-        Gen.containerOfN[Seq, FieldDescriptorProto](10, sampleFieldDescProto(packageName, name, None).arbitrary))
-      oneOfFields <- Gen.sequence[List[FieldDescriptorProto], FieldDescriptorProto](
-        oneOfs.zipWithIndex
-          .map { case (oneOf, i) => sampleFieldDescProto(packageName, oneOf.getName, Some(i)).arbitrary }
-      )
-      nestedTypes <- Gen.lzy(
-        Gen.containerOfN[Seq, DescriptorProto](oneOrZero, sampleDescriptorProto(packageName).arbitrary))
-      enums         <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](oneOrZero, sampleEnumDescriptor.arbitrary))
-      reservedRange <- Gen.lzy(Gen.containerOfN[Seq, ReservedRange](oneOrZero, sampleReservedRangeProto.arbitrary))
-      reservedNames <- Gen.lzy(Gen.containerOfN[Seq, String](oneOrZero, nonEmptyString))
-    } yield
-      new DescriptorProto(
-        name = Some(name),
-        field = fields ++ oneOfFields,
-        extension = Seq(),
-        nestedType = nestedTypes,
-        enumType = enums,
-        extensionRange = Seq(),
-        oneofDecl = oneOfs,
-        options = None,
-        reservedRange = reservedRange,
-        reservedName = reservedNames
-      )
-  }
-
-  lazy val sampleFileDescriptorProto: Arbitrary[FileDescriptorProto] = Arbitrary {
-    for {
-      name                 <- nonEmptyString
-      packageN             <- nonEmptyString
-      messageAndEnumLength <- Gen.choose(1, 5)
-      messages <- Gen.lzy(
-        Gen.containerOfN[Seq, DescriptorProto](messageAndEnumLength, sampleDescriptorProto(packageN).arbitrary))
-      enums <- Gen.lzy(Gen.containerOfN[Seq, EnumDescriptorProto](messageAndEnumLength, sampleEnumDescriptor.arbitrary))
-    } yield
-      new FileDescriptorProto(
-        name = Some(name),
-        `package` = Some(packageN),
-        dependency = Seq(),
-        publicDependency = Seq(),
-        weakDependency = Seq(),
-        messageType = messages,
-        enumType = enums,
-        service = Seq(), // These generators do not create services for now
-        extension = Seq(),
-        options = None,
-        sourceCodeInfo = None,
-        syntax = Some("proto3")
-      )
-  }
-
-  implicit lazy val baseDescriptorArbitrary: Arbitrary[FileDescriptor] = Arbitrary {
-    for {
-      sampleFileDescriptorProto <- Gen.lzy(sampleFileDescriptorProto.arbitrary)
-    } yield FileDescriptor.buildFrom(sampleFileDescriptorProto, Nil)
-  }
+  implicit val nativeFileArb: Arbitrary[NativeFile] = Arbitrary(nativeFileGen)
 
   def protobufFMessageWithRepeatFields[T](withRepeat: Boolean)(
       implicit B: Basis[ProtobufF, T]): Gen[ProtobufF.TMessage[T]] = {

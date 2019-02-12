@@ -17,10 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import cats.Functor
-import com.google.protobuf.descriptor.FieldDescriptorProto.Type
-import com.google.protobuf.descriptor.FieldDescriptorProto.Type._
 import org.scalacheck.Prop
-//import scalapb.descriptors._
 import qq.droste._
 import org.specs2.{ScalaCheck, Specification}
 
@@ -35,28 +32,12 @@ class ProtobufSpec extends Specification with ScalaCheck {
 
   """
 
-  def convertBaseDescriptor = Prop.forAll { fileDescriptor: FileDescriptor =>
-    val test: BaseDescriptor => Boolean = scheme.hylo(checkProto(fileDescriptor), ProtobufF.fromProtobuf)
-
+  def convertBaseDescriptor = Prop.forAll { fileDescriptor: NativeFile =>
+    val test = scheme.hylo(checkProto(fileDescriptor), ProtobufF.fromProtobuf)
     test(fileDescriptor)
   }
 
-  def checkProto(desc: BaseDescriptor): Algebra[ProtobufF, Boolean] = Algebra {
-    case ProtobufF.TDouble()                   => fieldTest(desc, Left(TYPE_DOUBLE))
-    case ProtobufF.TFloat()                    => fieldTest(desc, Left(TYPE_FLOAT))
-    case ProtobufF.TInt32()                    => fieldTest(desc, Left(TYPE_INT32))
-    case ProtobufF.TInt64()                    => fieldTest(desc, Left(TYPE_INT64))
-    case ProtobufF.TUint32()                   => fieldTest(desc, Left(TYPE_UINT32))
-    case ProtobufF.TUint64()                   => fieldTest(desc, Left(TYPE_UINT64))
-    case ProtobufF.TSint32()                   => fieldTest(desc, Left(TYPE_SINT32))
-    case ProtobufF.TSint64()                   => fieldTest(desc, Left(TYPE_SINT64))
-    case ProtobufF.TFixed32()                  => fieldTest(desc, Left(TYPE_FIXED32))
-    case ProtobufF.TFixed64()                  => fieldTest(desc, Left(TYPE_FIXED64))
-    case ProtobufF.TSfixed32()                 => fieldTest(desc, Left(TYPE_SFIXED32))
-    case ProtobufF.TSfixed64()                 => fieldTest(desc, Left(TYPE_SFIXED64))
-    case ProtobufF.TBool()                     => fieldTest(desc, Left(TYPE_BOOL))
-    case ProtobufF.TString()                   => fieldTest(desc, Left(TYPE_STRING))
-    case ProtobufF.TBytes()                    => fieldTest(desc, Left(TYPE_BYTES))
+  def checkProto(desc: NativeDescriptor): Algebra[ProtobufF, Boolean] = Algebra {
     case ProtobufF.TOneOf(_, _)                => true
     case _: ProtobufF.TMap[Boolean]            => true
     case ProtobufF.TRepeated(_)                => true
@@ -64,34 +45,28 @@ class ProtobufSpec extends Specification with ScalaCheck {
     case m @ ProtobufF.TMessage(_, _, _)       => fieldTest(desc, Right(m))
     case f: ProtobufF.TFileDescriptor[Boolean] => f.values.forall(v => v)
     case ProtobufF.TNamedType(_)               => true
+    case _                                     => true
   }
 
-  def fieldTest(fieldDesc: BaseDescriptor, target: Either[Type, ProtobufF[Boolean]]): Boolean =
+  def fieldTest(fieldDesc: NativeDescriptor, target: Either[Unit, ProtobufF[Boolean]]): Boolean = {
     fieldDesc match {
-      case f: FileDescriptor =>
-        (f.enums ++ f.messages).forall(
-          d =>
-            // These subsequent hylomorphisms ensure we actually test leaf nodes
-            scheme.hylo(checkProto(d), ProtobufF.fromProtobuf)(implicitly[Functor[ProtobufF]])(d))
-      case d: Descriptor =>
+      case f: NativeFile =>
+        f.values.forall(d => scheme.hylo(checkProto(d), ProtobufF.fromProtobuf)(implicitly[Functor[ProtobufF]])(d))
+      case d: NativeMessage =>
         target match {
           case Right(m: ProtobufF.TMessage[Boolean]) =>
             m.name == d.name &&
               d.fields.forall(f =>
-                scheme.hylo(checkProto(f), ProtobufF.fromProtobuf)(implicitly[Functor[ProtobufF]])(f))
+                scheme.hylo(checkProto(f.tpe), ProtobufF.fromProtobuf)(implicitly[Functor[ProtobufF]])(f.tpe))
           case _ => true
         }
-      case e: EnumDescriptor =>
+      case e: NativeEnum =>
         target match {
           case Right(tEnum: ProtobufF.TEnum[Boolean]) =>
-            e.name == tEnum.name &&
-              e.values.length == tEnum.symbols.length + tEnum.aliases.length &&
-              tEnum.symbols.head._2 == 0
+            e.symbols.length == tEnum.symbols.length && tEnum.symbols.head._2 == 0
           case _ => false
         }
-      case f: FieldDescriptor =>
-        val Left(targetType) = target
-        targetType == f.asProto.getType
       case _ => true
     }
+  }
 }
