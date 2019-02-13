@@ -192,7 +192,7 @@ val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
   higherkindness.skeuomorph.mu.print.proto.print(p)
 }
 
-(parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor))
+(parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor)
 ```
 
 It would generate:

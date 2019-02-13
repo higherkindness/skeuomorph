@@ -184,8 +184,12 @@ object NativeDescriptor {
 
   def partitionValuesAliases(
       valuesAndAliases: List[EnumValueDescriptorProto]): (List[(String, Int)], List[(String, Int)]) = {
-    val (hasAlias, noAlias)      = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
-    val separateValueFromAliases = hasAlias.map(list => (list.head, list.tail))
+    val (hasAlias, noAlias) = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
+    val separateValueFromAliases: Iterable[(EnumValueDescriptorProto, List[EnumValueDescriptorProto])] = hasAlias.map {
+      case h :: t => (h, t)
+      case _      => throw new Exception(s"Wrong number of aliases")
+    }
+
     (
       (separateValueFromAliases.map(_._1) ++ noAlias.flatten).toList
         .sortBy(_.getNumber)
@@ -258,15 +262,15 @@ object NativeDescriptor {
       source: DescriptorProto,
       files: List[FileDescriptorProto]): List[NativeFieldF] = oneOfFields.zipWithIndex.map {
     case (oneof, index) => {
-      val nativeFields: List[NativeField] =
-        fields
-          .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
-          .map(fromFieldDescriptorProto(_, source, files))
-          .collect { case b: NativeField => b }
+      val oneOfFields: NonEmptyList[NativeField] = NonEmptyList
+        .fromList(
+          fields
+            .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
+            .map(fromFieldDescriptorProto(_, source, files))
+            .collect { case b: NativeField => b })
+        .getOrElse(throw new Exception(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-      NativeOneOfField(
-        name = oneof.getName,
-        tpe = NativeOneOf(name = oneof.getName, fields = NonEmptyList(nativeFields.head, nativeFields.tail)))
+      NativeOneOfField(name = oneof.getName, tpe = NativeOneOf(name = oneof.getName, fields = oneOfFields))
     }
   }
 
