@@ -155,7 +155,7 @@ object NativeDescriptor {
       response = findMessage(o.getOutputType, files)
         .map(msg => toNativeMessage(msg, files))
         .getOrElse(NativeNull()),
-      responseStreaming = o.getServerStreaming,
+      responseStreaming = o.getServerStreaming
     )
 
   def toNativeMessage(descriptor: DescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {
