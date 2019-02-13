@@ -18,10 +18,10 @@ package higherkindness.skeuomorph.protobuf
 
 import cats.effect.IO
 import org.specs2.Specification
-import higherkindness.skeuomorph.protobuf.ParseProto._
-import higherkindness.skeuomorph.mu.{Protocol => MuProtocol}
 import higherkindness.skeuomorph.mu.MuF
+import higherkindness.skeuomorph.protobuf.ParseProto._
 import qq.droste.data.Mu
+import qq.droste.data.Mu._
 
 class ProtobufProtocolSpec extends Specification {
 
@@ -36,24 +36,65 @@ class ProtobufProtocolSpec extends Specification {
 
     val currentDirectory: String     = new java.io.File(".").getCanonicalPath
     val path                         = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
-    val source                       = ParseProto.ProtoSource("book.proto", path)
+    val source                       = ProtoSource("book.proto", path)
     val nativeDescriptor: NativeFile = parseProto[IO].parse(source).unsafeRunSync()
 
-    val parseNative: NativeFile => Protocol[Mu[ProtobufF]] = Protocol.fromProto(_)
-
-    val parseProtocol: Protocol[Mu[ProtobufF]] => MuProtocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
-      MuProtocol.fromProtobufProto(p)
+    val parseNative: NativeFile => Protocol[Mu[ProtobufF]] = { f: NativeFile =>
+      Protocol.fromProto(f)
     }
 
-    val printProtocol: MuProtocol[Mu[MuF]] => String = { b: MuProtocol[Mu[MuF]] =>
-      higherkindness.skeuomorph.mu.print.proto.print(b)
+    val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+      p: Protocol[Mu[ProtobufF]] =>
+        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(p)
     }
 
-    val a = (parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor)
+    val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
+      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+        higherkindness.skeuomorph.mu.print.proto.print(p)
+    }
 
-    println(a)
-    "Hello world" must haveSize(11)
+    val result = (parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor)
 
+    result.clean must beEqualTo(expectation.clean)
+
+  }
+
+  val expectation =
+    """package com.book
+      |
+      |object book {
+      |
+      |@message final case class Author(name: String, nick: String)
+      |@message final case class Book(isbn: Long, title: String, author: List[Author], binding_type: BindingType)
+      |@message final case class GetBookRequest(isbn: Long)
+      |@message final case class GetBookViaAuthor(author: Author)
+      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Genre], payment_method: Cop[Long :: Int :: String :: Book:: TNil])
+      |
+      |sealed trait Genre
+      |object Genre {
+      |  case object UNKNOWN extends Genre
+      |  case object SCIENCE_FICTION extends Genre
+      |  case object POETRY extends Genre
+      |}
+      |
+      |
+      |sealed trait BindingType
+      |object BindingType {
+      |  case object HARDCOVER extends BindingType
+      |  case object PAPERBACK extends BindingType
+      |}
+      |
+      |@service(Protobuf) trait BookService[F[_]] {
+      |  def GetBook(req: GetBookRequest): GetBookRequest
+      |  def GetBooksViaAuthor(req: GetBookViaAuthor): GetBookViaAuthor
+      |  def GetGreatestBook(req: GetBookRequest): GetBookRequest
+      |  def GetBooks(req: GetBookRequest): GetBookRequest
+      |}
+      |
+      |}""".stripMargin
+
+  implicit class StringOps(self: String) {
+    def clean: String = self.replaceAll("\\s", "")
   }
 
 }
