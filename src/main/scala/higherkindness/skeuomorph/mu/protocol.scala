@@ -20,6 +20,7 @@ import higherkindness.skeuomorph.protobuf
 import higherkindness.skeuomorph.protobuf.ProtobufF
 import higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.avro.AvroF
+import higherkindness.skeuomorph.mu.Service.OperationType
 import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.Transform.transformProto
 import qq.droste._
@@ -50,8 +51,8 @@ object Protocol {
       msg =>
         Service.Operation(
           msg.name,
-          toMu(msg.request),
-          toMu(msg.response)
+          request = OperationType(toMu(msg.request), false),
+          response = OperationType(toMu(msg.response), false)
       )
 
     Protocol(
@@ -69,9 +70,9 @@ object Protocol {
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
       msg =>
         Service.Operation(
-          msg.name,
-          toMu(msg.request),
-          toMu(msg.response)
+          name = msg.name,
+          request = OperationType(toMu(msg.request), msg.requestStraming),
+          response = OperationType(toMu(msg.response), msg.responseStreaming)
       )
 
     new Protocol[U](
@@ -89,5 +90,6 @@ object Protocol {
 
 final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
 object Service {
-  final case class Operation[T](name: String, request: T, response: T)
+  final case class OperationType[T](tpe: T, stream: Boolean)
+  final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])
 }

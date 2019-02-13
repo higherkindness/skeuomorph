@@ -37,7 +37,9 @@ object Protocol {
   final case class Operation[T](
       name: String,
       request: T,
-      response: T
+      requestStraming: Boolean,
+      response: T,
+      responseStreaming: Boolean
   )
 
   def fromProto[T](protocol: NativeFile)(implicit T: Embed[ProtobufF, T]): Protocol[T] = {
@@ -50,7 +52,9 @@ object Protocol {
       Operation[T](
         name = o.name,
         request = toProtobufF(o.request),
-        response = toProtobufF(o.request)
+        requestStraming = o.requestStreaming,
+        response = toProtobufF(o.response),
+        responseStreaming = o.responseStreaming
       )
 
     Protocol[T](

@@ -107,10 +107,12 @@ object instances {
 
   def sampleNativeOperation(messages: List[NativeDescriptor]): Gen[NativeOperation] =
     for {
-      name     <- nonEmptyString
-      request  <- Gen.oneOf(messages)
-      response <- Gen.oneOf(messages)
-    } yield NativeOperation(name, request, response)
+      name              <- nonEmptyString
+      request           <- Gen.oneOf(messages)
+      requestStreaming  <- sampleBool
+      response          <- Gen.oneOf(messages)
+      responseStreaming <- sampleBool
+    } yield NativeOperation(name, request, requestStreaming, response, responseStreaming)
 
   def sampleNativeService(messages: List[NativeDescriptor]): Gen[NativeService] =
     for {

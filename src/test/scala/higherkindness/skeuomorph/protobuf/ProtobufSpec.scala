@@ -28,11 +28,11 @@ class ProtobufSpec extends Specification with ScalaCheck {
   def is = s2"""
   Protobuf Schema
 
-  It should be possible to create a ProtobufF from a Base Descriptor. $convertBaseDescriptor
+  It should be possible to create a ProtobufF from a NativeDescriptor. $convertNativeDescriptor
 
   """
 
-  def convertBaseDescriptor = Prop.forAll { fileDescriptor: NativeFile =>
+  def convertNativeDescriptor = Prop.forAll { fileDescriptor: NativeFile =>
     val test = scheme.hylo(checkProto(fileDescriptor), ProtobufF.fromProtobuf)
     test(fileDescriptor)
   }

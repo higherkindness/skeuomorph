@@ -107,7 +107,12 @@ final case class NativeOption(name: String, value: String)
 
 final case class NativeService(name: String, operations: List[NativeOperation])
 
-final case class NativeOperation(name: String, request: NativeDescriptor, response: NativeDescriptor)
+final case class NativeOperation(
+    name: String,
+    request: NativeDescriptor,
+    requestStreaming: Boolean,
+    response: NativeDescriptor,
+    responseStreaming: Boolean)
 
 object NativeDescriptor {
 
@@ -146,9 +151,11 @@ object NativeDescriptor {
       request = findMessage(o.getInputType, files)
         .map(msg => toNativeMessage(msg, files))
         .getOrElse(NativeNull()),
+      requestStreaming = o.getClientStreaming,
       response = findMessage(o.getOutputType, files)
         .map(msg => toNativeMessage(msg, files))
-        .getOrElse(NativeNull())
+        .getOrElse(NativeNull()),
+      responseStreaming = o.getServerStreaming,
     )
 
   def toNativeMessage(descriptor: DescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {

@@ -85,9 +85,10 @@ object print {
    */
   def opTuple[T](
       op: Service.Operation[T]
-  ): (String, T, T) =
+  ): (String, Service.OperationType[T], Service.OperationType[T]) =
     op match {
-      case Service.Operation(name, request, response) => (name, request, response)
+      case Service.Operation(name, request, response) =>
+        (name, request, response)
     }
 
   /**
@@ -119,18 +120,45 @@ object print {
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
+  def opTpeEitherRequest[T](op: Service.OperationType[T]): Either[T, T] =
+    op.stream match {
+      case false => Left(op.tpe)
+      case true  => Right(op.tpe)
+    }
+
+  def opTpeEitherResponse[T](op: Service.OperationType[T]): Either[T, T] =
+    op.stream match {
+      case false => Left(op.tpe)
+      case true  => Right(op.tpe)
+    }
+
+  def opTpeRequest[T](implicit T: Basis[MuF, T]): Printer[Service.OperationType[T]] =
+    (opTypeRequestNoStream >|< opTypeStream).contramap(opTpeEitherRequest)
+
+  def opTpeResponse[T](implicit T: Basis[MuF, T]): Printer[Service.OperationType[T]] =
+    (opTypeResponseNoStream >|< opTypeStream).contramap(opTpeEitherResponse)
+
+  def opTypeRequestNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
+    Printer(namedTypes[T] >>> schema.print)
+
+  def opTypeResponseNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
+    konst("F[") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+
+  def opTypeStream[T](implicit T: Basis[MuF, T]): Printer[T] =
+    konst("Stream[F, ") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+
   def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
     (
-      (konst("  def ") *< string),
-      (konst("(req: ") *< Printer(namedTypes[T] >>> schema.print)),
-      (konst("): ") *< Printer(namedTypes[T] >>> schema.print))
+      konst("  def ") *< string,
+      konst("(req: ") *< opTpeRequest,
+      konst("): ") *< opTpeResponse
     ).contramapN(opTuple)
 
   def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
     (
-      (konst("@service(") *< serializationType >* konst(") trait ")),
-      (string >* konst("[F[_]] {") >* newLine),
-      (sepBy(operation, "\n") >* newLine >* konst("}"))
+      konst("@service(") *< serializationType >* konst(") trait "),
+      string >* konst("[F[_]] {") >* newLine,
+      sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)
 
   def option: Printer[(String, String)] =
@@ -140,11 +168,11 @@ object print {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
     (
-      (konst("package ") *< optional(string) >* newLine >* newLine),
+      konst("package ") *< optional(string) >* newLine >* newLine,
       sepBy(option, lineFeed),
-      (konst("object ") *< string >* konst(" { ") >* newLine >* newLine),
-      (sepBy(schema, lineFeed) >* newLine),
-      (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))
+      konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
+      sepBy(schema, lineFeed) >* newLine,
+      sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
     ).contramapN(protoTuple)
   }
 }
