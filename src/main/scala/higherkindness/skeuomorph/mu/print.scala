@@ -120,23 +120,17 @@ object print {
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
-  def opTpeEitherRequest[T](op: Service.OperationType[T]): Either[T, T] =
-    op.stream match {
-      case false => Left(op.tpe)
-      case true  => Right(op.tpe)
+  def opTpeEither[T](op: Service.OperationType[T], isRequest: Boolean): Either[Either[Either[T, T], T], T] =
+    (op.stream, isRequest) match {
+      case (false, true)  => Left(Left(Left(op.tpe)))
+      case (true, true)   => Left(Left(Right(op.tpe)))
+      case (false, false) => Left(Right(op.tpe))
+      case (true, false)  => Right(op.tpe)
     }
 
-  def opTpeEitherResponse[T](op: Service.OperationType[T]): Either[T, T] =
-    op.stream match {
-      case false => Left(op.tpe)
-      case true  => Right(op.tpe)
-    }
-
-  def opTpeRequest[T](implicit T: Basis[MuF, T]): Printer[Service.OperationType[T]] =
-    (opTypeRequestNoStream >|< opTypeStream).contramap(opTpeEitherRequest)
-
-  def opTpeResponse[T](implicit T: Basis[MuF, T]): Printer[Service.OperationType[T]] =
-    (opTypeResponseNoStream >|< opTypeStream).contramap(opTpeEitherResponse)
+  def opTpe[T](isRequest: Boolean)(implicit T: Basis[MuF, T]): Printer[Service.OperationType[T]] =
+    (opTypeRequestNoStream >|< opTypeStream >|< opTypeResponseNoStream >|< opTypeStream)
+      .contramap(t => opTpeEither(t, isRequest))
 
   def opTypeRequestNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
     Printer(namedTypes[T] >>> schema.print)
@@ -150,8 +144,8 @@ object print {
   def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
     (
       konst("  def ") *< string,
-      konst("(req: ") *< opTpeRequest,
-      konst("): ") *< opTpeResponse
+      konst("(req: ") *< opTpe(true),
+      konst("): ") *< opTpe(false)
     ).contramapN(opTuple)
 
   def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
