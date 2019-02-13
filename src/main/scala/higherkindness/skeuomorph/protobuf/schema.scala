@@ -330,7 +330,7 @@ object ProtobufF {
   def optionJson(o: Option): Json =
     Json.obj(
       "name"  -> Json.fromString(o.name),
-      "value" -> Json.fromString(o.value),
+      "value" -> Json.fromString(o.value)
     )
 
 }
