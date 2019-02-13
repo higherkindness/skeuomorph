@@ -19,7 +19,7 @@ package higherkindness.skeuomorph.protobuf
 import cats.effect.IO
 import org.specs2.Specification
 import higherkindness.skeuomorph.protobuf.ParseProto._
-import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.mu.{Protocol => MuProtocol}
 import higherkindness.skeuomorph.mu.MuF
 import qq.droste.data.Mu
 
@@ -34,17 +34,19 @@ class ProtobufProtocolSpec extends Specification {
 
   def printProtobufProtocol = {
 
-    val source                       = ParseProto.ProtoSource("book.proto", "resources")
+    val currentDirectory: String     = new java.io.File(".").getCanonicalPath
+    val path                         = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
+    val source                       = ParseProto.ProtoSource("book.proto", path)
     val nativeDescriptor: NativeFile = parseProto[IO].parse(source).unsafeRunSync()
 
     val parseNative: NativeFile => Protocol[Mu[ProtobufF]] = Protocol.fromProto(_)
 
-    val parseProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
-      mu.Protocol.fromProtobufProto(p)
+    val parseProtocol: Protocol[Mu[ProtobufF]] => MuProtocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
+      MuProtocol.fromProtobufProto(p)
     }
 
-    val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
-      higherkindness.skeuomorph.mu.print.proto.print(p)
+    val printProtocol: MuProtocol[Mu[MuF]] => String = { b: MuProtocol[Mu[MuF]] =>
+      higherkindness.skeuomorph.mu.print.proto.print(b)
     }
 
     val a = (parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor)
