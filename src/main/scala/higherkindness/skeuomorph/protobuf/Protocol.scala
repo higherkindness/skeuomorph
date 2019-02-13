@@ -21,7 +21,6 @@ final case class Protocol[T](
     name: String,
     pkg: String,
     options: List[(String, String)],
-    imports: List[String],
     declarations: List[T],
     services: List[Protocol.Service[T]]
 )
@@ -58,7 +57,6 @@ object Protocol {
       name = protocol.name,
       pkg = protocol.`package`,
       options = Nil,
-      imports = protocol.imports,
       declarations = protocol.values.map(m => toProtobufF(m)),
       services = protocol.services.map(s => toService(s))
     )

@@ -21,7 +21,7 @@ import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.github.os72.protocjar.Protoc
 import higherkindness.skeuomorph.FileUtils._
-import com.google.protobuf.DescriptorProtos.{FileDescriptorProto, FileDescriptorSet}
+import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import higherkindness.skeuomorph.{Parser, _}
 import scala.collection.JavaConverters._
 
@@ -29,13 +29,13 @@ object ParseProto {
 
   case class ProtoSource(filename: String, path: String)
 
-  implicit def parseProto[F[_]]: Parser[F, ProtoSource, List[NativeDescriptor]] =
-    new Parser[F, ProtoSource, List[NativeDescriptor]] {
-      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[List[NativeDescriptor]] =
+  implicit def parseProto[F[_]]: Parser[F, ProtoSource, NativeFile] =
+    new Parser[F, ProtoSource, NativeFile] {
+      override def parse(input: ProtoSource)(implicit S: Sync[F]): F[NativeFile] =
         runProtoc(input)
     }
 
-  private def runProtoc[F[_]: Sync](input: ProtoSource): F[List[NativeDescriptor]] = {
+  private def runProtoc[F[_]: Sync](input: ProtoSource): F[NativeFile] = {
     val descriptorFileName = s"${input.filename}.desc"
     val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
@@ -54,7 +54,7 @@ object ParseProto {
       fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
-      nativeDescriptors <- Sync[F].adaptError(getNativeDescriptors[F](fileDescriptor)) {
+      nativeDescriptors <- Sync[F].adaptError(getNativeDescriptors[F](input.filename, fileDescriptor)) {
         case ex: Exception => ProtobufNativeException(ex)
       }
     } yield nativeDescriptors
@@ -63,10 +63,9 @@ object ParseProto {
   private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptorSet] =
     fileInputStream(descriptorFileName).use(fis => Sync[F].delay(FileDescriptorSet.parseFrom(fis)))
 
-  private def getNativeDescriptors[F[_]: Sync](source: FileDescriptorSet): F[List[NativeDescriptor]] = {
+  private def getNativeDescriptors[F[_]: Sync](descriptorFileName: String, source: FileDescriptorSet): F[NativeFile] = {
     Sync[F].delay {
-      val descriptors: List[FileDescriptorProto] = source.getFileList.asScala.toList
-      descriptors.map(d => NativeDescriptor(d, descriptors))
+      NativeDescriptor.getFile(descriptorFileName, source.getFileList.asScala.toList)
     }
   }
 }

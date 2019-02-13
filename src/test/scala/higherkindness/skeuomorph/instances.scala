@@ -105,13 +105,27 @@ object instances {
       nestedTypes <- Gen.lzy(Gen.containerOfN[List, NativeMessage](oneOrZero, sampleNativeMessage(packageName)))
     } yield NativeMessage(name = name, fields = fields ++ oneOfFields, reserved = ranges, nested = nestedTypes)
 
+  def sampleNativeOperation(messages: List[NativeDescriptor]): Gen[NativeOperation] =
+    for {
+      name     <- nonEmptyString
+      request  <- Gen.oneOf(messages)
+      response <- Gen.oneOf(messages)
+    } yield NativeOperation(name, request, response)
+
+  def sampleNativeService(messages: List[NativeDescriptor]): Gen[NativeService] =
+    for {
+      name       <- nonEmptyString
+      operations <- Gen.listOfN(2, sampleNativeOperation(messages))
+    } yield NativeService(name, operations)
+
   lazy val nativeFileGen: Gen[NativeFile] = for {
     name                 <- nonEmptyString
     packageN             <- nonEmptyString
     messageAndEnumLength <- Gen.choose(1, 5)
     messages             <- Gen.lzy(Gen.containerOfN[List, NativeDescriptor](messageAndEnumLength, sampleNativeMessage(packageN)))
-    enums                <- Gen.lzy(Gen.containerOfN[Seq, NativeDescriptor](messageAndEnumLength, sampleNativeEnum))
-  } yield NativeFile(name = name, `package` = packageN, values = messages ++ enums)
+    enums                <- Gen.lzy(Gen.containerOfN[List, NativeDescriptor](messageAndEnumLength, sampleNativeEnum))
+    services             <- Gen.lzy(Gen.containerOfN[List, NativeService](messageAndEnumLength, sampleNativeService(messages)))
+  } yield NativeFile(name = name, `package` = packageN, values = messages ++ enums, services = services)
 
   implicit val nativeFileArb: Arbitrary[NativeFile] = Arbitrary(nativeFileGen)
 

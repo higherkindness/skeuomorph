@@ -100,7 +100,6 @@ final case class NativeFile(
     values: List[NativeDescriptor],
     name: String,
     `package`: String,
-    imports: List[String],
     services: List[NativeService])
     extends NativeDescriptor
 
@@ -112,16 +111,29 @@ final case class NativeOperation(name: String, request: NativeDescriptor, respon
 
 object NativeDescriptor {
 
-  def apply(file: FileDescriptorProto, files: List[FileDescriptorProto]): NativeDescriptor = {
-    NativeFile(
-      file.getMessageTypeList.j2s.map(d => toNativeMessage(d, files)) ++
-        file.getEnumTypeList.j2s.map(toNativeEnum),
-      formatName(file.getName),
-      file.getPackage,
-      file.getDependencyList.j2s,
-      file.getServiceList.j2s.map(s => toNativeService(s, files))
-    )
-  }
+  def getFile(descriptorFileName: String, files: List[FileDescriptorProto]): NativeFile =
+    findDescriptorProto(descriptorFileName, files)
+      .map { file =>
+        val dependents = file.getDependencyList.j2s
+          .flatMap(findDescriptorProto(_, files))
+          .flatMap(getDependentValues(_, files))
+
+        NativeFile(
+          dependents ++ file.getMessageTypeList.j2s.map(d => toNativeMessage(d, files)) ++
+            file.getEnumTypeList.j2s.map(toNativeEnum),
+          formatName(file.getName),
+          file.getPackage,
+          file.getServiceList.j2s.map(s => toNativeService(s, files))
+        )
+      }
+      .getOrElse(throw new Exception(s"Could not find descriptors for: $descriptorFileName"))
+
+  def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
+    files.find(_.getName == name)
+
+  def getDependentValues(dependent: FileDescriptorProto, files: List[FileDescriptorProto]): List[NativeDescriptor] =
+    dependent.getMessageTypeList.j2s.map(d => toNativeMessage(d, files)) ++
+      dependent.getEnumTypeList.j2s.map(toNativeEnum)
 
   def formatName(name: String): String = name.replace(".proto", "")
 
