@@ -95,10 +95,9 @@ val printAsScala: Mu[MuF] => String =
 ```
 
 ```
-Mu(TProduct(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
+Mu(TRecord(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
 @message final case class User(name: String, favorite_number: Cop[Int :: Null:: TNil], favorite_color: Cop[String :: Null:: TNil])
 ```
-
 
 ## Protobuf
 
@@ -229,6 +228,16 @@ object book {
   }
 }
 ```
+
+## Phases
+
+
+| phase       | consumes                  | produces                 | comments                                                                                            |
+|-------------|---------------------------|--------------------------|-----------------------------------------------------------------------------------------------------|
+| parsing     | `String`                  | `Fix[Protobuf]`          | the annotation in this case would be specifics that do not fit the overall schema                   |
+| naming      | `Fix[Protobuf]`           | `Fix[Named[Protobuf]#λ]` | this phase transforms all needed nested types into their string representation for the specific IDL |
+| codegen     | `Cofree[Named[F]#λ, Ann]` | `String`                 | generates the code for the given IDL                                                                |
+| translation | `Fix[Protobuf]`           | `Cofree[Avro, Ann]`      | transforms between two idls.  It carries an annotation to make it lossless                          |
 
 ## Skeuomorph in the wild
 

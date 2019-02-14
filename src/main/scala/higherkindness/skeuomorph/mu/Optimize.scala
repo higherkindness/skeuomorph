@@ -17,10 +17,11 @@
 package higherkindness.skeuomorph
 package mu
 
-import cats.Functor
+//import cats.Functor
 import cats.data.NonEmptyList
 import qq.droste._
-
+// import iota._
+// import iota.TListK.:::
 import uast._
 import uast.types._
 import uast.derivation._
@@ -47,46 +48,54 @@ object Optimize {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def nestedNamedTypesTrans[F[α] <: ACopK[α]: Functor, T](
-      implicit
-      P: TRecord :<<: F,
-      E: TEnum :<<: F,
-      N: TNamedType :<<: F,
-      T: Basis[F, T]): Trans[F, F, T] = Trans {
-    case P(TRecord(name, fields)) =>
-      def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes.apply(f.tpe))
-      P.inj(
-        TRecord[T](
-          name,
-          fields.map(nameTypes)
-        ))
-    case other => other
-  }
+  // def nestedNamedTypesTrans[F[α] <: ACopK[α]: Functor, G[α] <: ACopK[α]: Functor, T, U](
+  //     implicit
+  //     P: TRecord :<<: F,
+  //     E: TEnum :<<: F,
+  //     GN: TNamedType :<<: F,
+  //     GP: TRecord :<<: G,
+  //     GE: TEnum :<<: G,
+  //     T: Basis[F, T],
+  //     GT: Basis[G, U]
+  // ): GTrans[F, G, T, U] = GTrans {
+  //   case P(TRecord(name, fields)) =>
+  //     def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes.apply(f.tpe))
+  //     P.inj(
+  //       TRecord[T](
+  //         name,
+  //         fields.map(nameTypes)
+  //       ))
+  //   case other => other
+  // }
 
-  def namedTypesTrans[F[α] <: ACopK[α], T](
-      implicit
-      P: TRecord :<<: F,
-      S: TEnum :<<: F,
-      N: TNamedType :<<: F
-  ): Trans[F, F, T] = Trans {
-    case P(TRecord(name, _)) => namedType[F, T](name)
-    case S(TEnum(name, _))   => namedType[F, T](name)
-    case other               => other
-  }
+  // def namedTypesTrans[
+  //     F[α] <: ACopK[α],
+  //     G[α] <: CopK[F[α]#L, α],
+  //     T
+  // ](
+  //     implicit
+  //     P: TRecord :<<: F,
+  //     S: TEnum :<<: F,
+  //     GN: TNamedType :<<: G
+  // ): GTrans[F, G, T, T] = GTrans {
+  //   case P(TRecord(name, _)) => namedType[G, T](name)
+  //   case S(TEnum(name, _))   => namedType[G, T](name)
+  //   case other               => other
+  // }
 
-  def namedTypes[F[α] <: ACopK[α]: Functor, T: Basis[F, ?]](
-      implicit
-      P: TRecord :<<: F,
-      S: TEnum :<<: F,
-      N: TNamedType :<<: F
-  ): T => T = scheme.cata(namedTypesTrans[F, T].algebra)
+  // def namedTypes[F[α] <: ACopK[α]: Functor, T: Basis[F, ?]](
+  //     implicit
+  //     P: TRecord :<<: F,
+  //     S: TEnum :<<: F,
+  //     N: TNamedType :<<: F
+  // ): T => T = scheme.cata(namedTypesTrans[F, T].algebra)
 
-  def nestedNamedTypes[F[α] <: ACopK[α]: Functor, T: Basis[F, ?]](
-      implicit
-      P: TRecord :<<: F,
-      S: TEnum :<<: F,
-      N: TNamedType :<<: F
-  ): T => T = scheme.cata(nestedNamedTypesTrans[F, T].algebra)
+  // def nestedNamedTypes[F[α] <: ACopK[α]: Functor, T: Basis[F, ?]](
+  //     implicit
+  //     P: TRecord :<<: F,
+  //     S: TEnum :<<: F,
+  //     N: TNamedType :<<: F
+  // ): T => T = scheme.cata(nestedNamedTypesTrans[F, T].algebra)
 
   /**
    * micro-optimization to convert known coproducts to named types
