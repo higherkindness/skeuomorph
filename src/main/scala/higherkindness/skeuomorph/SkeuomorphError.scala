@@ -30,7 +30,7 @@ case class ProtobufParsingException(originalError: Exception) extends Skeuomorph
   override def getMessage: String = message
 }
 
-case class ProtobufNativeException(originalError: Exception) extends SkeuomorphError {
-  override val message            = s"Failed to transform into Native descriptors with error: ${originalError.getMessage}"
+case class ProtobufNativeException(originalError: String) extends SkeuomorphError {
+  override val message            = s"Failed to transform into Native descriptors with error: $originalError"
   override def getMessage: String = message
 }

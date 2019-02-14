@@ -17,10 +17,12 @@
 package higherkindness.skeuomorph.protobuf
 
 import java.util
+
 import cats.data.NonEmptyList
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.{Label, Type}
 import com.google.protobuf.DescriptorProtos.UninterpretedOption.NamePart
 import com.google.protobuf.DescriptorProtos._
+import higherkindness.skeuomorph.ProtobufNativeException
 
 import scala.collection.JavaConverters._
 
@@ -131,7 +133,7 @@ object NativeDescriptor {
           file.getServiceList.j2s.map(s => toNativeService(s, files))
         )
       }
-      .getOrElse(throw new Exception(s"Could not find descriptors for: $descriptorFileName"))
+      .getOrElse(throw new ProtobufNativeException(s"Could not find descriptors for: $descriptorFileName"))
 
   def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
     files.find(_.getName == name)
@@ -194,7 +196,7 @@ object NativeDescriptor {
     val (hasAlias, noAlias) = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
     val separateValueFromAliases: Iterable[(EnumValueDescriptorProto, List[EnumValueDescriptorProto])] = hasAlias.map {
       case h :: t => (h, t)
-      case _      => throw new Exception(s"Wrong number of aliases")
+      case _      => throw new ProtobufNativeException("Wrong number of aliases")
     }
 
     (
@@ -252,7 +254,7 @@ object NativeDescriptor {
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
     } yield NativeMap(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)))
-      .getOrElse(throw new Exception(s"Could not find map entry for: $name"))
+      .getOrElse(throw new ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
     msg.getFieldList.j2s.find(_.getName == name)
@@ -274,8 +276,8 @@ object NativeDescriptor {
           fields
             .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
             .map(fromFieldDescriptorProto(_, source, files))
-            .collect { case b: NativeField => b })
-        .getOrElse(throw new Exception(s"Empty set of fields in OneOf: ${oneof.getName}"))
+            .collect { case b @ NativeField(_, _, _, _, _, _) => b })
+        .getOrElse(throw new ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
       NativeOneOfField(name = oneof.getName, tpe = NativeOneOf(name = oneof.getName, fields = oneOfFields))
     }
@@ -338,11 +340,11 @@ object NativeDescriptor {
       .map(_.msg)
   }
 
-  implicit class LabelOps(self: Label) {
+  private implicit class LabelOps(self: Label) {
     def isRepeated: Boolean = self.name() == "LABEL_REPEATED"
   }
 
-  implicit class JavaListOps[B](self: util.List[B]) {
+  private implicit class JavaListOps[B](self: util.List[B]) {
     def j2s: List[B] = self.asScala.toList
   }
 

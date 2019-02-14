@@ -54,9 +54,7 @@ object ParseProto {
       fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
-      nativeDescriptors <- Sync[F].adaptError(getNativeDescriptors[F](input.filename, fileDescriptor)) {
-        case ex: Exception => ProtobufNativeException(ex)
-      }
+      nativeDescriptors <- getNativeDescriptors[F](input.filename, fileDescriptor)
     } yield nativeDescriptors
   }
 
