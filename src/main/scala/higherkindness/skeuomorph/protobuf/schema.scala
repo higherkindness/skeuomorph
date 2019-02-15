@@ -19,10 +19,8 @@ package higherkindness.skeuomorph.protobuf
 import cats.{Applicative, Eq}
 import cats.data.NonEmptyList
 import cats.implicits._
-import higherkindness.skeuomorph.protobuf.ProtobufF.Option
-import qq.droste.{Algebra, Coalgebra}
+import higherkindness.skeuomorph.protobuf.ProtobufF.OptionValue
 import qq.droste.util.DefaultTraverse
-import io.circe.Json
 
 sealed trait FieldF[A] {
   val name: String
@@ -34,7 +32,7 @@ object FieldF {
       name: String,
       tpe: A,
       position: Int,
-      options: List[Option],
+      options: List[OptionValue],
       isRepeated: Boolean,
       isMapField: Boolean)
       extends FieldF[A]
@@ -54,10 +52,10 @@ sealed trait ProtobufF[A]
 
 object ProtobufF {
 
-  final case class Option(name: String, value: String)
-  object Option {
-    implicit val optionEq: Eq[Option] = Eq.instance {
-      case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
+  final case class OptionValue(name: String, value: String)
+  object OptionValue {
+    implicit val optionEq: Eq[OptionValue] = Eq.instance {
+      case (OptionValue(n, v), OptionValue(n2, v2)) => n === n2 && v === v2
     }
   }
 
@@ -84,7 +82,7 @@ object ProtobufF {
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
-      options: List[Option],
+      options: List[OptionValue],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
@@ -113,7 +111,7 @@ object ProtobufF {
   def enum[A](
       name: String,
       symbols: List[(String, Int)],
-      options: List[Option],
+      options: List[OptionValue],
       aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
   def message[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]): ProtobufF[A] =
     TMessage(name, fields, reserved)
@@ -187,150 +185,4 @@ object ProtobufF {
       }
     }
   }
-
-  def fromProtobuf: Coalgebra[ProtobufF, NativeDescriptor] = Coalgebra {
-    case f: NativeFile      => fileFromDescriptor(f)
-    case e: NativeEnum      => enumFromDescriptor(e)
-    case o: NativeOneOf     => oneOfFromDescriptor(o)
-    case d: NativeMessage   => messageFromDescriptor(d)
-    case r: NativeRepeated  => repeatedFromDescriptor(r)
-    case m: NativeMap       => mapDescriptor(m)
-    case n: NativeNamedType => namedFromDescriptor(n)
-    case _: NativeNull      => TNull()
-    case _: NativeBool      => TBool()
-    case _: NativeBytes     => TBytes()
-    case _: NativeDouble    => TDouble()
-    case _: NativeFixed32   => TFixed32()
-    case _: NativeFixed64   => TFixed64()
-    case _: NativeFloat     => TFloat()
-    case _: NativeInt32     => TInt32()
-    case _: NativeInt64     => TInt64()
-    case _: NativeSfixed32  => TSfixed32()
-    case _: NativeSfixed64  => TSfixed64()
-    case _: NativeSint32    => TSint32()
-    case _: NativeSint64    => TSint64()
-    case _: NativeString    => TString()
-    case _: NativeUint32    => TUint32()
-    case _: NativeUint64    => TUint64()
-  }
-
-  def fileFromDescriptor(fd: NativeFile): TFileDescriptor[NativeDescriptor] =
-    TFileDescriptor(fd.values, fd.name, fd.`package`)
-
-  def enumFromDescriptor(e: NativeEnum): TEnum[NativeDescriptor] =
-    TEnum(e.name, e.symbols, e.options.map(toTOption), e.aliases)
-
-  def oneOfFromDescriptor(o: NativeOneOf): TOneOf[NativeDescriptor] =
-    TOneOf[NativeDescriptor](
-      o.name,
-      o.fields.map(
-        f =>
-          FieldF
-            .Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)))
-
-  def messageFromDescriptor(msg: NativeMessage): TMessage[NativeDescriptor] =
-    TMessage[NativeDescriptor](msg.name, msg.fields.collect(toFieldF), msg.reserved)
-
-  def repeatedFromDescriptor(r: NativeRepeated): TRepeated[NativeDescriptor] =
-    TRepeated[NativeDescriptor](r.value)
-
-  def mapDescriptor(m: NativeMap): TMap[NativeDescriptor] =
-    TMap[NativeDescriptor](m.keyTpe, m.value)
-
-  def namedFromDescriptor(n: NativeNamedType): TNamedType[NativeDescriptor] =
-    TNamedType[NativeDescriptor](n.name)
-
-  def toFieldF: PartialFunction[NativeFieldF, FieldF[NativeDescriptor]] = {
-    case f: NativeField =>
-      FieldF.Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)
-    case f: NativeOneOfField =>
-      FieldF.OneOfField[NativeDescriptor](f.name, f.tpe)
-  }
-
-  def toTOption(no: NativeOption): ProtobufF.Option =
-    ProtobufF.Option(no.name, no.value)
-
-  def toJson: Algebra[ProtobufF, Json] = Algebra {
-    case TNull()          => Json.Null
-    case TDouble()        => Json.fromString("Double")
-    case TFloat()         => Json.fromString("Float")
-    case TInt32()         => Json.fromString("Int")
-    case TInt64()         => Json.fromString("Int")
-    case TUint32()        => Json.fromString("Int")
-    case TUint64()        => Json.fromString("Int")
-    case TSint32()        => Json.fromString("Int")
-    case TSint64()        => Json.fromString("Int")
-    case TFixed32()       => Json.fromString("Int")
-    case TFixed64()       => Json.fromString("Int")
-    case TSfixed32()      => Json.fromString("Int")
-    case TSfixed64()      => Json.fromString("Int")
-    case TBool()          => Json.fromString("Boolean")
-    case TString()        => Json.fromString("String")
-    case TBytes()         => Json.fromString("Bytes")
-    case TNamedType(name) => Json.fromString(name)
-    case TRepeated(value) =>
-      Json.obj(
-        "type"  -> Json.fromString("repeated"),
-        "items" -> value
-      )
-    case TOneOf(name, fields) =>
-      Json.obj(
-        "name"   -> Json.fromString(name),
-        "fields" -> Json.arr(fields.toList.map(field2Json): _*)
-      )
-    case TMap(keyTpe, value) =>
-      Json.obj(
-        "key"   -> keyTpe,
-        "value" -> value
-      )
-    case TEnum(name, symbols, options, aliases) =>
-      Json.obj(
-        "name" -> Json.fromString(name),
-        "symbols" -> Json.arr(
-          symbols.map(s => Json.obj("key" -> Json.fromString(s._1), "value" -> Json.fromInt(s._2))): _*),
-        "options" -> Json.arr(options.map(optionJson): _*),
-        "aliases" -> Json.arr(
-          aliases.map(s => Json.obj("key" -> Json.fromString(s._1), "value" -> Json.fromInt(s._2))): _*)
-      )
-    case TMessage(name, fields, reserved) =>
-      Json.obj(
-        "name"     -> Json.fromString(name),
-        "fields"   -> Json.arr(fields.map(fieldF2Json): _*),
-        "reserved" -> Json.arr(reserved.map(l => Json.arr(l.map(Json.fromString): _*)): _*)
-      )
-    case TFileDescriptor(values, name, pkg) =>
-      Json.obj(
-        "values"  -> Json.arr(values: _*),
-        "name"    -> Json.fromString(name),
-        "package" -> Json.fromString(pkg)
-      )
-  }
-
-  def fieldF2Json(f: FieldF[Json]): Json = f match {
-    case ff: FieldF.Field[Json]      => field2Json(ff)
-    case ff: FieldF.OneOfField[Json] => fieldOneOfField2Json(ff)
-  }
-
-  def field2Json(f: FieldF.Field[Json]): Json =
-    Json.obj(
-      "name"       -> Json.fromString(f.name),
-      "type"       -> f.tpe,
-      "position"   -> Json.fromInt(f.position),
-      "options"    -> Json.arr(f.options.map(optionJson): _*),
-      "isRepeated" -> Json.fromBoolean(f.isRepeated),
-      "isMapField" -> Json.fromBoolean(f.isMapField)
-    )
-
-  def fieldOneOfField2Json(f: FieldF.OneOfField[Json]): Json =
-    Json.obj(
-      "name" -> Json.fromString(f.name),
-      "type" -> f.tpe
-    )
-
-  def optionJson(o: Option): Json =
-    Json.obj(
-      "name"  -> Json.fromString(o.name),
-      "value" -> Json.fromString(o.value)
-    )
-
 }

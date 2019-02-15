@@ -71,7 +71,7 @@ object Protocol {
       msg =>
         Service.Operation(
           name = msg.name,
-          request = OperationType(toMu(msg.request), msg.requestStraming),
+          request = OperationType(toMu(msg.request), msg.requestStreaming),
           response = OperationType(toMu(msg.response), msg.responseStreaming)
       )
 
