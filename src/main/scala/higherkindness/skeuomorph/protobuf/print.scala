@@ -24,7 +24,7 @@ object print {
   import ProtobufF._
   import FieldF._
 
-  def printOption(o: Option): String = s"${o.name} = ${o.value}"
+  def printOption(o: OptionValue): String = s"${o.name} = ${o.value}"
 
   def printSchema[T: Basis[ProtobufF, ?]]: Printer[T] = {
     val algebra: Algebra[ProtobufF, String] = Algebra {
@@ -66,7 +66,7 @@ object print {
         val printReserved: String = reserved
           .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
           .mkString("\n  ")
-        def printOptions(options: List[Option]) =
+        def printOptions(options: List[OptionValue]) =
           if (options.isEmpty)
             ""
           else

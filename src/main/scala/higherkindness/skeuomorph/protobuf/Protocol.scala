@@ -15,7 +15,6 @@
  */
 
 package higherkindness.skeuomorph.protobuf
-import qq.droste._
 
 final case class Protocol[T](
     name: String,
@@ -27,8 +26,6 @@ final case class Protocol[T](
 
 object Protocol {
 
-  import ProtobufF._
-
   final case class Service[T](
       name: String,
       operations: List[Operation[T]]
@@ -37,33 +34,32 @@ object Protocol {
   final case class Operation[T](
       name: String,
       request: T,
-      requestStraming: Boolean,
+      requestStreaming: Boolean,
       response: T,
       responseStreaming: Boolean
   )
+  // def fromProto[T](protocol: Protocol)(implicit T: Embed[ProtobufF, T]): Protocol[T] = {
+  //   val toProtobufF: NativeDescriptor => T = scheme.ana(fromProtobuf)
 
-  def fromProto[T](protocol: NativeFile)(implicit T: Embed[ProtobufF, T]): Protocol[T] = {
-    val toProtobufF: NativeDescriptor => T = scheme.ana(fromProtobuf)
+  //   def toService(s: NativeService): Service[T] =
+  //     Service[T](s.name, s.operations.map(toOperation))
 
-    def toService(s: NativeService): Service[T] =
-      Service[T](s.name, s.operations.map(toOperation))
+  //   def toOperation(o: NativeOperation): Operation[T] =
+  //     Operation[T](
+  //       name = o.name,
+  //       request = toProtobufF(o.request),
+  //       requestStreaming = o.requestStreaming,
+  //       response = toProtobufF(o.response),
+  //       responseStreaming = o.responseStreaming
+  //     )
 
-    def toOperation(o: NativeOperation): Operation[T] =
-      Operation[T](
-        name = o.name,
-        request = toProtobufF(o.request),
-        requestStraming = o.requestStreaming,
-        response = toProtobufF(o.response),
-        responseStreaming = o.responseStreaming
-      )
-
-    Protocol[T](
-      name = protocol.name,
-      pkg = protocol.`package`,
-      options = Nil,
-      declarations = protocol.values.map(m => toProtobufF(m)),
-      services = protocol.services.map(s => toService(s))
-    )
-  }
+  //   Protocol[T](
+  //     name = protocol.name,
+  //     pkg = protocol.`package`,
+  //     options = Nil,
+  //     declarations = protocol.values.map(m => toProtobufF(m)),
+  //     services = protocol.services.map(s => toService(s))
+  //   )
+  // }
 
 }

@@ -19,8 +19,7 @@ package higherkindness.skeuomorph.protobuf
 import cats.{Applicative, Eq}
 import cats.data.NonEmptyList
 import cats.implicits._
-import higherkindness.skeuomorph.protobuf.ProtobufF.Option
-import qq.droste.Coalgebra
+import higherkindness.skeuomorph.protobuf.ProtobufF.OptionValue
 import qq.droste.util.DefaultTraverse
 
 sealed trait FieldF[A] {
@@ -33,7 +32,7 @@ object FieldF {
       name: String,
       tpe: A,
       position: Int,
-      options: List[Option],
+      options: List[OptionValue],
       isRepeated: Boolean,
       isMapField: Boolean)
       extends FieldF[A]
@@ -53,10 +52,10 @@ sealed trait ProtobufF[A]
 
 object ProtobufF {
 
-  final case class Option(name: String, value: String)
-  object Option {
-    implicit val optionEq: Eq[Option] = Eq.instance {
-      case (Option(n, v), Option(n2, v2)) => n === n2 && v === v2
+  final case class OptionValue(name: String, value: String)
+  object OptionValue {
+    implicit val optionEq: Eq[OptionValue] = Eq.instance {
+      case (OptionValue(n, v), OptionValue(n2, v2)) => n === n2 && v === v2
     }
   }
 
@@ -83,7 +82,7 @@ object ProtobufF {
   final case class TEnum[A](
       name: String,
       symbols: List[(String, Int)],
-      options: List[Option],
+      options: List[OptionValue],
       aliases: List[(String, Int)])
       extends ProtobufF[A]
   final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]) extends ProtobufF[A]
@@ -112,7 +111,7 @@ object ProtobufF {
   def enum[A](
       name: String,
       symbols: List[(String, Int)],
-      options: List[Option],
+      options: List[OptionValue],
       aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
   def message[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]]): ProtobufF[A] =
     TMessage(name, fields, reserved)
@@ -186,67 +185,4 @@ object ProtobufF {
       }
     }
   }
-
-  def fromProtobuf: Coalgebra[ProtobufF, NativeDescriptor] = Coalgebra {
-    case f: NativeFile      => fileFromDescriptor(f)
-    case e: NativeEnum      => enumFromDescriptor(e)
-    case o: NativeOneOf     => oneOfFromDescriptor(o)
-    case d: NativeMessage   => messageFromDescriptor(d)
-    case r: NativeRepeated  => repeatedFromDescriptor(r)
-    case m: NativeMap       => mapDescriptor(m)
-    case n: NativeNamedType => namedFromDescriptor(n)
-    case _: NativeNull      => TNull()
-    case _: NativeBool      => TBool()
-    case _: NativeBytes     => TBytes()
-    case _: NativeDouble    => TDouble()
-    case _: NativeFixed32   => TFixed32()
-    case _: NativeFixed64   => TFixed64()
-    case _: NativeFloat     => TFloat()
-    case _: NativeInt32     => TInt32()
-    case _: NativeInt64     => TInt64()
-    case _: NativeSfixed32  => TSfixed32()
-    case _: NativeSfixed64  => TSfixed64()
-    case _: NativeSint32    => TSint32()
-    case _: NativeSint64    => TSint64()
-    case _: NativeString    => TString()
-    case _: NativeUint32    => TUint32()
-    case _: NativeUint64    => TUint64()
-  }
-
-  def fileFromDescriptor(fd: NativeFile): TFileDescriptor[NativeDescriptor] =
-    TFileDescriptor(fd.values, fd.name, fd.`package`)
-
-  def enumFromDescriptor(e: NativeEnum): TEnum[NativeDescriptor] =
-    TEnum(e.name, e.symbols, e.options.map(toTOption), e.aliases)
-
-  def oneOfFromDescriptor(o: NativeOneOf): TOneOf[NativeDescriptor] =
-    TOneOf[NativeDescriptor](
-      o.name,
-      o.fields.map(
-        f =>
-          FieldF
-            .Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)))
-
-  def messageFromDescriptor(msg: NativeMessage): TMessage[NativeDescriptor] =
-    TMessage[NativeDescriptor](msg.name, msg.fields.collect(toFieldF), msg.reserved)
-
-  def repeatedFromDescriptor(r: NativeRepeated): TRepeated[NativeDescriptor] =
-    TRepeated[NativeDescriptor](r.value)
-
-  def mapDescriptor(m: NativeMap): TMap[NativeDescriptor] =
-    TMap[NativeDescriptor](m.keyTpe, m.value)
-
-  def namedFromDescriptor(n: NativeNamedType): TNamedType[NativeDescriptor] =
-    TNamedType[NativeDescriptor](n.name)
-
-  def toFieldF: PartialFunction[NativeFieldF, FieldF[NativeDescriptor]] = {
-    case f: NativeField =>
-      FieldF.Field[NativeDescriptor](f.name, f.tpe, f.position, f.options.map(toTOption), f.isRepeated, f.isMapField)
-    case f: NativeOneOfField =>
-      FieldF.OneOfField[NativeDescriptor](f.name, f.tpe)
-  }
-
-  def toTOption(no: NativeOption): ProtobufF.Option =
-    ProtobufF.Option(no.name, no.value)
-
 }
