@@ -22,7 +22,6 @@ import higherkindness.skeuomorph.protobuf.ProtobufF._
 import qq.droste.data.Mu
 import org.specs2.Specification
 import higherkindness.skeuomorph.protobuf.ParseProto._
-//import higherkindness.skeuomorph.mu.MuF
 import qq.droste.data.Mu._
 
 class ProtobufProtocolSpec extends Specification {
@@ -52,8 +51,6 @@ class ProtobufProtocolSpec extends Specification {
     }
 
     val result = (parseProtocol andThen printProtocol)(protobufProtocol)
-
-    println(result)
 
     result.clean must beEqualTo(expectation.clean)
 

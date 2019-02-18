@@ -28,8 +28,10 @@ import com.google.protobuf.DescriptorProtos._
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 import java.util
+
 import qq.droste._
 import qq.droste.syntax.embed._
+
 import scala.collection.JavaConverters._
 
 object ParseProto {
@@ -64,9 +66,7 @@ object ParseProto {
       fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
         case ex: Exception => ProtobufParsingException(ex)
       }
-      nativeDescriptors <- Sync[F].adaptError(getTFiles[F, T](input.filename, fileDescriptor)) {
-        case ex: Exception => ProtobufNativeException(ex)
-      }
+      nativeDescriptors <- getTFiles[F, T](input.filename, fileDescriptor)
     } yield nativeDescriptors
   }
 
@@ -103,7 +103,7 @@ object ParseProto {
           file.getServiceList.j2s.map(s => toService[A](s, files))
         )
       }
-      .getOrElse(throw new Exception(s"Could not find descriptors for: $descriptorFileName"))
+      .getOrElse(throw ProtobufNativeException(s"Could not find descriptors for: $descriptorFileName"))
 
   def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
     files.find(_.getName == name)
@@ -137,10 +137,9 @@ object ParseProto {
       implicit A: Embed[ProtobufF, A]): A = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s
     val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.j2s
-    val oneOfFields: List[FieldF[A]] =
+    val oneOfFields: List[(FieldF[A], List[Int])] =
       fromOneofDescriptorsProto(protoOneOf, protoFields, descriptor, files)
-    val oneOfNumbers: List[Int] =
-      oneOfFields.map(_.tpe).collect { case TOneOf(_, fields) => fields.toList.map(_.position) }.flatten
+    val oneOfNumbers: List[Int] = oneOfFields.flatMap(_._2)
     val fields: List[FieldF[A]] =
       protoFields
         .filterNot(f => oneOfNumbers.contains(f.getNumber))
@@ -148,10 +147,9 @@ object ParseProto {
 
     message[A](
       name = descriptor.getName,
-      fields = fields ++ oneOfFields,
+      fields = fields ++ oneOfFields.map(_._1),
       reserved =
         descriptor.getReservedRangeList.j2s.map(range => (range.getStart until range.getEnd).map(_.toString).toList)
-//      nested = descriptor.getNestedTypeList.j2s.map(d => toMessage(d, files))
     ).embed
   }
 
@@ -172,7 +170,7 @@ object ParseProto {
     val (hasAlias, noAlias) = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
     val separateValueFromAliases: Iterable[(EnumValueDescriptorProto, List[EnumValueDescriptorProto])] = hasAlias.map {
       case h :: t => (h, t)
-      case _      => throw new Exception(s"Wrong number of aliases")
+      case _      => throw ProtobufNativeException(s"Wrong number of aliases")
     }
 
     (
@@ -231,7 +229,7 @@ object ParseProto {
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
     } yield map(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)).embed)
-      .getOrElse(throw new Exception(s"Could not find map entry for: $name"))
+      .getOrElse(throw ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
     msg.getFieldList.j2s.find(_.getName == name)
@@ -248,7 +246,7 @@ object ParseProto {
       source: DescriptorProto,
       files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]
-  ): List[FieldF[A]] = oneOfFields.zipWithIndex.map {
+  ): List[(FieldF[A], List[Int])] = oneOfFields.zipWithIndex.map {
     case (oneof, index) => {
       val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
         .fromList(
@@ -256,9 +254,10 @@ object ParseProto {
             .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
             .map(fromFieldDescriptorProto(_, source, files))
             .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b })
-        .getOrElse(throw new Exception(s"Empty set of fields in OneOf: ${oneof.getName}"))
+        .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-      FieldF.OneOfField(name = oneof.getName, tpe = oneOf(name = oneof.getName, fields = oneOfFields).embed)
+      val fOneOf = oneOf(name = oneof.getName, fields = oneOfFields)
+      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed), oneOfFields.map(_.position).toList)
     }
   }
 
