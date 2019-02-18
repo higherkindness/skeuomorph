@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,8 +93,9 @@ object Protocol {
     case MuF.TOption(value)         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
     case MuF.TEither(left, right)   => AvroF.union(NonEmptyList(left, List(right)))
     case MuF.TList(value)           => AvroF.array(value)
-    case MuF.TMap(value)            => AvroF.map(value)
+    case MuF.TMap(_, value)         => AvroF.map(value)
     case MuF.TGeneric(_, _)         => ??? // WAT
+    case MuF.TContaining(_)         => ??? // TBD
     case MuF.TRequired(t)           => T.coalgebra(t)
     case MuF.TCoproduct(invariants) => AvroF.union(invariants)
     case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields)
@@ -107,18 +108,18 @@ object Protocol {
         fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
   }
 
-  def fromFreesFProtocol[T, U](proto: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
-    def fromFreestyle: T => U = scheme.cata(fromFreesFSchema.algebra)
-    val services: List[Message[U]] = proto.services
+  def fromFreesFProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
+    def fromMu: T => U = scheme.cata(fromFreesFSchema.algebra)
+    val services: List[Message[U]] = protocol.services
       .filter(_.serializationType == SerializationType.Avro)
       .flatMap { s =>
-        s.operations.map(op => Message(op.name, fromFreestyle(op.request), fromFreestyle(op.response)))
+        s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe)))
       }
 
     Protocol(
-      proto.name,
-      proto.pkg,
-      proto.declarations.map(fromFreestyle),
+      protocol.name,
+      protocol.pkg,
+      protocol.declarations.map(fromMu),
       services
     )
   }

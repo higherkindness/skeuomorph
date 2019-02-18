@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,31 +19,70 @@ package higherkindness.skeuomorph
 import cats.data.NonEmptyList
 import cats.implicits._
 import org.apache.avro.Schema
-import org.apache.avro.Schema.Type
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
-
-import qq.droste.Basis
 import mu.MuF
 import avro.AvroF
-import protobuf.ProtobufF
+import protobuf._
+import qq.droste.Basis
 
 import scala.collection.JavaConverters._
 
 object instances {
-  val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
+  lazy val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)
+
+  lazy val smallNumber: Gen[Int] = Gen.choose(1, 10)
+
+  lazy val sampleBool: Gen[Boolean] = Gen.oneOf(true, false)
+
+  def protobufFMessageWithRepeatFields[T](withRepeat: Boolean)(
+      implicit B: Basis[ProtobufF, T]): Gen[ProtobufF.TMessage[T]] = {
+
+    val innerTypes: Gen[ProtobufF[T]] = Gen.oneOf(
+      List(
+        ProtobufF.TDouble[T](),
+        ProtobufF.TFloat[T](),
+        ProtobufF.TInt32[T](),
+        ProtobufF.TInt64[T](),
+        ProtobufF.TUint32[T](),
+        ProtobufF.TUint64[T](),
+        ProtobufF.TSint32[T](),
+        ProtobufF.TSint64[T](),
+        ProtobufF.TFixed32[T](),
+        ProtobufF.TFixed64[T](),
+        ProtobufF.TSfixed32[T](),
+        ProtobufF.TSfixed64[T](),
+        ProtobufF.TBool[T](),
+        ProtobufF.TString[T](),
+        ProtobufF.TBytes[T]()
+      )
+    )
+
+    val sampleField: Gen[FieldF.Field[T]] = {
+      for {
+        name     <- nonEmptyString
+        tpe      <- innerTypes
+        position <- smallNumber
+      } yield FieldF.Field(name, B.algebra(tpe), position, List(), withRepeat, isMapField = false)
+    }
+
+    for {
+      name  <- nonEmptyString
+      field <- sampleField
+    } yield ProtobufF.TMessage(name, List(field), List())
+  }
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
     val primitives: Gen[Schema] = Gen.oneOf(
       List(
-        Type.STRING,
-        Type.BOOLEAN,
-        Type.BYTES,
-        Type.DOUBLE,
-        Type.FLOAT,
-        Type.INT,
-        Type.LONG,
-        Type.NULL
+        org.apache.avro.Schema.Type.STRING,
+        org.apache.avro.Schema.Type.BOOLEAN,
+        org.apache.avro.Schema.Type.BYTES,
+        org.apache.avro.Schema.Type.DOUBLE,
+        org.apache.avro.Schema.Type.FLOAT,
+        org.apache.avro.Schema.Type.INT,
+        org.apache.avro.Schema.Type.LONG,
+        org.apache.avro.Schema.Type.NULL
       ).map(Schema.create)
     )
 
@@ -91,7 +130,7 @@ object instances {
       (
         nonNullPrimitives,
         if (withTNull) Gen.const(MuF.TNull[T]()) else nonNullPrimitives,
-        Gen.oneOf(true, false)
+        sampleBool
       ).mapN((t1, t2, reversed) =>
         MuF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
         else NonEmptyList.of(B.algebra(t1), B.algebra(t2))))
@@ -121,7 +160,7 @@ object instances {
           MuF.either(a, b)
         },
         T.arbitrary map MuF.list[T],
-        T.arbitrary map MuF.map[T],
+        T.arbitrary map (t => MuF.map[T](None, t)),
         T.arbitrary map MuF.required[T],
         (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
           MuF.generic[T](a, b)
@@ -190,7 +229,7 @@ object instances {
   }
 
   implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[ProtobufF[T]] = {
-    val genOption: Gen[ProtobufF.Option] = (nonEmptyString, nonEmptyString).mapN(ProtobufF.Option.apply)
+    val genOption: Gen[ProtobufF.OptionValue] = (nonEmptyString, nonEmptyString).mapN(ProtobufF.OptionValue.apply)
     Arbitrary(
       Gen.oneOf(
         ProtobufF.double[T]().pure[Gen],
@@ -209,8 +248,6 @@ object instances {
         ProtobufF.string[T]().pure[Gen],
         ProtobufF.bytes[T]().pure[Gen],
         nonEmptyString map ProtobufF.namedType[T],
-        T.arbitrary map ProtobufF.required[T],
-        T.arbitrary map ProtobufF.optional[T],
         T.arbitrary map ProtobufF.repeated[T],
         (
           nonEmptyString,
@@ -225,8 +262,10 @@ object instances {
               nonEmptyString,
               T.arbitrary,
               Gen.posNum[Int],
-              Gen.listOf(genOption)
-            ).mapN(ProtobufF.Field.apply[T])
+              Gen.listOf(genOption),
+              sampleBool,
+              sampleBool
+            ).mapN(FieldF.Field.apply[T])
           ),
           Gen.listOf(Gen.listOf(nonEmptyString))
         ).mapN(ProtobufF.message[T])

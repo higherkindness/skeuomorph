@@ -99,6 +99,137 @@ Mu(TProduct(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCopro
 @message final case class User(name: String, favorite_number: Cop[Int :: Null:: TNil], favorite_color: Cop[String :: Null:: TNil])
 ```
 
+
+## Protobuf
+
+### Parsing nested `.proto` files and converting into Scala code
+
+Given these proto files below:
+
+_author.proto_
+
+```protobuf
+syntax = "proto3";
+package com.acme;
+
+message Author {
+    string name = 1;
+    string nick = 2;
+}
+```
+
+_book.proto_
+
+```protobuf
+syntax = "proto3";
+package com.acme;
+import "author.proto";
+
+message Book {
+    reserved 4, 8;
+    reserved 12 to 15;
+    int64 isbn = 1;
+    string title = 2;
+    repeated Author author = 3;
+    BindingType binding_type = 9;
+}
+
+message GetBookRequest {
+    int64 isbn = 1;
+}
+
+message GetBookViaAuthor {
+    Author author = 1;
+}
+
+message BookStore {
+    string name = 1;
+    map<int64, string> books = 2;
+    repeated Genre genres = 3;
+
+    oneof payment_method {
+        int64 credit_card_number = 4;
+        int32 cash = 5;
+        string iou_note = 6;
+        Book barter = 7;
+    }
+}
+
+enum Genre {
+    option allow_alias = true;
+    UNKNOWN = 0;
+    SCIENCE_FICTION = 1;
+    SPECULATIVE_FICTION = 1;
+    POETRY = 2;
+    SCI_FI = 1;
+}
+
+enum BindingType {
+    HARDCOVER = 0;
+    PAPERBACK = 1;
+}
+
+service BookService {
+    rpc GetBook (GetBookRequest) returns (Book) {}
+    rpc GetBooksViaAuthor (GetBookViaAuthor) returns (stream Book) {}
+    rpc GetGreatestBook (stream GetBookRequest) returns (Book) {}
+    rpc GetBooks (stream GetBookRequest) returns (stream Book) {}
+}
+```
+
+We can parse and convert them into Scala code as:
+
+```scala
+val source = ParseProto.ProtoSource("book.proto", "resources")
+val nativeDescriptor: NativeFile = parseProto[IO].parse(source).unsafeRunSync()
+
+val parseNative: NativeFile => Protocol[Mu[ProtobufF]] = Protocol.fromProto(_)
+
+val parseProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] =
+{ p: Protocol[Mu[ProtobufF]] => mu.Protocol.fromProtobufProto(p) }
+
+val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
+  higherkindness.skeuomorph.mu.print.proto.print(p)
+}
+
+(parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor)
+```
+
+It would generate:
+
+```scala
+package com.acme
+
+object book {
+
+  @message final case class Author(name: String, nick: String)
+  @message final case class Book(isbn: Long, title: String, author: List[Author], binding_type: BindingType)
+  @message final case class GetBookRequest(isbn: Long)
+  @message final case class GetBookViaAuthor(author: Author)
+  @message final case class BookStore(name: String, books: Map[Long, String], genres: List[Genre], payment_method: Cop[Long :: Int :: String :: Book:: TNil])
+
+  sealed trait Genre
+  object Genre {
+    case object UNKNOWN extends Genre
+    case object SCIENCE_FICTION extends Genre
+    case object POETRY extends Genre
+  }
+
+  sealed trait BindingType
+  object BindingType {
+    case object HARDCOVER extends BindingType
+    case object PAPERBACK extends BindingType
+  }
+
+  @service(Protobuf) trait BookService[F[_]] {
+    def GetBook(req: GetBookRequest): F[Book]
+    def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
+    def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
+    def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
+  }
+}
+```
+
 ## Skeuomorph in the wild
 
 If you wish to add your library here please consider a PR to include

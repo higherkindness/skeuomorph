@@ -14,18 +14,14 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.catz.contrib
+package higherkindness.skeuomorph
 
-import cats.ContravariantMonoidal
+import cats.effect.Sync
 
-trait Decidable[F[_]] extends ContravariantMonoidal[F] {
-  def choose[A, B, C](fa: F[A], fb: F[B])(cab: C => Either[A, B]): F[C]
+trait Parser[F[_], I, O] {
+  def parse(input: I)(implicit S: Sync[F]): F[O]
 }
 
-object Decidable {
-  def apply[F[_]](implicit F: Decidable[F]): Decidable[F] = F
-
-  implicit class decidableSyntax[F[_]: Decidable, A](fa: F[A]) {
-    def >|<[B](fb: F[B]): F[Either[A, B]] = Decidable[F].choose(fa, fb)(identity)
-  }
+object Parser {
+  def apply[F[_], I, O](implicit parser: Parser[F, I, O]) = parser
 }

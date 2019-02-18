@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import cats.Eq
 import cats.data.NonEmptyList
 import cats.instances.list._
 import cats.instances.string._
+import cats.instances.option._
 import cats.syntax.eq._
 
 /**
@@ -43,8 +44,9 @@ object MuF {
   final case class TOption[A](value: A)                              extends MuF[A]
   final case class TEither[A](left: A, right: A)                     extends MuF[A]
   final case class TList[A](value: A)                                extends MuF[A]
-  final case class TMap[A](value: A)                                 extends MuF[A]
+  final case class TMap[A](keyTpe: Option[A], value: A)              extends MuF[A]
   final case class TGeneric[A](generic: A, params: List[A])          extends MuF[A]
+  final case class TContaining[A](values: List[A])                   extends MuF[A]
   final case class TRequired[A](value: A)                            extends MuF[A]
   final case class TCoproduct[A](invariants: NonEmptyList[A])        extends MuF[A]
   final case class TSum[A](name: String, fields: List[String])       extends MuF[A]
@@ -67,9 +69,10 @@ object MuF {
     case (TNamedType(a), TNamedType(b)) => a === b
     case (TOption(a), TOption(b))       => a === b
     case (TList(a), TList(b))           => a === b
-    case (TMap(a), TMap(b))             => a === b
+    case (TMap(k1, a), TMap(k2, b))     => k1 === k2 && a === b
     case (TRequired(a), TRequired(b))   => a === b
 
+    case (TContaining(a), TContaining(b))   => a === b
     case (TEither(l, r), TEither(l2, r2))   => l === l2 && r === r2
     case (TGeneric(g, p), TGeneric(g2, p2)) => g === g2 && p === p2
     case (TCoproduct(i), TCoproduct(i2))    => i === i2
@@ -92,7 +95,7 @@ object MuF {
   def option[A](value: A): MuF[A]                              = TOption(value)
   def either[A](left: A, right: A): MuF[A]                     = TEither(left, right)
   def list[A](value: A): MuF[A]                                = TList(value)
-  def map[A](value: A): MuF[A]                                 = TMap(value)
+  def map[A](maybeKey: Option[A], value: A): MuF[A]            = TMap(maybeKey, value)
   def generic[A](generic: A, params: List[A]): MuF[A]          = TGeneric(generic, params)
   def required[A](value: A): MuF[A]                            = TRequired(value)
   def coproduct[A](invariants: NonEmptyList[A]): MuF[A]        = TCoproduct(invariants)

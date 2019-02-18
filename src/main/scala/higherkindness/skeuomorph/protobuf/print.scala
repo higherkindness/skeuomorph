@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,11 +22,13 @@ import qq.droste._
 object print {
 
   import ProtobufF._
+  import FieldF._
 
-  def printOption(o: Option): String = s"${o.name} = ${o.value}"
+  def printOption(o: OptionValue): String = s"${o.name} = ${o.value}"
 
   def printSchema[T: Basis[ProtobufF, ?]]: Printer[T] = {
     val algebra: Algebra[ProtobufF, String] = Algebra {
+      case TNull()          => "null"
       case TDouble()        => "double"
       case TFloat()         => "float"
       case TInt32()         => "int32"
@@ -43,25 +45,28 @@ object print {
       case TString()        => "string"
       case TBytes()         => "bytes"
       case TNamedType(name) => name
-
-      case TRequired(value) => s"required $value"
-      case TOptional(value) => s"optional $value"
       case TRepeated(value) => s"repeated $value"
+      case TMap(key, value) => s"map<$key, $value>"
+
+      case TFileDescriptor(values, _, packageName) => s"package $packageName; \n ${values.mkString("\n")}"
 
       case TEnum(name, symbols, options, aliases) =>
-        val printOptions = options.map(o => s"option ${o.name} = ${o.value}").mkString("\n")
-        val printSymbols = symbols.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
-        val printAliases = aliases.map({ case (s, i) => s"$s = $i;" }).mkString("\n")
+        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
+        val printSymbols = symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
+        val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         s"""
       |enum $name {
-      |  $printOptions
-      |  $printSymbols
-      |  $printAliases
+      |$printOptions
+      |$printSymbols
+      |$printAliases
       |}
       """.stripMargin
+
       case TMessage(name, fields, reserved) =>
-        val printReserved = reserved.map(l => s"reserved " + l.mkString(", ")).mkString("\n  ")
-        def printOptions(options: List[Option]) =
+        val printReserved: String = reserved
+          .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
+          .mkString("\n  ")
+        def printOptions(options: List[OptionValue]) =
           if (options.isEmpty)
             ""
           else
@@ -69,11 +74,29 @@ object print {
 
         val printFields =
           fields
-            .map(f => s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};")
+            .map {
+              case f: Field[String] =>
+                s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
+              case oneOf: OneOfField[String] =>
+                s"${oneOf.tpe}"
+            }
             .mkString("\n  ")
         s"""
       |message $name {
       |  $printReserved
+      |  $printFields
+      |}
+      """.stripMargin
+
+      case TOneOf(name, fields) =>
+        val printFields =
+          fields
+            .map(f => s"${f.tpe} ${f.name} = ${f.position};")
+            .toList
+            .mkString("\n  ")
+
+        s"""
+      |oneof $name {
       |  $printFields
       |}
       """.stripMargin

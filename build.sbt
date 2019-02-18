@@ -1,11 +1,9 @@
 import microsites._
 import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
 import sbtorgpolicies.model._
-import sbtorgpolicies.runnable.SetSetting
 import sbtorgpolicies.runnable.syntax._
 import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
-import scoverage.ScoverageKeys
 
 val V = new {
   val avro             = "1.8.2"
@@ -18,6 +16,8 @@ val V = new {
   val macroParadise    = "2.1.1"
   val scalacheck       = "1.13.5"
   val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
+  val protoc           = "3.6.0"
+  val protobuf         = "3.6.1"
 }
 
 lazy val skeuomorph = project
@@ -97,9 +97,12 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     %%("cats-laws", V.cats) % Test,
     %%("cats-core", V.cats),
-    "io.higherkindness" %% "droste-core"   % V.droste,
-    "io.higherkindness" %% "droste-macros" % V.droste,
-    "org.apache.avro"   % "avro"           % V.avro,
+    "io.higherkindness"    %% "droste-core"     % V.droste,
+    "io.higherkindness"    %% "droste-macros"   % V.droste,
+    "org.apache.avro"      % "avro"             % V.avro,
+    "com.github.os72"      % "protoc-jar"       % V.protoc,
+    "com.google.protobuf"  % "protobuf-java"    % V.protobuf,
+    %%("cats-effect"),
     %%("circe-core", V.circe),
     %%("scalacheck", V.scalacheck) % Test,
     %%("specs2-core"      , V.specs2)       % Test,

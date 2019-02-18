@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,9 +43,11 @@ object print {
       case TNamedType(name)          => name
       case TOption(value)            => s"Option[$value]"
       case TEither(a, b)             => s"Either[$a, $b]"
-      case TMap(value)               => s"Map[String, $value]"
+      case TMap(Some(key), value)    => s"Map[$key, $value]"
+      case TMap(None, value)         => s"Map[String, $value]" // Compatibility for Avro
       case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
       case TList(value)              => s"List[$value]"
+      case TContaining(values)       => values.mkString("\n")
       case TRequired(value)          => value
       case TCoproduct(invariants) =>
         invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
@@ -83,9 +85,10 @@ object print {
    */
   def opTuple[T](
       op: Service.Operation[T]
-  ): (String, T, T) =
+  ): (String, Service.OperationType[T], Service.OperationType[T]) =
     op match {
-      case Service.Operation(name, request, response) => (name, request, response)
+      case Service.Operation(name, request, response) =>
+        (name, request, response)
     }
 
   /**
@@ -117,18 +120,39 @@ object print {
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
+  def opTpeEither[T](op: Service.OperationType[T], isRequest: Boolean): Either[Either[Either[T, T], T], T] =
+    (op.stream, isRequest) match {
+      case (false, true)  => Left(Left(Left(op.tpe)))
+      case (true, true)   => Left(Left(Right(op.tpe)))
+      case (false, false) => Left(Right(op.tpe))
+      case (true, false)  => Right(op.tpe)
+    }
+
+  def opTpe[T](isRequest: Boolean)(implicit T: Basis[MuF, T]): Printer[Service.OperationType[T]] =
+    (opTypeRequestNoStream >|< opTypeStream >|< opTypeResponseNoStream >|< opTypeStream)
+      .contramap(t => opTpeEither(t, isRequest))
+
+  def opTypeRequestNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
+    Printer(namedTypes[T] >>> schema.print)
+
+  def opTypeResponseNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
+    konst("F[") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+
+  def opTypeStream[T](implicit T: Basis[MuF, T]): Printer[T] =
+    konst("Stream[F, ") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+
   def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
     (
-      (konst("def ") *< string),
-      (konst("(req: ") *< Printer(namedTypes[T] >>> schema.print)),
-      (konst("): ") *< Printer(namedTypes[T] >>> schema.print))
+      konst("  def ") *< string,
+      konst("(req: ") *< opTpe(true),
+      konst("): ") *< opTpe(false)
     ).contramapN(opTuple)
 
   def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
     (
-      (konst("@service(") *< serializationType >* konst(") trait ")),
-      (string >* konst("[F[_]] {") >* newLine),
-      (sepBy(operation, "\n") >* newLine >* konst("}"))
+      konst("@service(") *< serializationType >* konst(") trait "),
+      string >* konst("[F[_]] {") >* newLine,
+      sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)
 
   def option: Printer[(String, String)] =
@@ -138,11 +162,11 @@ object print {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
     (
-      (konst("package ") *< optional(string) >* newLine >* newLine),
+      konst("package ") *< optional(string) >* newLine >* newLine,
       sepBy(option, lineFeed),
-      (konst("object ") *< string >* konst(" { ") >* newLine >* newLine),
-      (sepBy(schema, lineFeed) >* newLine),
-      (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))
+      konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
+      sepBy(schema, lineFeed) >* newLine,
+      sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
     ).contramapN(protoTuple)
   }
 }
