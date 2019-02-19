@@ -1,5 +1,16 @@
 # Changelog
 
+## 02/19/2019 - Version 0.0.4
+
+Release changes:
+
+* add metals & bloop foldesrs to gitignore ([#53](https://github.com/higherkindness/skeuomorph/pull/53))
+* make code more readable by using contramapN ([#25](https://github.com/higherkindness/skeuomorph/pull/25))
+* :tada: use @deriveTraverse annotation in our ADTs ([#27](https://github.com/higherkindness/skeuomorph/pull/27))
+* Protobuf compilation: schema and protocol ([#66](https://github.com/higherkindness/skeuomorph/pull/66))
+* Releases Skeuomorph 0.0.4 ([#71](https://github.com/higherkindness/skeuomorph/pull/71))
+
+
 ## 12/12/2018 - Version 0.0.3
 
 Release changes:
