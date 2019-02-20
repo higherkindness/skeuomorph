@@ -17,8 +17,6 @@
 package higherkindness.skeuomorph
 package mu
 
-import higherkindness.skeuomorph.protobuf
-import higherkindness.skeuomorph.protobuf.ProtobufF
 import higherkindness.skeuomorph.avro
 import qq.droste._
 

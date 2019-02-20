@@ -106,9 +106,10 @@ object Protocol {
 //        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
 //  }
 
-  def fromFreesFProtocol[T, U](proto: mu.Protocol[T])(implicit T: Basis[mu.Type, T], U: Basis[Type, U]): Protocol[U] = {
-    def fromFreestyle: T => U = scheme.cata(fromFreesFSchema.algebra)
-    val services: List[Message[U]] = proto.services
+  def fromFreesFProtocol[T, U](
+      protocol: mu.Protocol[T])(implicit T: Basis[mu.Type, T], U: Basis[Type, U]): Protocol[U] = {
+    def fromMu: T => U = scheme.cata(fromFreesFSchema.algebra)
+    val services: List[Message[U]] = protocol.services
       .filter(_.serializationType == SerializationType.Avro)
       .flatMap { s =>
         s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe)))

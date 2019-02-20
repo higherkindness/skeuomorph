@@ -89,5 +89,4 @@ object Transform {
   //     ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   // }
 
-
 }
