@@ -9,12 +9,3 @@ The maintainers of the project are:
 ## Contributors
 
 These are the people that have contributed to the skeuomorph project:
-
-* [47degfreestyle](https://github.com/47degfreestyle)
-* Francisco Diaz <[franciscodr](https://github.com/franciscodr)>
-* Jesús Martínez <[JesusMtnez](https://github.com/JesusMtnez)>
-* Juan Pedro Moreno <[juanpedromoreno](https://github.com/juanpedromoreno)>
-* Oli <[oli-kitty](https://github.com/oli-kitty)>
-* Pepe García <[pepegar](https://github.com/pepegar)>
-* Rafa Paradela <[rafaparadela](https://github.com/rafaparadela)>
-* Rebecca <[rlmark](https://github.com/rlmark)>
