@@ -1,4 +1,3 @@
-sudo: false
 language: scala
 
 jdk:
@@ -8,13 +7,10 @@ scala:
 - 2.12.8
 - 2.11.12
 
-script:
-- sbt ++$TRAVIS_SCALA_VERSION orgScriptCI
-
-after_success:
-- sbt ++$TRAVIS_SCALA_VERSION orgAfterCISuccess
-
 before_cache:
+- du -h -d 1 $HOME/.ivy2/
+- du -h -d 2 $HOME/.sbt/
+- du -h -d 4 $HOME/.coursier/
 - find $HOME/.sbt -name "*.lock" -type f -delete
 - find $HOME/.ivy2/cache -name "ivydata-*.properties" -type f -delete
 
@@ -24,13 +20,43 @@ cache:
   - "$HOME/.coursier/cache"
   - "$HOME/.sbt"
 
-before_install:
-- if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then openssl aes-256-cbc
-  -K $encrypted_ca54c9c78452_key -iv $encrypted_ca54c9c78452_iv -in secring.gpg.enc -out secring.gpg -d; fi
-- export PATH=${PATH}:./vendor/bundle
-
 install:
 - rvm use 2.3.3 --install --fuzzy
 - gem update --system
 - gem install sass
 - gem install jekyll -v 3.8.3
+
+script:
+  - sbt ++$TRAVIS_SCALA_VERSION orgScriptCI
+
+stages:
+  - test
+  - deploy
+  - microsite
+
+jobs:
+  include:
+    - stage: deploy
+      scala: 2.12.8
+      if: branch = master AND type != pull_request
+      script:
+        - if grep -q "SNAPSHOT" version.sbt; then
+            sbt +publish;
+          else
+            sbt orgUpdateDocFiles;
+            git reset --hard HEAD;
+            git clean -f;
+            git checkout master;
+            git pull origin master;
+            openssl aes-256-cbc -K $encrypted_ca54c9c78452_key -iv $encrypted_ca54c9c78452_iv -in secring.gpg.enc -out secring.gpg -d;
+            sbt release;
+          fi
+    - stage: microsite
+      scala: 2.12.8
+      if: branch = master AND type != pull_request
+      script:
+        - if grep -q "SNAPSHOT" version.sbt; then
+            echo "Skipping microsite publication, snapshot version";
+          else
+            sbt docs/publishMicrosite;
+          fi

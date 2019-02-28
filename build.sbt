@@ -8,15 +8,16 @@ import sbtorgpolicies.templates.badges._
 val V = new {
   val avro             = "1.8.2"
   val betterMonadicFor = "0.2.4"
-  val cats             = "1.5.0"
+  val cats             = "1.6.0"
+  val catsEffect       = "1.2.0"
   val catsScalacheck   = "0.1.0"
-  val circe            = "0.10.1"
+  val circe            = "0.11.1"
   val droste           = "0.6.0"
   val kindProjector    = "0.9.9"
   val macroParadise    = "2.1.1"
   val scalacheck       = "1.13.5"
   val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
-  val protoc           = "3.6.0"
+  val protoc           = "3.6.0.1"
   val protobuf         = "3.6.1"
 }
 
@@ -30,7 +31,6 @@ lazy val docs = project
   .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
-  .settings(sbtMicrositesSettings)
   .settings(noPublishSettings)
   .settings(tutSettings)
   .settings(
@@ -41,6 +41,7 @@ lazy val docs = project
     micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md",
+    micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
       file("readme/README.md") -> ExtraMdFileConfig(
@@ -97,18 +98,18 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     %%("cats-laws", V.cats) % Test,
     %%("cats-core", V.cats),
-    "io.higherkindness"    %% "droste-core"     % V.droste,
-    "io.higherkindness"    %% "droste-macros"   % V.droste,
-    "org.apache.avro"      % "avro"             % V.avro,
-    "com.github.os72"      % "protoc-jar"       % V.protoc,
-    "com.google.protobuf"  % "protobuf-java"    % V.protobuf,
-    %%("cats-effect"),
+    "io.higherkindness"   %% "droste-core"   % V.droste,
+    "io.higherkindness"   %% "droste-macros" % V.droste,
+    "org.apache.avro"     % "avro"           % V.avro,
+    "com.github.os72"     % "protoc-jar"     % V.protoc,
+    "com.google.protobuf" % "protobuf-java"  % V.protobuf,
+    %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
-    %%("scalacheck", V.scalacheck) % Test,
-    %%("specs2-core"      , V.specs2)       % Test,
+    %%("scalacheck", V.scalacheck)    % Test,
+    %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
-    "io.chrisdavenport"     %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll(
-      ExclusionRule(organization="org.scalacheck")
+    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll (
+      ExclusionRule(organization = "org.scalacheck")
     )
   ),
   orgProjectName := "Skeuomorph",
