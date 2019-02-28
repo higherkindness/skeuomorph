@@ -27,7 +27,12 @@ install:
 - gem install jekyll -v 3.8.3
 
 script:
-  - sbt ++$TRAVIS_SCALA_VERSION orgScriptCI
+  - curl -s https://codecov.io/bash > .codecov
+  - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
+  - chmod +x .codecov
+  - if [ $TRAVIS_SCALA_VERSION = "2.12.8" ]; then sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/tut readme/tut; fi
+  - if [ $TRAVIS_SCALA_VERSION = "2.12.8" ]; then ./.codecov -X gcov; fi
+  - if [ $TRAVIS_SCALA_VERSION = "2.11.12" ]; then sbt ++$TRAVIS_SCALA_VERSION clean test; fi
 
 stages:
   - test
@@ -40,6 +45,7 @@ jobs:
       scala: 2.12.8
       if: branch = master AND type != pull_request
       script:
+        - bash <(curl -s https://codecov.io/bash) -t 2a67f0e7-2605-4f25-abab-516ee953a08c
         - if grep -q "SNAPSHOT" version.sbt; then
             sbt +publish;
           else
