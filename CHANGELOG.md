@@ -1,5 +1,12 @@
 # Changelog
 
+## 02/28/2019 - Version 0.0.5
+
+Release changes:
+
+* CI Process & Build Upgrade ([#72](https://github.com/higherkindness/skeuomorph/pull/72))
+
+
 ## 02/19/2019 - Version 0.0.4
 
 Release changes:
