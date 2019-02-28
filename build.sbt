@@ -31,7 +31,6 @@ lazy val docs = project
   .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
-  .settings(sbtMicrositesSettings)
   .settings(noPublishSettings)
   .settings(tutSettings)
   .settings(
@@ -42,6 +41,7 @@ lazy val docs = project
     micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md",
+    micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
       file("readme/README.md") -> ExtraMdFileConfig(
