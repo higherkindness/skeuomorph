@@ -31,7 +31,7 @@ class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
   """
 
   val traverse =
-    checkAll("Traverse[ProtobufF]", TraverseTests[ProtobufF].traverse[Int, Int, Int, Set[Int], Option, Option])
-  val functor  = checkAll("Functor[ProtobufF]", FunctorTests[ProtobufF].functor[Int, Int, String])
-  val foldable = checkAll("Foldable[ProtobufF]", FoldableTests[ProtobufF].foldable[Int, Int])
+    checkAll("Traverse[protobuf.Type]", TraverseTests[protobuf.Type].traverse[Int, Int, Int, Set[Int], Option, Option])
+  val functor  = checkAll("Functor[protobuf.Type]", FunctorTests[protobuf.Type].functor[Int, Int, String])
+  val foldable = checkAll("Foldable[protobuf.Type]", FoldableTests[protobuf.Type].foldable[Int, Int])
 }

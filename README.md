@@ -182,10 +182,10 @@ We can parse and convert them into Scala code as:
 val source = ParseProto.ProtoSource("book.proto", "resources")
 val nativeDescriptor: NativeFile = parseProto[IO].parse(source).unsafeRunSync()
 
-val parseNative: NativeFile => Protocol[Mu[ProtobufF]] = Protocol.fromProto(_)
+val parseNative: NativeFile => Protocol[Mu[protobuf.Type]] = Protocol.fromProto(_)
 
-val parseProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] =
-{ p: Protocol[Mu[ProtobufF]] => mu.Protocol.fromProtobufProto(p) }
+val parseProtocol: Protocol[Mu[protobuf.Type]] => mu.Protocol[Mu[MuF]] =
+{ p: Protocol[Mu[protobuf.Type]] => mu.Protocol.fromProtobufProto(p) }
 
 val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
   higherkindness.skeuomorph.mu.print.proto.print(p)

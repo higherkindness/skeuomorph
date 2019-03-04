@@ -19,7 +19,7 @@ package mu
 
 import cats.implicits._
 import higherkindness.skeuomorph.avro
-import higherkindness.skeuomorph.protobuf.ProtobufF
+import higherkindness.skeuomorph.protobuf
 import qq.droste._
 
 object Transform {
@@ -29,20 +29,20 @@ object Transform {
   /**
    * transform Protobuf schema into Mu schema
    */
-  def transformProto[A]: Trans[ProtobufF, mu.Type, A] = ???
+  def transformProto[A]: Trans[protobuf.Type, mu.Type, A] = ???
   // Trans {
   //   case ProtobufF.TDouble()                  => TDouble()
   //   case ProtobufF.TFloat()                   => TFloat()
   //   case ProtobufF.TInt32()                   => TInt()
   //   case ProtobufF.TInt64()                   => TLong()
-  //   case ProtobufF.TUint32()                  => TInt()
-  //   case ProtobufF.TUint64()                  => TLong()
-  //   case ProtobufF.TSint32()                  => TInt()
-  //   case ProtobufF.TSint64()                  => TLong()
+  //   case ProtobufF.TUInt32()                  => TInt()
+  //   case ProtobufF.TUInt64()                  => TLong()
+  //   case ProtobufF.TSInt32()                  => TInt()
+  //   case ProtobufF.TSInt64()                  => TLong()
   //   case ProtobufF.TFixed32()                 => TInt()
   //   case ProtobufF.TFixed64()                 => TLong()
-  //   case ProtobufF.TSfixed32()                => TInt()
-  //   case ProtobufF.TSfixed64()                => TLong()
+  //   case ProtobufF.TSFixed32()                => TInt()
+  //   case ProtobufF.TSFixed64()                => TLong()
   //   case ProtobufF.TBool()                    => TBoolean()
   //   case ProtobufF.TString()                  => TString()
   //   case ProtobufF.TBytes()                   => TByteArray()
@@ -85,7 +85,7 @@ object Transform {
   //     TRecord(name, fields.map(f => Field(f.name, f.tpe)))
   //   case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
   //   case AvroF.TUnion(options)               => TCoproduct(options)
-  //   case AvroF.TFixed(_, _, _, _) =>
+  //   case AvroF.TNamedFixed(_, _, _, _) =>
   //     ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
   // }
 

@@ -72,9 +72,6 @@ lazy val readme = (project in file("readme"))
   .enablePlugins(TutPlugin)
 
 // check for library updates whenever the project is [re]load
-onLoad in Global := { s =>
-  "dependencyUpdates" :: s
-}
 
 pgpPassphrase := Some(getEnvVar("PGP_PASSPHRASE").getOrElse("").toCharArray)
 pgpPublicRing := file(s"$gpgFolder/pubring.gpg")

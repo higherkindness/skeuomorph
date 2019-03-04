@@ -42,7 +42,7 @@ package object avro {
       TRecord :::
       TEnum :::
       TUnion :::
-      TFixed :::
+      TNamedFixed :::
       TNilK,
     A
   ]
@@ -59,7 +59,7 @@ package object avro {
   implicit val InjRecord: CopK.Inject[TRecord, Type]       = CopK.Inject[TRecord, Type]
   implicit val InjEnum: CopK.Inject[TEnum, Type]           = CopK.Inject[TEnum, Type]
   implicit val InjUnion: CopK.Inject[TUnion, Type]         = CopK.Inject[TUnion, Type]
-  implicit val InjFixed: CopK.Inject[TFixed, Type]         = CopK.Inject[TFixed, Type]
+  implicit val InjFixed: CopK.Inject[TNamedFixed, Type]    = CopK.Inject[TNamedFixed, Type]
 
   object Type {
 
@@ -109,7 +109,7 @@ package object avro {
           "fields" -> Json.arr(fields.map(field2Obj): _*))
       case InjEnum(TEnum(_, _))      => ???
       case InjUnion(TUnion(options)) => Json.arr(options.toList: _*)
-      case InjFixed(TFixed(name, size)) =>
+      case InjFixed(TNamedFixed(name, size)) =>
         Json.obj(
           "type" -> Json.fromString("fixed"),
           "name" -> Json.fromString(name),

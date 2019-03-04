@@ -36,22 +36,22 @@ object instances {
   lazy val sampleBool: Gen[Boolean] = Gen.oneOf(true, false)
 
   def protobufFMessageWithRepeatFields[T](withRepeat: Boolean)(
-      implicit B: Basis[ProtobufF, T]): Gen[ProtobufF.TMessage[T]] = {
+      implicit B: Basis[protobuf.Type, T]): Gen[protobuf.Type.TMessage[T]] = {
 
-    val innerTypes: Gen[ProtobufF[T]] = Gen.oneOf(
+    val innerTypes: Gen[protobuf.Type[T]] = Gen.oneOf(
       List(
         ProtobufF.TDouble[T](),
         ProtobufF.TFloat[T](),
         ProtobufF.TInt32[T](),
         ProtobufF.TInt64[T](),
-        ProtobufF.TUint32[T](),
-        ProtobufF.TUint64[T](),
-        ProtobufF.TSint32[T](),
-        ProtobufF.TSint64[T](),
+        ProtobufF.TUInt32[T](),
+        ProtobufF.TUInt64[T](),
+        ProtobufF.TSInt32[T](),
+        ProtobufF.TSInt64[T](),
         ProtobufF.TFixed32[T](),
         ProtobufF.TFixed64[T](),
-        ProtobufF.TSfixed32[T](),
-        ProtobufF.TSfixed64[T](),
+        ProtobufF.TSFixed32[T](),
+        ProtobufF.TSFixed64[T](),
         ProtobufF.TBool[T](),
         ProtobufF.TString[T](),
         ProtobufF.TBytes[T]()
@@ -69,7 +69,7 @@ object instances {
     for {
       name  <- nonEmptyString
       field <- sampleField
-    } yield ProtobufF.TMessage(name, List(field), List())
+    } yield protobuf.Type.TMessage(name, List(field), List())
   }
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
@@ -228,7 +228,7 @@ object instances {
       ))
   }
 
-  implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[ProtobufF[T]] = {
+  implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] = {
     val genOption: Gen[ProtobufF.OptionValue] = (nonEmptyString, nonEmptyString).mapN(ProtobufF.OptionValue.apply)
     Arbitrary(
       Gen.oneOf(

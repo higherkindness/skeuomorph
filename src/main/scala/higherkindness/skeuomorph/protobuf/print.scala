@@ -17,40 +17,42 @@
 package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.Printer
+import higherkindness.skeuomorph.uast.types._
+import higherkindness.skeuomorph.uast.derivation._
+import higherkindness.skeuomorph.protobuf.types._
+import higherkindness.skeuomorph.compdata.Ann
 import qq.droste._
 
 object print {
 
-  import ProtobufF._
-  import FieldF._
-
   def printOption(o: OptionValue): String = s"${o.name} = ${o.value}"
 
-  def printSchema[T: Basis[ProtobufF, ?]]: Printer[T] = {
-    val algebra: Algebra[ProtobufF, String] = Algebra {
-      case TNull()          => "null"
-      case TDouble()        => "double"
-      case TFloat()         => "float"
-      case TInt32()         => "int32"
-      case TInt64()         => "int64"
-      case TUint32()        => "uint32"
-      case TUint64()        => "uint64"
-      case TSint32()        => "sint32"
-      case TSint64()        => "sint64"
-      case TFixed32()       => "fixed32"
-      case TFixed64()       => "fixed64"
-      case TSfixed32()      => "sfixed32"
-      case TSfixed64()      => "sfixed64"
-      case TBool()          => "bool"
-      case TString()        => "string"
-      case TBytes()         => "bytes"
-      case TNamedType(name) => name
-      case TRepeated(value) => s"repeated $value"
-      case TMap(key, value) => s"map<$key, $value>"
+  def printSchema[T: Basis[Type, ?]]: Printer[T] = {
+    val algebra: Algebra[Type, String] = Algebra {
+      case InjNull(_)                     => "null"
+      case InjDouble(_)                   => "double"
+      case InjFloat(_)                    => "float"
+      case InjInt32(_)                    => "int32"
+      case InjInt64(_)                    => "int64"
+      case InjUint32(_)                   => "uint32"
+      case InjUint64(_)                   => "uint64"
+      case InjSint32(_)                   => "sint32"
+      case InjSint64(_)                   => "sint64"
+      case InjFixed32(_)                  => "fixed32"
+      case InjFixed64(_)                  => "fixed64"
+      case InjSfixed32(_)                 => "sfixed32"
+      case InjSfixed64(_)                 => "sfixed64"
+      case InjBoolean(_)                  => "bool"
+      case InjString(_)                   => "string"
+      case InjByteArray(_)                => "bytes"
+      case InjNamedType(TNamedType(name)) => name
+      case InjList(TList(value))          => s"repeated $value"
+      case InjMap(TMap(key, value))       => s"map<$key, $value>"
 
-      case TFileDescriptor(values, _, packageName) => s"package $packageName; \n ${values.mkString("\n")}"
+      case InjFileDescriptor(TFileDescriptor(values, _, packageName)) =>
+        s"package $packageName; \n ${values.mkString("\n")}"
 
-      case TEnum(name, symbols, options, aliases) =>
+      case InjProtoEnum(TProtoEnum(name, symbols, options, aliases)) =>
         val printOptions = options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
         val printSymbols = symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
@@ -62,7 +64,7 @@ object print {
       |}
       """.stripMargin
 
-      case TMessage(name, fields, reserved) =>
+      case InjMessage(TMessage(name, fields, reserved)) =>
         val printReserved: String = reserved
           .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
           .mkString("\n  ")
@@ -75,12 +77,13 @@ object print {
         val printFields =
           fields
             .map {
-              case f: Field[String] =>
-                s"${f.tpe} ${f.name} = ${f.position}${printOptions(f.options)};"
-              case oneOf: OneOfField[String] =>
-                s"${oneOf.tpe}"
+              case FieldF.InjField(Ann(Field(name, tpe), (position, options, _, _))) =>
+                s"$tpe $name = ${position}${printOptions(options)};"
+              case FieldF.InjOneOfField(Field(_, tpe)) =>
+                s"$tpe"
             }
             .mkString("\n  ")
+
         s"""
       |message $name {
       |  $printReserved
@@ -88,10 +91,14 @@ object print {
       |}
       """.stripMargin
 
-      case TOneOf(name, fields) =>
+      case InjOneOf(TOneOf(name, fields)) =>
         val printFields =
           fields
-            .map(f => s"${f.tpe} ${f.name} = ${f.position};")
+            .collect { case FieldF.InjField(Ann(Field(name, tpe), (position, _, _, _))) => (name, tpe, position) }
+            .map {
+              case (name, tpe, position) =>
+                s"$tpe $name = $position;"
+            }
             .toList
             .mkString("\n  ")
 

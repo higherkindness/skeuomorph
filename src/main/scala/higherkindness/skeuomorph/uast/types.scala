@@ -39,7 +39,7 @@ object types {
   @deriveTraverse final case class TByteArray[A]()
   @deriveTraverse final case class TNamedType[A](name: String)
   @deriveTraverse final case class TMap[A](keys: A, values: A) // sugar over Generic(NamedType("Map"), A, A)
-  @deriveTraverse final case class TFixed[A](name: String, size: Int)
+  @deriveTraverse final case class TNamedFixed[A](name: String, size: Int)
   @deriveTraverse final case class TOption[A](value: A)          // sugar over Generic(NamedType("Option"), A)
   @deriveTraverse final case class TEither[A](left: A, right: A) // sugar over Generic(NamedType("Option"), A)
   @deriveTraverse final case class TList[A](value: A)            // sugar over Generic(NamedType("Option"), A)
@@ -47,6 +47,7 @@ object types {
   @deriveTraverse final case class TRecord[A](name: String, fields: List[Field[A]])
   @deriveTraverse final case class TEnum[A](name: String, symbols: List[String])
   @deriveTraverse final case class TUnion[A](options: NonEmptyList[A])
+  @deriveTraverse final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)
 
   def `null`[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TNull, F]): F[A]         = I.inj(TNull[A]())
   def boolean[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TBoolean, F]): F[A]     = I.inj(TBoolean[A]())
@@ -70,14 +71,17 @@ object types {
     I.inj(TEnum[A](name, symbols))
   def union[F[α] <: CopK[_, α], A](options: NonEmptyList[A])(implicit I: CopK.Inject[TUnion, F]): F[A] =
     I.inj(TUnion[A](options))
-  def fixed[F[α] <: CopK[_, α], A](name: String, size: Int)(implicit I: CopK.Inject[TFixed, F]): F[A] =
-    I.inj(TFixed[A](name, size))
+  def fixed[F[α] <: CopK[_, α], A](name: String, size: Int)(implicit I: CopK.Inject[TNamedFixed, F]): F[A] =
+    I.inj(TNamedFixed[A](name, size))
   def option[F[α] <: CopK[_, α], A](value: A)(implicit I: CopK.Inject[TOption, F]): F[A] = I.inj(TOption[A](value))
   def either[F[α] <: CopK[_, α], A](left: A, right: A)(implicit I: CopK.Inject[TEither, F]): F[A] =
     I.inj(TEither[A](left, right))
   def list[F[α] <: CopK[_, α], A](value: A)(implicit I: CopK.Inject[TList, F]): F[A] = I.inj(TList[A](value))
   def generic[F[α] <: CopK[_, α], A](generic: A, params: List[A])(implicit I: CopK.Inject[TGeneric, F]): F[A] =
     I.inj(TGeneric[A](generic, params))
+  def fileDescriptor[F[α] <: CopK[_, α], A](values: List[A], name: String, `package`: String)(
+      implicit I: CopK.Inject[TFileDescriptor, F]): F[A] =
+    I.inj(TFileDescriptor[A](values, name, `package`))
 
   // def desugarList[F[α] <: CopK[_, α], A](
   //     implicit

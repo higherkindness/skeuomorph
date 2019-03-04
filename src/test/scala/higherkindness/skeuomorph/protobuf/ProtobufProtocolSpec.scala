@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.protobuf
 
 import cats.effect.IO
 import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.protobuf.ProtobufF._
+import higherkindness.skeuomorph.protobuf.protobuf.Type._
 import qq.droste.data.Mu
 import org.specs2.Specification
 import higherkindness.skeuomorph.protobuf.ParseProto._
@@ -38,10 +38,10 @@ class ProtobufProtocolSpec extends Specification {
     val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
     val path                                      = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
     val source                                    = ProtoSource("book.proto", path)
-    val protobufProtocol: Protocol[Mu[ProtobufF]] = parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    val protobufProtocol: Protocol[Mu[protobuf.Type]] = parseProto[IO, Mu[protobuf.Type]].parse(source).unsafeRunSync()
 
-    val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-      p: Protocol[Mu[ProtobufF]] =>
+    val parseProtocol: Protocol[Mu[protobuf.Type]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+      p: Protocol[Mu[protobuf.Type]] =>
         higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(p)
     }
 

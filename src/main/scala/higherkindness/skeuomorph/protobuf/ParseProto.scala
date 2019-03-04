@@ -21,10 +21,13 @@ import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
 import com.github.os72.protocjar.Protoc
-import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.{Label, Type}
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.{Label, Type => ProtoType}
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import com.google.protobuf.DescriptorProtos.UninterpretedOption.NamePart
 import com.google.protobuf.DescriptorProtos._
+import higherkindness.skeuomorph.compdata.Ann
+import higherkindness.skeuomorph.uast.{types => t}
+import higherkindness.skeuomorph.uast.derivation._
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 import java.util
@@ -36,18 +39,17 @@ import scala.collection.JavaConverters._
 
 object ParseProto {
 
-  import ProtobufF._
   import Protocol._
 
   case class ProtoSource(filename: String, path: String)
 
-  implicit def parseProto[F[_], T](implicit T: Embed[ProtobufF, T]): Parser[F, ProtoSource, Protocol[T]] =
+  implicit def parseProto[F[_], T](implicit T: Embed[protobuf.Type, T]): Parser[F, ProtoSource, Protocol[T]] =
     new Parser[F, ProtoSource, Protocol[T]] {
       override def parse(input: ProtoSource)(implicit S: Sync[F]): F[Protocol[T]] =
         runProtoc(input)
     }
 
-  private def runProtoc[F[_]: Sync, T](input: ProtoSource)(implicit T: Embed[ProtobufF, T]): F[Protocol[T]] = {
+  private def runProtoc[F[_]: Sync, T](input: ProtoSource)(implicit T: Embed[protobuf.Type, T]): F[Protocol[T]] = {
     val descriptorFileName = s"${input.filename}.desc"
     val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
@@ -74,7 +76,7 @@ object ParseProto {
     fileInputStream(descriptorFileName).use(fis => Sync[F].delay(FileDescriptorSet.parseFrom(fis)))
 
   private def getTFiles[F[_]: Sync, T](descriptorFileName: String, source: FileDescriptorSet)(
-      implicit T: Embed[ProtobufF, T]
+      implicit T: Embed[protobuf.Type, T]
   ): F[Protocol[T]] = {
     Sync[F].delay {
       fromProto[T](descriptorFileName, source.getFileList.asScala.toList)
@@ -84,7 +86,7 @@ object ParseProto {
   def fromProto[A](
       descriptorFileName: String,
       files: List[FileDescriptorProto]
-  )(implicit A: Embed[ProtobufF, A]): Protocol[A] =
+  )(implicit A: Embed[protobuf.Type, A]): Protocol[A] =
     findDescriptorProto(descriptorFileName, files)
       .map { file =>
         val dependents: List[A] = file.getDependencyList.j2s
@@ -109,32 +111,32 @@ object ParseProto {
     files.find(_.getName == name)
 
   def getDependentValues[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): List[A] =
+      implicit A: Embed[protobuf.Type, A]): List[A] =
     dependent.getMessageTypeList.j2s.map(d => toMessage(d, files)) ++
       dependent.getEnumTypeList.j2s.map(toEnum(_)(A))
 
   def formatName(name: String): String = name.replace(".proto", "")
 
   def toService[A](s: ServiceDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): Service[A] =
+      implicit A: Embed[protobuf.Type, A]): Service[A] =
     Service(s.getName, s.getMethodList.j2s.map(o => toOperation[A](o, files)))
 
   def toOperation[A](o: MethodDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): Protocol.Operation[A] =
+      implicit A: Embed[Type, A]): Protocol.Operation[A] =
     Protocol.Operation(
       name = o.getName,
       request = findMessage(o.getInputType, files)
         .map(msg => toMessage(msg, files))
-        .getOrElse(`null`[A]().embed),
+        .getOrElse(t.`null`[protobuf.Type, A].embed),
       requestStreaming = o.getClientStreaming,
       response = findMessage(o.getOutputType, files)
         .map(msg => toMessage(msg, files))
-        .getOrElse(`null`[A]().embed),
+        .getOrElse(t.`null`[protobuf.Type, A].embed),
       responseStreaming = o.getServerStreaming
     )
 
   def toMessage[A](descriptor: DescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): A = {
+      implicit A: Embed[protobuf.Type, A]): A = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s
     val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.j2s
     val oneOfFields: List[(FieldF[A], List[Int])] =
@@ -145,7 +147,7 @@ object ParseProto {
         .filterNot(f => oneOfNumbers.contains(f.getNumber))
         .map(f => fromFieldDescriptorProto[A](f, descriptor, files))
 
-    message[A](
+    message[protobuf.Type, A](
       name = descriptor.getName,
       fields = fields ++ oneOfFields.map(_._1),
       reserved =
@@ -153,16 +155,15 @@ object ParseProto {
     ).embed
   }
 
-  def toEnum[A](enum: EnumDescriptorProto)(implicit A: Embed[ProtobufF, A]): A = {
+  def toEnum[A](enum: EnumDescriptorProto)(implicit A: Embed[protobuf.Type, A]): A = {
     val (values, aliases) = partitionValuesAliases(enum.getValueList.j2s)
 
-    ProtobufF
-      .enum[A](
+    A.algebra(
+      protoEnum[protobuf.Type, A](
         name = enum.getName,
         symbols = values,
         options = fromFieldOptionsEnum(enum.getOptions),
-        aliases = aliases)
-      .embed
+        aliases = aliases))
   }
 
   def partitionValuesAliases(
@@ -183,13 +184,13 @@ object ParseProto {
   def fromFieldDescriptorProto[A](
       field: FieldDescriptorProto,
       source: DescriptorProto,
-      files: List[FileDescriptorProto])(implicit A: Embed[ProtobufF, A]): FieldF[A] =
+      files: List[FileDescriptorProto])(implicit A: Embed[protobuf.Type, A]): FieldF[A] =
     (field.getLabel.isRepeated, isMap(field, source)) match {
       case (true, false) =>
         FieldF.Field(
           name = field.getName,
+          tpe = t.list[protobuf.Type, A](fromFieldType(field, files)).embed,
           position = field.getNumber,
-          tpe = repeated[A](fromFieldType(field, files)).embed,
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = true,
           isMapField = false
@@ -222,13 +223,13 @@ object ParseProto {
           takeOnlyMapEntries(e.getFieldList.j2s))
 
   def getTMap[A](name: String, source: DescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): A =
+      implicit A: Embed[protobuf.Type, A]): A =
     (for {
       maybeMsg <- source.getNestedTypeList.j2s
         .find(e => e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.j2s))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
-    } yield map(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)).embed)
+    } yield t.map[Type, A](fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)).embed)
       .getOrElse(throw ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
@@ -245,52 +246,53 @@ object ParseProto {
       fields: List[FieldDescriptorProto],
       source: DescriptorProto,
       files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]
+      implicit A: Embed[protobuf.Type, A]
   ): List[(FieldF[A], List[Int])] = oneOfFields.zipWithIndex.map {
     case (oneof, index) => {
-      val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
+      val oneOfFields: NonEmptyList[FieldF[A]] = NonEmptyList
         .fromList(
           fields
             .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
             .map(fromFieldDescriptorProto(_, source, files))
-            .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b })
+            .collect { case b @ FieldF.InjField(_) => b })
         .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-      val fOneOf = oneOf(name = oneof.getName, fields = oneOfFields)
-      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed), oneOfFields.map(_.position).toList)
+      val fOneOf    = oneOf[protobuf.Type, A](name = oneof.getName, fields = oneOfFields)
+      val positions = oneOfFields.map({ case FieldF.InjField(Ann(_, (pos, _, _, _))) => pos }).toList
+      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed), positions)
     }
   }
 
   def fromFieldTypeCoalgebra(
       field: FieldDescriptorProto,
       files: List[FileDescriptorProto]
-  ): Coalgebra[ProtobufF, Type] = Coalgebra {
-    case Type.TYPE_BOOL     => TBool()
-    case Type.TYPE_BYTES    => TBytes()
-    case Type.TYPE_DOUBLE   => TDouble()
-    case Type.TYPE_FIXED32  => TFixed32()
-    case Type.TYPE_FIXED64  => TFixed64()
-    case Type.TYPE_FLOAT    => TFloat()
-    case Type.TYPE_INT32    => TInt32()
-    case Type.TYPE_INT64    => TInt64()
-    case Type.TYPE_SFIXED32 => TFixed32()
-    case Type.TYPE_SFIXED64 => TFixed64()
-    case Type.TYPE_SINT32   => TInt32()
-    case Type.TYPE_SINT64   => TInt64()
-    case Type.TYPE_STRING   => TString()
-    case Type.TYPE_UINT32   => TInt32()
-    case Type.TYPE_UINT64   => TInt64()
-    case Type.TYPE_ENUM =>
+  ): Coalgebra[Type, ProtoType] = Coalgebra {
+    case ProtoType.TYPE_BOOL     => t.boolean[Type, ProtoType]
+    case ProtoType.TYPE_BYTES    => t.byteArray[Type, ProtoType]
+    case ProtoType.TYPE_DOUBLE   => t.double[Type, ProtoType]
+    case ProtoType.TYPE_FIXED32  => fixed32[Type, ProtoType]
+    case ProtoType.TYPE_FIXED64  => fixed64[Type, ProtoType]
+    case ProtoType.TYPE_FLOAT    => t.float[Type, ProtoType]
+    case ProtoType.TYPE_INT32    => int32[Type, ProtoType]
+    case ProtoType.TYPE_INT64    => int64[Type, ProtoType]
+    case ProtoType.TYPE_SFIXED32 => fixed32[Type, ProtoType]
+    case ProtoType.TYPE_SFIXED64 => fixed64[Type, ProtoType]
+    case ProtoType.TYPE_SINT32   => int32[Type, ProtoType]
+    case ProtoType.TYPE_SINT64   => int64[Type, ProtoType]
+    case ProtoType.TYPE_STRING   => t.string[Type, ProtoType]
+    case ProtoType.TYPE_UINT32   => int32[Type, ProtoType]
+    case ProtoType.TYPE_UINT64   => int64[Type, ProtoType]
+    case ProtoType.TYPE_ENUM =>
       findEnum(field.getTypeName, files)
-        .fold[ProtobufF[Type]](TNull())(e => TNamedType(e.getName))
-    case Type.TYPE_MESSAGE =>
+        .fold[protobuf.Type[ProtoType]](t.`null`[Type, ProtoType])(e => t.namedType[Type, ProtoType](e.getName))
+    case ProtoType.TYPE_MESSAGE =>
       findMessage(field.getTypeName, files)
-        .fold[ProtobufF[Type]](TNull())(e => TNamedType(e.getName))
-    case _ => TNull()
+        .fold[protobuf.Type[ProtoType]](t.`null`[Type, ProtoType])(e => t.namedType[Type, ProtoType](e.getName))
+    case _ => t.`null`[Type, ProtoType]
   }
 
   def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): A =
+      implicit A: Embed[protobuf.Type, A]): A =
     scheme.ana(fromFieldTypeCoalgebra(field, files)).apply(field.getType)
 
   def fromFieldOptionsMsg(options: FieldOptions): List[OptionValue] =

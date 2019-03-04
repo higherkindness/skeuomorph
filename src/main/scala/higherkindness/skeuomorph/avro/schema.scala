@@ -127,7 +127,7 @@
 //      symbols: List[String])
 //      extends AvroF[A]
 //  final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
-//  final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
+//  final case class TNamedFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
 //
 //  implicit def eqAvroF[T: Eq]: Eq[AvroF[T]] = Eq.instance {
 //    case (TNull(), TNull())                             => true
@@ -142,7 +142,7 @@
 //    case (TArray(i), TArray(i2))                        => i === i2
 //    case (TMap(v), TMap(v2))                            => v === v2
 //    case (TUnion(o), TUnion(o2))                        => o === o2
-//    case (TFixed(n, ns, a, s), TFixed(n2, ns2, a2, s2)) => n === n2 && ns === ns2 && a === a2 && s === s2
+//    case (TNamedFixed(n, ns, a, s), TNamedFixed(n2, ns2, a2, s2)) => n === n2 && ns === ns2 && a === a2 && s === s2
 //    case (TRecord(n, ns, al, d, f), TRecord(n2, ns2, al2, d2, f2)) =>
 //      n === n2 && ns === ns2 && al === al2 && d === d2 && f === f2
 //    case (TEnum(n, ns, al, d, s), TEnum(n2, ns2, al2, d2, s2)) =>
@@ -179,7 +179,7 @@
 //      symbols: List[String]): AvroF[A]             = TEnum(name, namespace, aliases, doc, symbols)
 //  def union[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
 //  def fixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int): AvroF[A] =
-//    TFixed(name, namespace, aliases, size)
+//    TNamedFixed(name, namespace, aliases, size)
 //
 //  /**
 //   * Convert org.apache.avro.Schema to skeuomorph.avro.Schema
@@ -219,7 +219,7 @@
 ////          NonEmptyList.fromListUnsafe(types)
 ////        )
 ////      case Type.FIXED =>
-////        AvroF.TFixed(
+////        AvroF.TNamedFixed(
 ////          sch.getName,
 ////          Option(sch.getNamespace),
 ////          sch.getAliases.asScala.toList,
@@ -268,7 +268,7 @@
 ////      withDoc
 ////    case TEnum(_, _, _, _, _) => ???
 ////    case TUnion(options)      => Json.arr(options.toList: _*)
-////    case TFixed(name, _, _, size) =>
+////    case TNamedFixed(name, _, _, size) =>
 ////      Json.obj(
 ////        "type" -> Json.fromString("fixed"),
 ////        "name" -> Json.fromString(name),
