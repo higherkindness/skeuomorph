@@ -59,10 +59,16 @@ object instances {
       ))
   }
 
+  val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
+
   implicit def arbOptionValue: Arbitrary[OptionValue] =
     Arbitrary((nonEmptyString, nonEmptyString).mapN(OptionValue.apply))
-
-  val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
+  implicit val arb32       = Arbitrary(Gen.const(protobuf.annotations.`32`()))
+  implicit val arb64       = Arbitrary(Gen.const(protobuf.annotations.`64`()))
+  implicit val arbSigned   = Arbitrary(Gen.const(protobuf.annotations.Signed()))
+  implicit val arbUnsigned = Arbitrary(Gen.const(protobuf.annotations.Unsigned()))
+  implicit val arbFixed    = Arbitrary(Gen.const(protobuf.annotations.Fixed()))
+  implicit val arbReserved = Arbitrary(Gen.listOf(Gen.listOf(nonEmptyString)).map(protobuf.annotations.Reserved.apply))
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
     val primitives: Gen[Schema] = Gen.oneOf(
@@ -111,6 +117,6 @@ object instances {
   implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[avro.Type[T]] =
     implicitly[Delay[Arbitrary, avro.Type]].apply(T)
 
-  // implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] =
-  //   implicitly[Delay[Arbitrary, protobuf.Type]].apply(T)
+  implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] =
+    implicitly[Delay[Arbitrary, protobuf.Type]].apply(T)
 }

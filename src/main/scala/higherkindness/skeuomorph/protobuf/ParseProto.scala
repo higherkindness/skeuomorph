@@ -150,8 +150,8 @@ object ParseProto {
     message[protobuf.Type, A](
       name = descriptor.getName,
       fields = fields ++ oneOfFields.map(_._1),
-      reserved =
-        descriptor.getReservedRangeList.j2s.map(range => (range.getStart until range.getEnd).map(_.toString).toList)
+      reserved = annotations.Reserved(
+        descriptor.getReservedRangeList.j2s.map(range => (range.getStart until range.getEnd).map(_.toString).toList))
     ).embed
   }
 

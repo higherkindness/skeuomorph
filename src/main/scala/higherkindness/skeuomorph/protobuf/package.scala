@@ -47,8 +47,7 @@ package object protobuf {
   type TFixed64[A]   = Ann[TInt, (annotations.Fixed, annotations.`64`), A]
   type TSFixed32[A]  = Ann[TInt, (annotations.Fixed, annotations.Signed, annotations.`32`), A]
   type TSFixed64[A]  = Ann[TInt, (annotations.Fixed, annotations.Signed, annotations.`64`), A]
-  // change annotation to use annotations.reserved
-  type TMessage[A] = Ann[TRecord, List[List[String]], A]
+  type TMessage[A]   = Ann[TRecord, annotations.Reserved, A]
 
   type Type[A] = CopK[
     TNull :::
@@ -102,7 +101,7 @@ package object protobuf {
   val InjMessage: CopK.Inject[TMessage, Type]               = CopK.Inject[TMessage, Type]
   val InjFileDescriptor: CopK.Inject[TFileDescriptor, Type] = CopK.Inject[TFileDescriptor, Type]
 
-  def message[F[α] <: ACopK[α], A](name: String, fields: List[FieldF[A]], reserved: List[List[String]])(
+  def message[F[α] <: ACopK[α], A](name: String, fields: List[FieldF[A]], reserved: annotations.Reserved)(
       implicit I: TMessage :<<: F) = I.inj(Ann(TRecord(name, fields), reserved))
   def protoEnum[F[α] <: ACopK[α], A](
       name: String,
