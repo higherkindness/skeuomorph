@@ -19,6 +19,7 @@ package uast
 
 import higherkindness.skeuomorph.compdata._
 import higherkindness.skeuomorph.uast.types._
+import higherkindness.skeuomorph.protobuf.TProtoEnum
 
 import cats.~>
 import cats.implicits._
@@ -92,6 +93,16 @@ object arbitraries {
       Arbitrary(
         (instances.nonEmptyString, Gen.listOf(arbitraryFieldF(aa).arbitrary).map(NonEmptyList.fromListUnsafe))
           .mapN(TOneOf.apply)))
+  implicit val arbitraryTProtoEnum: Delay[Arbitrary, TProtoEnum] =
+    λ[Arbitrary ~> (Arbitrary ∘ TProtoEnum)#λ](
+      aa =>
+        Arbitrary((
+          instances.nonEmptyString,
+          Gen.listOf((instances.nonEmptyString, Arbitrary.arbInt.arbitrary).tupled),
+          Gen.listOf(instances.arbOptionValue.arbitrary),
+          Gen.listOf((instances.nonEmptyString, Arbitrary.arbInt.arbitrary).tupled)
+        ).mapN((name, fields, options, aliases) =>
+          Ann(TEnum(name, fields.map(_._1)), protobuf.annotations.EnumAnnotation(fields.map(_._2), options, aliases)))))
 
   implicit def arbitraryAnnotated[F[_], E](
       implicit F: Delay[Arbitrary, F],

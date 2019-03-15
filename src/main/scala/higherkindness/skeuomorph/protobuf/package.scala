@@ -22,21 +22,33 @@ import iota.TListK.:::
 import higherkindness.skeuomorph.uast.{:<<:, ACopK}
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.compdata.Ann
-import higherkindness.skeuomorph.protobuf.types._
 
 package object protobuf {
 
-  type TInt32[A]    = Ann[TInt, `32`, A]
-  type TInt64[A]    = Ann[TInt, `64`, A]
-  type TUInt32[A]   = Ann[TInt, (Unsigned, `32`), A]
-  type TUInt64[A]   = Ann[TInt, (Unsigned, `64`), A]
-  type TSInt32[A]   = Ann[TInt, (Signed, `32`), A]
-  type TSInt64[A]   = Ann[TInt, (Signed, `64`), A]
-  type TFixed32[A]  = Ann[TInt, (Fixed, `32`), A]
-  type TFixed64[A]  = Ann[TInt, (Fixed, `64`), A]
-  type TSFixed32[A] = Ann[TInt, (Fixed, Signed, `32`), A]
-  type TSFixed64[A] = Ann[TInt, (Fixed, Signed, `64`), A]
-  type TMessage[A]  = Ann[TRecord, List[List[String]], A]
+  // annotations used for adding extra data to uast types
+  object annotations {
+    final case class `32`()
+    final case class `64`()
+    final case class Signed()
+    final case class Unsigned()
+    final case class Fixed()
+    final case class Reserved(reserved: List[List[String]])
+    final case class EnumAnnotation(fieldNumbers: List[Int], options: List[OptionValue], aliases: List[(String, Int)])
+  }
+
+  type TProtoEnum[A] = Ann[TEnum, annotations.EnumAnnotation, A]
+  type TInt32[A]     = Ann[TInt, annotations.`32`, A]
+  type TInt64[A]     = Ann[TInt, annotations.`64`, A]
+  type TUInt32[A]    = Ann[TInt, (annotations.Unsigned, annotations.`32`), A]
+  type TUInt64[A]    = Ann[TInt, (annotations.Unsigned, annotations.`64`), A]
+  type TSInt32[A]    = Ann[TInt, (annotations.Signed, annotations.`32`), A]
+  type TSInt64[A]    = Ann[TInt, (annotations.Signed, annotations.`64`), A]
+  type TFixed32[A]   = Ann[TInt, (annotations.Fixed, annotations.`32`), A]
+  type TFixed64[A]   = Ann[TInt, (annotations.Fixed, annotations.`64`), A]
+  type TSFixed32[A]  = Ann[TInt, (annotations.Fixed, annotations.Signed, annotations.`32`), A]
+  type TSFixed64[A]  = Ann[TInt, (annotations.Fixed, annotations.Signed, annotations.`64`), A]
+  // change annotation to use annotations.reserved
+  type TMessage[A] = Ann[TRecord, List[List[String]], A]
 
   type Type[A] = CopK[
     TNull :::
@@ -96,18 +108,24 @@ package object protobuf {
       name: String,
       symbols: List[(String, Int)],
       options: List[OptionValue],
-      aliases: List[(String, Int)])(implicit I: TProtoEnum :<<: F) =
-    I.inj(TProtoEnum[A](name, symbols, options, aliases))
-  def int32[F[α] <: ACopK[α], A](implicit I: TInt32 :<<: F)     = I.inj(Ann(TInt[A](), `32`()))
-  def int64[F[α] <: ACopK[α], A](implicit I: TInt64 :<<: F)     = I.inj(Ann(TInt[A](), `64`()))
-  def sint32[F[α] <: ACopK[α], A](implicit I: TSInt32 :<<: F)   = I.inj(Ann(TInt[A](), (Signed(), `32`())))
-  def sint64[F[α] <: ACopK[α], A](implicit I: TSInt64 :<<: F)   = I.inj(Ann(TInt[A](), (Signed(), `64`())))
-  def uint32[F[α] <: ACopK[α], A](implicit I: TUInt32 :<<: F)   = I.inj(Ann(TInt[A](), (Unsigned(), `32`())))
-  def uint64[F[α] <: ACopK[α], A](implicit I: TUInt64 :<<: F)   = I.inj(Ann(TInt[A](), (Unsigned(), `64`())))
-  def fixed32[F[α] <: ACopK[α], A](implicit I: TFixed32 :<<: F) = I.inj(Ann(TInt[A](), (Fixed(), `32`())))
-  def fixed64[F[α] <: ACopK[α], A](implicit I: TFixed64 :<<: F) = I.inj(Ann(TInt[A](), (Fixed(), `64`())))
+      aliases: List[(String, Int)])(implicit I: TProtoEnum :<<: F): F[A] =
+    I.inj(Ann(TEnum(name, symbols.map(_._1)), annotations.EnumAnnotation(symbols.map(_._2), options, aliases)))
+  def int32[F[α] <: ACopK[α], A](implicit I: TInt32 :<<: F) = I.inj(Ann(TInt[A](), annotations.`32`()))
+  def int64[F[α] <: ACopK[α], A](implicit I: TInt64 :<<: F) = I.inj(Ann(TInt[A](), annotations.`64`()))
+  def sint32[F[α] <: ACopK[α], A](implicit I: TSInt32 :<<: F) =
+    I.inj(Ann(TInt[A](), (annotations.Signed(), annotations.`32`())))
+  def sint64[F[α] <: ACopK[α], A](implicit I: TSInt64 :<<: F) =
+    I.inj(Ann(TInt[A](), (annotations.Signed(), annotations.`64`())))
+  def uint32[F[α] <: ACopK[α], A](implicit I: TUInt32 :<<: F) =
+    I.inj(Ann(TInt[A](), (annotations.Unsigned(), annotations.`32`())))
+  def uint64[F[α] <: ACopK[α], A](implicit I: TUInt64 :<<: F) =
+    I.inj(Ann(TInt[A](), (annotations.Unsigned(), annotations.`64`())))
+  def fixed32[F[α] <: ACopK[α], A](implicit I: TFixed32 :<<: F) =
+    I.inj(Ann(TInt[A](), (annotations.Fixed(), annotations.`32`())))
+  def fixed64[F[α] <: ACopK[α], A](implicit I: TFixed64 :<<: F) =
+    I.inj(Ann(TInt[A](), (annotations.Fixed(), annotations.`64`())))
   def sfixed32[F[α] <: ACopK[α], A](implicit I: TSFixed32 :<<: F) =
-    I.inj(Ann(TInt[A](), (Fixed(), Signed(), `32`())))
+    I.inj(Ann(TInt[A](), (annotations.Fixed(), annotations.Signed(), annotations.`32`())))
   def sfixed64[F[α] <: ACopK[α], A](implicit I: TSFixed64 :<<: F) =
-    I.inj(Ann(TInt[A](), (Fixed(), Signed(), `64`())))
+    I.inj(Ann(TInt[A](), (annotations.Fixed(), annotations.Signed(), annotations.`64`())))
 }

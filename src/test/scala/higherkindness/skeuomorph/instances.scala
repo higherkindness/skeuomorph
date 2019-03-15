@@ -27,6 +27,7 @@ import higherkindness.skeuomorph.uast.ArbitraryKMaterializer
 import higherkindness.skeuomorph.uast.arbitraries._
 //import higherkindness.skeuomorph.protobuf._
 import higherkindness.skeuomorph.avro.types._
+import higherkindness.skeuomorph.protobuf.OptionValue
 import qq.droste.Delay
 
 import scala.collection.JavaConverters._
@@ -57,6 +58,9 @@ object instances {
         )
       ))
   }
+
+  implicit def arbOptionValue: Arbitrary[OptionValue] =
+    Arbitrary((nonEmptyString, nonEmptyString).mapN(OptionValue.apply))
 
   val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
 

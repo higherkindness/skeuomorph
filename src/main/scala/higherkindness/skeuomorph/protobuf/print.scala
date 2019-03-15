@@ -19,7 +19,6 @@ package higherkindness.skeuomorph.protobuf
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.uast.derivation._
-import higherkindness.skeuomorph.protobuf.types._
 import higherkindness.skeuomorph.compdata.Ann
 import qq.droste._
 
@@ -52,9 +51,9 @@ object print {
       case InjFileDescriptor(TFileDescriptor(values, _, packageName)) =>
         s"package $packageName; \n ${values.mkString("\n")}"
 
-      case InjProtoEnum(TProtoEnum(name, symbols, options, aliases)) =>
+      case InjProtoEnum(Ann(TEnum(name, symbolNames), annotations.EnumAnnotation(symbolNumbers, options, aliases))) =>
         val printOptions = options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
-        val printSymbols = symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
+        val printSymbols = symbolNames.zip(symbolNumbers).map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         s"""
       |enum $name {
