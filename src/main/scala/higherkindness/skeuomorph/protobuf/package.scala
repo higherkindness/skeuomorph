@@ -16,8 +16,6 @@
 
 package higherkindness.skeuomorph
 
-import cats.data.NonEmptyList
-
 import iota.{TList => _, _}
 import iota.TListK.:::
 
@@ -101,8 +99,6 @@ package object protobuf {
       options: List[OptionValue],
       aliases: List[(String, Int)])(implicit I: TProtoEnum :<<: F) =
     I.inj(TProtoEnum[A](name, symbols, options, aliases))
-  def oneOf[F[α] <: ACopK[α], A](name: String, fields: NonEmptyList[FieldF[A]])(implicit I: TOneOf :<<: F): F[A] =
-    I.inj(TOneOf(name, fields))
   def int32[F[α] <: ACopK[α], A](implicit I: TInt32 :<<: F)     = I.inj(Ann(TInt[A](), `32`()))
   def int64[F[α] <: ACopK[α], A](implicit I: TInt64 :<<: F)     = I.inj(Ann(TInt[A](), `64`()))
   def sint32[F[α] <: ACopK[α], A](implicit I: TSInt32 :<<: F)   = I.inj(Ann(TInt[A](), (Signed(), `32`())))

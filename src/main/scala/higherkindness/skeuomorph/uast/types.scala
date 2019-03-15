@@ -188,6 +188,12 @@ object types {
       def apply[A](eq: Eq[A]): Eq[TFileDescriptor[A]] = Eq.fromUniversalEquals
     }
   }
+  @deriveTraverse final case class TOneOf[A](name: String, fields: NonEmptyList[FieldF[A]])
+  object TOneOf {
+    implicit def eqTOneOf: Delay[Eq, TOneOf] = new (Eq ~> (Eq ∘ TOneOf)#λ) {
+      def apply[A](eq: Eq[A]): Eq[TOneOf[A]] = Eq.fromUniversalEquals
+    }
+  }
 
   def `null`[F[α] <: ACopK[α], A](implicit I: TNull :<<: F): F[A]         = I.inj(TNull[A]())
   def boolean[F[α] <: ACopK[α], A](implicit I: TBoolean :<<: F): F[A]     = I.inj(TBoolean[A]())
@@ -224,6 +230,8 @@ object types {
   def fileDescriptor[F[α] <: ACopK[α], A](values: List[A], name: String, `package`: String)(
       implicit I: TFileDescriptor :<<: F): F[A] =
     I.inj(TFileDescriptor[A](values, name, `package`))
+  def oneOf[F[α] <: ACopK[α], A](name: String, fields: NonEmptyList[FieldF[A]])(implicit I: TOneOf :<<: F): F[A] =
+    I.inj(TOneOf(name, fields))
 
   type FieldF[A] = CopK[
     Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?] :::

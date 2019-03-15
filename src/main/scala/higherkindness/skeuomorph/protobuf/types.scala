@@ -19,7 +19,6 @@ package higherkindness.skeuomorph.protobuf
 import higherkindness.skeuomorph.uast.types.FieldF
 import higherkindness.skeuomorph.uast.derivation._
 import qq.droste.macros.deriveTraverse
-import cats.data.NonEmptyList
 import cats.instances.list._
 
 object types {
@@ -38,6 +37,5 @@ object types {
       options: List[OptionValue],
       aliases: List[(String, Int)])
   @deriveTraverse final case class TMessage[A](name: String, fields: List[FieldF[A]], reserved: List[List[String]])
-  @deriveTraverse final case class TOneOf[A](name: String, fields: NonEmptyList[FieldF[A]])
 
 }

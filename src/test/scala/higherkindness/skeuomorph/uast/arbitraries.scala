@@ -87,6 +87,11 @@ object arbitraries {
       aa =>
         Arbitrary(
           (Gen.listOf(aa.arbitrary), instances.nonEmptyString, instances.nonEmptyString).mapN(TFileDescriptor.apply)))
+  implicit val arbitraryTOneOf: Delay[Arbitrary, TOneOf] = λ[Arbitrary ~> (Arbitrary ∘ TOneOf)#λ](
+    aa =>
+      Arbitrary(
+        (instances.nonEmptyString, Gen.listOf(arbitraryFieldF(aa).arbitrary).map(NonEmptyList.fromListUnsafe))
+          .mapN(TOneOf.apply)))
 
   implicit def arbitraryAnnotated[F[_], E](
       implicit F: Delay[Arbitrary, F],

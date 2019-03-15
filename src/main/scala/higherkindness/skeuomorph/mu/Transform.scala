@@ -46,7 +46,7 @@ object Transform {
     case protobuf.InjByteArray(_)             => byteArray[mu.Type, A]
     case protobuf.InjNamedType(TNamedType(n)) => namedType[mu.Type, A](n)
     case protobuf.InjList(TList(value))       => list[mu.Type, A](value)
-    case protobuf.InjOneOf(protobuf.types.TOneOf(_, values)) =>
+    case protobuf.InjOneOf(TOneOf(_, values)) =>
       union[mu.Type, A](values.map(FieldF.fieldType.get))
     case protobuf.InjMap(TMap(k, v)) => map[mu.Type, A](k, v)
     case protobuf.InjProtoEnum(protobuf.types.TProtoEnum(name, symbols, _, _)) =>

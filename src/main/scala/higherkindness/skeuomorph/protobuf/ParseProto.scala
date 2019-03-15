@@ -257,7 +257,7 @@ object ParseProto {
             .collect { case b @ t.FieldF.InjProtobufField(_) => b })
         .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-      val fOneOf    = oneOf[protobuf.Type, A](name = oneof.getName, fields = oneOfFields)
+      val fOneOf    = t.oneOf[protobuf.Type, A](name = oneof.getName, fields = oneOfFields)
       val positions = oneOfFields.map({ case t.FieldF.InjProtobufField(Ann(_, (pos, _, _, _))) => pos }).toList
       (t.FieldF.SimpleField(name = oneof.getName, tpe = fOneOf.embed), positions)
     }
