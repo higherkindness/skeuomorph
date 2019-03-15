@@ -14,57 +14,59 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.avro
+// package higherkindness.skeuomorph.avro
 
-import higherkindness.skeuomorph.instances._
+// import higherkindness.skeuomorph.uast.types._
+// import higherkindness.skeuomorph.uast.derivation._
+// import higherkindness.skeuomorph.compdata.Ann
+// import higherkindness.skeuomorph.instances._
 
-import org.apache.avro.Schema
-import org.scalacheck._
-import org.specs2._
-import qq.droste._
+// import org.apache.avro.Schema
+// import org.scalacheck._
+// import org.specs2._
+// import qq.droste._
 
-import scala.collection.JavaConverters._
+// import scala.collection.JavaConverters._
 
-class AvroSpec extends Specification with ScalaCheck {
+// class AvroSpec extends Specification with ScalaCheck {
 
-  def is = s2"""
-  Avro Schema
+//   def is = s2"""
+//   Avro Schema
 
-  It should be possible to create a Schema from org.apache.avro.Schema. $convertSchema
+//   It should be possible to create a Schema from org.apache.Schema. $convertSchema
 
-  It should be possible to create a Protocol from org.apache.avro.Protocol. $convertProtocol
-  """
+//   It should be possible to create a Protocol from org.apache.Protocol. $convertProtocol
+//   """
 
-  def convertSchema = Prop.forAll { (schema: Schema) =>
-    val test = scheme.hylo(checkSchema(schema), AvroF.fromAvro)
+//   def convertSchema = Prop.forAll { (schema: Schema) =>
+//     val test = scheme.hylo(checkSchema(schema), Type.fromAvro)
 
-    test(schema)
-  }
+//     test(schema)
+//   }
 
-  def convertProtocol = todo
+//   def convertProtocol = todo
 
-  def checkSchema(sch: Schema): Algebra[AvroF, Boolean] = Algebra {
-    case AvroF.TNull()    => sch.getType should_== Schema.Type.NULL
-    case AvroF.TBoolean() => sch.getType should_== Schema.Type.BOOLEAN
-    case AvroF.TInt()     => sch.getType should_== Schema.Type.INT
-    case AvroF.TLong()    => sch.getType should_== Schema.Type.LONG
-    case AvroF.TFloat()   => sch.getType should_== Schema.Type.FLOAT
-    case AvroF.TDouble()  => sch.getType should_== Schema.Type.DOUBLE
-    case AvroF.TBytes()   => sch.getType should_== Schema.Type.BYTES
-    case AvroF.TString()  => sch.getType should_== Schema.Type.STRING
+//   def checkSchema(sch: Schema): Algebra[Type, Boolean] = Algebra {
+//     case InjNull(_)      => sch.getType should_== Schema.Type.NULL
+//     case InjBoolean(_)   => sch.getType should_== Schema.Type.BOOLEAN
+//     case InjInt(_)       => sch.getType should_== Schema.Type.INT
+//     case InjLong(_)      => sch.getType should_== Schema.Type.LONG
+//     case InjFloat(_)     => sch.getType should_== Schema.Type.FLOAT
+//     case InjDouble(_)    => sch.getType should_== Schema.Type.DOUBLE
+//     case InjByteArray(_) => sch.getType should_== Schema.Type.BYTES
+//     case InjString(_)    => sch.getType should_== Schema.Type.STRING
 
-    case AvroF.TNamedType(_) => false
-    case AvroF.TArray(_)     => sch.getType should_== Schema.Type.ARRAY
-    case AvroF.TMap(_)       => sch.getType should_== Schema.Type.MAP
-    case AvroF.TRecord(name, namespace, _, doc, fields) =>
-      (sch.getName should_== name)
-        .and(sch.getNamespace should_== namespace.getOrElse(""))
-        .and(sch.getDoc should_== doc.getOrElse(""))
-        .and(sch.getFields.asScala.toList.map(f => (f.name, f.doc)) should_== fields.map(f =>
-          (f.name, f.doc.getOrElse(""))))
+//     case InjNamedType(_)                      => false
+//     case InjList(_)                           => sch.getType should_== Schema.Type.ARRAY
+//     case InjMap(_)                            => sch.getType should_== Schema.Type.MAP
+//     case InjAvroRecord(Ann(TRecord(_, _), _)) =>
+//       // (sch.getName should_== name)
+//       //   .and(sch.getFields.asScala.toList.map(f => (f.name, f.schema.getType)) should_== fields.map(f =>
+//       //     (f.name, f.doc.getOrElse(""))))
+//       true
 
-    case AvroF.TEnum(_, _, _, _, _) => true
-    case AvroF.TUnion(_)            => true
-    case AvroF.TNamedFixed(_, _, _, _)   => true
-  }
-}
+//     case InjEnum(_)  => true
+//     case InjUnion(_) => true
+//     case InjFixed(_) => true
+//   }
+// }

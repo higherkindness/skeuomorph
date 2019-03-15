@@ -17,76 +17,58 @@
 package higherkindness.skeuomorph
 package mu
 
+import higherkindness.skeuomorph.uast.types._
+import higherkindness.skeuomorph.compdata.Ann
 import cats.implicits._
-import higherkindness.skeuomorph.avro
-import higherkindness.skeuomorph.protobuf
 import qq.droste._
 
 object Transform {
 
-//  import MuF._
-
   /**
    * transform Protobuf schema into Mu schema
    */
-  def transformProto[A]: Trans[protobuf.Type, mu.Type, A] = ???
-  // Trans {
-  //   case ProtobufF.TDouble()                  => TDouble()
-  //   case ProtobufF.TFloat()                   => TFloat()
-  //   case ProtobufF.TInt32()                   => TInt()
-  //   case ProtobufF.TInt64()                   => TLong()
-  //   case ProtobufF.TUInt32()                  => TInt()
-  //   case ProtobufF.TUInt64()                  => TLong()
-  //   case ProtobufF.TSInt32()                  => TInt()
-  //   case ProtobufF.TSInt64()                  => TLong()
-  //   case ProtobufF.TFixed32()                 => TInt()
-  //   case ProtobufF.TFixed64()                 => TLong()
-  //   case ProtobufF.TSFixed32()                => TInt()
-  //   case ProtobufF.TSFixed64()                => TLong()
-  //   case ProtobufF.TBool()                    => TBoolean()
-  //   case ProtobufF.TString()                  => TString()
-  //   case ProtobufF.TBytes()                   => TByteArray()
-  //   case ProtobufF.TNamedType(name)           => TNamedType(name)
-  //   case ProtobufF.TOptional(value)           => TOption(value)
-  //   case ProtobufF.TRepeated(value)           => TList(value)
-  //   case ProtobufF.TRequired(value)           => TRequired(value)
-  //   case ProtobufF.TEnum(name, symbols, _, _) => TSum(name, symbols.map(_._1))
-  //   case ProtobufF.TMessage(name, fields, _)  => TRecord(name, fields.map(f => Field(f.name, f.tpe)))
-  // }
+  def transformProto[A]: Trans[protobuf.Type, mu.Type, A] = Trans {
+    case protobuf.InjNull(_)                  => `null`[mu.Type, A]
+    case protobuf.InjDouble(_)                => double[mu.Type, A]
+    case protobuf.InjFloat(_)                 => float[mu.Type, A]
+    case protobuf.InjInt32(_)                 => int[mu.Type, A]
+    case protobuf.InjInt64(_)                 => long[mu.Type, A]
+    case protobuf.InjUint32(_)                => int[mu.Type, A]
+    case protobuf.InjUint64(_)                => long[mu.Type, A]
+    case protobuf.InjSint32(_)                => int[mu.Type, A]
+    case protobuf.InjSint64(_)                => long[mu.Type, A]
+    case protobuf.InjFixed32(_)               => int[mu.Type, A]
+    case protobuf.InjFixed64(_)               => long[mu.Type, A]
+    case protobuf.InjSfixed32(_)              => int[mu.Type, A]
+    case protobuf.InjSfixed64(_)              => long[mu.Type, A]
+    case protobuf.InjBoolean(_)               => boolean[mu.Type, A]
+    case protobuf.InjString(_)                => string[mu.Type, A]
+    case protobuf.InjByteArray(_)             => byteArray[mu.Type, A]
+    case protobuf.InjNamedType(TNamedType(n)) => namedType[mu.Type, A](n)
+    case protobuf.InjList(TList(value))       => list[mu.Type, A](value)
+    case protobuf.InjOneOf(protobuf.types.TOneOf(_, values)) =>
+      union[mu.Type, A](values.map(FieldF.fieldType.get))
+    case protobuf.InjMap(TMap(k, v)) => map[mu.Type, A](k, v)
+    case protobuf.InjProtoEnum(protobuf.types.TProtoEnum(name, symbols, _, _)) =>
+      enum[mu.Type, A](name, symbols.map(_._1))
+    case protobuf.InjMessage(protobuf.types.TMessage(name, fields, _)) =>
+      record[mu.Type, A](name, fields)
+    case protobuf.InjFileDescriptor(TFileDescriptor(values, _, _)) => containing[mu.Type, A](values)
+  }
 
   def transformAvro[A]: TransM[Option, avro.Type, mu.Type, A] = TransM {
-    case avro.InjNull(a)      => mu.InjNull(a).some
-    case avro.InjBoolean(a)   => mu.InjBoolean(a).some
-    case avro.InjInt(a)       => mu.InjInt(a).some
-    case avro.InjLong(a)      => mu.InjLong(a).some
-    case avro.InjFloat(a)     => mu.InjFloat(a).some
-    case avro.InjDouble(a)    => mu.InjDouble(a).some
-    case avro.InjByteArray(a) => mu.InjByteArray(a).some
-    case avro.InjString(a)    => mu.InjString(a).some
-    case avro.InjMap(a)       => mu.InjMap(a).some
-    case avro.InjRecord(a)    => mu.InjRecord(a).some
-    case avro.InjEnum(a)      => mu.InjEnum(a).some
-    case avro.InjUnion(a)     => mu.InjUnion(a).some
-    case avro.InjFixed(_)     => none[mu.Type[A]]
+    case avro.InjNull(a)               => mu.InjNull(a).some
+    case avro.InjBoolean(a)            => mu.InjBoolean(a).some
+    case avro.InjInt(a)                => mu.InjInt(a).some
+    case avro.InjLong(a)               => mu.InjLong(a).some
+    case avro.InjFloat(a)              => mu.InjFloat(a).some
+    case avro.InjDouble(a)             => mu.InjDouble(a).some
+    case avro.InjByteArray(a)          => mu.InjByteArray(a).some
+    case avro.InjString(a)             => mu.InjString(a).some
+    case avro.InjMap(a)                => mu.InjMap(a).some
+    case avro.InjAvroRecord(Ann(a, _)) => mu.InjRecord(a).some
+    case avro.InjEnum(a)               => mu.InjEnum(a).some
+    case avro.InjUnion(a)              => mu.InjUnion(a).some
+    case avro.InjFixed(_)              => none[mu.Type[A]]
   }
-  //Trans {
-  //   case AvroF.TNull()          => TNull()
-  //   case AvroF.TBoolean()       => TBoolean()
-  //   case AvroF.TInt()           => TInt()
-  //   case AvroF.TLong()          => TLong()
-  //   case AvroF.TFloat()         => TFloat()
-  //   case AvroF.TDouble()        => TDouble()
-  //   case AvroF.TBytes()         => TByteArray()
-  //   case AvroF.TString()        => TString()
-  //   case AvroF.TNamedType(name) => TNamedType(name)
-  //   case AvroF.TArray(item)     => TList(item)
-  //   case AvroF.TMap(values)     => TMap(values)
-  //   case AvroF.TRecord(name, _, _, _, fields) =>
-  //     TRecord(name, fields.map(f => Field(f.name, f.tpe)))
-  //   case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
-  //   case AvroF.TUnion(options)               => TCoproduct(options)
-  //   case AvroF.TNamedFixed(_, _, _, _) =>
-  //     ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
-  // }
-
 }

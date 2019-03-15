@@ -14,84 +14,84 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.protobuf
+//package higherkindness.skeuomorph.protobuf
 
-import cats.effect.IO
-import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.protobuf.protobuf.Type._
-import qq.droste.data.Mu
-import org.specs2.Specification
-import higherkindness.skeuomorph.protobuf.ParseProto._
-import qq.droste.data.Mu._
+// import cats.effect.IO
+// import higherkindness.skeuomorph.mu.MuF
+// import higherkindness.skeuomorph.protobuf.protobuf.Type._
+// import qq.droste.data.Mu
+// import org.specs2.Specification
+// import higherkindness.skeuomorph.protobuf.ParseProto._
+// import qq.droste.data.Mu._
 
-class ProtobufProtocolSpec extends Specification {
+// class ProtobufProtocolSpec extends Specification {
 
-  def is = s2"""
-  Protobuf Protocol
+//   def is = s2"""
+//   Protobuf Protocol
 
-  It should be possible to print a protocol from a Proto file. $printProtobufProtocol
+//   It should be possible to print a protocol from a Proto file. $printProtobufProtocol
 
-  """
+//   """
 
-  def printProtobufProtocol = {
+//   def printProtobufProtocol = {
 
-    val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
-    val path                                      = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
-    val source                                    = ProtoSource("book.proto", path)
-    val protobufProtocol: Protocol[Mu[protobuf.Type]] = parseProto[IO, Mu[protobuf.Type]].parse(source).unsafeRunSync()
+//     val currentDirectory: String                      = new java.io.File(".").getCanonicalPath
+//     val path                                          = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
+//     val source                                        = ProtoSource("book.proto", path)
+//     val protobufProtocol: Protocol[Mu[protobuf.Type]] = parseProto[IO, Mu[protobuf.Type]].parse(source).unsafeRunSync()
 
-    val parseProtocol: Protocol[Mu[protobuf.Type]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-      p: Protocol[Mu[protobuf.Type]] =>
-        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(p)
-    }
+//     val parseProtocol: Protocol[Mu[protobuf.Type]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+//       p: Protocol[Mu[protobuf.Type]] =>
+//         higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(p)
+//     }
 
-    val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
-      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        higherkindness.skeuomorph.mu.print.proto.print(p)
-    }
+//     val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
+//       p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+//         higherkindness.skeuomorph.mu.print.proto.print(p)
+//     }
 
-    val result = (parseProtocol andThen printProtocol)(protobufProtocol)
+//     val result = (parseProtocol andThen printProtocol)(protobufProtocol)
 
-    result.clean must beEqualTo(expectation.clean)
+//     result.clean must beEqualTo(expectation.clean)
 
-  }
+//   }
 
-  val expectation =
-    """package com.book
-      |
-      |object book {
-      |
-      |@message final case class Author(name: String, nick: String)
-      |@message final case class Book(isbn: Long, title: String, author: List[Author], binding_type: BindingType)
-      |@message final case class GetBookRequest(isbn: Long)
-      |@message final case class GetBookViaAuthor(author: Author)
-      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Genre], payment_method: Cop[Long :: Int :: String :: Book:: TNil])
-      |
-      |sealed trait Genre
-      |object Genre {
-      |  case object UNKNOWN extends Genre
-      |  case object SCIENCE_FICTION extends Genre
-      |  case object POETRY extends Genre
-      |}
-      |
-      |
-      |sealed trait BindingType
-      |object BindingType {
-      |  case object HARDCOVER extends BindingType
-      |  case object PAPERBACK extends BindingType
-      |}
-      |
-      |@service(Protobuf) trait BookService[F[_]] {
-      |  def GetBook(req: GetBookRequest): F[Book]
-      |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
-      |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
-      |  def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
-      |}
-      |
-      |}""".stripMargin
+//   val expectation =
+//     """package com.book
+//       |
+//       |object book {
+//       |
+//       |@message final case class Author(name: String, nick: String)
+//       |@message final case class Book(isbn: Long, title: String, author: List[Author], binding_type: BindingType)
+//       |@message final case class GetBookRequest(isbn: Long)
+//       |@message final case class GetBookViaAuthor(author: Author)
+//       |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Genre], payment_method: Cop[Long :: Int :: String :: Book:: TNil])
+//       |
+//       |sealed trait Genre
+//       |object Genre {
+//       |  case object UNKNOWN extends Genre
+//       |  case object SCIENCE_FICTION extends Genre
+//       |  case object POETRY extends Genre
+//       |}
+//       |
+//       |
+//       |sealed trait BindingType
+//       |object BindingType {
+//       |  case object HARDCOVER extends BindingType
+//       |  case object PAPERBACK extends BindingType
+//       |}
+//       |
+//       |@service(Protobuf) trait BookService[F[_]] {
+//       |  def GetBook(req: GetBookRequest): F[Book]
+//       |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
+//       |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
+//       |  def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
+//       |}
+//       |
+//       |}""".stripMargin
 
-  implicit class StringOps(self: String) {
-    def clean: String = self.replaceAll("\\s", "")
-  }
+//   implicit class StringOps(self: String) {
+//     def clean: String = self.replaceAll("\\s", "")
+//   }
 
-}
+// }

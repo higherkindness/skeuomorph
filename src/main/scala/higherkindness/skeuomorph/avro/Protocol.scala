@@ -19,9 +19,14 @@ package higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.mu.SerializationType
 import higherkindness.skeuomorph.uast.derivation._
+import higherkindness.skeuomorph.uast.types._
+
+import cats.implicits._
+import cats.data.NonEmptyList
 import io.circe.Json
 import org.apache.avro.{Schema, Protocol => AvroProtocol}
 import qq.droste._
+import qq.droste.syntax.embed._
 
 import scala.collection.JavaConverters._
 
@@ -77,49 +82,46 @@ object Protocol {
     )
   }
 
-  def fromFreesFSchema[T](implicit T: Basis[Type, T]): Trans[mu.Type, Type, T] = ???
-
-//  def fromFreesFSchema[T](implicit T: Basis[Type, T]): Trans[mu.Type, Type, T] = Trans {
-//    case MuF.TNull()                => AvroF.`null`()
-//    case MuF.TDouble()              => AvroF.double()
-//    case MuF.TFloat()               => AvroF.float()
-//    case MuF.TInt()                 => AvroF.int()
-//    case MuF.TLong()                => AvroF.long()
-//    case MuF.TBoolean()             => AvroF.boolean()
-//    case MuF.TString()              => AvroF.string()
-//    case MuF.TByteArray()           => AvroF.bytes()
-//    case MuF.TNamedType(name)       => AvroF.namedType(name)
-//    case MuF.TOption(value)         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
-//    case MuF.TEither(left, right)   => AvroF.union(NonEmptyList(left, List(right)))
-//    case MuF.TList(value)           => AvroF.array(value)
-//    case MuF.TMap(value)            => AvroF.map(value)
-//    case MuF.TGeneric(_, _)         => ??? // WAT
-//    case MuF.TRequired(t)           => T.coalgebra(t)
-//    case MuF.TCoproduct(invariants) => AvroF.union(invariants)
-//    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields)
-//    case MuF.TRecord(name, fields) =>
-//      TRecord(
-//        name,
-//        none[String],
-//        Nil,
-//        none[String],
-//        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
-//  }
+  def fromMuSchema[T](implicit T: Basis[Type, T]): TransM[Option, mu.Type, Type, T] = TransM {
+    case mu.InjNull(_)                      => `null`[Type, T].some
+    case mu.InjDouble(_)                    => double[Type, T].some
+    case mu.InjFloat(_)                     => float[Type, T].some
+    case mu.InjInt(_)                       => int[Type, T].some
+    case mu.InjLong(_)                      => long[Type, T].some
+    case mu.InjBoolean(_)                   => boolean[Type, T].some
+    case mu.InjString(_)                    => string[Type, T].some
+    case mu.InjByteArray(_)                 => byteArray[Type, T].some
+    case mu.InjNamedType(TNamedType(name))  => namedType[Type, T](name).some
+    case mu.InjOption(TOption(value))       => union[Type, T](NonEmptyList(`null`[Type, T].embed, List(value))).some
+    case mu.InjEither(TEither(left, right)) => union[Type, T](NonEmptyList(left, List(right))).some
+    case mu.InjList(TList(value))           => list[Type, T](value).some
+    case mu.InjMap(TMap(_, value))          => map[Type, T](string[Type, T].embed, value).some
+    case mu.InjGeneric(_)                   => none[Type[T]]
+    case mu.InjUnion(TUnion(invariants))    => union[Type, T](invariants).some
+    case mu.InjEnum(TEnum(name, fields)) =>
+      enum[Type, T](name, fields).some
+    case mu.InjRecord(TRecord(name, fields)) =>
+      avroRecord[Type, T](name, none[String], List.empty[String], none[String], fields).some
+  }
 
   def fromFreesFProtocol[T, U](
-      protocol: mu.Protocol[T])(implicit T: Basis[mu.Type, T], U: Basis[Type, U]): Protocol[U] = {
-    def fromMu: T => U = scheme.cata(fromFreesFSchema.algebra)
-    val services: List[Message[U]] = protocol.services
-      .filter(_.serializationType == SerializationType.Avro)
-      .flatMap { s =>
-        s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe)))
-      }
+      protocol: mu.Protocol[T])(implicit T: Basis[mu.Type, T], U: Basis[Type, U]): Option[Protocol[U]] = {
+    def fromMu: T => Option[U] = scheme.cataM(fromMuSchema.algebra)
+    val services: Option[List[Message[U]]] =
+      protocol.services
+        .filter(_.serializationType == SerializationType.Avro)
+        .flatTraverse { s =>
+          s.operations.traverse[Option, Message[U]](op =>
+            (op.name.some, fromMu(op.request.tpe), fromMu(op.response.tpe)).mapN(Message.apply))
+        }
 
-    Protocol(
-      protocol.name,
-      protocol.pkg,
-      protocol.declarations.map(fromMu),
-      services
-    )
+    (services, protocol.declarations.traverse(fromMu)).mapN(
+      (s, decls) =>
+        Protocol(
+          protocol.name,
+          protocol.pkg,
+          decls,
+          s
+      ))
   }
 }

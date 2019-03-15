@@ -21,7 +21,8 @@ import cats.data.NonEmptyList
 import iota.{TList => _, _}
 import iota.TListK.:::
 
-import higherkindness.skeuomorph.uast.types.{Field => TField, _}
+import higherkindness.skeuomorph.uast.{:<<:, ACopK}
+import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.compdata.Ann
 import higherkindness.skeuomorph.protobuf.types._
 
@@ -37,29 +38,6 @@ package object protobuf {
   type TFixed64[A]  = Ann[TInt, (Fixed, `64`), A]
   type TSFixed32[A] = Ann[TInt, (Fixed, Signed, `32`), A]
   type TSFixed64[A] = Ann[TInt, (Fixed, Signed, `64`), A]
-
-  type FieldF[A] = CopK[
-    Ann[TField, (Int, List[OptionValue], Boolean, Boolean), ?] :::
-      TField :::
-      TNilK,
-    A
-  ]
-
-  object FieldF {
-    val InjField      = CopK.Inject[Ann[TField, (Int, List[OptionValue], Boolean, Boolean), ?], FieldF]
-    val InjOneOfField = CopK.Inject[TField, FieldF]
-
-    def Field[A](
-        name: String,
-        tpe: A,
-        position: Int,
-        options: List[OptionValue],
-        isRepeated: Boolean,
-        isMapField: Boolean): FieldF[A] =
-      InjField.inj(Ann(TField[A](name, tpe), (position, options, isRepeated, isMapField)))
-
-    def OneOfField[A](name: String, tpe: A): FieldF[A] = InjOneOfField.inj(TField(name, tpe))
-  }
 
   type Type[A] = CopK[
     TNull :::
@@ -115,27 +93,26 @@ package object protobuf {
   val InjMessage: CopK.Inject[TMessage, Type]               = CopK.Inject[TMessage, Type]
   val InjFileDescriptor: CopK.Inject[TFileDescriptor, Type] = CopK.Inject[TFileDescriptor, Type]
 
-  def message[F[α] <: CopK[_, α], A](name: String, fields: List[FieldF[A]], reserved: List[List[String]])(
-      implicit I: CopK.Inject[TMessage, F]) = I.inj(TMessage(name, fields, reserved))
-  def protoEnum[F[α] <: CopK[_, α], A](
+  def message[F[α] <: ACopK[α], A](name: String, fields: List[FieldF[A]], reserved: List[List[String]])(
+      implicit I: TMessage :<<: F) = I.inj(TMessage(name, fields, reserved))
+  def protoEnum[F[α] <: ACopK[α], A](
       name: String,
       symbols: List[(String, Int)],
       options: List[OptionValue],
-      aliases: List[(String, Int)])(implicit I: CopK.Inject[TProtoEnum, F]) =
+      aliases: List[(String, Int)])(implicit I: TProtoEnum :<<: F) =
     I.inj(TProtoEnum[A](name, symbols, options, aliases))
-  def oneOf[F[α] <: CopK[_, α], A](name: String, fields: NonEmptyList[FieldF[A]])(
-      implicit I: CopK.Inject[TOneOf, F]): F[A] =
+  def oneOf[F[α] <: ACopK[α], A](name: String, fields: NonEmptyList[FieldF[A]])(implicit I: TOneOf :<<: F): F[A] =
     I.inj(TOneOf(name, fields))
-  def int32[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TInt32, F])     = I.inj(Ann(TInt[A](), `32`()))
-  def int64[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TInt64, F])     = I.inj(Ann(TInt[A](), `64`()))
-  def sint32[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TSInt32, F])   = I.inj(Ann(TInt[A](), (Signed(), `32`())))
-  def sint64[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TSInt64, F])   = I.inj(Ann(TInt[A](), (Signed(), `64`())))
-  def uint32[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TUInt32, F])   = I.inj(Ann(TInt[A](), (Unsigned(), `32`())))
-  def uint64[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TUInt64, F])   = I.inj(Ann(TInt[A](), (Unsigned(), `64`())))
-  def fixed32[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TFixed32, F]) = I.inj(Ann(TInt[A](), (Fixed(), `32`())))
-  def fixed64[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TFixed64, F]) = I.inj(Ann(TInt[A](), (Fixed(), `64`())))
-  def sfixed32[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TSFixed32, F]) =
+  def int32[F[α] <: ACopK[α], A](implicit I: TInt32 :<<: F)     = I.inj(Ann(TInt[A](), `32`()))
+  def int64[F[α] <: ACopK[α], A](implicit I: TInt64 :<<: F)     = I.inj(Ann(TInt[A](), `64`()))
+  def sint32[F[α] <: ACopK[α], A](implicit I: TSInt32 :<<: F)   = I.inj(Ann(TInt[A](), (Signed(), `32`())))
+  def sint64[F[α] <: ACopK[α], A](implicit I: TSInt64 :<<: F)   = I.inj(Ann(TInt[A](), (Signed(), `64`())))
+  def uint32[F[α] <: ACopK[α], A](implicit I: TUInt32 :<<: F)   = I.inj(Ann(TInt[A](), (Unsigned(), `32`())))
+  def uint64[F[α] <: ACopK[α], A](implicit I: TUInt64 :<<: F)   = I.inj(Ann(TInt[A](), (Unsigned(), `64`())))
+  def fixed32[F[α] <: ACopK[α], A](implicit I: TFixed32 :<<: F) = I.inj(Ann(TInt[A](), (Fixed(), `32`())))
+  def fixed64[F[α] <: ACopK[α], A](implicit I: TFixed64 :<<: F) = I.inj(Ann(TInt[A](), (Fixed(), `64`())))
+  def sfixed32[F[α] <: ACopK[α], A](implicit I: TSFixed32 :<<: F) =
     I.inj(Ann(TInt[A](), (Fixed(), Signed(), `32`())))
-  def sfixed64[F[α] <: CopK[_, α], A](implicit I: CopK.Inject[TSFixed64, F]) =
+  def sfixed64[F[α] <: ACopK[α], A](implicit I: TSFixed64 :<<: F) =
     I.inj(Ann(TInt[A](), (Fixed(), Signed(), `64`())))
 }

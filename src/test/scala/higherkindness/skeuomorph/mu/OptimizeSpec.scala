@@ -14,52 +14,53 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+//package higherkindness.skeuomorph.mu
 
-import org.scalacheck.Prop
-import org.specs2.{ScalaCheck, Specification}
-import qq.droste._
-import qq.droste.data._
-import higherkindness.skeuomorph.mu.MuF.TCoproduct
-import higherkindness.skeuomorph.mu.Optimize._
+// import org.scalacheck.Prop
+// import org.specs2.{ScalaCheck, Specification}
+// import qq.droste._
+// import qq.droste.data._
+// import higherkindness.skeuomorph.uast.types._
+// import higherkindness.skeuomorph.mu.Optimize._
 
-class OptimizeSpec extends Specification with ScalaCheck {
+// class OptimizeSpec extends Specification with ScalaCheck {
 
-  import higherkindness.skeuomorph.instances._
+//   import higherkindness.skeuomorph.instances._
 
-  def is =
-    s2"""
-  mu Optimize
+//   def is =
+//     s2"""
+//   mu Optimize
 
-  It should convert a TCoproduct into a TOption. $convertCoproduct2Option
+//   It should convert a TCoproduct into a TOption. $convertCoproduct2Option
 
-  It should convert a TCoproduct into a TEither. $convertCoproduct2Either
-  """
+//   It should convert a TCoproduct into a TEither. $convertCoproduct2Either
+//   """
 
-  def convertCoproduct2Option: Prop = Prop.forAll(muCoproductWithTNullGen[Mu[MuF]]) { coproduct: TCoproduct[Mu[MuF]] =>
-    val transformation: Mu[MuF] = knownCoproductTypesTrans[Mu[MuF]].algebra.run(coproduct)
+//   def convertCoproduct2Option: Prop = Prop.forAll(muCoproductWithTNullGen[Fix[Type]]) {
+//     coproduct: TCoproduct[Fix[Type]] =>
+//       val transformation: Fix[Type] = knownCoproductTypesTrans[Type, Fix[Type]].algebra.run(coproduct)
 
-    val test = scheme.hylo(checkOptionalValue, Project[MuF, Mu[MuF]].coalgebra)
+//       val test = scheme.hylo(checkOptionalValue, Project[Type, Fix[Type]].coalgebra)
 
-    test(transformation)
-  }
+//       test(transformation)
+//   }
 
-  def convertCoproduct2Either: Prop = Prop.forAll(muCoproductWithoutTNullGen[Mu[MuF]]) {
-    coproduct: TCoproduct[Mu[MuF]] =>
-      val transformation: Mu[MuF] = knownCoproductTypesTrans[Mu[MuF]].algebra.run(coproduct)
+//   def convertCoproduct2Either: Prop = Prop.forAll(muCoproductWithoutTNullGen[Fix[Type]]) {
+//     coproduct: TCoproduct[Fix[Type]] =>
+//       val transformation: Fix[Type] = knownCoproductTypesTrans[Fix[Type]].algebra.run(coproduct)
 
-      val test = scheme.hylo(checkEitherValue, Project[MuF, Mu[MuF]].coalgebra)
+//       val test = scheme.hylo(checkEitherValue, Project[Type, Fix[Type]].coalgebra)
 
-      test(transformation)
-  }
+//       test(transformation)
+//   }
 
-  def checkEitherValue: Algebra[MuF, Boolean] = Algebra[MuF, Boolean] {
-    case MuF.TEither(_, _) => true
-    case _                 => false
-  }
+//   def checkEitherValue: Algebra[Type, Boolean] = Algebra[Type, Boolean] {
+//     case Type.TEither(_, _) => true
+//     case _                  => false
+//   }
 
-  def checkOptionalValue: Algebra[MuF, Boolean] = Algebra[MuF, Boolean] {
-    case MuF.TOption(_) => true
-    case _              => false
-  }
-}
+//   def checkOptionalValue: Algebra[Type, Boolean] = Algebra[Type, Boolean] {
+//     case Type.TOption(_) => true
+//     case _               => false
+//   }
+// }

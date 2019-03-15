@@ -16,6 +16,7 @@
 
 package higherkindness.skeuomorph.protobuf
 
+import higherkindness.skeuomorph.uast.types.FieldF
 import higherkindness.skeuomorph.uast.derivation._
 import qq.droste.macros.deriveTraverse
 import cats.data.NonEmptyList

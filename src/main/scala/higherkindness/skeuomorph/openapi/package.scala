@@ -21,7 +21,7 @@ import iota.{TList => _, _}
 import iota.TListK.:::
 import qq.droste.Algebra
 
-import uast.types._
+import higherkindness.skeuomorph.uast.types._
 
 package object openapi {
 
@@ -70,8 +70,9 @@ package object openapi {
       case InjRecord(TRecord(name, properties)) =>
         Json.obj(
           name -> Json.obj(
-            "type"       -> Json.fromString("object"),
-            "properties" -> Json.obj(properties.map(prop => prop.name -> prop.tpe): _*)
+            "type" -> Json.fromString("object"),
+            "properties" -> Json.obj(
+              properties.map(prop => FieldF.fieldName.get(prop) -> FieldF.fieldType.get(prop)): _*)
             //          "required"   -> Json.fromValues(required.map(Json.fromString))
           )
         )

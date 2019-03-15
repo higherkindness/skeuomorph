@@ -14,6 +14,7 @@ val V = new {
   val circe            = "0.11.1"
   val droste           = "0.6.0"
   val kindProjector    = "0.9.9"
+  val monocle          = "1.5.1-cats"
   val macroParadise    = "2.1.1"
   val scalacheck       = "1.13.5"
   val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
@@ -95,7 +96,8 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     %%("cats-laws", V.cats) % Test,
     %%("cats-core", V.cats),
-    "io.higherkindness"   %% "droste-core"   % V.droste,
+    "com.github.julien-truffaut" %% "monocle-core" % V.monocle,
+    "io.higherkindness"   %% "droste-core"   % V.droste, 
     "io.higherkindness"   %% "droste-macros" % V.droste,
     "org.apache.avro"     % "avro"           % V.avro,
     "com.github.os72"     % "protoc-jar"     % V.protoc,

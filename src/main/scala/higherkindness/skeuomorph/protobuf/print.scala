@@ -77,9 +77,9 @@ object print {
         val printFields =
           fields
             .map {
-              case FieldF.InjField(Ann(Field(name, tpe), (position, options, _, _))) =>
+              case FieldF.InjProtobufField(Ann(Field(name, tpe), (position, options, _, _))) =>
                 s"$tpe $name = ${position}${printOptions(options)};"
-              case FieldF.InjOneOfField(Field(_, tpe)) =>
+              case FieldF.InjSimpleField(Field(_, tpe)) =>
                 s"$tpe"
             }
             .mkString("\n  ")
@@ -94,7 +94,9 @@ object print {
       case InjOneOf(TOneOf(name, fields)) =>
         val printFields =
           fields
-            .collect { case FieldF.InjField(Ann(Field(name, tpe), (position, _, _, _))) => (name, tpe, position) }
+            .collect {
+              case FieldF.InjProtobufField(Ann(Field(name, tpe), (position, _, _, _))) => (name, tpe, position)
+            }
             .map {
               case (name, tpe, position) =>
                 s"$tpe $name = $position;"

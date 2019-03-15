@@ -18,6 +18,8 @@ package higherkindness.skeuomorph
 
 import iota._
 
+import qq.droste.Delay
+
 package object uast {
 
   def mkInject[F[_], LL <: TListK](i: Int): CopK.Inject[F, CopK[LL, ?]] = {
@@ -31,4 +33,5 @@ package object uast {
   type ACopK[a]                     = CopK[_, a]
   type :<<:[F[_], G[a] <: ACopK[a]] = CopK.Inject[F, G]
 
+  type ~~>[F[_], G[_]] = Delay[F, G]
 }

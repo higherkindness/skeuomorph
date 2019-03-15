@@ -17,7 +17,9 @@
 package higherkindness.skeuomorph
 package mu
 
+import cats.implicits._
 import higherkindness.skeuomorph.avro
+import higherkindness.skeuomorph.uast.derivation._
 import qq.droste._
 
 sealed trait SerializationType extends Product with Serializable
@@ -40,26 +42,22 @@ object Protocol {
    * create a [[higherkindness.skeuomorph.mu.Service]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
   def fromAvroProtocol[T, U](
-      proto: avro.Protocol[T])(implicit T: Basis[avro.Type, T], U: Basis[mu.Type, U]): Protocol[U] =
-    ???
-  // {
-  //   val toFreestyle: T => U = scheme.cata(transformAvro[U].algebra)
-  //   val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
-  //     msg =>
-  //       Service.Operation(
-  //         msg.name,
-  //         toFreestyle(msg.request),
-  //         toFreestyle(msg.response)
-  //     )
+      proto: avro.Protocol[T])(implicit T: Basis[avro.Type, T], U: Basis[mu.Type, U]): Option[Protocol[U]] = {
+    val toFreestyle: T => Option[U] = scheme.cataM(Transform.transformAvro[U].algebra)
+    val toOperation: avro.Protocol.Message[T] => Option[Service.Operation[U]] =
+      msg => {
+        (toFreestyle(msg.request), toFreestyle(msg.response)) mapN { (req, resp) =>
+          Service.Operation(
+            msg.name,
+            Service.OperationType(req, false),
+            Service.OperationType(resp, false)
+          )
+        }
+      }
 
-  //   Protocol(
-  //     proto.name,
-  //     proto.namespace,
-  //     Nil,
-  //     proto.types.map(toFreestyle),
-  //     List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
-  //   )
-  // }
+    (proto.messages.traverse(toOperation), proto.types.traverse(toFreestyle)).mapN((ops, types) =>
+      Protocol(proto.name, proto.namespace, Nil, types, List(Service(proto.name, SerializationType.Avro, ops))))
+  }
 }
 
 final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])

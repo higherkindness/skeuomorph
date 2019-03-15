@@ -48,29 +48,4 @@ object Protocol {
       response: T,
       responseStreaming: Boolean
   )
-
-  // def fromProto[T](protocol: Protocol)(implicit T: Embed[protobuf.Type, T]): Protocol[T] = {
-  //   val toprotobuf.Type: NativeDescriptor => T = scheme.ana(fromProtobuf)
-
-  //   def toService(s: NativeService): Service[T] =
-  //     Service[T](s.name, s.operations.map(toOperation))
-
-  //   def toOperation(o: NativeOperation): Operation[T] =
-  //     Operation[T](
-  //       name = o.name,
-  //       request = toprotobuf.Type(o.request),
-  //       requestStreaming = o.requestStreaming,
-  //       response = toprotobuf.Type(o.response),
-  //       responseStreaming = o.responseStreaming
-  //     )
-
-  //   Protocol[T](
-  //     name = protocol.name,
-  //     pkg = protocol.`package`,
-  //     options = Nil,
-  //     declarations = protocol.values.map(m => toProtobufF(m)),
-  //     services = protocol.services.map(s => toService(s))
-  //   )
-  // }
-
 }

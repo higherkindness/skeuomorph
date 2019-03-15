@@ -139,10 +139,10 @@ object ParseProto {
       implicit A: Embed[protobuf.Type, A]): A = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s
     val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.j2s
-    val oneOfFields: List[(FieldF[A], List[Int])] =
+    val oneOfFields: List[(t.FieldF[A], List[Int])] =
       fromOneofDescriptorsProto(protoOneOf, protoFields, descriptor, files)
     val oneOfNumbers: List[Int] = oneOfFields.flatMap(_._2)
-    val fields: List[FieldF[A]] =
+    val fields: List[t.FieldF[A]] =
       protoFields
         .filterNot(f => oneOfNumbers.contains(f.getNumber))
         .map(f => fromFieldDescriptorProto[A](f, descriptor, files))
@@ -184,10 +184,10 @@ object ParseProto {
   def fromFieldDescriptorProto[A](
       field: FieldDescriptorProto,
       source: DescriptorProto,
-      files: List[FileDescriptorProto])(implicit A: Embed[protobuf.Type, A]): FieldF[A] =
+      files: List[FileDescriptorProto])(implicit A: Embed[protobuf.Type, A]): t.FieldF[A] =
     (field.getLabel.isRepeated, isMap(field, source)) match {
       case (true, false) =>
-        FieldF.Field(
+        t.FieldF.ProtobufField(
           name = field.getName,
           tpe = t.list[protobuf.Type, A](fromFieldType(field, files)).embed,
           position = field.getNumber,
@@ -196,7 +196,7 @@ object ParseProto {
           isMapField = false
         )
       case (_, true) =>
-        FieldF.Field(
+        t.FieldF.ProtobufField(
           name = field.getName,
           position = field.getNumber,
           tpe = getTMap(field.getName, source, files),
@@ -205,7 +205,7 @@ object ParseProto {
           isMapField = true
         )
       case _ =>
-        FieldF.Field(
+        t.FieldF.ProtobufField(
           name = field.getName,
           position = field.getNumber,
           tpe = fromFieldType(field, files),
@@ -247,19 +247,19 @@ object ParseProto {
       source: DescriptorProto,
       files: List[FileDescriptorProto])(
       implicit A: Embed[protobuf.Type, A]
-  ): List[(FieldF[A], List[Int])] = oneOfFields.zipWithIndex.map {
+  ): List[(t.FieldF[A], List[Int])] = oneOfFields.zipWithIndex.map {
     case (oneof, index) => {
-      val oneOfFields: NonEmptyList[FieldF[A]] = NonEmptyList
+      val oneOfFields: NonEmptyList[t.FieldF[A]] = NonEmptyList
         .fromList(
           fields
             .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
             .map(fromFieldDescriptorProto(_, source, files))
-            .collect { case b @ FieldF.InjField(_) => b })
+            .collect { case b @ t.FieldF.InjProtobufField(_) => b })
         .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
       val fOneOf    = oneOf[protobuf.Type, A](name = oneof.getName, fields = oneOfFields)
-      val positions = oneOfFields.map({ case FieldF.InjField(Ann(_, (pos, _, _, _))) => pos }).toList
-      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed), positions)
+      val positions = oneOfFields.map({ case t.FieldF.InjProtobufField(Ann(_, (pos, _, _, _))) => pos }).toList
+      (t.FieldF.SimpleField(name = oneof.getName, tpe = fOneOf.embed), positions)
     }
   }
 
