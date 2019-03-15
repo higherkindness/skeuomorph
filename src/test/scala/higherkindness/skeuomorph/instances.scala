@@ -39,7 +39,7 @@ object instances {
     M.materialize(offset = 0)
 
   implicit def arbAvroMetadata: Arbitrary[AvroMetadata] = {
-    val genOrder = Gen.oneOf(Order.Ascending, Order.Descending, Order.Ignore)
+    val genOrder  = Gen.oneOf(Order.Ascending, Order.Descending, Order.Ignore)
     val aliases   = Gen.listOf(nonEmptyString).map(AvroMetadata.Aliases)
     val namespace = Gen.option(nonEmptyString).map(AvroMetadata.NameSpace)
     val doc       = Gen.option(nonEmptyString).map(AvroMetadata.Doc)
