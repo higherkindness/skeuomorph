@@ -104,8 +104,8 @@ object instances {
   implicit def muArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[mu.Type[T]] =
     implicitly[Delay[Arbitrary, mu.Type]].apply(T)
 
-  // implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[avro.Type[T]] =
-  //   implicitly[Delay[Arbitrary, avro.Type]].apply(T)
+  implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[avro.Type[T]] =
+    implicitly[Delay[Arbitrary, avro.Type]].apply(T)
 
   // implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] =
   //   implicitly[Delay[Arbitrary, protobuf.Type]].apply(T)

@@ -17,6 +17,7 @@
 package higherkindness.skeuomorph
 package uast
 
+import higherkindness.skeuomorph.compdata._
 import higherkindness.skeuomorph.uast.types._
 
 import cats.~>
@@ -86,5 +87,10 @@ object arbitraries {
       aa =>
         Arbitrary(
           (Gen.listOf(aa.arbitrary), instances.nonEmptyString, instances.nonEmptyString).mapN(TFileDescriptor.apply)))
+
+  implicit def arbitraryAnnotated[F[_], E](
+      implicit F: Delay[Arbitrary, F],
+      E: Arbitrary[E]): Delay[Arbitrary, Ann[F, E, ?]] =
+    λ[Arbitrary ~> (Arbitrary ∘ Ann[F, E, ?])#λ](aa => Arbitrary((F(aa).arbitrary, E.arbitrary).mapN(Ann.apply)))
 
 }
