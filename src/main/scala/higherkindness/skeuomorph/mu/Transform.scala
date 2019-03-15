@@ -51,7 +51,7 @@ object Transform {
     case protobuf.InjMap(TMap(k, v)) => map[mu.Type, A](k, v)
     case protobuf.InjProtoEnum(protobuf.types.TProtoEnum(name, symbols, _, _)) =>
       enum[mu.Type, A](name, symbols.map(_._1))
-    case protobuf.InjMessage(protobuf.types.TMessage(name, fields, _)) =>
+    case protobuf.InjMessage(Ann(TRecord(name, fields), _)) =>
       record[mu.Type, A](name, fields)
     case protobuf.InjFileDescriptor(TFileDescriptor(values, _, _)) => containing[mu.Type, A](values)
   }

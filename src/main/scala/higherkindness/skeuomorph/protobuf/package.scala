@@ -36,6 +36,7 @@ package object protobuf {
   type TFixed64[A]  = Ann[TInt, (Fixed, `64`), A]
   type TSFixed32[A] = Ann[TInt, (Fixed, Signed, `32`), A]
   type TSFixed64[A] = Ann[TInt, (Fixed, Signed, `64`), A]
+  type TMessage[A]  = Ann[TRecord, List[List[String]], A]
 
   type Type[A] = CopK[
     TNull :::
@@ -58,10 +59,8 @@ package object protobuf {
       TList :::
       TOneOf :::
       TMap :::
-      //analogous to TEnum
-    TProtoEnum :::
-      // analogous to TRecord
-    TMessage :::
+      TProtoEnum :::
+      TMessage :::
       TFileDescriptor :::
       TNilK,
     A
@@ -92,7 +91,7 @@ package object protobuf {
   val InjFileDescriptor: CopK.Inject[TFileDescriptor, Type] = CopK.Inject[TFileDescriptor, Type]
 
   def message[F[α] <: ACopK[α], A](name: String, fields: List[FieldF[A]], reserved: List[List[String]])(
-      implicit I: TMessage :<<: F) = I.inj(TMessage(name, fields, reserved))
+      implicit I: TMessage :<<: F) = I.inj(Ann(TRecord(name, fields), reserved))
   def protoEnum[F[α] <: ACopK[α], A](
       name: String,
       symbols: List[(String, Int)],

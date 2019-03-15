@@ -64,7 +64,7 @@ object print {
       |}
       """.stripMargin
 
-      case InjMessage(TMessage(name, fields, reserved)) =>
+      case InjMessage(Ann(TRecord(name, fields), reserved)) =>
         val printReserved: String = reserved
           .map(l => s"reserved " + l.mkString(start = "", sep = ", ", end = ";"))
           .mkString("\n  ")
