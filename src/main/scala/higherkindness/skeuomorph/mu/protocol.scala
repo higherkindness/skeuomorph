@@ -78,7 +78,7 @@ object Protocol {
       )
 
     val toImports: DependentImport[T] => DependentImport[U] =
-      imp => DependentImport(imp.pkg, toMu(imp.tpe))
+      imp => DependentImport(imp.pkg, imp.protocol, toMu(imp.tpe))
 
     new Protocol[U](
       name = protocol.name,
@@ -100,4 +100,4 @@ object Service {
   final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])
 }
 
-final case class DependentImport[T](pkg: String, tpe: T)
+final case class DependentImport[T](pkg: String, protocol: String, tpe: T)

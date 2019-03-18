@@ -59,7 +59,7 @@ class ProtobufProtocolSpec extends Specification {
   val expectation =
     """package com.acme
       |
-      |import com.acme.Author
+      |import com.acme.author.Author
       |
       |object book {
       |

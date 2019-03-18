@@ -107,8 +107,8 @@ object print {
    * Needed to be able to use the DependentImport case class
    * as a [[cats.ContravariantMonoidal]].
    */
-  def importTuple[T](i: DependentImport[T]): (String, T) = i match {
-    case DependentImport(pkg, tpe) => (pkg, tpe)
+  def importTuple[T](i: DependentImport[T]): (String, String, T) = i match {
+    case DependentImport(pkg, name, tpe) => (pkg, name, tpe)
   }
 
   /**
@@ -166,6 +166,7 @@ object print {
   def depImport[T](implicit T: Basis[MuF, T]): Printer[DependentImport[T]] =
     (
       konst("import ") *< string,
+      konst(".") *< string,
       konst(".") *< Printer(namedTypes[T] >>> schema.print)
     ).contramapN(importTuple)
 

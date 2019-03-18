@@ -112,7 +112,8 @@ object ParseProto {
 
   def getDependentImports[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): List[DependentImport[A]] =
-    dependent.getMessageTypeList.j2s.map(d => DependentImport(dependent.getPackage, toMessage(d, files)))
+    dependent.getMessageTypeList.j2s.map(d =>
+      DependentImport(dependent.getPackage, formatName(dependent.getName), toMessage(d, files)))
 
   def formatName(name: String): String = name.replace(".proto", "")
 
