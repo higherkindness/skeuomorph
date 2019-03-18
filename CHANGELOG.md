@@ -1,5 +1,14 @@
 # Changelog
 
+## 03/18/2019 - Version 0.0.6
+
+Release changes:
+
+* Pushes codecov reports ([#73](https://github.com/higherkindness/skeuomorph/pull/73))
+* Propagates imports instead of cloning dependent messages ([#75](https://github.com/higherkindness/skeuomorph/pull/75))
+* Release skeuomorph 0.0.6 ([#76](https://github.com/higherkindness/skeuomorph/pull/76))
+
+
 ## 02/28/2019 - Version 0.0.5
 
 Release changes:
