@@ -37,7 +37,8 @@ final case class Protocol[T](
     pkg: Option[String],
     options: List[(String, String)],
     declarations: List[T],
-    services: List[Service[T]]
+    services: List[Service[T]],
+    imports: List[DependentImport[T]]
 )
 object Protocol {
 
@@ -60,7 +61,8 @@ object Protocol {
       proto.namespace,
       Nil,
       proto.types.map(toMu),
-      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation)))
+      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation))),
+      Nil
     )
   }
 
@@ -75,13 +77,17 @@ object Protocol {
           response = OperationType(toMu(msg.response), msg.responseStreaming)
       )
 
+    val toImports: DependentImport[T] => DependentImport[U] =
+      imp => DependentImport(imp.pkg, toMu(imp.tpe))
+
     new Protocol[U](
       name = protocol.name,
       pkg = Option(protocol.pkg),
       options = protocol.options,
       declarations = protocol.declarations.map(toMu),
       services = protocol.services
-        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation)))
+        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation))),
+      imports = protocol.imports.map(toImports)
     )
 
   }
@@ -93,3 +99,5 @@ object Service {
   final case class OperationType[T](tpe: T, stream: Boolean)
   final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])
 }
+
+final case class DependentImport[T](pkg: String, tpe: T)

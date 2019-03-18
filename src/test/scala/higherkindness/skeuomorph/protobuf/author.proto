@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package com.book;
+package com.acme;
 
 message Author {
     string name = 1;
