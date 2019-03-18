@@ -29,6 +29,7 @@ import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 import java.util
 
+import higherkindness.skeuomorph.mu.DependentImport
 import qq.droste._
 import qq.droste.syntax.embed._
 
@@ -87,9 +88,9 @@ object ParseProto {
   )(implicit A: Embed[ProtobufF, A]): Protocol[A] =
     findDescriptorProto(descriptorFileName, files)
       .map { file =>
-        val dependents: List[A] = file.getDependencyList.j2s
-          .flatMap(findDescriptorProto(_, files))
-          .flatMap(getDependentValues(_, files))
+        val imports: List[DependentImport[A]] = file.getDependencyList.j2s
+          .flatMap(b => findDescriptorProto(b, files))
+          .flatMap(f => getDependentImports(f, files))
 
         val messages: List[A] = file.getMessageTypeList.j2s.map(d => toMessage[A](d, files))
 
@@ -99,8 +100,9 @@ object ParseProto {
           formatName(file.getName),
           file.getPackage,
           Nil,
-          dependents ++ messages ++ enums,
-          file.getServiceList.j2s.map(s => toService[A](s, files))
+          messages ++ enums,
+          file.getServiceList.j2s.map(s => toService[A](s, files)),
+          imports
         )
       }
       .getOrElse(throw ProtobufNativeException(s"Could not find descriptors for: $descriptorFileName"))
@@ -108,10 +110,10 @@ object ParseProto {
   def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
     files.find(_.getName == name)
 
-  def getDependentValues[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): List[A] =
-    dependent.getMessageTypeList.j2s.map(d => toMessage(d, files)) ++
-      dependent.getEnumTypeList.j2s.map(toEnum(_)(A))
+  def getDependentImports[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
+      implicit A: Embed[ProtobufF, A]): List[DependentImport[A]] =
+    dependent.getMessageTypeList.j2s.map(d =>
+      DependentImport(dependent.getPackage, formatName(dependent.getName), toMessage(d, files)))
 
   def formatName(name: String): String = name.replace(".proto", "")
 

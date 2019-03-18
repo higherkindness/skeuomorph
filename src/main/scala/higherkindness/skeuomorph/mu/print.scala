@@ -50,7 +50,7 @@ object print {
       case TContaining(values)       => values.mkString("\n")
       case TRequired(value)          => value
       case TCoproduct(invariants) =>
-        invariants.toList.mkString("Cop[", " :: ", ":: TNil]")
+        invariants.toList.mkString("Cop[", " :: ", " :: TNil]")
       case TSum(name, fields) =>
         val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
         s"""
@@ -73,10 +73,10 @@ object print {
    */
   def protoTuple[T](
       proto: Protocol[T]
-  ): (Option[String], List[(String, String)], String, List[T], List[Service[T]]) =
+  ): (Option[String], List[(String, String)], List[DependentImport[T]], String, List[T], List[Service[T]]) =
     proto match {
-      case Protocol(name, pkg, options, declarations, services) =>
-        (pkg, options, name, declarations, services)
+      case Protocol(name, pkg, options, declarations, services, imports) =>
+        (pkg, options, imports, name, declarations, services)
     }
 
   /**
@@ -102,6 +102,14 @@ object print {
       case Service(name, serType, ops) =>
         (serType, name, ops)
     }
+
+  /**
+   * Needed to be able to use the DependentImport case class
+   * as a [[cats.ContravariantMonoidal]].
+   */
+  def importTuple[T](i: DependentImport[T]): (String, String, T) = i match {
+    case DependentImport(pkg, name, tpe) => (pkg, name, tpe)
+  }
 
   /**
    * needed to use SerializationType as a [[catz.contrib.Decidable]].
@@ -155,6 +163,13 @@ object print {
       sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)
 
+  def depImport[T](implicit T: Basis[MuF, T]): Printer[DependentImport[T]] =
+    (
+      konst("import ") *< string,
+      konst(".") *< string,
+      konst(".") *< Printer(namedTypes[T] >>> schema.print)
+    ).contramapN(importTuple)
+
   def option: Printer[(String, String)] =
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
 
@@ -164,6 +179,7 @@ object print {
     (
       konst("package ") *< optional(string) >* newLine >* newLine,
       sepBy(option, lineFeed),
+      sepBy(depImport, lineFeed) >* newLine >* newLine,
       konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
       sepBy(schema, lineFeed) >* newLine,
       sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
