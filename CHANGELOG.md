@@ -1,5 +1,12 @@
 # Changelog
 
+## 03/18/2019 - Version 0.0.7
+
+Release changes:
+
+* Upgrades codecov plugin ([#77](https://github.com/higherkindness/skeuomorph/pull/77))
+
+
 ## 03/18/2019 - Version 0.0.6
 
 Release changes:
