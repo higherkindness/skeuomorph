@@ -1,5 +1,12 @@
 # Changelog
 
+## 03/19/2019 - Version 0.0.8
+
+Release changes:
+
+* Fixes scoverage transitive issues ([#78](https://github.com/higherkindness/skeuomorph/pull/78))
+
+
 ## 03/18/2019 - Version 0.0.7
 
 Release changes:
