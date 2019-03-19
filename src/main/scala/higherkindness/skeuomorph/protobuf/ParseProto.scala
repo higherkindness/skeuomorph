@@ -27,7 +27,6 @@ import com.google.protobuf.DescriptorProtos.UninterpretedOption.NamePart
 import com.google.protobuf.DescriptorProtos._
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
-import java.util
 
 import higherkindness.skeuomorph.mu.DependentImport
 import qq.droste._
@@ -88,20 +87,20 @@ object ParseProto {
   )(implicit A: Embed[ProtobufF, A]): Protocol[A] =
     findDescriptorProto(descriptorFileName, files)
       .map { file =>
-        val imports: List[DependentImport[A]] = file.getDependencyList.j2s
+        val imports: List[DependentImport[A]] = file.getDependencyList.asScala.toList
           .flatMap(b => findDescriptorProto(b, files))
           .flatMap(f => getDependentImports(f, files))
 
-        val messages: List[A] = file.getMessageTypeList.j2s.map(d => toMessage[A](d, files))
+        val messages: List[A] = file.getMessageTypeList.asScala.toList.map(d => toMessage[A](d, files))
 
-        val enums: List[A] = file.getEnumTypeList.j2s.map(toEnum[A])
+        val enums: List[A] = file.getEnumTypeList.asScala.toList.map(toEnum[A])
 
         Protocol[A](
           formatName(file.getName),
           file.getPackage,
           Nil,
           messages ++ enums,
-          file.getServiceList.j2s.map(s => toService[A](s, files)),
+          file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
           imports
         )
       }
@@ -112,14 +111,14 @@ object ParseProto {
 
   def getDependentImports[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): List[DependentImport[A]] =
-    dependent.getMessageTypeList.j2s.map(d =>
+    dependent.getMessageTypeList.asScala.toList.map(d =>
       DependentImport(dependent.getPackage, formatName(dependent.getName), toMessage(d, files)))
 
   def formatName(name: String): String = name.replace(".proto", "")
 
   def toService[A](s: ServiceDescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): Service[A] =
-    Service(s.getName, s.getMethodList.j2s.map(o => toOperation[A](o, files)))
+    Service(s.getName, s.getMethodList.asScala.toList.map(o => toOperation[A](o, files)))
 
   def toOperation[A](o: MethodDescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): Protocol.Operation[A] =
@@ -137,8 +136,8 @@ object ParseProto {
 
   def toMessage[A](descriptor: DescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): A = {
-    val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.j2s
-    val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.j2s
+    val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.asScala.toList
+    val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.asScala.toList
     val oneOfFields: List[(FieldF[A], List[Int])] =
       fromOneofDescriptorsProto(protoOneOf, protoFields, descriptor, files)
     val oneOfNumbers: List[Int] = oneOfFields.flatMap(_._2)
@@ -150,13 +149,13 @@ object ParseProto {
     message[A](
       name = descriptor.getName,
       fields = fields ++ oneOfFields.map(_._1),
-      reserved =
-        descriptor.getReservedRangeList.j2s.map(range => (range.getStart until range.getEnd).map(_.toString).toList)
+      reserved = descriptor.getReservedRangeList.asScala.toList.map(range =>
+        (range.getStart until range.getEnd).map(_.toString).toList)
     ).embed
   }
 
   def toEnum[A](enum: EnumDescriptorProto)(implicit A: Embed[ProtobufF, A]): A = {
-    val (values, aliases) = partitionValuesAliases(enum.getValueList.j2s)
+    val (values, aliases) = partitionValuesAliases(enum.getValueList.asScala.toList)
 
     ProtobufF
       .enum[A](
@@ -217,24 +216,25 @@ object ParseProto {
     }
 
   def isMap(field: FieldDescriptorProto, source: DescriptorProto): Boolean =
-    source.getNestedTypeList.j2s.exists(
+    source.getNestedTypeList.asScala.toList.exists(
       e =>
         e.getOptions.getMapEntry &&
           matchNameEntry(field.getName, e) &&
-          takeOnlyMapEntries(e.getFieldList.j2s))
+          takeOnlyMapEntries(e.getFieldList.asScala.toList))
 
   def getTMap[A](name: String, source: DescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): A =
     (for {
-      maybeMsg <- source.getNestedTypeList.j2s
-        .find(e => e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.j2s))
+      maybeMsg <- source.getNestedTypeList.asScala.toList
+        .find(e =>
+          e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.asScala.toList))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
     } yield map(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)).embed)
       .getOrElse(throw ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
-    msg.getFieldList.j2s.find(_.getName == name)
+    msg.getFieldList.asScala.toList.find(_.getName == name)
 
   def takeOnlyMapEntries(fields: List[FieldDescriptorProto]): Boolean =
     fields.count(f => (f.getNumber == 1 && f.getName == "key") || (f.getNumber == 2 && f.getName == "value")) == 2
@@ -297,13 +297,15 @@ object ParseProto {
 
   def fromFieldOptionsMsg(options: FieldOptions): List[OptionValue] =
     OptionValue("deprecated", options.getDeprecated.toString) ::
-      options.getUninterpretedOptionList.j2s.map(t => OptionValue(toString(t.getNameList.j2s), t.getIdentifierValue))
+      options.getUninterpretedOptionList.asScala.toList.map(t =>
+      OptionValue(toString(t.getNameList.asScala.toList), t.getIdentifierValue))
 
   def fromFieldOptionsEnum(options: EnumOptions): List[OptionValue] = {
     List(
       OptionValue("allow_alias", options.getAllowAlias.toString),
       OptionValue("deprecated", options.getDeprecated.toString)) ++
-      options.getUninterpretedOptionList.j2s.map(t => OptionValue(toString(t.getNameList.j2s), t.getIdentifierValue))
+      options.getUninterpretedOptionList.asScala.toList.map(t =>
+        OptionValue(toString(t.getNameList.asScala.toList), t.getIdentifierValue))
   }
 
   def toString(nameParts: Seq[NamePart]): String =
@@ -312,8 +314,8 @@ object ParseProto {
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[DescriptorProto] = {
     case class NamedMessage(fullName: String, msg: DescriptorProto)
     val all: List[NamedMessage] = files.flatMap(f =>
-      f.getMessageTypeList.j2s.flatMap(m =>
-        NamedMessage(s".${f.getPackage}.${m.getName}", m) :: m.getNestedTypeList.j2s.map(n =>
+      f.getMessageTypeList.asScala.toList.flatMap(m =>
+        NamedMessage(s".${f.getPackage}.${m.getName}", m) :: m.getNestedTypeList.asScala.toList.map(n =>
           NamedMessage(s".${f.getPackage}.${m.getName}.${n.getName}", n))))
     all.find(_.fullName == name).map(_.msg)
   }
@@ -321,16 +323,12 @@ object ParseProto {
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[EnumDescriptorProto] = {
     case class NamedEnum(fullName: String, msg: EnumDescriptorProto)
     files
-      .flatMap(f => f.getEnumTypeList.j2s.map(m => NamedEnum(s".${f.getPackage}.${m.getName}", m)))
+      .flatMap(f => f.getEnumTypeList.asScala.toList.map(m => NamedEnum(s".${f.getPackage}.${m.getName}", m)))
       .find(_.fullName == name)
       .map(_.msg)
   }
 
   implicit class LabelOps(self: Label) {
     def isRepeated: Boolean = self.name() == "LABEL_REPEATED"
-  }
-
-  implicit class JavaListOps[B](self: util.List[B]) {
-    def j2s: List[B] = self.asScala.toList
   }
 }

@@ -162,7 +162,6 @@ lazy val commonSettings = Seq(
     "readme/tut".asRunnableItem
   ),
   releaseIgnoreUntrackedFiles := true,
-  coverageEnabled := true,
   coverageFailOnMinimum := false
 ) ++ compilerPlugins
 
