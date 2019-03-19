@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-//package higherkindness.skeuomorph.protobuf
+// package higherkindness.skeuomorph
+// package protobuf
 
 // import cats.effect.IO
-// import higherkindness.skeuomorph.mu.MuF
-// import higherkindness.skeuomorph.protobuf.protobuf.Type._
-// import qq.droste.data.Mu
 // import org.specs2.Specification
 // import higherkindness.skeuomorph.protobuf.ParseProto._
+
+// import qq.droste._
 // import qq.droste.data.Mu._
+// import qq.droste.data.Mu
 
 // class ProtobufProtocolSpec extends Specification {
 
@@ -40,13 +41,13 @@
 //     val source                                        = ProtoSource("book.proto", path)
 //     val protobufProtocol: Protocol[Mu[protobuf.Type]] = parseProto[IO, Mu[protobuf.Type]].parse(source).unsafeRunSync()
 
-//     val parseProtocol: Protocol[Mu[protobuf.Type]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+//     val parseProtocol: Protocol[Mu[protobuf.Type]] => higherkindness.skeuomorph.mu.Protocol[Mu[mu.Type]] = {
 //       p: Protocol[Mu[protobuf.Type]] =>
 //         higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(p)
 //     }
 
-//     val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
-//       p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+//     val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[mu.Type]] => String = {
+//       p: higherkindness.skeuomorph.mu.Protocol[Mu[mu.Type]] =>
 //         higherkindness.skeuomorph.mu.print.proto.print(p)
 //     }
 

@@ -42,5 +42,7 @@ object types {
     case class Doc(doc: Option[String])             extends AvroMetadata
     case class AMOrder(order: Option[Order])        extends AvroMetadata
     case class AMList(list: List[AvroMetadata])     extends AvroMetadata
+
+    implicit val eq: Eq[AvroMetadata] = Eq.fromUniversalEquals
   }
 }

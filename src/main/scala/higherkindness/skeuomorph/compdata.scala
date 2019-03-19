@@ -16,8 +16,11 @@
 
 package higherkindness.skeuomorph
 
-import cats.{Applicative, Traverse}
+import cats.{~>, Applicative, Eq, Traverse}
+
+import qq.droste.Delay
 import qq.droste.util.DefaultTraverse
+import qq.droste.syntax.compose._
 
 object compdata {
 
@@ -32,6 +35,15 @@ object compdata {
           fa match {
             case Ann(fa, ann) => G.map(F.traverse(fa)(f))(fb => Ann(fb, ann))
           }
+      }
+    def delayEq[F[_], E](implicit F: Delay[Eq, F], E: Eq[E]): Delay[Eq, Ann[F, E, ?]] =
+      new (Eq ~> (Eq ∘ Ann[F, E, ?])#λ) {
+        def apply[A](A: Eq[A]): Eq[Ann[F, E, A]] = new Eq[Ann[F, E, A]] {
+          def eqv(a: Ann[F, E, A], b: Ann[F, E, A]): Boolean = (a, b) match {
+            case (Ann(fa1, e1), Ann(fa2, e2)) =>
+              Eq[E].eqv(e1, e2) && F(A).eqv(fa1, fa2)
+          }
+        }
       }
   }
 }

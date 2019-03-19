@@ -46,15 +46,16 @@ object Optimize {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def nestedNamedTypesTrans[F[α] <: ACopK[α]: Functor, T](
+  def nestedNamedTypesTrans[F[α] <: ACopK[α], T](
       implicit
       P: TRecord :<<: F,
       E: TEnum :<<: F,
       N: TNamedType :<<: F,
+      F: Functor[F],
       T: Basis[F, T],
   ): Trans[F, F, T] = Trans {
     case P(TRecord(name, fields)) =>
-      def nameTypes(f: FieldF[T]): FieldF[T] = FieldF.fieldType.modify(namedTypes.apply)(f)
+      val nameTypes: FieldF[T] => FieldF[T] = f => FieldF.fieldType.modify(namedTypes[F, T].apply)(f)
       P.inj(
         TRecord[T](
           name,

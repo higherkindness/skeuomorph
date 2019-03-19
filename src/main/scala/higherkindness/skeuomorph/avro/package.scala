@@ -16,13 +16,14 @@
 
 package higherkindness.skeuomorph
 
+import cats.{Eq, Traverse}
 import cats.data.NonEmptyList
 import io.circe.Json
 import iota.{TList => _, _}
 import iota.TListK.:::
 import org.apache.avro.Schema
 import org.apache.avro.Schema.{Type => SType}
-import qq.droste.{Algebra, Coalgebra}
+import qq.droste.{Algebra, Coalgebra, Delay}
 import higherkindness.skeuomorph.uast._
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.avro.types._
@@ -69,6 +70,10 @@ package object avro {
   implicit val InjUnion: CopK.Inject[TUnion, Type]           = CopK.Inject[TUnion, Type]
   implicit val InjNamedType: CopK.Inject[TNamedType, Type]   = CopK.Inject[TNamedType, Type]
   implicit val InjFixed: CopK.Inject[TNamedFixed, Type]      = CopK.Inject[TNamedFixed, Type]
+  implicit val eqTAvroRecord: Delay[Eq, TAvroRecord]         = Ann.delayEq[TRecord, AvroMetadata]
+  implicit val avroTraverse: Traverse[avro.Type]             = derivation.copkTraverse[avro.Type[Unit]#L]
+  implicit def avroEq[T](implicit T: Eq[T]): Eq[avro.Type[T]] =
+    derivation.copkEqual[avro.Type[Unit]#L].apply(T)
 
   def avroRecord[F[α] <: ACopK[α], A](
       name: String,
@@ -83,13 +88,13 @@ package object avro {
         AvroMetadata.AMList(
           List(AvroMetadata.NameSpace(namespace), AvroMetadata.Aliases(aliases), AvroMetadata.Doc(doc)))))
 
-  def order2Order(avroO: Schema.Field.Order): Order = avroO match {
-    case Schema.Field.Order.ASCENDING  => Order.Ascending
-    case Schema.Field.Order.DESCENDING => Order.Descending
-    case Schema.Field.Order.IGNORE     => Order.Ignore
-  }
-
   object Type {
+
+    def order2Order(avroO: Schema.Field.Order): Order = avroO match {
+      case Schema.Field.Order.ASCENDING  => Order.Ascending
+      case Schema.Field.Order.DESCENDING => Order.Descending
+      case Schema.Field.Order.IGNORE     => Order.Ignore
+    }
 
     def fromAvro: Coalgebra[Type, Schema] = Coalgebra { sch =>
       sch.getType match {

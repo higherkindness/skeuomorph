@@ -104,9 +104,7 @@ object arbitraries {
         ).mapN((name, fields, options, aliases) =>
           Ann(TEnum(name, fields.map(_._1)), protobuf.annotations.EnumAnnotation(fields.map(_._2), options, aliases)))))
 
-  implicit def arbitraryAnnotated[F[_], E](
-      implicit F: Delay[Arbitrary, F],
-      E: Arbitrary[E]): Delay[Arbitrary, Ann[F, E, ?]] =
+  def arbitraryAnnotated[F[_], E](implicit F: Delay[Arbitrary, F], E: Arbitrary[E]): Delay[Arbitrary, Ann[F, E, ?]] =
     λ[Arbitrary ~> (Arbitrary ∘ Ann[F, E, ?])#λ](aa => Arbitrary((F(aa).arbitrary, E.arbitrary).mapN(Ann.apply)))
 
 }

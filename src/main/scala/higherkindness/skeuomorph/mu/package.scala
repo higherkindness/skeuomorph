@@ -16,9 +16,13 @@
 
 package higherkindness.skeuomorph
 
+import cats.{Eq, Traverse}
+
 import iota.{TList => _, _}
 import iota.TListK.:::
-import uast.types._
+
+import higherkindness.skeuomorph.uast.derivation
+import higherkindness.skeuomorph.uast.types._
 
 package object mu {
   type Type[A] = CopK[
@@ -63,5 +67,8 @@ package object mu {
   implicit val InjEnum: CopK.Inject[TEnum, Type]             = CopK.Inject[TEnum, Type]
   implicit val InjRecord: CopK.Inject[TRecord, Type]         = CopK.Inject[TRecord, Type]
   implicit val InjContaining: CopK.Inject[TContaining, Type] = CopK.Inject[TContaining, Type]
+  implicit val muTraverse: Traverse[Type]                    = derivation.copkTraverse[Type[Unit]#L]
+  implicit def muEq[T](implicit T: Eq[T]): Eq[mu.Type[T]] =
+    derivation.copkEqual[Type[Unit]#L].apply(T)
 
 }

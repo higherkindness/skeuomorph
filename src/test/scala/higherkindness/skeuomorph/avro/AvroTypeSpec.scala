@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-// package higherkindness.skeuomorph.avro
+package higherkindness.skeuomorph.avro
 
-// import higherkindness.skeuomorph.instances._
-// import org.typelevel.discipline.specs2.Discipline
-// import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
-// import cats.implicits._
-// import org.specs2._
+import higherkindness.skeuomorph.instances._
+import higherkindness.skeuomorph.uast.derivation._
+import org.typelevel.discipline.specs2.Discipline
+import cats.laws.discipline.TraverseTests
+import cats.implicits._
+import org.specs2._
 
-// class AvroTypeSpec extends Specification with ScalaCheck with Discipline {
+class AvroTypeSpec extends Specification with ScalaCheck with Discipline {
 
-//   def is = s2"""
-//   $traverse
-//   $functor
-//   $foldable
-//   """
+  def is = s2"""
+  $traverse
+  """
 
-//   val traverse = checkAll("Traverse[avro.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
-//   val functor  = checkAll("Functor[avro.Type]", FunctorTests[Type].functor[Int, Int, String])
-//   val foldable = checkAll("Foldable[avro.Type]", FoldableTests[Type].foldable[Int, Int])
-// }
+  val traverse = checkAll("Traverse[avro.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
+}

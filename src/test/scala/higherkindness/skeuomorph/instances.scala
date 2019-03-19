@@ -16,18 +16,19 @@
 
 package higherkindness.skeuomorph
 
+import cats.{Eq, Traverse}
 import cats.implicits._
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
 
 import higherkindness.skeuomorph.uast.ArbitraryKMaterializer
-// import higherkindness.skeuomorph.uast.types._
-// import higherkindness.skeuomorph.uast.derivation._
+import higherkindness.skeuomorph.uast.derivation
 import higherkindness.skeuomorph.uast.arbitraries._
-//import higherkindness.skeuomorph.protobuf._
+import higherkindness.skeuomorph.uast.types._
+import higherkindness.skeuomorph.avro._
 import higherkindness.skeuomorph.avro.types._
-import higherkindness.skeuomorph.protobuf.OptionValue
+import higherkindness.skeuomorph.protobuf._
 import qq.droste.Delay
 
 import scala.collection.JavaConverters._
@@ -63,12 +64,31 @@ object instances {
 
   implicit def arbOptionValue: Arbitrary[OptionValue] =
     Arbitrary((nonEmptyString, nonEmptyString).mapN(OptionValue.apply))
-  implicit val arb32       = Arbitrary(Gen.const(protobuf.annotations.`32`()))
-  implicit val arb64       = Arbitrary(Gen.const(protobuf.annotations.`64`()))
-  implicit val arbSigned   = Arbitrary(Gen.const(protobuf.annotations.Signed()))
-  implicit val arbUnsigned = Arbitrary(Gen.const(protobuf.annotations.Unsigned()))
-  implicit val arbFixed    = Arbitrary(Gen.const(protobuf.annotations.Fixed()))
-  implicit val arbReserved = Arbitrary(Gen.listOf(Gen.listOf(nonEmptyString)).map(protobuf.annotations.Reserved.apply))
+  implicit val arb32: Arbitrary[protobuf.annotations.`32`]       = Arbitrary(Gen.const(protobuf.annotations.`32`()))
+  implicit val arb64: Arbitrary[protobuf.annotations.`64`]       = Arbitrary(Gen.const(protobuf.annotations.`64`()))
+  implicit val arbSigned: Arbitrary[protobuf.annotations.Signed] = Arbitrary(Gen.const(protobuf.annotations.Signed()))
+  implicit val arbUnsigned: Arbitrary[protobuf.annotations.Unsigned] = Arbitrary(
+    Gen.const(protobuf.annotations.Unsigned()))
+  implicit val arbFixed: Arbitrary[protobuf.annotations.Fixed] = Arbitrary(Gen.const(protobuf.annotations.Fixed()))
+  implicit val arbReserved: Arbitrary[protobuf.annotations.Reserved] = Arbitrary(
+    Gen.listOf(Gen.listOf(nonEmptyString)).map(protobuf.annotations.Reserved.apply))
+
+  implicit val arbTAvroRecord: Delay[Arbitrary, TAvroRecord] = arbitraryAnnotated[TRecord, AvroMetadata]
+  implicit val arbTInt32: Delay[Arbitrary, TInt32]           = arbitraryAnnotated[TInt, annotations.`32`]
+  implicit val arbTInt64: Delay[Arbitrary, TInt64]           = arbitraryAnnotated[TInt, annotations.`64`]
+  implicit val arbTUInt32: Delay[Arbitrary, TUInt32] =
+    arbitraryAnnotated[TInt, (annotations.Unsigned, annotations.`32`)]
+  implicit val arbTUInt64: Delay[Arbitrary, TUInt64] =
+    arbitraryAnnotated[TInt, (annotations.Unsigned, annotations.`64`)]
+  implicit val arbTSInt32: Delay[Arbitrary, TSInt32]   = arbitraryAnnotated[TInt, (annotations.Signed, annotations.`32`)]
+  implicit val arbTSInt64: Delay[Arbitrary, TSInt64]   = arbitraryAnnotated[TInt, (annotations.Signed, annotations.`64`)]
+  implicit val arbTFixed32: Delay[Arbitrary, TFixed32] = arbitraryAnnotated[TInt, (annotations.Fixed, annotations.`32`)]
+  implicit val arbTFixed64: Delay[Arbitrary, TFixed64] = arbitraryAnnotated[TInt, (annotations.Fixed, annotations.`64`)]
+  implicit val arbTSFixed32: Delay[Arbitrary, TSFixed32] =
+    arbitraryAnnotated[TInt, (annotations.Fixed, annotations.Signed, annotations.`32`)]
+  implicit val arbTSFixed64: Delay[Arbitrary, TSFixed64] =
+    arbitraryAnnotated[TInt, (annotations.Fixed, annotations.Signed, annotations.`64`)]
+  implicit val arbTMessage: Delay[Arbitrary, TMessage] = arbitraryAnnotated[TRecord, annotations.Reserved]
 
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
     val primitives: Gen[Schema] = Gen.oneOf(
@@ -113,10 +133,9 @@ object instances {
 
   implicit def muArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[mu.Type[T]] =
     implicitly[Delay[Arbitrary, mu.Type]].apply(T)
-
   implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[avro.Type[T]] =
     implicitly[Delay[Arbitrary, avro.Type]].apply(T)
-
   implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] =
     implicitly[Delay[Arbitrary, protobuf.Type]].apply(T)
+
 }

@@ -16,6 +16,7 @@
 
 // package higherkindness.skeuomorph.protobuf
 
+// import higherkindness.skeuomorph.uast.derivation._
 // import higherkindness.skeuomorph.instances._
 // import org.typelevel.discipline.specs2.Discipline
 // import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
