@@ -21,54 +21,52 @@ import cats.{Eq, Traverse}
 import iota.{TList => _, _}
 import iota.TListK.:::
 
-import higherkindness.skeuomorph.uast.derivation
+import higherkindness.skeuomorph.uast.{derivation, mkInject}
 import higherkindness.skeuomorph.uast.types._
 
 package object mu {
-  type Type[A] = CopK[
-    TNull :::
-      TDouble :::
-      TFloat :::
-      TInt :::
-      TLong :::
-      TBoolean :::
-      TString :::
-      TByteArray :::
-      TByte :::
-      TNamedType :::
-      TOption :::
-      TEither :::
-      TList :::
-      TMap :::
-      TGeneric :::
-      TUnion :::
-      TEnum :::
-      TRecord :::
-      TContaining :::
-      TNilK,
-    A]
+  type Types = TNull :::
+    TDouble :::
+    TFloat :::
+    TInt :::
+    TLong :::
+    TBoolean :::
+    TString :::
+    TByteArray :::
+    TByte :::
+    TNamedType :::
+    TOption :::
+    TEither :::
+    TList :::
+    TMap :::
+    TGeneric :::
+    TUnion :::
+    TEnum :::
+    TRecord :::
+    TContaining :::
+    TNilK
 
-  implicit val InjNull: CopK.Inject[TNull, Type]             = CopK.Inject[TNull, Type]
-  implicit val InjDouble: CopK.Inject[TDouble, Type]         = CopK.Inject[TDouble, Type]
-  implicit val InjFloat: CopK.Inject[TFloat, Type]           = CopK.Inject[TFloat, Type]
-  implicit val InjInt: CopK.Inject[TInt, Type]               = CopK.Inject[TInt, Type]
-  implicit val InjLong: CopK.Inject[TLong, Type]             = CopK.Inject[TLong, Type]
-  implicit val InjBoolean: CopK.Inject[TBoolean, Type]       = CopK.Inject[TBoolean, Type]
-  implicit val InjString: CopK.Inject[TString, Type]         = CopK.Inject[TString, Type]
-  implicit val InjByteArray: CopK.Inject[TByteArray, Type]   = CopK.Inject[TByteArray, Type]
-  implicit val InjByte: CopK.Inject[TByte, Type]             = CopK.Inject[TByte, Type]
-  implicit val InjNamedType: CopK.Inject[TNamedType, Type]   = CopK.Inject[TNamedType, Type]
-  implicit val InjOption: CopK.Inject[TOption, Type]         = CopK.Inject[TOption, Type]
-  implicit val InjEither: CopK.Inject[TEither, Type]         = CopK.Inject[TEither, Type]
-  implicit val InjList: CopK.Inject[TList, Type]             = CopK.Inject[TList, Type]
-  implicit val InjMap: CopK.Inject[TMap, Type]               = CopK.Inject[TMap, Type]
-  implicit val InjGeneric: CopK.Inject[TGeneric, Type]       = CopK.Inject[TGeneric, Type]
-  implicit val InjUnion: CopK.Inject[TUnion, Type]           = CopK.Inject[TUnion, Type]
-  implicit val InjEnum: CopK.Inject[TEnum, Type]             = CopK.Inject[TEnum, Type]
-  implicit val InjRecord: CopK.Inject[TRecord, Type]         = CopK.Inject[TRecord, Type]
-  implicit val InjContaining: CopK.Inject[TContaining, Type] = CopK.Inject[TContaining, Type]
-  implicit val muTraverse: Traverse[Type]                    = derivation.copkTraverse[Type[Unit]#L]
-  implicit def muEq[T](implicit T: Eq[T]): Eq[mu.Type[T]] =
-    derivation.copkEqual[Type[Unit]#L].apply(T)
+  type Type[A] = CopK[Types, A]
 
+  implicit val InjNull: CopK.Inject[TNull, Type]             = mkInject[TNull, Types](0)
+  implicit val InjDouble: CopK.Inject[TDouble, Type]         = mkInject[TDouble, Types](1)
+  implicit val InjFloat: CopK.Inject[TFloat, Type]           = mkInject[TFloat, Types](2)
+  implicit val InjInt: CopK.Inject[TInt, Type]               = mkInject[TInt, Types](3)
+  implicit val InjLong: CopK.Inject[TLong, Type]             = mkInject[TLong, Types](4)
+  implicit val InjBoolean: CopK.Inject[TBoolean, Type]       = mkInject[TBoolean, Types](5)
+  implicit val InjString: CopK.Inject[TString, Type]         = mkInject[TString, Types](6)
+  implicit val InjByteArray: CopK.Inject[TByteArray, Type]   = mkInject[TByteArray, Types](7)
+  implicit val InjByte: CopK.Inject[TByte, Type]             = mkInject[TByte, Types](8)
+  implicit val InjNamedType: CopK.Inject[TNamedType, Type]   = mkInject[TNamedType, Types](9)
+  implicit val InjOption: CopK.Inject[TOption, Type]         = mkInject[TOption, Types](10)
+  implicit val InjEither: CopK.Inject[TEither, Type]         = mkInject[TEither, Types](11)
+  implicit val InjList: CopK.Inject[TList, Type]             = mkInject[TList, Types](12)
+  implicit val InjMap: CopK.Inject[TMap, Type]               = mkInject[TMap, Types](13)
+  implicit val InjGeneric: CopK.Inject[TGeneric, Type]       = mkInject[TGeneric, Types](14)
+  implicit val InjUnion: CopK.Inject[TUnion, Type]           = mkInject[TUnion, Types](15)
+  implicit val InjEnum: CopK.Inject[TEnum, Type]             = mkInject[TEnum, Types](16)
+  implicit val InjRecord: CopK.Inject[TRecord, Type]         = mkInject[TRecord, Types](17)
+  implicit val InjContaining: CopK.Inject[TContaining, Type] = mkInject[TContaining, Types](18)
+  implicit def muEq[T](implicit T: Eq[T]): Eq[mu.Type[T]]    = derivation.copkEqual[Types].apply(T)
+  implicit val muTraverse: Traverse[Type]                    = derivation.copkTraverse[Types]
 }

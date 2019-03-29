@@ -16,11 +16,10 @@
 
 package higherkindness.skeuomorph
 
-import cats.{~>, Applicative, Eq, Traverse}
+import cats.{Applicative, Eq, Traverse}
 
-import qq.droste.Delay
 import qq.droste.util.DefaultTraverse
-import qq.droste.syntax.compose._
+import higherkindness.skeuomorph.uast.Delay
 
 object compdata {
 
@@ -29,7 +28,7 @@ object compdata {
   // similar to compdata's :*:
   final case class Ann[F[_], E, A](fa: F[A], ann: E)
   object Ann {
-    implicit def traverse[F[_], E](implicit F: Traverse[F]): Traverse[Ann[F, E, ?]] =
+    def traverse[F[_], E](implicit F: Traverse[F]): Traverse[Ann[F, E, ?]] =
       new DefaultTraverse[Ann[F, E, ?]] {
         def traverse[G[_], A, B](fa: Ann[F, E, A])(f: A => G[B])(implicit G: Applicative[G]): G[Ann[F, E, B]] =
           fa match {
@@ -37,7 +36,7 @@ object compdata {
           }
       }
     def delayEq[F[_], E](implicit F: Delay[Eq, F], E: Eq[E]): Delay[Eq, Ann[F, E, ?]] =
-      new (Eq ~> (Eq ∘ Ann[F, E, ?])#λ) {
+      new Delay[Eq, Ann[F, E, ?]] {
         def apply[A](A: Eq[A]): Eq[Ann[F, E, A]] = new Eq[Ann[F, E, A]] {
           def eqv(a: Ann[F, E, A], b: Ann[F, E, A]): Boolean = (a, b) match {
             case (Ann(fa1, e1), Ann(fa2, e2)) =>

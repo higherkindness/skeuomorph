@@ -27,7 +27,7 @@ import com.google.protobuf.DescriptorProtos.UninterpretedOption.NamePart
 import com.google.protobuf.DescriptorProtos._
 import higherkindness.skeuomorph.compdata.Ann
 import higherkindness.skeuomorph.uast.{types => t}
-import higherkindness.skeuomorph.uast.derivation._
+
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 import java.util

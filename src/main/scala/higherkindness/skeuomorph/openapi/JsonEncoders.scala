@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.openapi
 
 import higherkindness.skeuomorph.openapi.schema._
-import higherkindness.skeuomorph.uast.derivation._
+
 import io.circe.{Encoder, Json}
 import qq.droste._
 import qq.droste.syntax.all._

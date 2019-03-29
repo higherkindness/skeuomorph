@@ -22,10 +22,8 @@ import cats.implicits._
 import iota.{TList => _, _}
 import iota.TListK.:::
 
-import qq.droste.Delay
-
-import higherkindness.skeuomorph.uast.derivation
-import higherkindness.skeuomorph.uast.{:<<:, ACopK}
+import higherkindness.skeuomorph.uast.{derivation, mkInject}
+import higherkindness.skeuomorph.uast.{:<<:, ACopK, Delay}
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.compdata.Ann
 
@@ -64,111 +62,110 @@ package object protobuf {
   }
 
   type TProtoEnum[A] = Ann[TEnum, annotations.EnumAnnotation, A]
-  implicit def eqTProtoEnum: Delay[Eq, TProtoEnum]      = Ann.delayEq[TEnum, annotations.EnumAnnotation]
+  implicit val eqTProtoEnum: Delay[Eq, TProtoEnum]      = Ann.delayEq[TEnum, annotations.EnumAnnotation]
   implicit val traverseTProtoEnum: Traverse[TProtoEnum] = Ann.traverse[TEnum, annotations.EnumAnnotation]
 
   type TInt32[A] = Ann[TInt, annotations.`32`, A]
-  implicit def eqTInt32: Delay[Eq, TInt32]      = Ann.delayEq[TInt, annotations.`32`]
+  implicit val eqTInt32: Delay[Eq, TInt32]      = Ann.delayEq[TInt, annotations.`32`]
   implicit val traverseTInt32: Traverse[TInt32] = Ann.traverse[TInt, annotations.`32`]
 
   type TInt64[A] = Ann[TInt, annotations.`64`, A]
-  implicit def eqTInt64: Delay[Eq, TInt64]      = Ann.delayEq[TInt, annotations.`64`]
+  implicit val eqTInt64: Delay[Eq, TInt64]      = Ann.delayEq[TInt, annotations.`64`]
   implicit val traverseTInt64: Traverse[TInt64] = Ann.traverse[TInt, annotations.`64`]
 
   type TUInt32[A] = Ann[TInt, (annotations.Unsigned, annotations.`32`), A]
-  implicit def eqTUInt32: Delay[Eq, TUInt32]      = Ann.delayEq[TInt, (annotations.Unsigned, annotations.`32`)]
+  implicit val eqTUInt32: Delay[Eq, TUInt32]      = Ann.delayEq[TInt, (annotations.Unsigned, annotations.`32`)]
   implicit val traverseTUInt32: Traverse[TUInt32] = Ann.traverse[TInt, (annotations.Unsigned, annotations.`32`)]
 
   type TUInt64[A] = Ann[TInt, (annotations.Unsigned, annotations.`64`), A]
-  implicit def eqTUInt64: Delay[Eq, TUInt64]      = Ann.delayEq[TInt, (annotations.Unsigned, annotations.`64`)]
+  implicit val eqTUInt64: Delay[Eq, TUInt64]      = Ann.delayEq[TInt, (annotations.Unsigned, annotations.`64`)]
   implicit val traverseTUInt64: Traverse[TUInt64] = Ann.traverse[TInt, (annotations.Unsigned, annotations.`64`)]
 
   type TSInt32[A] = Ann[TInt, (annotations.Signed, annotations.`32`), A]
-  implicit def eqTSInt32: Delay[Eq, TSInt32]      = Ann.delayEq[TInt, (annotations.Signed, annotations.`32`)]
+  implicit val eqTSInt32: Delay[Eq, TSInt32]      = Ann.delayEq[TInt, (annotations.Signed, annotations.`32`)]
   implicit val traverseTSInt32: Traverse[TSInt32] = Ann.traverse[TInt, (annotations.Signed, annotations.`32`)]
 
   type TSInt64[A] = Ann[TInt, (annotations.Signed, annotations.`64`), A]
-  implicit def eqTSInt64: Delay[Eq, TSInt64]      = Ann.delayEq[TInt, (annotations.Signed, annotations.`64`)]
+  implicit val eqTSInt64: Delay[Eq, TSInt64]      = Ann.delayEq[TInt, (annotations.Signed, annotations.`64`)]
   implicit val traverseTSInt64: Traverse[TSInt64] = Ann.traverse[TInt, (annotations.Signed, annotations.`64`)]
 
   type TFixed32[A] = Ann[TInt, (annotations.Fixed, annotations.`32`), A]
-  implicit def eqTFixed32: Delay[Eq, TFixed32]      = Ann.delayEq[TInt, (annotations.Fixed, annotations.`32`)]
+  implicit val eqTFixed32: Delay[Eq, TFixed32]      = Ann.delayEq[TInt, (annotations.Fixed, annotations.`32`)]
   implicit val traverseTFixed32: Traverse[TFixed32] = Ann.traverse[TInt, (annotations.Fixed, annotations.`32`)]
 
   type TFixed64[A] = Ann[TInt, (annotations.Fixed, annotations.`64`), A]
-  implicit def eqTFixed64: Delay[Eq, TFixed64]      = Ann.delayEq[TInt, (annotations.Fixed, annotations.`64`)]
+  implicit val eqTFixed64: Delay[Eq, TFixed64]      = Ann.delayEq[TInt, (annotations.Fixed, annotations.`64`)]
   implicit val traverseTFixed64: Traverse[TFixed64] = Ann.traverse[TInt, (annotations.Fixed, annotations.`64`)]
 
   type TSFixed32[A] = Ann[TInt, (annotations.Fixed, annotations.Signed, annotations.`32`), A]
-  implicit def eqTSFixed32: Delay[Eq, TSFixed32] =
+  implicit val eqTSFixed32: Delay[Eq, TSFixed32] =
     Ann.delayEq[TInt, (annotations.Fixed, annotations.Signed, annotations.`32`)]
   implicit val traverseTSFixed32: Traverse[TSFixed32] =
     Ann.traverse[TInt, (annotations.Fixed, annotations.Signed, annotations.`32`)]
 
   type TSFixed64[A] = Ann[TInt, (annotations.Fixed, annotations.Signed, annotations.`64`), A]
-  implicit def eqTSFixed64: Delay[Eq, TSFixed64] =
+  implicit val eqTSFixed64: Delay[Eq, TSFixed64] =
     Ann.delayEq[TInt, (annotations.Fixed, annotations.Signed, annotations.`64`)]
   implicit val traverseTSFixed64: Traverse[TSFixed64] =
     Ann.traverse[TInt, (annotations.Fixed, annotations.Signed, annotations.`64`)]
 
   type TMessage[A] = Ann[TRecord, annotations.Reserved, A]
-  implicit def eqTMessage: Delay[Eq, TMessage]      = Ann.delayEq[TRecord, annotations.Reserved]
+  implicit val eqTMessage: Delay[Eq, TMessage]      = Ann.delayEq[TRecord, annotations.Reserved]
   implicit val traverseTMessage: Traverse[TMessage] = Ann.traverse[TRecord, annotations.Reserved]
 
-  type Type[A] = CopK[
-    TNull :::
-      TDouble :::
-      TFloat :::
-      TInt32 :::
-      TInt64 :::
-      TUInt32 :::
-      TUInt64 :::
-      TSInt32 :::
-      TSInt64 :::
-      TFixed32 :::
-      TFixed64 :::
-      TSFixed32 :::
-      TSFixed64 :::
-      TBoolean :::
-      TString :::
-      TByteArray :::
-      TNamedType :::
-      TList :::
-      TOneOf :::
-      TMap :::
-      TProtoEnum :::
-      TMessage :::
-      TFileDescriptor :::
-      TNilK,
-    A
-  ]
+  type Types = TNull :::
+    TDouble :::
+    TFloat :::
+    TInt32 :::
+    TInt64 :::
+    TUInt32 :::
+    TUInt64 :::
+    TSInt32 :::
+    TSInt64 :::
+    TFixed32 :::
+    TFixed64 :::
+    TSFixed32 :::
+    TSFixed64 :::
+    TBoolean :::
+    TString :::
+    TByteArray :::
+    TNamedType :::
+    TList :::
+    TOneOf :::
+    TMap :::
+    TProtoEnum :::
+    TMessage :::
+    TFileDescriptor :::
+    TNilK
 
-  implicit val InjNull: CopK.Inject[TNull, Type]                     = CopK.Inject[TNull, Type]
-  implicit val InjDouble: CopK.Inject[TDouble, Type]                 = CopK.Inject[TDouble, Type]
-  implicit val InjFloat: CopK.Inject[TFloat, Type]                   = CopK.Inject[TFloat, Type]
-  implicit val InjInt32: CopK.Inject[TInt32, Type]                   = CopK.Inject[TInt32, Type]
-  implicit val InjInt64: CopK.Inject[TInt64, Type]                   = CopK.Inject[TInt64, Type]
-  implicit val InjUint32: CopK.Inject[TUInt32, Type]                 = CopK.Inject[TUInt32, Type]
-  implicit val InjUint64: CopK.Inject[TUInt64, Type]                 = CopK.Inject[TUInt64, Type]
-  implicit val InjSint32: CopK.Inject[TSInt32, Type]                 = CopK.Inject[TSInt32, Type]
-  implicit val InjSint64: CopK.Inject[TSInt64, Type]                 = CopK.Inject[TSInt64, Type]
-  implicit val InjFixed32: CopK.Inject[TFixed32, Type]               = CopK.Inject[TFixed32, Type]
-  implicit val InjFixed64: CopK.Inject[TFixed64, Type]               = CopK.Inject[TFixed64, Type]
-  implicit val InjSfixed32: CopK.Inject[TSFixed32, Type]             = CopK.Inject[TSFixed32, Type]
-  implicit val InjSfixed64: CopK.Inject[TSFixed64, Type]             = CopK.Inject[TSFixed64, Type]
-  implicit val InjBoolean: CopK.Inject[TBoolean, Type]               = CopK.Inject[TBoolean, Type]
-  implicit val InjString: CopK.Inject[TString, Type]                 = CopK.Inject[TString, Type]
-  implicit val InjByteArray: CopK.Inject[TByteArray, Type]           = CopK.Inject[TByteArray, Type]
-  implicit val InjNamedType: CopK.Inject[TNamedType, Type]           = CopK.Inject[TNamedType, Type]
-  implicit val InjList: CopK.Inject[TList, Type]                     = CopK.Inject[TList, Type]
-  implicit val InjOneOf: CopK.Inject[TOneOf, Type]                   = CopK.Inject[TOneOf, Type]
-  implicit val InjMap: CopK.Inject[TMap, Type]                       = CopK.Inject[TMap, Type]
-  implicit val InjProtoEnum: CopK.Inject[TProtoEnum, Type]           = CopK.Inject[TProtoEnum, Type]
-  implicit val InjMessage: CopK.Inject[TMessage, Type]               = CopK.Inject[TMessage, Type]
-  implicit val InjFileDescriptor: CopK.Inject[TFileDescriptor, Type] = CopK.Inject[TFileDescriptor, Type]
-  implicit val protoTraverse: Traverse[protobuf.Type]                = derivation.copkTraverse[protobuf.Type[Unit]#L]
+  type Type[A] = CopK[Types, A]
+
+  implicit val InjNull: CopK.Inject[TNull, Type]                     = mkInject[TNull, Types](0)
+  implicit val InjDouble: CopK.Inject[TDouble, Type]                 = mkInject[TDouble, Types](1)
+  implicit val InjFloat: CopK.Inject[TFloat, Type]                   = mkInject[TFloat, Types](2)
+  implicit val InjInt32: CopK.Inject[TInt32, Type]                   = mkInject[TInt32, Types](3)
+  implicit val InjInt64: CopK.Inject[TInt64, Type]                   = mkInject[TInt64, Types](4)
+  implicit val InjUint32: CopK.Inject[TUInt32, Type]                 = mkInject[TUInt32, Types](5)
+  implicit val InjUint64: CopK.Inject[TUInt64, Type]                 = mkInject[TUInt64, Types](6)
+  implicit val InjSint32: CopK.Inject[TSInt32, Type]                 = mkInject[TSInt32, Types](7)
+  implicit val InjSint64: CopK.Inject[TSInt64, Type]                 = mkInject[TSInt64, Types](8)
+  implicit val InjFixed32: CopK.Inject[TFixed32, Type]               = mkInject[TFixed32, Types](9)
+  implicit val InjFixed64: CopK.Inject[TFixed64, Type]               = mkInject[TFixed64, Types](10)
+  implicit val InjSfixed32: CopK.Inject[TSFixed32, Type]             = mkInject[TSFixed32, Types](11)
+  implicit val InjSfixed64: CopK.Inject[TSFixed64, Type]             = mkInject[TSFixed64, Types](11)
+  implicit val InjBoolean: CopK.Inject[TBoolean, Type]               = mkInject[TBoolean, Types](12)
+  implicit val InjString: CopK.Inject[TString, Type]                 = mkInject[TString, Types](13)
+  implicit val InjByteArray: CopK.Inject[TByteArray, Type]           = mkInject[TByteArray, Types](14)
+  implicit val InjNamedType: CopK.Inject[TNamedType, Type]           = mkInject[TNamedType, Types](15)
+  implicit val InjList: CopK.Inject[TList, Type]                     = mkInject[TList, Types](16)
+  implicit val InjOneOf: CopK.Inject[TOneOf, Type]                   = mkInject[TOneOf, Types](17)
+  implicit val InjMap: CopK.Inject[TMap, Type]                       = mkInject[TMap, Types](18)
+  implicit val InjProtoEnum: CopK.Inject[TProtoEnum, Type]           = mkInject[TProtoEnum, Types](19)
+  implicit val InjMessage: CopK.Inject[TMessage, Type]               = mkInject[TMessage, Types](20)
+  implicit val InjFileDescriptor: CopK.Inject[TFileDescriptor, Type] = mkInject[TFileDescriptor, Types](21)
+  implicit val protoTraverse: Traverse[protobuf.Type]                = derivation.copkTraverse[Types]
   implicit def protoEq[T](implicit T: Eq[T]): Eq[protobuf.Type[T]] =
-    derivation.copkEqual[protobuf.Type[Unit]#L].apply(T)
+    derivation.copkEqual[Types].apply(T)
 
   def message[F[α] <: ACopK[α], A](name: String, fields: List[FieldF[A]], reserved: annotations.Reserved)(
       implicit I: TMessage :<<: F) = I.inj(Ann(TRecord(name, fields), reserved))

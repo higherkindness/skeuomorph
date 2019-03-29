@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.uast.types._
-import higherkindness.skeuomorph.uast.derivation._
+
 import higherkindness.skeuomorph.compdata.Ann
 import qq.droste._
 

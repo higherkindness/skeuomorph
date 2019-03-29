@@ -17,7 +17,7 @@
 // package higherkindness.skeuomorph.avro
 
 // import higherkindness.skeuomorph.uast.types._
-// import higherkindness.skeuomorph.uast.derivation._
+//
 // import higherkindness.skeuomorph.compdata.Ann
 // import higherkindness.skeuomorph.instances._
 

@@ -16,44 +16,49 @@
 
 package higherkindness.skeuomorph
 
+import cats.{Eq, Traverse}
+
 import io.circe.Json
 import iota.{TList => _, _}
 import iota.TListK.:::
+
 import qq.droste.Algebra
 
+import higherkindness.skeuomorph.uast.{derivation, mkInject}
 import higherkindness.skeuomorph.uast.types._
 
 package object openapi {
 
-  type Type[A] = CopK[
-    TInt :::
-      TLong :::
-      TFloat :::
-      TDouble :::
-      TString :::
-      TBoolean :::
-      TDate :::
-      TDateTime :::
-      TPassword :::
-      TRecord :::
-      TList :::
-      TUnion :::
-      TNilK,
-    A
-  ]
+  type Types = TInt :::
+    TLong :::
+    TFloat :::
+    TDouble :::
+    TString :::
+    TBoolean :::
+    TDate :::
+    TDateTime :::
+    TPassword :::
+    TRecord :::
+    TList :::
+    TUnion :::
+    TNilK
 
-  val InjInt: CopK.Inject[TInt, Type]           = CopK.Inject[TInt, Type]
-  val InjLong: CopK.Inject[TLong, Type]         = CopK.Inject[TLong, Type]
-  val InjFloat: CopK.Inject[TFloat, Type]       = CopK.Inject[TFloat, Type]
-  val InjDouble: CopK.Inject[TDouble, Type]     = CopK.Inject[TDouble, Type]
-  val InjString: CopK.Inject[TString, Type]     = CopK.Inject[TString, Type]
-  val InjBoolean: CopK.Inject[TBoolean, Type]   = CopK.Inject[TBoolean, Type]
-  val InjDate: CopK.Inject[TDate, Type]         = CopK.Inject[TDate, Type]
-  val InjDateTime: CopK.Inject[TDateTime, Type] = CopK.Inject[TDateTime, Type]
-  val InjPassword: CopK.Inject[TPassword, Type] = CopK.Inject[TPassword, Type]
-  val InjRecord: CopK.Inject[TRecord, Type]     = CopK.Inject[TRecord, Type]
-  val InjList: CopK.Inject[TList, Type]         = CopK.Inject[TList, Type]
-  val InjUnion: CopK.Inject[TUnion, Type]       = CopK.Inject[TUnion, Type]
+  type Type[A] = CopK[Types, A]
+
+  val InjInt: CopK.Inject[TInt, Type]                       = mkInject[TInt, Types](0)
+  val InjLong: CopK.Inject[TLong, Type]                     = mkInject[TLong, Types](1)
+  val InjFloat: CopK.Inject[TFloat, Type]                   = mkInject[TFloat, Types](2)
+  val InjDouble: CopK.Inject[TDouble, Type]                 = mkInject[TDouble, Types](3)
+  val InjString: CopK.Inject[TString, Type]                 = mkInject[TString, Types](4)
+  val InjBoolean: CopK.Inject[TBoolean, Type]               = mkInject[TBoolean, Types](5)
+  val InjDate: CopK.Inject[TDate, Type]                     = mkInject[TDate, Types](6)
+  val InjDateTime: CopK.Inject[TDateTime, Type]             = mkInject[TDateTime, Types](7)
+  val InjPassword: CopK.Inject[TPassword, Type]             = mkInject[TPassword, Types](8)
+  val InjRecord: CopK.Inject[TRecord, Type]                 = mkInject[TRecord, Types](9)
+  val InjList: CopK.Inject[TList, Type]                     = mkInject[TList, Types](10)
+  val InjUnion: CopK.Inject[TUnion, Type]                   = mkInject[TUnion, Types](11)
+  implicit def openapiEq[T](implicit T: Eq[T]): Eq[Type[T]] = derivation.copkEqual[Types].apply(T)
+  implicit val openapiTraverse: Traverse[Type]              = derivation.copkTraverse[Types]
 
   object Type {
 

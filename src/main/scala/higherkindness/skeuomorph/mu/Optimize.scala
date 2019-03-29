@@ -22,7 +22,6 @@ import cats.data.NonEmptyList
 import qq.droste._
 import uast._
 import uast.types._
-import uast.derivation._
 
 /**
  * Optimize object contains transformations in same schema

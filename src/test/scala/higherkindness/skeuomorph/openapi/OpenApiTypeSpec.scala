@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-// package higherkindness.skeuomorph.protobuf
+// package higherkindness.skeuomorph.openapi
 
-// import higherkindness.skeuomorph.uast.derivation._
-// import higherkindness.skeuomorph.instances._
 // import org.typelevel.discipline.specs2.Discipline
-// import cats.laws.discipline.{FoldableTests, FunctorTests, TraverseTests}
+// import cats.laws.discipline.TraverseTests
 // import cats.implicits._
 // import org.specs2._
 
-// class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
+// class OpenApiTypeSpec extends Specification with ScalaCheck with Discipline {
 
 //   def is = s2"""
-//   $traverse
-//   $functor
-//   $foldable
-//   """
+//  $traverse
+//  """
 
 //   val traverse =
-//     checkAll("Traverse[protobuf.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
-//   val functor  = checkAll("Functor[protobuf.Type]", FunctorTests[Type].functor[Int, Int, String])
-//   val foldable = checkAll("Foldable[protobuf.Type]", FoldableTests[Type].foldable[Int, Int])
+//     checkAll("Traverse[openapi.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
 // }

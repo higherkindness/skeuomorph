@@ -14,20 +14,9 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph
+package uast
 
-import higherkindness.skeuomorph.instances._
-
-import org.typelevel.discipline.specs2.Discipline
-import cats.laws.discipline.TraverseTests
-import cats.implicits._
-import org.specs2._
-
-class MuTypeSpec extends Specification with ScalaCheck with Discipline {
-
-  def is = s2"""
-  $traverse
-  """
-
-  val traverse = checkAll("Traverse[mu.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
+trait Delay[F[_], G[_]] {
+  def apply[A](fa: F[A]): F[G[A]]
 }

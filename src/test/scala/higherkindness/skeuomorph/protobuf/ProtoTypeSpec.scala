@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.instances._
-
 import org.typelevel.discipline.specs2.Discipline
 import cats.laws.discipline.TraverseTests
 import cats.implicits._
 import org.specs2._
 
-class MuTypeSpec extends Specification with ScalaCheck with Discipline {
+class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
 
   def is = s2"""
   $traverse
   """
 
-  val traverse = checkAll("Traverse[mu.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
+  val traverse =
+    checkAll("Traverse[protobuf.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
 }

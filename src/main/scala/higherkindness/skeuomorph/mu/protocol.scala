@@ -19,7 +19,8 @@ package mu
 
 import cats.implicits._
 import higherkindness.skeuomorph.avro
-import higherkindness.skeuomorph.uast.derivation._
+import higherkindness.skeuomorph.avro.avroTraverse
+
 import qq.droste._
 
 sealed trait SerializationType extends Product with Serializable

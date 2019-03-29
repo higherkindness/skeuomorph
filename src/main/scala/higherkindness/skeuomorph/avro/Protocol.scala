@@ -17,8 +17,8 @@
 package higherkindness.skeuomorph.avro
 
 import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.mu.muTraverse
 import higherkindness.skeuomorph.mu.SerializationType
-import higherkindness.skeuomorph.uast.derivation._
 import higherkindness.skeuomorph.uast.types._
 
 import cats.implicits._

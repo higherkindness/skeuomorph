@@ -21,7 +21,7 @@ import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.uast.types.{string => _, _}
-import higherkindness.skeuomorph.uast.derivation._
+
 import higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
 import higherkindness.skeuomorph.mu.SerializationType._

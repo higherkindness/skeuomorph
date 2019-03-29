@@ -16,7 +16,7 @@
 
 package higherkindness.skeuomorph.uast
 
-import cats.{~>, Eq}
+import cats.{Eq, Traverse}
 import cats.data._
 import cats.instances.list._
 import monocle.Lens
@@ -24,11 +24,8 @@ import monocle.Lens
 import higherkindness.skeuomorph.compdata.Ann
 import higherkindness.skeuomorph.protobuf.OptionValue
 import higherkindness.skeuomorph.avro.types._
-import higherkindness.skeuomorph.uast.derivation._
 
-import qq.droste.Delay
 import qq.droste.macros.deriveTraverse
-import qq.droste.syntax.compose._
 
 import iota.{CopK, TNilK}
 import iota.TListK.:::
@@ -40,157 +37,157 @@ object types {
     def tpe[A]: Lens[Field[A], A]       = Lens[Field[A], A](_.tpe)(tpe => field => field.copy(tpe = tpe))
     def name[A]: Lens[Field[A], String] = Lens[Field[A], String](_.name)(name => field => field.copy(name = name))
 
-    implicit def eqField: Delay[Eq, Field] = new (Eq ~> (Eq ∘ Field)#λ) {
+    implicit val eqField: Delay[Eq, Field] = new Delay[Eq, Field] {
       def apply[A](eq: Eq[A]): Eq[Field[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TNull[A]()
   object TNull {
-    implicit def eqTNull: Delay[Eq, TNull] = new (Eq ~> (Eq ∘ TNull)#λ) {
+    implicit val eqTNull: Delay[Eq, TNull] = new Delay[Eq, TNull] {
       def apply[A](eq: Eq[A]): Eq[TNull[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TBoolean[A]()
   object TBoolean {
-    implicit def eqTBoolean: Delay[Eq, TBoolean] = new (Eq ~> (Eq ∘ TBoolean)#λ) {
+    implicit val eqTBoolean: Delay[Eq, TBoolean] = new Delay[Eq, TBoolean] {
       def apply[A](eq: Eq[A]): Eq[TBoolean[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TInt[A]()
   object TInt {
-    implicit def eqTInt: Delay[Eq, TInt] = new (Eq ~> (Eq ∘ TInt)#λ) {
+    implicit val eqTInt: Delay[Eq, TInt] = new Delay[Eq, TInt] {
       def apply[A](eq: Eq[A]): Eq[TInt[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TLong[A]()
   object TLong {
-    implicit def eqTLong: Delay[Eq, TLong] = new (Eq ~> (Eq ∘ TLong)#λ) {
+    implicit val eqTLong: Delay[Eq, TLong] = new Delay[Eq, TLong] {
       def apply[A](eq: Eq[A]): Eq[TLong[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TFloat[A]()
   object TFloat {
-    implicit def eqTFloat: Delay[Eq, TFloat] = new (Eq ~> (Eq ∘ TFloat)#λ) {
+    implicit val eqTFloat: Delay[Eq, TFloat] = new Delay[Eq, TFloat] {
       def apply[A](eq: Eq[A]): Eq[TFloat[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TDouble[A]()
   object TDouble {
-    implicit def eqTDouble: Delay[Eq, TDouble] = new (Eq ~> (Eq ∘ TDouble)#λ) {
+    implicit val eqTDouble: Delay[Eq, TDouble] = new Delay[Eq, TDouble] {
       def apply[A](eq: Eq[A]): Eq[TDouble[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TString[A]()
   object TString {
-    implicit def eqTString: Delay[Eq, TString] = new (Eq ~> (Eq ∘ TString)#λ) {
+    implicit val eqTString: Delay[Eq, TString] = new Delay[Eq, TString] {
       def apply[A](eq: Eq[A]): Eq[TString[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TDate[A]()
   object TDate {
-    implicit def eqTDate: Delay[Eq, TDate] = new (Eq ~> (Eq ∘ TDate)#λ) {
+    implicit val eqTDate: Delay[Eq, TDate] = new Delay[Eq, TDate] {
       def apply[A](eq: Eq[A]): Eq[TDate[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TDateTime[A]()
   object TDateTime {
-    implicit def eqTDateTime: Delay[Eq, TDateTime] = new (Eq ~> (Eq ∘ TDateTime)#λ) {
+    implicit val eqTDateTime: Delay[Eq, TDateTime] = new Delay[Eq, TDateTime] {
       def apply[A](eq: Eq[A]): Eq[TDateTime[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TPassword[A]()
   object TPassword {
-    implicit def eqTPassword: Delay[Eq, TPassword] = new (Eq ~> (Eq ∘ TPassword)#λ) {
+    implicit val eqTPassword: Delay[Eq, TPassword] = new Delay[Eq, TPassword] {
       def apply[A](eq: Eq[A]): Eq[TPassword[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TByte[A]()
   object TByte {
-    implicit def eqTByte: Delay[Eq, TByte] = new (Eq ~> (Eq ∘ TByte)#λ) {
+    implicit val eqTByte: Delay[Eq, TByte] = new Delay[Eq, TByte] {
       def apply[A](eq: Eq[A]): Eq[TByte[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TByteArray[A]()
   object TByteArray {
-    implicit def eqTByteArray: Delay[Eq, TByteArray] = new (Eq ~> (Eq ∘ TByteArray)#λ) {
+    implicit val eqTByteArray: Delay[Eq, TByteArray] = new Delay[Eq, TByteArray] {
       def apply[A](eq: Eq[A]): Eq[TByteArray[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TNamedType[A](name: String)
   object TNamedType {
-    implicit def eqTNamedType: Delay[Eq, TNamedType] = new (Eq ~> (Eq ∘ TNamedType)#λ) {
+    implicit val eqTNamedType: Delay[Eq, TNamedType] = new Delay[Eq, TNamedType] {
       def apply[A](eq: Eq[A]): Eq[TNamedType[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TMap[A](keys: A, values: A)
   object TMap {
-    implicit def eqTMap: Delay[Eq, TMap] = new (Eq ~> (Eq ∘ TMap)#λ) {
+    implicit val eqTMap: Delay[Eq, TMap] = new Delay[Eq, TMap] {
       def apply[A](eq: Eq[A]): Eq[TMap[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TNamedFixed[A](name: String, size: Int)
   object TNamedFixed {
-    implicit def eqTNamedFixed: Delay[Eq, TNamedFixed] = new (Eq ~> (Eq ∘ TNamedFixed)#λ) {
+    implicit val eqTNamedFixed: Delay[Eq, TNamedFixed] = new Delay[Eq, TNamedFixed] {
       def apply[A](eq: Eq[A]): Eq[TNamedFixed[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TOption[A](value: A)
   object TOption {
-    implicit def eqTOption: Delay[Eq, TOption] = new (Eq ~> (Eq ∘ TOption)#λ) {
+    implicit val eqTOption: Delay[Eq, TOption] = new Delay[Eq, TOption] {
       def apply[A](eq: Eq[A]): Eq[TOption[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TEither[A](left: A, right: A)
   object TEither {
-    implicit def eqTEither: Delay[Eq, TEither] = new (Eq ~> (Eq ∘ TEither)#λ) {
+    implicit val eqTEither: Delay[Eq, TEither] = new Delay[Eq, TEither] {
       def apply[A](eq: Eq[A]): Eq[TEither[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TList[A](value: A)
   object TList {
-    implicit def eqTList: Delay[Eq, TList] = new (Eq ~> (Eq ∘ TList)#λ) {
+    implicit val eqTList: Delay[Eq, TList] = new Delay[Eq, TList] {
       def apply[A](eq: Eq[A]): Eq[TList[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TGeneric[A](generic: A, params: List[A])
   object TGeneric {
-    implicit def eqTGeneric: Delay[Eq, TGeneric] = new (Eq ~> (Eq ∘ TGeneric)#λ) {
+    implicit val eqTGeneric: Delay[Eq, TGeneric] = new Delay[Eq, TGeneric] {
       def apply[A](eq: Eq[A]): Eq[TGeneric[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TRecord[A](name: String, fields: List[FieldF[A]])
   object TRecord {
-    implicit def eqTRecord: Delay[Eq, TRecord] = new (Eq ~> (Eq ∘ TRecord)#λ) {
+    implicit val eqTRecord: Delay[Eq, TRecord] = new Delay[Eq, TRecord] {
       def apply[A](eq: Eq[A]): Eq[TRecord[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TEnum[A](name: String, symbols: List[String])
   object TEnum {
-    implicit def eqTEnum: Delay[Eq, TEnum] = new (Eq ~> (Eq ∘ TEnum)#λ) {
+    implicit val eqTEnum: Delay[Eq, TEnum] = new Delay[Eq, TEnum] {
       def apply[A](eq: Eq[A]): Eq[TEnum[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TUnion[A](options: NonEmptyList[A])
   object TUnion {
-    implicit def eqTUnion: Delay[Eq, TUnion] = new (Eq ~> (Eq ∘ TUnion)#λ) {
+    implicit val eqTUnion: Delay[Eq, TUnion] = new Delay[Eq, TUnion] {
       def apply[A](eq: Eq[A]): Eq[TUnion[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TContaining[A](types: List[A])
   object TContaining {
-    implicit def eqTContaining: Delay[Eq, TContaining] = new (Eq ~> (Eq ∘ TContaining)#λ) {
+    implicit val eqTContaining: Delay[Eq, TContaining] = new Delay[Eq, TContaining] {
       def apply[A](eq: Eq[A]): Eq[TContaining[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TFileDescriptor[A](values: List[A], name: String, `package`: String)
   object TFileDescriptor {
-    implicit def eqTFileDescriptor: Delay[Eq, TFileDescriptor] = new (Eq ~> (Eq ∘ TFileDescriptor)#λ) {
+    implicit val eqTFileDescriptor: Delay[Eq, TFileDescriptor] = new Delay[Eq, TFileDescriptor] {
       def apply[A](eq: Eq[A]): Eq[TFileDescriptor[A]] = Eq.fromUniversalEquals
     }
   }
   @deriveTraverse final case class TOneOf[A](name: String, fields: NonEmptyList[FieldF[A]])
   object TOneOf {
-    implicit def eqTOneOf: Delay[Eq, TOneOf] = new (Eq ~> (Eq ∘ TOneOf)#λ) {
+    implicit val eqTOneOf: Delay[Eq, TOneOf] = new Delay[Eq, TOneOf] {
       def apply[A](eq: Eq[A]): Eq[TOneOf[A]] = Eq.fromUniversalEquals
     }
   }
@@ -233,18 +230,25 @@ object types {
   def oneOf[F[α] <: ACopK[α], A](name: String, fields: NonEmptyList[FieldF[A]])(implicit I: TOneOf :<<: F): F[A] =
     I.inj(TOneOf(name, fields))
 
+  type FieldFTypes = Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?] :::
+    Ann[Field, AvroMetadata, ?] :::
+    Field :::
+    TNilK
+
   type FieldF[A] = CopK[
-    Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?] :::
-      Ann[Field, AvroMetadata, ?] :::
-      Field :::
-      TNilK,
+    FieldFTypes,
     A
   ]
 
+  implicit val protoField: Traverse[Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?]] =
+    Ann.traverse[Field, (Int, List[OptionValue], Boolean, Boolean)]
+  implicit val avroField: Traverse[Ann[Field, AvroMetadata, ?]] = Ann.traverse[Field, AvroMetadata]
+  implicit val fieldFTraverse: Traverse[FieldF]                 = derivation.copkTraverse[FieldF[Unit]#L]
+
   object FieldF {
-    val InjProtobufField = CopK.Inject[Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?], FieldF]
-    val InjAvroField     = CopK.Inject[Ann[Field, AvroMetadata, ?], FieldF]
-    val InjSimpleField   = CopK.Inject[Field, FieldF]
+    val InjProtobufField = mkInject[Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?], FieldFTypes](0)
+    val InjAvroField     = mkInject[Ann[Field, AvroMetadata, ?], FieldFTypes](1)
+    val InjSimpleField   = mkInject[Field, FieldFTypes](2)
 
     def ProtobufField[A](
         name: String,

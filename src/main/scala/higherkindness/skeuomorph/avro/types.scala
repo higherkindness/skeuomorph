@@ -27,7 +27,7 @@ object types {
     case object Descending extends Order
     case object Ignore     extends Order
 
-    implicit def orderEq: Eq[Order] = Eq.instance {
+    implicit val orderEq: Eq[Order] = Eq.instance {
       case (Ascending, Ascending)   => true
       case (Descending, Descending) => true
       case (Ignore, Ignore)         => true

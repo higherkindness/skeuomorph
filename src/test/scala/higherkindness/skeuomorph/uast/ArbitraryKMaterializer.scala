@@ -17,7 +17,6 @@
 package higherkindness.skeuomorph
 package uast
 
-import qq.droste.Delay
 import org.scalacheck._
 import iota.{CopK, TListK, TNilK}
 import iota.TListK.:::
@@ -49,7 +48,6 @@ object ArbitraryKMaterializer {
   implicit def induct[F[_], LL <: TListK](
       implicit
       FA: Delay[Arbitrary, F],
-      LW: UnionWidth[CopK[LL, ?]],
       LL: ArbitraryKMaterializer[LL]
   ): ArbitraryKMaterializer[F ::: LL] = new ArbitraryKMaterializer[F ::: LL] {
     override def materialize(offset: Int): Delay[Arbitrary, CopK[F ::: LL, ?]] = {
@@ -59,7 +57,7 @@ object ArbitraryKMaterializer {
           Arbitrary(
             Gen.frequency(
               (1, FA(arb).arbitrary.map(I(_))),
-              (LW.width, LL.materialize(offset + 1)(arb).arbitrary.asInstanceOf[Gen[CopK[F ::: LL, A]]])
+              (offset + 2, LL.materialize(offset + 1)(arb).arbitrary.asInstanceOf[Gen[CopK[F ::: LL, A]]])
             ))
         }
       }

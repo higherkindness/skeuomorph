@@ -17,14 +17,13 @@
 package higherkindness.skeuomorph.avro
 
 import higherkindness.skeuomorph.instances._
-import higherkindness.skeuomorph.uast.derivation._
+
 import org.typelevel.discipline.specs2.Discipline
 import cats.laws.discipline.TraverseTests
 import cats.implicits._
 import org.specs2._
 
 class AvroTypeSpec extends Specification with ScalaCheck with Discipline {
-
   def is = s2"""
   $traverse
   """

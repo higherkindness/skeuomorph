@@ -18,7 +18,6 @@ package higherkindness.skeuomorph.uast
 
 import iota.TListK.:::
 import iota.{CopK, TListK, TNilK}
-import qq.droste.Delay
 
 import cats._
 
@@ -39,7 +38,7 @@ object EqKMaterializer {
   ): EqKMaterializer[F ::: TNilK] = new EqKMaterializer[F ::: TNilK] {
     override def materialize(offset: Int): Delay[Eq, CopK[F ::: TNilK, ?]] = {
       val I = mkInject[F, F ::: TNilK](offset)
-      new (Eq ~> λ[a => Eq[CopK[F ::: TNilK, a]]]) {
+      new Delay[Eq, λ[α => CopK[F ::: TNilK, α]]] {
         override def apply[A](eq: Eq[A]): Eq[CopK[F ::: TNilK, A]] = {
           Eq instance {
             case (I(left), I(right)) => F(eq).eqv(left, right)
@@ -57,7 +56,7 @@ object EqKMaterializer {
   ): EqKMaterializer[F ::: LL] = new EqKMaterializer[F ::: LL] {
     override def materialize(offset: Int): Delay[Eq, CopK[F ::: LL, ?]] = {
       val I = mkInject[F, F ::: LL](offset)
-      new (Eq ~> λ[a => Eq[CopK[F ::: LL, a]]]) {
+      new Delay[Eq, λ[α => CopK[F ::: LL, α]]] {
         override def apply[A](eq: Eq[A]): Eq[CopK[F ::: LL, A]] = {
           Eq instance {
             case (I(left), I(right)) => F(eq).eqv(left, right)

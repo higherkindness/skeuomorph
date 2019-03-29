@@ -23,7 +23,7 @@ import iota.{TList => _, _}
 import iota.TListK.:::
 import org.apache.avro.Schema
 import org.apache.avro.Schema.{Type => SType}
-import qq.droste.{Algebra, Coalgebra, Delay}
+import qq.droste.{Algebra, Coalgebra}
 import higherkindness.skeuomorph.uast._
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.avro.types._
@@ -34,46 +34,46 @@ import scala.collection.JavaConverters._
 package object avro {
 
   type TAvroRecord[A] = Ann[TRecord, AvroMetadata, A]
+  implicit val avroRecordTraverse: Traverse[TAvroRecord] = Ann.traverse[TRecord, AvroMetadata]
 
-  type Type[A] = CopK[
-    TNull :::
-      TBoolean :::
-      TInt :::
-      TLong :::
-      TFloat :::
-      TDouble :::
-      TByteArray :::
-      TString :::
-      TList :::
-      TMap :::
-      TAvroRecord :::
-      TEnum :::
-      TUnion :::
-      TNamedType :::
-      TNamedFixed :::
-      TNilK,
-    A
-  ]
+  type Types = TNull :::
+    TBoolean :::
+    TInt :::
+    TLong :::
+    TFloat :::
+    TDouble :::
+    TByteArray :::
+    TString :::
+    TList :::
+    TMap :::
+    TAvroRecord :::
+    TEnum :::
+    TUnion :::
+    TNamedType :::
+    TNamedFixed :::
+    TNilK
 
-  implicit val InjNull: CopK.Inject[TNull, Type]             = CopK.Inject[TNull, Type]
-  implicit val InjBoolean: CopK.Inject[TBoolean, Type]       = CopK.Inject[TBoolean, Type]
-  implicit val InjInt: CopK.Inject[TInt, Type]               = CopK.Inject[TInt, Type]
-  implicit val InjLong: CopK.Inject[TLong, Type]             = CopK.Inject[TLong, Type]
-  implicit val InjFloat: CopK.Inject[TFloat, Type]           = CopK.Inject[TFloat, Type]
-  implicit val InjDouble: CopK.Inject[TDouble, Type]         = CopK.Inject[TDouble, Type]
-  implicit val InjByteArray: CopK.Inject[TByteArray, Type]   = CopK.Inject[TByteArray, Type]
-  implicit val InjString: CopK.Inject[TString, Type]         = CopK.Inject[TString, Type]
-  implicit val InjList: CopK.Inject[TList, Type]             = CopK.Inject[TList, Type]
-  implicit val InjMap: CopK.Inject[TMap, Type]               = CopK.Inject[TMap, Type]
-  implicit val InjAvroRecord: CopK.Inject[TAvroRecord, Type] = CopK.Inject[TAvroRecord, Type]
-  implicit val InjEnum: CopK.Inject[TEnum, Type]             = CopK.Inject[TEnum, Type]
-  implicit val InjUnion: CopK.Inject[TUnion, Type]           = CopK.Inject[TUnion, Type]
-  implicit val InjNamedType: CopK.Inject[TNamedType, Type]   = CopK.Inject[TNamedType, Type]
-  implicit val InjFixed: CopK.Inject[TNamedFixed, Type]      = CopK.Inject[TNamedFixed, Type]
+  type Type[A] = CopK[Types, A]
+
+  implicit val avroTraverse: Traverse[avro.Type]             = derivation.copkTraverse[Types]
+  implicit val InjNull: CopK.Inject[TNull, Type]             = mkInject[TNull, Types](0)
+  implicit val InjBoolean: CopK.Inject[TBoolean, Type]       = mkInject[TBoolean, Types](1)
+  implicit val InjInt: CopK.Inject[TInt, Type]               = mkInject[TInt, Types](2)
+  implicit val InjLong: CopK.Inject[TLong, Type]             = mkInject[TLong, Types](3)
+  implicit val InjFloat: CopK.Inject[TFloat, Type]           = mkInject[TFloat, Types](4)
+  implicit val InjDouble: CopK.Inject[TDouble, Type]         = mkInject[TDouble, Types](5)
+  implicit val InjByteArray: CopK.Inject[TByteArray, Type]   = mkInject[TByteArray, Types](6)
+  implicit val InjString: CopK.Inject[TString, Type]         = mkInject[TString, Types](7)
+  implicit val InjList: CopK.Inject[TList, Type]             = mkInject[TList, Types](8)
+  implicit val InjMap: CopK.Inject[TMap, Type]               = mkInject[TMap, Types](9)
+  implicit val InjAvroRecord: CopK.Inject[TAvroRecord, Type] = mkInject[TAvroRecord, Types](10)
+  implicit val InjEnum: CopK.Inject[TEnum, Type]             = mkInject[TEnum, Types](11)
+  implicit val InjUnion: CopK.Inject[TUnion, Type]           = mkInject[TUnion, Types](12)
+  implicit val InjNamedType: CopK.Inject[TNamedType, Type]   = mkInject[TNamedType, Types](13)
+  implicit val InjFixed: CopK.Inject[TNamedFixed, Type]      = mkInject[TNamedFixed, Types](14)
   implicit val eqTAvroRecord: Delay[Eq, TAvroRecord]         = Ann.delayEq[TRecord, AvroMetadata]
-  implicit val avroTraverse: Traverse[avro.Type]             = derivation.copkTraverse[avro.Type[Unit]#L]
   implicit def avroEq[T](implicit T: Eq[T]): Eq[avro.Type[T]] =
-    derivation.copkEqual[avro.Type[Unit]#L].apply(T)
+    derivation.copkEqual[Types].apply(T)
 
   def avroRecord[F[α] <: ACopK[α], A](
       name: String,

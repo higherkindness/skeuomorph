@@ -16,20 +16,18 @@
 
 package higherkindness.skeuomorph
 
-import cats.{Eq, Traverse}
 import cats.implicits._
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
 
-import higherkindness.skeuomorph.uast.ArbitraryKMaterializer
-import higherkindness.skeuomorph.uast.derivation
+import higherkindness.skeuomorph.uast.{ArbitraryKMaterializer, Delay}
 import higherkindness.skeuomorph.uast.arbitraries._
+import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.avro._
 import higherkindness.skeuomorph.avro.types._
 import higherkindness.skeuomorph.protobuf._
-import qq.droste.Delay
 
 import scala.collection.JavaConverters._
 
@@ -37,10 +35,12 @@ import iota.{CopK, TListK}
 
 object instances {
 
-  implicit def copkArbitrary[LL <: TListK](implicit M: ArbitraryKMaterializer[LL]): Delay[Arbitrary, CopK[LL, ?]] =
+  val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
+
+  def copkArbitrary[LL <: TListK](implicit M: ArbitraryKMaterializer[LL]): Delay[Arbitrary, CopK[LL, ?]] =
     M.materialize(offset = 0)
 
-  implicit def arbAvroMetadata: Arbitrary[AvroMetadata] = {
+  implicit val arbAvroMetadata: Arbitrary[AvroMetadata] = {
     val genOrder  = Gen.oneOf(Order.Ascending, Order.Descending, Order.Ignore)
     val aliases   = Gen.listOf(nonEmptyString).map(AvroMetadata.Aliases)
     val namespace = Gen.option(nonEmptyString).map(AvroMetadata.NameSpace)
@@ -60,9 +60,7 @@ object instances {
       ))
   }
 
-  val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
-
-  implicit def arbOptionValue: Arbitrary[OptionValue] =
+  implicit val arbOptionValue: Arbitrary[OptionValue] =
     Arbitrary((nonEmptyString, nonEmptyString).mapN(OptionValue.apply))
   implicit val arb32: Arbitrary[protobuf.annotations.`32`]       = Arbitrary(Gen.const(protobuf.annotations.`32`()))
   implicit val arb64: Arbitrary[protobuf.annotations.`64`]       = Arbitrary(Gen.const(protobuf.annotations.`64`()))
@@ -132,10 +130,12 @@ object instances {
   }
 
   implicit def muArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[mu.Type[T]] =
-    implicitly[Delay[Arbitrary, mu.Type]].apply(T)
+    copkArbitrary[mu.Types].apply(T)
   implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[avro.Type[T]] =
-    implicitly[Delay[Arbitrary, avro.Type]].apply(T)
+    copkArbitrary[avro.Types].apply(T)
   implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] =
-    implicitly[Delay[Arbitrary, protobuf.Type]].apply(T)
+    copkArbitrary[protobuf.Types].apply(T)
+  implicit def openapiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[openapi.Type[T]] =
+    copkArbitrary[openapi.Types].apply(T)
 
 }
