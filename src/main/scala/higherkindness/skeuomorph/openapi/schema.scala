@@ -59,6 +59,7 @@ object schema {
         description: String,
         externalDocs: ExternalDocs,
         operationId: String,
+        parameters: List[Either[Parameter[_], Reference]],
         responses: Map[String, Either[Response[A], Reference]],
         callbacks: Map[String, Either[Callback[A], Reference]],
         deprecated: Boolean,
@@ -95,5 +96,86 @@ object schema {
   final case class Reference(ref: String) // $ref
 
   final case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
+
+  sealed trait Parameter[A] extends Product with Serializable {
+    def name: String
+    def in: Location
+    def description: Option[String]
+    def required: Boolean
+    def deprecated: Boolean
+    def style: String
+    def explode: Boolean
+    def allowEmptyValue: Boolean
+    def allowReserved: Boolean
+    def schema: Either[JsonSchemaF[A], Reference]
+  }
+
+  object Parameter {
+
+    final case class Path[A](
+        name: String,
+        description: Option[String],
+        deprecated: Boolean = false,
+        style: String = "simple",
+        explode: Boolean = false,
+        schema: Either[JsonSchemaF[A], Reference]
+    ) extends Parameter[A] {
+      val in: Location             = Location.Path
+      val required: Boolean        = true
+      val allowEmptyValue: Boolean = false
+      val allowReserved: Boolean   = false
+    }
+
+    final case class Query[A](
+        name: String,
+        description: Option[String],
+        required: Boolean = false,
+        deprecated: Boolean = false,
+        style: String = "form",
+        allowEmptyValue: Boolean,
+        explode: Boolean = true,
+        allowReserved: Boolean = false,
+        schema: Either[JsonSchemaF[A], Reference]
+    ) extends Parameter[A] {
+      val in: Location = Location.Query
+    }
+
+    final case class Header[A](
+        name: String,
+        description: Option[String],
+        required: Boolean = false,
+        deprecated: Boolean = false,
+        style: String = "simple",
+        explode: Boolean = false,
+        schema: Either[JsonSchemaF[A], Reference]
+    ) extends Parameter[A] {
+      val in: Location             = Location.Header
+      val allowEmptyValue: Boolean = false
+      val allowReserved: Boolean   = false
+    }
+
+    final case class Cookie[A](
+        name: String,
+        description: Option[String],
+        required: Boolean = false,
+        deprecated: Boolean = false,
+        style: String = "form",
+        explode: Boolean = false,
+        schema: Either[JsonSchemaF[A], Reference]
+    ) extends Parameter[A] {
+      val in: Location             = Location.Cookie
+      val allowEmptyValue: Boolean = false
+      val allowReserved: Boolean   = false
+    }
+
+  }
+
+  sealed abstract class Location(val value: String) extends Product with Serializable
+  object Location {
+    case object Path   extends Location("path")
+    case object Query  extends Location("query")
+    case object Header extends Location("header")
+    case object Cookie extends Location("cookie")
+  }
 
 }

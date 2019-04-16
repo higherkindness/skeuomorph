@@ -113,13 +113,42 @@ object JsonEncoders {
       (r.description, r.headers, r.content)
     }
 
+  implicit val locationEncoder: Encoder[Location] = Encoder.encodeString.contramap(_.value)
+
+  implicit def parameterEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Parameter[A]] =
+    Encoder.forProduct10(
+      "name",
+      "in",
+      "description",
+      "required",
+      "deprecated",
+      "style",
+      "explode",
+      "allowEmptyValue",
+      "allowReserved",
+      "schema"
+    ) { p =>
+      (
+        p.name,
+        p.in,
+        p.description,
+        p.required,
+        p.deprecated,
+        p.style,
+        p.explode,
+        p.allowEmptyValue,
+        p.allowReserved,
+        p.schema)
+    }
+
   implicit def operationEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.Operation[A]] =
-    Encoder.forProduct9(
+    Encoder.forProduct10(
       "tags",
       "summary",
       "description",
       "externalDocs",
       "operationId",
+      "parameters",
       "responses",
       "callbacks",
       "deprecated",
@@ -130,6 +159,7 @@ object JsonEncoders {
         op.description,
         op.externalDocs,
         op.operationId,
+        op.parameters,
         op.responses,
         op.callbacks,
         op.deprecated,
