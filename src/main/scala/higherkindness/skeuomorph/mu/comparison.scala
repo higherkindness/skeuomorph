@@ -98,7 +98,7 @@ object Incompatibility {
   }
 }
 
-sealed trait ComparisonResult[T]
+sealed trait ComparisonResult[T] 
 object ComparisonResult {
 
   final case class Match[T](transformations: List[Transformation[T]]) extends ComparisonResult[T]
