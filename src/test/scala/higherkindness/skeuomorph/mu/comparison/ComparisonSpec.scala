@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph.mu.comparison
 
 import qq.droste.data.Mu
 import qq.droste.syntax.embed._
 import org.specs2.Specification
 import cats.data.NonEmptyList
 
-import MuF._
+import higherkindness.skeuomorph.mu.MuF, MuF._
 import ComparisonResult._
 import Transformation._
 import PathElement._

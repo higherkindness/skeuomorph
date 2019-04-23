@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.mu
+package higherkindness.skeuomorph.mu.comparison
 
 import qq.droste._
 import qq.droste.syntax.project._
-import MuF._
+import higherkindness.skeuomorph.mu.MuF, MuF._
 import cats.Functor
-import cats.Monoid
-import cats.Show
 import cats.data.NonEmptyList
 import cats.instances.list._
 import cats.instances.string._
@@ -30,118 +28,6 @@ import cats.syntax.option._
 import cats.syntax.foldable._
 import cats.syntax.semigroup._
 import cats.syntax.apply._
-import cats.syntax.show._
-
-trait PathElement extends Product with Serializable
-object PathElement {
-  final case class Name(value: String)        extends PathElement
-  final case class FieldName(name: String)    extends PathElement
-  case object Values                          extends PathElement
-  case object Keys                            extends PathElement
-  case object Items                           extends PathElement
-  final case class Alternative(idx: Int)      extends PathElement
-  case object LeftBranch                      extends PathElement
-  case object RightBranch                     extends PathElement
-  case object GenericType                     extends PathElement
-  final case class GenericParameter(idx: Int) extends PathElement
-
-  implicit val pathElementShow: Show[PathElement] = Show.show {
-    case Name(v)             => v
-    case FieldName(n)        => n
-    case Values              => "$values"
-    case Keys                => "$keys"
-    case Items               => "$items"
-    case Alternative(i)      => s"$$alt[$i]"
-    case LeftBranch          => "$left"
-    case RightBranch         => "$right"
-    case GenericType         => "$gtype"
-    case GenericParameter(i) => s"$$tparam[$i]"
-  }
-}
-
-final case class Path(elements: Vector[PathElement]) {
-  def /(elem: PathElement) = Path(elements :+ elem)
-}
-object Path {
-  def empty: Path = Path(Vector.empty)
-
-  implicit def pathShow(implicit elem: Show[PathElement]): Show[Path] =
-    Show.show(_.elements.map(elem.show).mkString("."))
-
-  def commonAncestor(p1: Path, p2: Path): Path =
-    Path(p1.elements.zip(p2.elements).takeWhile(p => p._1 == p._2).map(_._1))
-}
-
-sealed trait Transformation[T]
-
-object Transformation {
-  final case class NumericWiddening[T](relativePath: Path, from: T, to: T)  extends Transformation[T]
-  final case class StringConversion[T](relativePath: Path, from: T, to: T)  extends Transformation[T]
-  final case class Addition[T](relativePath: Path, added: T)                extends Transformation[T]
-  final case class Removal[T](relativePath: Path, removed: T)               extends Transformation[T]
-  final case class MadeOptional[T](relativePath: Path)                      extends Transformation[T]
-  final case class PromotedToEither[T](relativePath: Path, either: T)       extends Transformation[T]
-  final case class PromotedToCoproduct[T](relativePath: Path, coproduct: T) extends Transformation[T]
-  final case class CoproductWiddening[T](relativePath: Path, coproduct: T)  extends Transformation[T]
-
-  implicit def transformationShow[T](implicit showT: Show[T]): Show[Transformation[T]] = Show.show {
-    case NumericWiddening(p, f, t) => p.show ++ ": numeric widdening from " ++ f.show ++ " to " ++ t.show
-    case StringConversion(p, f, t) => p.show ++ ": string conversion from " ++ f.show ++ " to " ++ t.show
-    case Addition(p, a)            => p.show ++ ": added field with schema " ++ a.show
-    case Removal(p, _)             => p.show ++ ": field removed"
-    case MadeOptional(p)           => p.show ++ ": made optional"
-    case PromotedToEither(p, e)    => p.show ++ ": promoted to either " ++ e.show
-    case PromotedToCoproduct(p, c) => p.show ++ ": promoted to coproduct " ++ c.show
-    case CoproductWiddening(p, c)  => p.show ++ ": coproduct widdening to " ++ c.show
-  }
-}
-
-sealed trait Incompatibility
-
-object Incompatibility {
-  final case class Different(relativePath: Path)          extends Incompatibility
-  final case class UnionMemberRemoved(relativePath: Path) extends Incompatibility
-
-  implicit val incompatibilityShow: Show[Incompatibility] = Show.show {
-    case Different(p)          => p.show ++ ": !!DIFFERENT!!"
-    case UnionMemberRemoved(p) => p.show ++ ": union member not found in reader schema"
-  }
-}
-
-sealed trait ComparisonResult[T] {
-  def transformations: List[Transformation[T]]
-}
-object ComparisonResult {
-
-  final case class Match[T](transformations: List[Transformation[T]]) extends ComparisonResult[T]
-  final case class Mismatch[T](transformations: List[Transformation[T]], discrepancies: NonEmptyList[Incompatibility])
-      extends ComparisonResult[T]
-
-  def isMatch[T](result: ComparisonResult[T]): Boolean = result match {
-    case Match(_)       => true
-    case Mismatch(_, _) => false
-  }
-
-  implicit def comparisonResultCatsMonoid[T]: Monoid[ComparisonResult[T]] =
-    new Monoid[ComparisonResult[T]] {
-      def empty = Match[T](Nil)
-      def combine(left: ComparisonResult[T], right: ComparisonResult[T]): ComparisonResult[T] = (left, right) match {
-        case (Match(t1), Match(t2))               => Match(t1 ++ t2)
-        case (Match(t1), Mismatch(t2, d2))        => Mismatch(t1 ++ t2, d2)
-        case (Mismatch(t1, d1), Match(t2))        => Mismatch(t1 ++ t2, d1)
-        case (Mismatch(t1, d1), Mismatch(t2, d2)) => Mismatch(t1 ++ t2, d1 ++ d2.toList)
-      }
-    }
-
-  implicit def comparisonResultShow[T](
-      implicit showTrans: Show[Transformation[T]],
-      showIncomp: Show[Incompatibility]): Show[ComparisonResult[T]] = Show.show {
-    case Match(Nil)     => "schemas are identical"
-    case Match(t)       => "compatible transformations detected:\n" ++ t.map(_.show).mkString("\n")
-    case Mismatch(_, i) => "schemas are incompatible:\n" ++ i.toList.map(_.show).mkString("\n")
-  }
-
-}
 
 object Reporter {
 
