@@ -38,6 +38,8 @@ sealed trait ComparisonResult[T] {
 }
 object ComparisonResult {
 
+  def empty[T] = Match[T](Nil)
+
   final case class Match[T](transformations: List[Transformation[T]]) extends ComparisonResult[T]
   final case class Mismatch[T](transformations: List[Transformation[T]], discrepancies: NonEmptyList[Incompatibility])
       extends ComparisonResult[T]
@@ -49,7 +51,7 @@ object ComparisonResult {
 
   implicit def comparisonResultCatsMonoid[T]: Monoid[ComparisonResult[T]] =
     new Monoid[ComparisonResult[T]] {
-      def empty = Match[T](Nil)
+      def empty = ComparisonResult.empty
       def combine(left: ComparisonResult[T], right: ComparisonResult[T]): ComparisonResult[T] = (left, right) match {
         case (Match(t1), Match(t2))               => Match(t1 ++ t2)
         case (Match(t1), Mismatch(t2, d2))        => Mismatch(t1 ++ t2, d2)
