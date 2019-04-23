@@ -37,6 +37,11 @@ class ComparisonSpec extends Specification {
   Should accept coproduct widenning $coproductWiddening
   Should accept field addition in records $fieldAddition
   Should accept field removal in records $fieldRemoval
+  Should accept making a type optional $optionalPromotion
+  Should accept promotion to either $eitherPromotion
+  Should accept promotion of option to either $optionToEither
+  Should accept promotion of option to coproduct $optionToCoproduct
+  Should accept promotion of either to coproduct $eitherToCoproduct
   """
 
   type T = Mu[MuF]
@@ -59,14 +64,57 @@ class ComparisonSpec extends Specification {
     val original = int[T].embed
     val extended = coproduct(NonEmptyList.of(string[T].embed, long[T].embed)).embed
 
-    Comparison(original, extended) must_== Match(List())
+    Comparison(original, extended) must_== Match(
+      List(
+        PromotedToCoproduct(Path.empty, extended),
+        NumericWiddening(Path.empty, original, long[T].embed)
+      ))
+  }
+
+  def optionToEither = {
+    val original = option(int[T].embed).embed
+    val extended = either(int[T].embed, string[T].embed).embed
+
+    Comparison(original, extended) must_== Match(
+      List(
+        PromotedToEither(Path.empty, extended)
+      )
+    )
+  }
+
+  def optionToCoproduct = {
+    val original = option(int[T].embed).embed
+    val extended = coproduct(NonEmptyList.of(int[T].embed, string[T].embed)).embed
+
+    Comparison(original, extended) must_== Match(
+      List(
+        PromotedToCoproduct(Path.empty, extended)
+      )
+    )
+  }
+
+  def eitherToCoproduct = {
+    val original = either(int[T].embed, string[T].embed).embed
+    val extended = coproduct(NonEmptyList.of(byteArray[T].embed, boolean[T].embed, long[T].embed)).embed
+
+    Comparison(original, extended) must_== Match(
+      List(
+        PromotedToCoproduct(Path.empty, extended),
+        NumericWiddening(Path.empty / LeftBranch, int[T].embed, long[T].embed),
+        StringConversion(Path.empty / RightBranch, string[T].embed, byteArray[T].embed)
+      )
+    )
   }
 
   def coproductWiddening = {
     val original = coproduct(NonEmptyList.of(string[T].embed, long[T].embed)).embed
-    val extended = coproduct(NonEmptyList.of(long[T].embed, byteArray[T].embed, boolean[T].embed)).embed
+    val extended = coproduct(NonEmptyList.of(float[T].embed, byteArray[T].embed, boolean[T].embed)).embed
 
-    Comparison(original, extended) must_== Match(List())
+    Comparison(original, extended) must_== Match(
+      List(
+        StringConversion(Path.empty / Alternative(0), string[T].embed, byteArray[T].embed),
+        NumericWiddening(Path.empty / Alternative(1), long[T].embed, float[T].embed)
+      ))
   }
 
   def fieldAddition = {
@@ -83,5 +131,32 @@ class ComparisonSpec extends Specification {
 
     Comparison(original, reduced) must_== Match(
       List(Removal(Path.empty / Name("foo") / FieldName("age"), int[T].embed)))
+  }
+
+  def optionalPromotion = {
+
+    val original = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
+    val promoted = product("foo", List(Field("name", string[T].embed), Field("age", option(int[T].embed).embed))).embed
+
+    Comparison(original, promoted) must_== Match(List(MadeOptional[T](Path.empty / Name("foo") / FieldName("age"))))
+  }
+
+  def eitherPromotion = {
+
+    val original = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
+    val promotedL = product(
+      "foo",
+      List(Field("name", string[T].embed), Field("age", either(int[T].embed, boolean[T].embed).embed))).embed
+    val promotedR = product(
+      "foo",
+      List(Field("name", either(long[T].embed, string[T].embed).embed), Field("age", int[T].embed))).embed
+
+    Comparison(original, promotedL) must_== Match(PromotedToEither(
+      Path.empty / Name("foo") / FieldName("age"),
+      either(int[T].embed, boolean[T].embed).embed) :: Nil)
+    Comparison(original, promotedR) must_== Match(PromotedToEither(
+      Path.empty / Name("foo") / FieldName("name"),
+      either(long[T].embed, string[T].embed).embed) :: Nil)
+
   }
 }

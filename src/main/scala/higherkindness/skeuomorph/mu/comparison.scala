@@ -75,14 +75,24 @@ object Path {
 sealed trait Transformation[T]
 
 object Transformation {
-  final case class NumericWiddening[T](relativePath: Path, from: T, to: T) extends Transformation[T]
-  final case class Addition[T](relativePath: Path, added: T)               extends Transformation[T]
-  final case class Removal[T](relativePath: Path, removed: T)              extends Transformation[T]
+  final case class NumericWiddening[T](relativePath: Path, from: T, to: T)  extends Transformation[T]
+  final case class StringConversion[T](relativePath: Path, from: T, to: T)  extends Transformation[T]
+  final case class Addition[T](relativePath: Path, added: T)                extends Transformation[T]
+  final case class Removal[T](relativePath: Path, removed: T)               extends Transformation[T]
+  final case class MadeOptional[T](relativePath: Path)                      extends Transformation[T]
+  final case class PromotedToEither[T](relativePath: Path, either: T)       extends Transformation[T]
+  final case class PromotedToCoproduct[T](relativePath: Path, coproduct: T) extends Transformation[T]
+  final case class CoproductWiddening[T](relativePath: Path, coproduct: T)  extends Transformation[T]
 
   implicit def transformationShow[T](implicit showT: Show[T]): Show[Transformation[T]] = Show.show {
     case NumericWiddening(p, f, t) => p.show ++ ": numeric widdening from " ++ f.show ++ " to " ++ t.show
+    case StringConversion(p, f, t) => p.show ++ ": string conversion from " ++ f.show ++ " to " ++ t.show
     case Addition(p, a)            => p.show ++ ": added field with schema " ++ a.show
     case Removal(p, _)             => p.show ++ ": field removed"
+    case MadeOptional(p)           => p.show ++ ": made optional"
+    case PromotedToEither(p, e)    => p.show ++ ": promoted to either " ++ e.show
+    case PromotedToCoproduct(p, c) => p.show ++ ": promoted to coproduct " ++ c.show
+    case CoproductWiddening(p, c)  => p.show ++ ": coproduct widdening to " ++ c.show
   }
 }
 
@@ -98,7 +108,9 @@ object Incompatibility {
   }
 }
 
-sealed trait ComparisonResult[T] 
+sealed trait ComparisonResult[T] {
+  def transformations: List[Transformation[T]]
+}
 object ComparisonResult {
 
   final case class Match[T](transformations: List[Transformation[T]]) extends ComparisonResult[T]
@@ -131,6 +143,30 @@ object ComparisonResult {
 
 }
 
+object Reporter {
+
+  import ComparisonResult._
+  import Transformation._
+
+  def id[T]: ComparisonResult[T] => ComparisonResult[T] = r => r
+
+  def madeOptional[T](path: Path): ComparisonResult[T] => ComparisonResult[T] = {
+    case Match(tr) => Match(MadeOptional[T](path) +: tr)
+    case mismatch  => mismatch
+  }
+
+  def promotedToEither[T](path: Path, either: T): ComparisonResult[T] => ComparisonResult[T] = {
+    case Match(tr) => Match(PromotedToEither(path, either) :: tr)
+    case mismatch  => mismatch
+  }
+
+  def promotedToCoproduct[T](path: Path, coproduct: T): ComparisonResult[T] => ComparisonResult[T] = {
+    case Match(tr) => Match(PromotedToCoproduct(path, coproduct) :: tr)
+    case mismatch  => mismatch
+  }
+
+}
+
 sealed trait Comparison[T, A]
 object Comparison {
 
@@ -139,21 +175,25 @@ object Comparison {
   import Transformation._
   import Incompatibility._
 
-  final case class Result[T, A](result: ComparisonResult[T])            extends Comparison[T, A]
-  final case class Compare[T, A](a: A)                                  extends Comparison[T, A]
-  final case class CompareBoth[T, A](x: A, y: A)                        extends Comparison[T, A]
-  final case class CompareList[T, A](items: List[A])                    extends Comparison[T, A]
-  final case class MatchInList[T, A](attempts: Vector[A])               extends Comparison[T, A]
-  final case class AlignUnionMembers[T, A](attempts: Map[Int, List[A]]) extends Comparison[T, A]
+  type Reporter[T] = ComparisonResult[T] => ComparisonResult[T]
+
+  final case class Result[T, A](result: ComparisonResult[T])                                 extends Comparison[T, A]
+  final case class Compare[T, A](a: A, reporter: Reporter[T] = Reporter.id[T])               extends Comparison[T, A]
+  final case class CompareBoth[T, A](x: A, y: A)                                             extends Comparison[T, A]
+  final case class CompareList[T, A](items: List[A], reporter: Reporter[T] = Reporter.id[T]) extends Comparison[T, A]
+  final case class MatchInList[T, A](attempts: Vector[A], reporter: Reporter[T] = Reporter.id[T])
+      extends Comparison[T, A]
+  final case class AlignUnionMembers[T, A](attempts: Map[Path, List[A]], reporter: Reporter[T] = Reporter.id[T])
+      extends Comparison[T, A]
 
   implicit def comparisonCatsFunctor[T] = new Functor[Comparison[T, ?]] {
     def map[A, B](fa: Comparison[T, A])(f: (A) => B): Comparison[T, B] = fa match {
-      case Result(res)          => Result(res)
-      case Compare(a)           => Compare(f(a))
-      case CompareBoth(x, y)    => CompareBoth(f(x), f(y))
-      case CompareList(i)       => CompareList(i.map(f))
-      case MatchInList(a)       => MatchInList(a.map(f))
-      case AlignUnionMembers(a) => AlignUnionMembers(a.mapValues(_.map(f)))
+      case Result(res)               => Result(res)
+      case Compare(a, rep)           => Compare(f(a), rep)
+      case CompareBoth(x, y)         => CompareBoth(f(x), f(y))
+      case CompareList(i, rep)       => CompareList(i.map(f), rep)
+      case MatchInList(a, rep)       => MatchInList(a.map(f), rep)
+      case AlignUnionMembers(a, rep) => AlignUnionMembers(a.mapValues(_.map(f)), rep)
     }
   }
 
@@ -186,7 +226,8 @@ object Comparison {
           Result(Match(List(NumericWiddening(path, writer, reader))))
 
         // String and Byte arrays are considered the same
-        case (TByteArray(), TString()) | (TString(), TByteArray()) => same
+        case (TByteArray(), TString()) | (TString(), TByteArray()) =>
+          Result(Match(List(StringConversion(path, writer, reader))))
 
         case (TNamedType(a), TNamedType(b)) if (a === b) => same
         case (TOption(a), TOption(b))                    => Compare((path, a.some, b.some))
@@ -206,15 +247,37 @@ object Comparison {
             i.zipWithIndex
               .map {
                 case (item, idx) =>
-                  idx -> (List(item.some), i2.toList.map(_.some)).tupled.map(p => (path / Alternative(idx), p._1, p._2))
+                  path / Alternative(idx) -> (List(item.some), i2.toList.map(_.some)).tupled.map(p =>
+                    (path / Alternative(idx), p._1, p._2))
               }
               .toList
               .toMap)
         case (TSum(n, f), TSum(n2, f2)) if (n === n2 && f.forall(f2.toSet)) => same
         case (TProduct(n, f), TProduct(n2, f2)) if (n === n2)               => CompareList(zipFields(path / Name(n), f, f2))
 
-        case (_, TCoproduct(i2)) => MatchInList(i2.toList.toVector.map(i => (path, w, i.some)))
+        case (TOption(i1), TCoproduct(is)) =>
+          MatchInList(is.toList.toVector.map(i => (path, i1.some, i.some)), Reporter.promotedToCoproduct(path, reader))
 
+        case (TOption(i1), TEither(r1, r2)) =>
+          MatchInList(
+            Vector((path, i1.some, r1.some), (path, i1.some, r2.some)),
+            Reporter.promotedToEither(path, reader))
+
+        case (TEither(l1, r1), TCoproduct(rs)) =>
+          AlignUnionMembers(
+            Map(
+              path / LeftBranch  -> rs.toList.map(rr => (path / LeftBranch, l1.some, rr.some)),
+              path / RightBranch -> rs.toList.map(rr => (path / RightBranch, r1.some, rr.some)),
+            ),
+            Reporter.promotedToCoproduct(path, reader)
+          )
+
+        case (_, TCoproduct(i2)) =>
+          MatchInList(i2.toList.toVector.map(i => (path, w, i.some)), Reporter.promotedToCoproduct(path, reader))
+        case (_, TOption(t2)) =>
+          Compare((path, w, t2.some), Reporter.madeOptional[T](path))
+        case (_, TEither(l2, r2)) =>
+          MatchInList(Vector((path, w, l2.some), (path, w, r2.some)), Reporter.promotedToEither(path, reader))
         case _ => Result(Mismatch(Nil, NonEmptyList.of(Different(path))))
       }
     case (path, None, Some(reader)) => Result(Match(List(Addition(path, reader))))
@@ -233,25 +296,28 @@ object Comparison {
     keys.toList.map(k => (path / FieldName(k), left.get(k), right.get(k)))
   }
 
-  def alg[T]: Comparison[T, ComparisonResult[T]] => ComparisonResult[T] = { comp =>
-    {
+  def alg[T]: Comparison[T, ComparisonResult[T]] => ComparisonResult[T] = {
+    case Result(res)               => res
+    case Compare(res, rep)         => rep(res)
+    case CompareList(results, rep) => rep(results.combineAll)
+    case CompareBoth(res1, res2)   => res1 |+| res2
+    case AlignUnionMembers(res, rep) =>
+      rep(
+        res
+          .map {
+            case (p, results) =>
+              results
+                .find(ComparisonResult.isMatch)
+                .getOrElse(Mismatch(Nil, NonEmptyList.one(UnionMemberRemoved(p))))
+          }
+          .toList
+          .combineAll)
 
-      comp match {
-        case Result(res)             => res
-        case Compare(res)            => res
-        case CompareList(results)    => results.combineAll
-        case CompareBoth(res1, res2) => res1 |+| res2
-        case AlignUnionMembers(res) =>
-          val alignment = res.collect {
-            case (idx, results) if (!results.exists(ComparisonResult.isMatch)) =>
-              UnionMemberRemoved(Path.empty / Alternative(idx))
-          }.toList
-          NonEmptyList.fromList(alignment).fold[ComparisonResult[T]](Match(Nil))(Mismatch(Nil, _))
-        case MatchInList(res) =>
-          if (res.exists(ComparisonResult.isMatch)) Match(Nil)
-          else Mismatch(Nil, NonEmptyList.one(Different(Path.empty)))
-      }
-    }
+    case MatchInList(res, rep) =>
+      val firstMatch = res.find(ComparisonResult.isMatch)
+      val searchResult =
+        firstMatch.getOrElse(Mismatch(Nil, NonEmptyList.one(Different(Path.empty))))
+      rep(searchResult)
   }
 
   def apply[T](writer: T, reader: T)(implicit ev: Basis[MuF, T]) =
