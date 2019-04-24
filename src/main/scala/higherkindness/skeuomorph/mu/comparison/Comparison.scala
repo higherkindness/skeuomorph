@@ -43,7 +43,6 @@ sealed trait Comparison[T, A]
 
 object Comparison extends ComparisonInstances {
 
-
   /** The schemas being compared at a given path of the current comparison */
   type Context[T] = (Path, Option[T], Option[T])
 
@@ -73,12 +72,11 @@ object Comparison extends ComparisonInstances {
   final case class AlignUnionMembers[T, A](attempts: Map[Path, List[A]], reporter: Reporter[T] = Reporter.id[T])
       extends Comparison[T, A]
 
-
   /** Performs the comparison of two schemas
    *
    * Compares two schemas to verify that messages written using the writer schema are compatible with the reader schema.
    * Both schemas' roots are shallowly compared to unfold a `Comparison[T, ?]`, to compare their children or to signal a result.
-    * Comparison branches are then folded back by combining their results.
+   * Comparison branches are then folded back by combining their results.
    *
    * @tparam T the concrete schema type, must be a [[qq.droste.Basis]] over [[higherkindness.skeuomorph.mu.MuF]]
    * @param writer
@@ -177,7 +175,7 @@ object Comparison extends ComparisonInstances {
           AlignUnionMembers(
             Map(
               path / LeftBranch  -> rs.toList.map(rr => (path / LeftBranch, l1.some, rr.some)),
-              path / RightBranch -> rs.toList.map(rr => (path / RightBranch, r1.some, rr.some)),
+              path / RightBranch -> rs.toList.map(rr => (path / RightBranch, r1.some, rr.some))
             ),
             Reporter.promotedToCoproduct(path, reader)
           )
