@@ -30,16 +30,15 @@ import cats.syntax.eq._
  */
 @deriveTraverse sealed trait MuF[A]
 object MuF {
+
+  object Atomic extends Enumeration {
+    val ANull, ADouble, AFloat, AnInt, ALong, ABoolean, AString, AByteArray = Value
+    implicit val eqAtomic: Eq[Value] = Eq.fromUniversalEquals[Value]
+  }
+
   @deriveTraverse final case class Field[A](name: String, tpe: A)
 
-  final case class TNull[A]()                                        extends MuF[A]
-  final case class TDouble[A]()                                      extends MuF[A]
-  final case class TFloat[A]()                                       extends MuF[A]
-  final case class TInt[A]()                                         extends MuF[A]
-  final case class TLong[A]()                                        extends MuF[A]
-  final case class TBoolean[A]()                                     extends MuF[A]
-  final case class TString[A]()                                      extends MuF[A]
-  final case class TByteArray[A]()                                   extends MuF[A]
+  final case class TAtom[A](atom: Atomic)                            extends MuF[A]
   final case class TNamedType[A](name: String)                       extends MuF[A]
   final case class TOption[A](value: A)                              extends MuF[A]
   final case class TEither[A](left: A, right: A)                     extends MuF[A]
@@ -57,21 +56,12 @@ object MuF {
   }
 
   implicit def muEq[T](implicit T: Eq[T]): Eq[MuF[T]] = Eq.instance {
-    case (TNull(), TNull())           => true
-    case (TDouble(), TDouble())       => true
-    case (TFloat(), TFloat())         => true
-    case (TInt(), TInt())             => true
-    case (TLong(), TLong())           => true
-    case (TBoolean(), TBoolean())     => true
-    case (TString(), TString())       => true
-    case (TByteArray(), TByteArray()) => true
-
+    case (TAtom(a), TAtom(b))          => a === b
     case (TNamedType(a), TNamedType(b)) => a === b
     case (TOption(a), TOption(b))       => a === b
     case (TList(a), TList(b))           => a === b
     case (TMap(k1, a), TMap(k2, b))     => k1 === k2 && a === b
     case (TRequired(a), TRequired(b))   => a === b
-
     case (TContaining(a), TContaining(b))   => a === b
     case (TEither(l, r), TEither(l2, r2))   => l === l2 && r === r2
     case (TGeneric(g, p), TGeneric(g2, p2)) => g === g2 && p === p2
@@ -83,14 +73,14 @@ object MuF {
   }
 
   // smart constructors, to avoid scala inferring specific types instead of MuF
-  def `null`[A](): MuF[A]                                      = TNull()
-  def double[A](): MuF[A]                                      = TDouble()
-  def float[A](): MuF[A]                                       = TFloat()
-  def int[A](): MuF[A]                                         = TInt()
-  def long[A](): MuF[A]                                        = TLong()
-  def boolean[A](): MuF[A]                                     = TBoolean()
-  def string[A](): MuF[A]                                      = TString()
-  def byteArray[A](): MuF[A]                                   = TByteArray()
+  def `null`[A](): MuF[A]                                      = TAtom(ANull)
+  def double[A](): MuF[A]                                      = TAtom(ADouble)
+  def float[A](): MuF[A]                                       = TAtom(AFloat)
+  def int[A](): MuF[A]                                         = TAtom(AInt)
+  def long[A](): MuF[A]                                        = TAtom(ALong)
+  def boolean[A](): MuF[A]                                     = TAtom(ABoolean)
+  def string[A](): MuF[A]                                      = TAtom(AString)
+  def byteArray[A](): MuF[A]                                   = TAtom(AByteArray)
   def namedType[A](name: String): MuF[A]                       = TNamedType(name)
   def option[A](value: A): MuF[A]                              = TOption(value)
   def either[A](left: A, right: A): MuF[A]                     = TEither(left, right)
