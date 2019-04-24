@@ -18,11 +18,12 @@ package higherkindness.skeuomorph.mu.comparison
 
 import qq.droste._
 import qq.droste.syntax.project._
+import qq.droste.syntax.embed._
 import higherkindness.skeuomorph.mu.MuF, MuF._
 import cats.Functor
-import cats.data.NonEmptyList
 import cats.instances.list._
 import cats.instances.string._
+import cats.instances.tuple._
 import cats.syntax.eq._
 import cats.syntax.option._
 import cats.syntax.foldable._
@@ -46,11 +47,26 @@ object Comparison extends ComparisonInstances {
   /** The schemas being compared at a given path of the current comparison */
   type Context[T] = (Path, Option[T], Option[T])
 
+  type Result[T] = (List[Transformation[T]], List[Incompatibility])
+
+  object Result {
+    def empty[T]: Result[T]                                      = (Nil, Nil)
+    def mismatch[T](incompatibility: Incompatibility): Result[T] = (Nil, List(incompatibility))
+    def isMatch[T](result: Result[T]): Boolean                   = result._2.isEmpty
+
+  }
+
+  object Match {
+    def apply[T](transformation: List[Transformation[T]]): Result[T] = (transformation, Nil)
+    def unapply[T](result: Result[T]): Option[List[Transformation[T]]] =
+      if (result._2.isEmpty) Some(result._1) else None
+  }
+
   /** Function for result enrichment */
-  type Reporter[T] = ComparisonResult[T] => ComparisonResult[T]
+  type Reporter[T] = Result[T] => Result[T]
 
   /** Early result: there is nothing left to compare */
-  final case class Result[T, A](result: ComparisonResult[T]) extends Comparison[T, A]
+  final case class End[T, A](result: Result[T]) extends Comparison[T, A]
 
   /** Perform a single recursive comparison and enrich its result */
   final case class Compare[T, A](a: A, reporter: Reporter[T] = Reporter.id[T]) extends Comparison[T, A]
@@ -78,22 +94,25 @@ object Comparison extends ComparisonInstances {
    * Both schemas' roots are shallowly compared to unfold a `Comparison[T, ?]`, to compare their children or to signal a result.
    * Comparison branches are then folded back by combining their results.
    *
+   * WARNING: The current implementation does a lot of "useless" comparisons when it comes to compare coproducts. This is due to
+   * the structure of hylo: when we want to align something with a coproduct, we test all the possible combinations algthough
+   * we're only interested in finding the first successful one.
+   *
    * @tparam T the concrete schema type, must be a [[qq.droste.Basis]] over [[higherkindness.skeuomorph.mu.MuF]]
    * @param writer
    * @param reader
    */
-  def apply[T](writer: T, reader: T)(implicit ev: Basis[MuF, T], F: Functor[Comparison[T, ?]]): ComparisonResult[T] =
+  def apply[T](writer: T, reader: T)(implicit ev: Basis[MuF, T], F: Functor[Comparison[T, ?]]): Result[T] =
     scheme
       .hylo(Algebra(combineResults[T]), Coalgebra(unfoldComparison[T]))
       .apply((Path.empty, writer.some, reader.some))
 
-  import ComparisonResult._
   import PathElement._
   import Transformation._
   import Incompatibility._
 
-  private def combineResults[T]: Comparison[T, ComparisonResult[T]] => ComparisonResult[T] = {
-    case Result(res)               => res
+  private def combineResults[T]: Comparison[T, Result[T]] => Result[T] = {
+    case End(res)                  => res
     case Compare(res, rep)         => rep(res)
     case CompareList(results, rep) => rep(results.combineAll)
     case CompareBoth(res1, res2)   => res1 |+| res2
@@ -103,16 +122,16 @@ object Comparison extends ComparisonInstances {
           .map {
             case (p, results) =>
               results
-                .find(ComparisonResult.isMatch)
-                .getOrElse(Mismatch(Nil, NonEmptyList.one(UnionMemberRemoved(p))))
+                .find(Result.isMatch)
+                .getOrElse(Result.mismatch(UnionMemberRemoved(p)))
           }
           .toList
           .combineAll)
 
     case MatchInList(res, rep) =>
-      val firstMatch = res.find(ComparisonResult.isMatch)
+      val firstMatch = res.find(Result.isMatch)
       val searchResult =
-        firstMatch.getOrElse(Mismatch(Nil, NonEmptyList.one(Different(Path.empty))))
+        firstMatch.getOrElse(Result.mismatch(Different(Path.empty)))
       rep(searchResult)
   }
 
@@ -134,11 +153,12 @@ object Comparison extends ComparisonInstances {
         case (TOption(a), TOption(b))                    => Compare((path, a.some, b.some))
         case (TList(a), TList(b))                        => Compare((path / Items, a.some, b.some))
         // According to the spec, Avro ignores the keys' schemas when resolving map schemas
-        case (TMap(_, a), TMap(_, b))         => Compare((path / Values, a.some, b.some))
-        case (TRequired(a), TRequired(b))     => Compare((path, a.some, b.some))
-        case (TContaining(a), TContaining(b)) => CompareList(zipLists(path, a, b, Alternative))
+        case (TMap(_, a), TMap(_, b))     => Compare((path / Values, a.some, b.some))
+        case (TRequired(a), TRequired(b)) => Compare((path, a.some, b.some))
+        case (TContaining(a), TContaining(b)) =>
+          CompareList(zipLists(path, a, b, Alternative)) // TODO what's the semantics?
         case (TEither(l1, r1), TEither(l2, r2)) =>
-          CompareBoth((path / LeftBranch, l1.some, l2.some), (path / RightBranch, r1.some, r2.some))
+          CompareList(List((path / LeftBranch, l1.some, l2.some), (path / RightBranch, r1.some, r2.some)))
         case (TGeneric(g, p), TGeneric(g2, p2)) =>
           CompareList((path / GenericType, g.some, g2.some) :: zipLists(path, p, p2, GenericParameter))
         case (TCoproduct(i), TCoproduct(i2)) =>
@@ -156,15 +176,21 @@ object Comparison extends ComparisonInstances {
 
         // Numeric widdening
         case (TInt(), TLong() | TFloat() | TDouble()) | (TLong(), TFloat() | TDouble()) | (TFloat(), TDouble()) =>
-          Result(Match(List(NumericWiddening(path, writer, reader))))
+          End(Match(List(NumericWiddening(path, writer, reader))))
 
         // String and Byte arrays are considered compatible
         case (TByteArray(), TString()) | (TString(), TByteArray()) =>
-          Result(Match(List(StringConversion(path, writer, reader))))
+          End(Match(List(StringConversion(path, writer, reader))))
 
         // Promotions
         case (TOption(i1), TCoproduct(is)) =>
-          MatchInList(is.toList.toVector.map(i => (path, i1.some, i.some)), Reporter.promotedToCoproduct(path, reader))
+          AlignUnionMembers(
+            Map(
+              path / Value -> is.toList.map(i => (path / Value, i1.some, i.some)),
+              path         -> is.toList.map(i => (path, `null`[T].embed.some, i.some))
+            ),
+            Reporter.promotedToCoproduct(path, reader)
+          )
 
         case (TOption(i1), TEither(r1, r2)) =>
           MatchInList(
@@ -188,14 +214,14 @@ object Comparison extends ComparisonInstances {
           MatchInList(Vector((path, w, l2.some), (path, w, r2.some)), Reporter.promotedToEither(path, reader))
 
         // No compatible transformation found
-        case _ => Result(Mismatch(Nil, NonEmptyList.of(Different(path))))
+        case _ => End(Result.mismatch(Different(path)))
       }
-    case (path, None, Some(reader)) => Result(Match(List(Addition(path, reader))))
-    case (path, Some(writer), None) => Result(Match(List(Removal(path, writer))))
+    case (path, None, Some(reader)) => End(Match(List(Addition(path, reader))))
+    case (path, Some(writer), None) => End(Match(List(Removal(path, writer))))
     case (_, None, None)            => same
   }
 
-  private def same[T, A]: Comparison[T, A] = Result(ComparisonResult.empty)
+  private def same[T, A]: Comparison[T, A] = End(Result.empty)
 
   private def zipLists[T](path: Path, l1: List[T], l2: List[T], pathElem: Int => PathElement): List[Context[T]] = {
     val l1s = l1.toStream.map(_.some) ++ Stream.continually(None)
@@ -222,7 +248,7 @@ trait ComparisonInstances {
 
   implicit def comparisonCatsFunctor[T] = new Functor[Comparison[T, ?]] {
     def map[A, B](fa: Comparison[T, A])(f: (A) => B): Comparison[T, B] = fa match {
-      case Comparison.Result(res)               => Comparison.Result(res)
+      case Comparison.End(res)                  => Comparison.End(res)
       case Comparison.Compare(a, rep)           => Comparison.Compare(f(a), rep)
       case Comparison.CompareBoth(x, y)         => Comparison.CompareBoth(f(x), f(y))
       case Comparison.CompareList(i, rep)       => Comparison.CompareList(i.map(f), rep)
@@ -234,22 +260,22 @@ trait ComparisonInstances {
 
 object Reporter {
 
-  import ComparisonResult._
+  import Comparison.{Match, Result}
   import Transformation._
 
-  def id[T]: ComparisonResult[T] => ComparisonResult[T] = r => r
+  def id[T]: Result[T] => Result[T] = r => r
 
-  def madeOptional[T](path: Path): ComparisonResult[T] => ComparisonResult[T] = {
+  def madeOptional[T](path: Path): Result[T] => Result[T] = {
     case Match(tr) => Match(MadeOptional[T](path) +: tr)
     case mismatch  => mismatch
   }
 
-  def promotedToEither[T](path: Path, either: T): ComparisonResult[T] => ComparisonResult[T] = {
+  def promotedToEither[T](path: Path, either: T): Result[T] => Result[T] = {
     case Match(tr) => Match(PromotedToEither(path, either) +: tr)
     case mismatch  => mismatch
   }
 
-  def promotedToCoproduct[T](path: Path, coproduct: T): ComparisonResult[T] => ComparisonResult[T] = {
+  def promotedToCoproduct[T](path: Path, coproduct: T): Result[T] => Result[T] = {
     case Match(tr) => Match(PromotedToCoproduct(path, coproduct) +: tr)
     case mismatch  => mismatch
   }

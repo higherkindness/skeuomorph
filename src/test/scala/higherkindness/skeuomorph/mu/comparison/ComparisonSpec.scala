@@ -22,7 +22,7 @@ import org.specs2.Specification
 import cats.data.NonEmptyList
 
 import higherkindness.skeuomorph.mu.MuF, MuF._
-import ComparisonResult._
+import Comparison.Match
 import Transformation._
 import PathElement._
 
@@ -84,7 +84,7 @@ class ComparisonSpec extends Specification {
 
   def optionToCoproduct = {
     val original = option(int[T].embed).embed
-    val extended = coproduct(NonEmptyList.of(int[T].embed, string[T].embed)).embed
+    val extended = coproduct(NonEmptyList.of(int[T].embed, string[T].embed, `null`[T].embed)).embed
 
     Comparison(original, extended) must_== Match(
       List(

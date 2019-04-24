@@ -42,3 +42,15 @@ object Transformation {
     case CoproductWiddening(p, c)  => p.show ++ ": coproduct widdening to " ++ c.show
   }
 }
+
+sealed trait Incompatibility
+
+object Incompatibility {
+  final case class Different(relativePath: Path)          extends Incompatibility
+  final case class UnionMemberRemoved(relativePath: Path) extends Incompatibility
+
+  implicit val incompatibilityShow: Show[Incompatibility] = Show.show {
+    case Different(p)          => p.show ++ ": !!DIFFERENT!!"
+    case UnionMemberRemoved(p) => p.show ++ ": union member not found in reader schema"
+  }
+}

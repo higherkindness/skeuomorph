@@ -22,6 +22,7 @@ sealed trait PathElement extends Product with Serializable
 object PathElement {
   final case class Name(value: String)        extends PathElement
   final case class FieldName(name: String)    extends PathElement
+  final case object Value                     extends PathElement
   final case object Values                    extends PathElement
   final case object Keys                      extends PathElement
   final case object Items                     extends PathElement
@@ -34,6 +35,7 @@ object PathElement {
   implicit val pathElementShow: Show[PathElement] = Show.show {
     case Name(v)             => v
     case FieldName(n)        => n
+    case Value               => "$value"
     case Values              => "$values"
     case Keys                => "$keys"
     case Items               => "$items"
