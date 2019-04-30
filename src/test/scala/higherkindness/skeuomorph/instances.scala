@@ -24,6 +24,7 @@ import org.scalacheck.cats.implicits._
 import mu.MuF
 import avro.AvroF
 import protobuf._
+import openapi._
 import qq.droste.Basis
 
 import scala.collection.JavaConverters._
@@ -175,6 +176,34 @@ object instances {
           MuF.product(n, f)
         }
       ))
+  }
+
+  implicit def openApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[JsonSchemaF[T]] = {
+    val propertyGen: Gen[JsonSchemaF.Property[T]] = (nonEmptyString, T.arbitrary).mapN(JsonSchemaF.Property[T])
+    val objectGen: Gen[JsonSchemaF[T]] = (
+      nonEmptyString,
+      Gen.listOf(propertyGen),
+      Gen.listOf(nonEmptyString)
+    ).mapN(JsonSchemaF.`object`[T])
+
+    Arbitrary(
+      Gen.oneOf(
+        JsonSchemaF.integer[T]().pure[Gen],
+        JsonSchemaF.long[T]().pure[Gen],
+        JsonSchemaF.float[T]().pure[Gen],
+        JsonSchemaF.double[T]().pure[Gen],
+        JsonSchemaF.string[T]().pure[Gen],
+        JsonSchemaF.byte[T]().pure[Gen],
+        JsonSchemaF.binary[T]().pure[Gen],
+        JsonSchemaF.boolean[T]().pure[Gen],
+        JsonSchemaF.date[T].pure[Gen],
+        JsonSchemaF.dateTime[T].pure[Gen],
+        JsonSchemaF.password[T]().pure[Gen],
+        T.arbitrary map JsonSchemaF.array,
+        Gen.listOf(T.arbitrary) map JsonSchemaF.enum,
+        objectGen
+      )
+    )
   }
 
   implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[AvroF[T]] = {

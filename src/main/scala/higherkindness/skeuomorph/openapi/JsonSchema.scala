@@ -18,10 +18,11 @@ package higherkindness.skeuomorph.openapi
 
 import io.circe.Json
 import qq.droste._
+import cats.implicits._
+import cats.Eq
+
 import qq.droste.data.Fix
 import qq.droste.macros.deriveTraverse
-
-import cats.instances.list._
 
 @deriveTraverse sealed trait JsonSchemaF[A]
 object JsonSchemaF {
@@ -42,6 +43,22 @@ object JsonSchemaF {
       extends JsonSchemaF[A]
   final case class ArrayF[A](values: A)     extends JsonSchemaF[A]
   final case class EnumF[A](cases: List[A]) extends JsonSchemaF[A]
+
+  def integer[T](): JsonSchemaF[T]  = IntegerF()
+  def long[T](): JsonSchemaF[T]     = LongF()
+  def float[T](): JsonSchemaF[T]    = FloatF()
+  def double[T](): JsonSchemaF[T]   = DoubleF()
+  def string[T](): JsonSchemaF[T]   = StringF()
+  def byte[T](): JsonSchemaF[T]     = ByteF()
+  def binary[T](): JsonSchemaF[T]   = BinaryF()
+  def boolean[T](): JsonSchemaF[T]  = BooleanF()
+  def date[T](): JsonSchemaF[T]     = DateF()
+  def dateTime[T](): JsonSchemaF[T] = DateTimeF()
+  def password[T](): JsonSchemaF[T] = PasswordF()
+  def `object`[T](name: String, properties: List[Property[T]], required: List[String]): JsonSchemaF[T] =
+    ObjectF(name, properties, required)
+  def array[T](values: T): JsonSchemaF[T]     = ArrayF(values)
+  def enum[T](cases: List[T]): JsonSchemaF[T] = EnumF(cases)
 
   def render: Algebra[JsonSchemaF, Json] = Algebra {
     case IntegerF()  => Json.fromString("integer")
@@ -74,6 +91,27 @@ object JsonSchemaF {
         "enum" -> Json.fromValues(cases)
       )
 
+  }
+  implicit def eqProperty[T: Eq]: Eq[Property[T]] = Eq.instance { (p1, p2) =>
+    p1.name === p2.name && p1.tpe === p2.tpe
+  }
+
+  implicit def eqJsonSchemaF[T: Eq]: Eq[JsonSchemaF[T]] = Eq.instance {
+    case (IntegerF(), IntegerF())                   => true
+    case (LongF(), LongF())                         => true
+    case (FloatF(), FloatF())                       => true
+    case (DoubleF(), DoubleF())                     => true
+    case (StringF(), StringF())                     => true
+    case (ByteF(), ByteF())                         => true
+    case (BinaryF(), BinaryF())                     => true
+    case (BooleanF(), BooleanF())                   => true
+    case (DateF(), DateF())                         => true
+    case (DateTimeF(), DateTimeF())                 => true
+    case (PasswordF(), PasswordF())                 => true
+    case (ObjectF(n1, p1, r1), ObjectF(n2, p2, r2)) => n1 === n2 && p1 === p2 && r1 === r2
+    case (ArrayF(v1), ArrayF(v2))                   => v1 === v2
+    case (EnumF(c1), EnumF(c2))                     => c1 === c2
+    case _                                          => false
   }
 
   def addressSchema: Fix[JsonSchemaF] =
