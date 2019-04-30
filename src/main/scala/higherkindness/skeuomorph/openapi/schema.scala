@@ -59,13 +59,12 @@ object schema {
         description: String,
         externalDocs: ExternalDocs,
         operationId: String,
-        parameters: List[Either[Parameter[_], Reference]],
+        parameters: List[Either[Parameter[A], Reference]],
         responses: Map[String, Either[Response[A], Reference]],
         callbacks: Map[String, Either[Callback[A], Reference]],
         deprecated: Boolean,
         servers: List[Server])
   }
-
   final case class Components[A](
       responses: Map[String, Either[Response[A], Reference]],
       requestBodies: Map[String, Either[Request[A], Reference]]
@@ -95,6 +94,14 @@ object schema {
 
   final case class Reference(ref: String) // $ref
 
+  //TODO Review: this could be used in Header/MediaType. could this be a type alias?
+  final case class SchemaOrRef[A](value: Either[JsonSchemaF[A], Reference])
+  object SchemaOrRef {
+    import cats.implicits._
+    def schema[A](a: JsonSchemaF[A]): SchemaOrRef[A]       = SchemaOrRef(a.asLeft)
+    def reference[A](reference: Reference): SchemaOrRef[A] = SchemaOrRef(reference.asRight)
+  }
+
   final case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
 
   sealed trait Parameter[A] extends Product with Serializable {
@@ -107,7 +114,7 @@ object schema {
     def explode: Boolean
     def allowEmptyValue: Boolean
     def allowReserved: Boolean
-    def schema: Either[JsonSchemaF[A], Reference]
+    def schema: SchemaOrRef[A]
   }
 
   object Parameter {
@@ -118,7 +125,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "simple",
         explode: Boolean = false,
-        schema: Either[JsonSchemaF[A], Reference]
+        schema: SchemaOrRef[A]
     ) extends Parameter[A] {
       val in: Location             = Location.Path
       val required: Boolean        = true
@@ -135,7 +142,7 @@ object schema {
         allowEmptyValue: Boolean,
         explode: Boolean = true,
         allowReserved: Boolean = false,
-        schema: Either[JsonSchemaF[A], Reference]
+        schema: SchemaOrRef[A]
     ) extends Parameter[A] {
       val in: Location = Location.Query
     }
@@ -147,7 +154,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "simple",
         explode: Boolean = false,
-        schema: Either[JsonSchemaF[A], Reference]
+        schema: SchemaOrRef[A]
     ) extends Parameter[A] {
       val in: Location             = Location.Header
       val allowEmptyValue: Boolean = false
@@ -161,7 +168,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "form",
         explode: Boolean = false,
-        schema: Either[JsonSchemaF[A], Reference]
+        schema: SchemaOrRef[A]
     ) extends Parameter[A] {
       val in: Location             = Location.Cookie
       val allowEmptyValue: Boolean = false

@@ -33,6 +33,9 @@ object JsonEncoders {
   implicit def orReferenceEncoder[A: Encoder]: Encoder[Either[A, Reference]] =
     Encoder.instance[Either[A, Reference]](_.fold(Encoder[A].apply, Encoder[Reference].apply))
 
+  implicit def schemaOrRef[A](implicit A: Basis[JsonSchemaF, A]): Encoder[SchemaOrRef[A]] =
+    Encoder[Either[JsonSchemaF[A], Reference]].contramap(_.value)
+
   implicit val infoEncoder: Encoder[Info] =
     Encoder.forProduct3(
       "title",
@@ -141,29 +144,22 @@ object JsonEncoders {
         p.schema)
     }
 
+  // TODO Review: Using forProduct10 produce recursive call
   implicit def operationEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.Operation[A]] =
-    Encoder.forProduct10(
-      "tags",
-      "summary",
-      "description",
-      "externalDocs",
-      "operationId",
-      "parameters",
-      "responses",
-      "callbacks",
-      "deprecated",
-      "servers") { op =>
-      (
-        op.tags,
-        op.summary,
-        op.description,
-        op.externalDocs,
-        op.operationId,
-        op.parameters,
-        op.responses,
-        op.callbacks,
-        op.deprecated,
-        op.servers)
+    Encoder.instance { op =>
+      import io.circe.syntax._
+      Json.obj(
+        "tags"         -> op.tags.asJson,
+        "summary"      -> op.summary.asJson,
+        "description"  -> op.description.asJson,
+        "externalDocs" -> op.externalDocs.asJson,
+        "operationId"  -> op.operationId.asJson,
+        "parameters"   -> op.parameters.asJson,
+        "responses"    -> op.responses.asJson,
+        "callbacks"    -> op.callbacks.asJson,
+        "deprecated"   -> op.deprecated.asJson,
+        "servers"      -> op.servers.asJson
+      )
     }
 
   implicit def itemObjectEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.ItemObject[A]] =
