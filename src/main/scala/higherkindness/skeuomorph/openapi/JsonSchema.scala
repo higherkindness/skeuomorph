@@ -94,7 +94,7 @@ object JsonSchemaF {
       )
     case ReferenceF(value) =>
       Json.obj(
-        "$ref" -> Json.fromString(value)
+        "$$ref" -> Json.fromString(value)
       )
 
   }

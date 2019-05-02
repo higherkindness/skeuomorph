@@ -22,7 +22,7 @@ import cats.implicits._
 
 object JsonDecoders {
 
-  implicit val referenceDecoder: Decoder[Reference] = Decoder.forProduct1("$ref")(Reference.apply)
+  implicit val referenceDecoder: Decoder[Reference] = Decoder.forProduct1("$$ref")(Reference.apply)
 
   implicit def orReferenceDecoder[A: Decoder]: Decoder[Either[A, Reference]] =
     Decoder[Reference].map(_.asRight[A]).handleErrorWith(_ => Decoder[A].map(_.asLeft[Reference]))
