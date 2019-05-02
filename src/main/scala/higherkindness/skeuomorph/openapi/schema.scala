@@ -119,6 +119,33 @@ object schema {
 
   object Parameter {
 
+    def apply[A](
+        name: String,
+        in: Location,
+        description: Option[String],
+        required: Boolean,
+        deprecated: Boolean,
+        style: String,
+        explode: Boolean,
+        allowEmptyValue: Option[Boolean],
+        allowReserved: Option[Boolean],
+        schemaOrRef: SchemaOrRef[A]): Parameter[A] = in match {
+      case Location.Path => Path(name, description, deprecated, style, explode, schemaOrRef)
+      case Location.Query =>
+        Query(
+          name,
+          description,
+          required,
+          deprecated,
+          style,
+          allowEmptyValue.getOrElse(false),
+          explode,
+          allowReserved.getOrElse(false),
+          schemaOrRef)
+      case Location.Header => Header(name, description, required, deprecated, style, explode, schemaOrRef)
+      case Location.Cookie => Cookie(name, description, required, deprecated, style, explode, schemaOrRef)
+    }
+
     final case class Path[A](
         name: String,
         description: Option[String],
@@ -179,10 +206,19 @@ object schema {
 
   sealed abstract class Location(val value: String) extends Product with Serializable
   object Location {
+    import cats.implicits._
     case object Path   extends Location("path")
     case object Query  extends Location("query")
     case object Header extends Location("header")
     case object Cookie extends Location("cookie")
+
+    def parse(value: String): Either[String, Location] = value match {
+      case "path"   => Path.asRight
+      case "query"  => Query.asRight
+      case "header" => Header.asRight
+      case "cookie" => Cookie.asRight
+      case _        => s"$value is not valid location".asLeft
+    }
   }
 
 }

@@ -16,7 +16,7 @@
 
 package higherkindness.skeuomorph.openapi
 
-import higherkindness.skeuomorph.openapi.schema._
+import schema._
 import io.circe.{Encoder, Json}
 import qq.droste._
 import qq.droste.syntax.all._
@@ -27,13 +27,13 @@ object JsonEncoders {
     Encoder.instance(
       r =>
         Json.obj(
-          "$$ref" -> Json.fromString(r.ref)
+          "$ref" -> Json.fromString(r.ref)
       ))
 
   implicit def orReferenceEncoder[A: Encoder]: Encoder[Either[A, Reference]] =
     Encoder.instance[Either[A, Reference]](_.fold(Encoder[A].apply, Encoder[Reference].apply))
 
-  implicit def schemaOrRef[A](implicit A: Basis[JsonSchemaF, A]): Encoder[SchemaOrRef[A]] =
+  implicit def schemaOrRefEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[SchemaOrRef[A]] =
     Encoder[Either[JsonSchemaF[A], Reference]].contramap(_.value)
 
   implicit val infoEncoder: Encoder[Info] =
@@ -92,7 +92,7 @@ object JsonEncoders {
       (e.contentType, e.headers, e.style, e.explode, e.allowReserved)
     }
 
-  implicit def mediatypeEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[MediaType[A]] =
+  implicit def mediaTypeEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[MediaType[A]] =
     Encoder.forProduct2(
       "schema",
       "encoding"
