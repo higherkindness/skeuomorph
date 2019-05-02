@@ -201,7 +201,8 @@ object instances {
         JsonSchemaF.password[T]().pure[Gen],
         T.arbitrary map JsonSchemaF.array,
         Gen.listOf(T.arbitrary) map JsonSchemaF.enum,
-        objectGen
+        objectGen,
+        nonEmptyString.map(JsonSchemaF.reference[T])
       )
     )
   }

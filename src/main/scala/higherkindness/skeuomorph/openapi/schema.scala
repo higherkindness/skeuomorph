@@ -20,6 +20,10 @@ package higherkindness.skeuomorph.openapi
  * @see https://swagger.io/specification/
  */
 object schema {
+  type Reference = JsonSchemaF.ReferenceF[Unit]
+  object Reference {
+    def apply(value: String): Reference = JsonSchemaF.ReferenceF(value)
+  }
 
   final case class OpenApi[A](
       openapi: String,
@@ -72,7 +76,7 @@ object schema {
 
   final case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
 
-  final case class MediaType[A](schema: Either[JsonSchemaF[A], Reference], encoding: Map[String, Encoding[A]])
+  final case class MediaType[A](schema: JsonSchemaF[A], encoding: Map[String, Encoding[A]])
 
   final case class Encoding[A](
       contentType: String,
@@ -92,17 +96,7 @@ object schema {
 
   type Callback[A] = Map[String, Path.ItemObject[A]]
 
-  final case class Reference(ref: String) // $ref
-
-  //TODO Review: this could be used in Header/MediaType. could this be a type alias?
-  final case class SchemaOrRef[A](value: Either[JsonSchemaF[A], Reference])
-  object SchemaOrRef {
-    import cats.implicits._
-    def schema[A](a: JsonSchemaF[A]): SchemaOrRef[A]       = SchemaOrRef(a.asLeft)
-    def reference[A](reference: Reference): SchemaOrRef[A] = SchemaOrRef(reference.asRight)
-  }
-
-  final case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
+  final case class Header[A](description: String, schema: JsonSchemaF[A])
 
   sealed trait Parameter[A] extends Product with Serializable {
     def name: String
@@ -114,7 +108,7 @@ object schema {
     def explode: Boolean
     def allowEmptyValue: Boolean
     def allowReserved: Boolean
-    def schema: SchemaOrRef[A]
+    def schema: JsonSchemaF[A]
   }
 
   object Parameter {
@@ -129,8 +123,8 @@ object schema {
         explode: Boolean,
         allowEmptyValue: Option[Boolean],
         allowReserved: Option[Boolean],
-        schemaOrRef: SchemaOrRef[A]): Parameter[A] = in match {
-      case Location.Path => Path(name, description, deprecated, style, explode, schemaOrRef)
+        schema: JsonSchemaF[A]): Parameter[A] = in match {
+      case Location.Path => Path(name, description, deprecated, style, explode, schema)
       case Location.Query =>
         Query(
           name,
@@ -141,9 +135,9 @@ object schema {
           allowEmptyValue.getOrElse(false),
           explode,
           allowReserved.getOrElse(false),
-          schemaOrRef)
-      case Location.Header => Header(name, description, required, deprecated, style, explode, schemaOrRef)
-      case Location.Cookie => Cookie(name, description, required, deprecated, style, explode, schemaOrRef)
+          schema)
+      case Location.Header => Header(name, description, required, deprecated, style, explode, schema)
+      case Location.Cookie => Cookie(name, description, required, deprecated, style, explode, schema)
     }
 
     final case class Path[A](
@@ -152,7 +146,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "simple",
         explode: Boolean = false,
-        schema: SchemaOrRef[A]
+        schema: JsonSchemaF[A]
     ) extends Parameter[A] {
       val in: Location             = Location.Path
       val required: Boolean        = true
@@ -169,7 +163,7 @@ object schema {
         allowEmptyValue: Boolean,
         explode: Boolean = true,
         allowReserved: Boolean = false,
-        schema: SchemaOrRef[A]
+        schema: JsonSchemaF[A]
     ) extends Parameter[A] {
       val in: Location = Location.Query
     }
@@ -181,7 +175,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "simple",
         explode: Boolean = false,
-        schema: SchemaOrRef[A]
+        schema: JsonSchemaF[A]
     ) extends Parameter[A] {
       val in: Location             = Location.Header
       val allowEmptyValue: Boolean = false
@@ -195,7 +189,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "form",
         explode: Boolean = false,
-        schema: SchemaOrRef[A]
+        schema: JsonSchemaF[A]
     ) extends Parameter[A] {
       val in: Location             = Location.Cookie
       val allowEmptyValue: Boolean = false

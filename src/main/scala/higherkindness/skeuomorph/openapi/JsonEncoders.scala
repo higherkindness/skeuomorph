@@ -23,19 +23,11 @@ import qq.droste.syntax.all._
 
 object JsonEncoders {
 
-  implicit val referenceEncoder: Encoder[Reference] =
-    Encoder.instance(
-      r =>
-        Json.obj(
-          "$ref" -> Json.fromString(r.ref)
-      ))
+  implicit def referenceEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Reference] =
+    jsonSchemaEncoder.contramap[Reference](x => JsonSchemaF.reference(x.ref))
 
   implicit def orReferenceEncoder[A: Encoder]: Encoder[Either[A, Reference]] =
     Encoder.instance[Either[A, Reference]](_.fold(Encoder[A].apply, Encoder[Reference].apply))
-
-  implicit def schemaOrRefEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[SchemaOrRef[A]] =
-    Encoder[Either[JsonSchemaF[A], Reference]].contramap(_.value)
-
   implicit val infoEncoder: Encoder[Info] =
     Encoder.forProduct3(
       "title",

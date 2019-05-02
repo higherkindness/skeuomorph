@@ -32,9 +32,6 @@ object JsonDecoders {
     // Decoder[Json].map(scheme.ana(JsonSchemaF.fromJson)).map[JsonSchemaF[A]](x => Fix.un[JsonSchemaF](x))
     ???
 
-  implicit def schemaOrRefDecoder[A]: Decoder[SchemaOrRef[A]] =
-    Decoder[Either[JsonSchemaF[A], Reference]].map(SchemaOrRef.apply)
-
   implicit val infoDecoder: Decoder[Info] =
     Decoder.forProduct3(
       "title",

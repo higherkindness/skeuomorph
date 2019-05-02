@@ -41,8 +41,9 @@ object JsonSchemaF {
   final case class PasswordF[A]() extends JsonSchemaF[A]
   final case class ObjectF[A](name: String, properties: List[Property[A]], required: List[String])
       extends JsonSchemaF[A]
-  final case class ArrayF[A](values: A)     extends JsonSchemaF[A]
-  final case class EnumF[A](cases: List[A]) extends JsonSchemaF[A]
+  final case class ArrayF[A](values: A)       extends JsonSchemaF[A]
+  final case class EnumF[A](cases: List[A])   extends JsonSchemaF[A]
+  final case class ReferenceF[A](ref: String) extends JsonSchemaF[A]
 
   def integer[T](): JsonSchemaF[T]  = IntegerF()
   def long[T](): JsonSchemaF[T]     = LongF()
@@ -57,8 +58,9 @@ object JsonSchemaF {
   def password[T](): JsonSchemaF[T] = PasswordF()
   def `object`[T](name: String, properties: List[Property[T]], required: List[String]): JsonSchemaF[T] =
     ObjectF(name, properties, required)
-  def array[T](values: T): JsonSchemaF[T]     = ArrayF(values)
-  def enum[T](cases: List[T]): JsonSchemaF[T] = EnumF(cases)
+  def array[T](values: T): JsonSchemaF[T]       = ArrayF(values)
+  def enum[T](cases: List[T]): JsonSchemaF[T]   = EnumF(cases)
+  def reference[T](ref: String): JsonSchemaF[T] = ReferenceF[T](ref)
 
   def render: Algebra[JsonSchemaF, Json] = Algebra {
     case IntegerF()  => Json.fromString("integer")
@@ -90,6 +92,10 @@ object JsonSchemaF {
         "type" -> Json.fromString("string"),
         "enum" -> Json.fromValues(cases)
       )
+    case ReferenceF(value) =>
+      Json.obj(
+        "$ref" -> Json.fromString(value)
+      )
 
   }
   implicit def eqProperty[T: Eq]: Eq[Property[T]] = Eq.instance { (p1, p2) =>
@@ -111,6 +117,7 @@ object JsonSchemaF {
     case (ObjectF(n1, p1, r1), ObjectF(n2, p2, r2)) => n1 === n2 && p1 === p2 && r1 === r2
     case (ArrayF(v1), ArrayF(v2))                   => v1 === v2
     case (EnumF(c1), EnumF(c2))                     => c1 === c2
+    case (ReferenceF(r1), ReferenceF(r2))           => r1 === r2
     case _                                          => false
   }
 
