@@ -178,10 +178,9 @@ object instances {
       ))
   }
 
-  implicit def openApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[JsonSchemaF[T]] = {
+  implicit def jsonSchemaOpenApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[JsonSchemaF[T]] = {
     val propertyGen: Gen[JsonSchemaF.Property[T]] = (nonEmptyString, T.arbitrary).mapN(JsonSchemaF.Property[T])
     val objectGen: Gen[JsonSchemaF[T]] = (
-      nonEmptyString,
       Gen.listOf(propertyGen),
       Gen.listOf(nonEmptyString)
     ).mapN(JsonSchemaF.`object`[T])
@@ -200,7 +199,7 @@ object instances {
         JsonSchemaF.dateTime[T].pure[Gen],
         JsonSchemaF.password[T]().pure[Gen],
         T.arbitrary map JsonSchemaF.array,
-        Gen.listOf(T.arbitrary) map JsonSchemaF.enum,
+        Gen.listOf(nonEmptyString) map JsonSchemaF.enum[T],
         objectGen,
         nonEmptyString.map(JsonSchemaF.reference[T])
       )

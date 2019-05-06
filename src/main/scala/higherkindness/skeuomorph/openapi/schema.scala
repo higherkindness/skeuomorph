@@ -20,11 +20,7 @@ package higherkindness.skeuomorph.openapi
  * @see https://swagger.io/specification/
  */
 object schema {
-  type Reference = JsonSchemaF.ReferenceF[Unit]
-  object Reference {
-    def apply(value: String): Reference = JsonSchemaF.ReferenceF(value)
-  }
-
+  final case class Reference(ref: String)
   final case class OpenApi[A](
       openapi: String,
       info: Info,
@@ -76,7 +72,7 @@ object schema {
 
   final case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
 
-  final case class MediaType[A](schema: JsonSchemaF[A], encoding: Map[String, Encoding[A]])
+  final case class MediaType[A](schema: A, encoding: Map[String, Encoding[A]])
 
   final case class Encoding[A](
       contentType: String,
@@ -96,7 +92,7 @@ object schema {
 
   type Callback[A] = Map[String, Path.ItemObject[A]]
 
-  final case class Header[A](description: String, schema: JsonSchemaF[A])
+  final case class Header[A](description: String, schema: A)
 
   sealed trait Parameter[A] extends Product with Serializable {
     def name: String
@@ -108,7 +104,7 @@ object schema {
     def explode: Boolean
     def allowEmptyValue: Boolean
     def allowReserved: Boolean
-    def schema: JsonSchemaF[A]
+    def schema: A
   }
 
   object Parameter {
@@ -123,7 +119,7 @@ object schema {
         explode: Boolean,
         allowEmptyValue: Option[Boolean],
         allowReserved: Option[Boolean],
-        schema: JsonSchemaF[A]): Parameter[A] = in match {
+        schema: A): Parameter[A] = in match {
       case Location.Path => Path(name, description, deprecated, style, explode, schema)
       case Location.Query =>
         Query(
@@ -146,7 +142,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "simple",
         explode: Boolean = false,
-        schema: JsonSchemaF[A]
+        schema: A
     ) extends Parameter[A] {
       val in: Location             = Location.Path
       val required: Boolean        = true
@@ -163,7 +159,7 @@ object schema {
         allowEmptyValue: Boolean,
         explode: Boolean = true,
         allowReserved: Boolean = false,
-        schema: JsonSchemaF[A]
+        schema: A
     ) extends Parameter[A] {
       val in: Location = Location.Query
     }
@@ -175,7 +171,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "simple",
         explode: Boolean = false,
-        schema: JsonSchemaF[A]
+        schema: A
     ) extends Parameter[A] {
       val in: Location             = Location.Header
       val allowEmptyValue: Boolean = false
@@ -189,7 +185,7 @@ object schema {
         deprecated: Boolean = false,
         style: String = "form",
         explode: Boolean = false,
-        schema: JsonSchemaF[A]
+        schema: A
     ) extends Parameter[A] {
       val in: Location             = Location.Cookie
       val allowEmptyValue: Boolean = false

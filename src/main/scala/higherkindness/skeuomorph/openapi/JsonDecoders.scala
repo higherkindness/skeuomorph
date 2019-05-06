@@ -28,8 +28,6 @@ object JsonDecoders {
     Decoder[Reference].map(_.asRight[A]).handleErrorWith(_ => Decoder[A].map(_.asLeft[Reference]))
 
   implicit def jsonSchemaDecoder[A]: Decoder[JsonSchemaF[A]] =
-    // import qq.droste.data.Fix
-    // Decoder[Json].map(scheme.ana(JsonSchemaF.fromJson)).map[JsonSchemaF[A]](x => Fix.un[JsonSchemaF](x))
     ???
 
   implicit val infoDecoder: Decoder[Info] =
@@ -66,13 +64,13 @@ object JsonDecoders {
       "externalDocs"
     )(Tag.apply)
 
-  implicit def headerDecoder[A]: Decoder[Header[A]] =
+  implicit def headerDecoder[A: Decoder]: Decoder[Header[A]] =
     Decoder.forProduct2(
       "description",
       "schema"
     )(Header.apply)
 
-  implicit def encodingDecoder[A]: Decoder[Encoding[A]] =
+  implicit def encodingDecoder[A: Decoder]: Decoder[Encoding[A]] =
     Decoder.forProduct5(
       "contentType",
       "headers",
@@ -81,20 +79,20 @@ object JsonDecoders {
       "allowReserved"
     )(Encoding.apply)
 
-  implicit def mediaTypeDecoder[A]: Decoder[MediaType[A]] =
+  implicit def mediaTypeDecoder[A: Decoder]: Decoder[MediaType[A]] =
     Decoder.forProduct2(
       "schema",
       "encoding"
     )(MediaType.apply)
 
-  implicit def requestDecoder[A]: Decoder[Request[A]] =
+  implicit def requestDecoder[A: Decoder]: Decoder[Request[A]] =
     Decoder.forProduct3(
       "description",
       "content",
       "required"
     )(Request.apply)
 
-  implicit def responseDecoder[A]: Decoder[Response[A]] =
+  implicit def responseDecoder[A: Decoder]: Decoder[Response[A]] =
     Decoder.forProduct3(
       "description",
       "headers",
@@ -103,7 +101,7 @@ object JsonDecoders {
 
   implicit val locationDecoder: Decoder[Location] = Decoder.decodeString.emap(Location.parse)
 
-  implicit def parameterDecoder[A]: Decoder[Parameter[A]] =
+  implicit def parameterDecoder[A: Decoder]: Decoder[Parameter[A]] =
     Decoder.forProduct10(
       "name",
       "in",
@@ -117,7 +115,7 @@ object JsonDecoders {
       "schema"
     )(Parameter.apply)
 
-  implicit def operationDecoder[A]: Decoder[Path.Operation[A]] = {
+  implicit def operationDecoder[A: Decoder]: Decoder[Path.Operation[A]] = {
     Decoder.forProduct10(
       "tags",
       "summary",
@@ -129,10 +127,10 @@ object JsonDecoders {
       "callbacks",
       "deprecated",
       "servers"
-    )(Path.Operation.apply[A])
+    )(Path.Operation.apply)
   }
 
-  implicit def itemObjectDecoder[A]: Decoder[Path.ItemObject[A]] =
+  implicit def itemObjectDecoder[A: Decoder]: Decoder[Path.ItemObject[A]] =
     Decoder.forProduct12(
       "ref",
       "summary",
@@ -148,13 +146,13 @@ object JsonDecoders {
       "servers"
     )(Path.ItemObject.apply)
 
-  implicit def componentsDecoder[A]: Decoder[Components[A]] =
+  implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
     Decoder.forProduct2(
       "responses",
       "requestBodies"
     )(Components.apply)
 
-  implicit def openApiDecoder[A]: Decoder[OpenApi[A]] =
+  implicit def openApiDecoder[A: Decoder]: Decoder[OpenApi[A]] =
     Decoder.forProduct7(
       "openapi",
       "info",

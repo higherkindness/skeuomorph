@@ -65,7 +65,7 @@ object JsonEncoders {
   implicit def jsonSchemaEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[JsonSchemaF[A]] =
     Encoder.instance(sch => scheme.cata[JsonSchemaF, A, Json](JsonSchemaF.render).apply(sch.embed))
 
-  implicit def headerEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Header[A]] =
+  implicit def headerEncoder[A: Encoder]: Encoder[Header[A]] =
     Encoder.forProduct2(
       "description",
       "schema"
@@ -73,7 +73,7 @@ object JsonEncoders {
       (h.description, h.schema)
     }
 
-  implicit def encodingEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Encoding[A]] =
+  implicit def encodingEncoder[A: Encoder]: Encoder[Encoding[A]] =
     Encoder.forProduct5(
       "contentType",
       "headers",
@@ -84,7 +84,7 @@ object JsonEncoders {
       (e.contentType, e.headers, e.style, e.explode, e.allowReserved)
     }
 
-  implicit def mediaTypeEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[MediaType[A]] =
+  implicit def mediaTypeEncoder[A: Encoder]: Encoder[MediaType[A]] =
     Encoder.forProduct2(
       "schema",
       "encoding"
@@ -92,14 +92,14 @@ object JsonEncoders {
       (m.schema, m.encoding)
     }
 
-  implicit def requestEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Request[A]] =
+  implicit def requestEncoder[A: Encoder]: Encoder[Request[A]] =
     Encoder.forProduct3(
       "description",
       "content",
       "required"
     )(r => (r.description, r.content, r.required))
 
-  implicit def responseEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Response[A]] =
+  implicit def responseEncoder[A: Encoder]: Encoder[Response[A]] =
     Encoder.forProduct3(
       "description",
       "headers",
@@ -110,7 +110,7 @@ object JsonEncoders {
 
   implicit val locationEncoder: Encoder[Location] = Encoder.encodeString.contramap(_.value)
 
-  implicit def parameterEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Parameter[A]] =
+  implicit def parameterEncoder[A: Encoder]: Encoder[Parameter[A]] =
     Encoder.forProduct10(
       "name",
       "in",
@@ -137,7 +137,7 @@ object JsonEncoders {
     }
 
   // TODO Review: Using forProduct10 produce recursive call
-  implicit def operationEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.Operation[A]] =
+  implicit def operationEncoder[A: Encoder]: Encoder[Path.Operation[A]] =
     Encoder.instance { op =>
       import io.circe.syntax._
       Json.obj(
@@ -154,7 +154,7 @@ object JsonEncoders {
       )
     }
 
-  implicit def itemObjectEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.ItemObject[A]] =
+  implicit def itemObjectEncoder[A: Encoder]: Encoder[Path.ItemObject[A]] =
     Encoder.forProduct12(
       "ref",
       "summary",
@@ -172,13 +172,14 @@ object JsonEncoders {
       (i.ref, i.summary, i.description, i.get, i.put, i.post, i.delete, i.options, i.head, i.patch, i.trace, i.servers)
     }
 
-  implicit def componentsEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Components[A]] =
+  // (implicit A: Basis[JsonSchemaF, A])
+  implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
     Encoder.forProduct2(
       "responses",
       "requestBodies"
     )(c => (c.responses, c.requestBodies))
 
-  implicit def openApiEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[OpenApi[A]] =
+  implicit def openApiEncoder[A: Encoder]: Encoder[OpenApi[A]] =
     Encoder.forProduct7(
       "openapi",
       "info",
