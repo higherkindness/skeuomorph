@@ -22,13 +22,68 @@ import cats.implicits._
 
 object JsonDecoders {
 
-  implicit val referenceDecoder: Decoder[Reference] = Decoder.forProduct1("$$ref")(Reference.apply)
+  implicit val referenceDecoder: Decoder[Reference] = Decoder.forProduct1(s"$$ref")(Reference.apply)
 
   implicit def orReferenceDecoder[A: Decoder]: Decoder[Either[A, Reference]] =
-    Decoder[Reference].map(_.asRight[A]).handleErrorWith(_ => Decoder[A].map(_.asLeft[Reference]))
+    Decoder[Reference].map(_.asRight[A]) orElse Decoder[A].map(_.asLeft[Reference])
 
-  implicit def jsonSchemaDecoder[A]: Decoder[JsonSchemaF[A]] =
-    ???
+  def basicJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] = {
+    import JsonSchemaF.Fixed._
+    Decoder.forProduct1[String, String]("type") { identity }.emap {
+      case "integer"  => integer().asRight
+      case "long"     => long().asRight
+      case "float"    => float().asRight
+      case "double"   => double().asRight
+      case "string"   => string().asRight
+      case "byte"     => byte().asRight
+      case "binary"   => binary().asRight
+      case "boolean"  => boolean().asRight
+      case "date"     => date().asRight
+      case "datetime" => dateTime().asRight
+      case "password" => password().asRight
+      case x          => s"$x is not well formed type".asLeft
+    }
+  }
+
+  def enumJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+    Decoder
+      .forProduct2[(String, List[String]), String, List[String]]("type", "enum")(Tuple2.apply)
+      .emap {
+        case ("string", values) => JsonSchemaF.Fixed.enum(values).asRight
+        case x                  => s"$x is not valid enum".asLeft
+      }
+
+  def objectJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+    Decoder
+      .forProduct3[
+        (String, Map[String, JsonSchemaF.Fixed], List[String]),
+        String,
+        Map[String, JsonSchemaF.Fixed],
+        List[String]]("type", "properties", "required")(Tuple3.apply)
+      .emap {
+        case ("object", properties, required) =>
+          JsonSchemaF.Fixed.`object`(properties.toList, required).asRight
+        case x =>
+          s"$x is not valid object".asLeft
+      }
+
+  def arrayJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+    Decoder
+      .forProduct2[(String, JsonSchemaF.Fixed), String, JsonSchemaF.Fixed]("type", "values")(Tuple2.apply)
+      .emap {
+        case ("array", x) =>
+          JsonSchemaF.Fixed.array(x).asRight
+        case x => s"$x is not an array".asLeft
+      }
+  def referenceJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+    Decoder[Reference].map(x => JsonSchemaF.Fixed.reference(x.ref))
+
+  implicit val jsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+    referenceJsonSchemaDecoder orElse
+      objectJsonSchemaDecoder orElse
+      arrayJsonSchemaDecoder orElse
+      enumJsonSchemaDecoder orElse
+      basicJsonSchemaDecoder
 
   implicit val infoDecoder: Decoder[Info] =
     Decoder.forProduct3(
@@ -42,14 +97,17 @@ object JsonDecoders {
       "enum",
       "default",
       "description"
-    )(Server.Variable.apply)
+    )((enum: Option[List[String]], default: String, description: Option[String]) =>
+      Server.Variable(enum.getOrElse(List.empty), default, description))
 
   implicit val serverDecoder: Decoder[Server] =
     Decoder.forProduct3(
       "url",
       "description",
       "variables"
-    )(Server.apply)
+    ) { (url: String, description: Option[String], variables: Option[Map[String, Server.Variable]]) =>
+      Server(url, description, variables.getOrElse(Map.empty))
+    }
 
   implicit val externalDocsDecoder: Decoder[ExternalDocs] =
     Decoder.forProduct2(
@@ -77,27 +135,41 @@ object JsonDecoders {
       "style",
       "explode",
       "allowReserved"
-    )(Encoding.apply)
+    )(
+      (
+          contentType: Option[String],
+          headers: Option[Map[String, Either[Header[A], Reference]]],
+          style: Option[String],
+          explode: Option[Boolean],
+          allowReserved: Option[Boolean]) =>
+        Encoding(contentType, headers.getOrElse(Map.empty), style, explode, allowReserved))
 
   implicit def mediaTypeDecoder[A: Decoder]: Decoder[MediaType[A]] =
     Decoder.forProduct2(
       "schema",
       "encoding"
-    )(MediaType.apply)
+    )((schema: Option[A], encoding: Option[Map[String, Encoding[A]]]) =>
+      MediaType(schema, encoding.getOrElse(Map.empty)))
 
   implicit def requestDecoder[A: Decoder]: Decoder[Request[A]] =
     Decoder.forProduct3(
       "description",
       "content",
       "required"
-    )(Request.apply)
+    )((description: Option[String], content: Map[String, MediaType[A]], required: Option[Boolean]) =>
+      Request(description, content, required.getOrElse(false)))
 
   implicit def responseDecoder[A: Decoder]: Decoder[Response[A]] =
     Decoder.forProduct3(
       "description",
       "headers",
       "content"
-    )(Response.apply)
+    )(
+      (
+          description: String,
+          headers: Option[Map[String, Either[Header[A], Reference]]],
+          content: Option[Map[String, MediaType[A]]]) =>
+        Response(description, headers.getOrElse(Map.empty), content.getOrElse(Map.empty)))
 
   implicit val locationDecoder: Decoder[Location] = Decoder.decodeString.emap(Location.parse)
 
@@ -123,11 +195,37 @@ object JsonDecoders {
       "externalDocs",
       "operationId",
       "parameters",
+      "requestBody",
       "responses",
-      "callbacks",
+      // "callbacks",
       "deprecated",
       "servers"
-    )(Path.Operation.apply)
+    )(
+      (
+          tags: Option[List[String]],
+          summary: Option[String],
+          description: Option[String],
+          externalDocs: Option[ExternalDocs],
+          operationId: Option[String],
+          parameters: Option[List[Either[Parameter[A], Reference]]],
+          requestBody: Either[Request[A], Reference],
+          responses: Map[String, Either[Response[A], Reference]],
+          // callbacks: Option[Map[String, Either[Callback[A], Reference]]],
+          deprecated: Option[Boolean],
+          servers: Option[List[Server]]) =>
+        Path.Operation.apply(
+          tags.getOrElse(List.empty),
+          summary,
+          description,
+          externalDocs,
+          operationId,
+          parameters.getOrElse(List.empty),
+          requestBody,
+          responses,
+          // callbacks.getOrElse(Map.empty),
+          deprecated.getOrElse(false),
+          servers.getOrElse(List.empty)
+      ))
   }
 
   implicit def itemObjectDecoder[A: Decoder]: Decoder[Path.ItemObject[A]] =
@@ -143,14 +241,44 @@ object JsonDecoders {
       "head",
       "patch",
       "trace",
-      "servers"
-    )(Path.ItemObject.apply)
+      "servers")(
+      (
+          (
+              ref: Option[String], // $ref
+              summary: Option[String],
+              description: Option[String],
+              get: Option[Path.Operation[A]],
+              put: Option[Path.Operation[A]],
+              post: Option[Path.Operation[A]],
+              delete: Option[Path.Operation[A]],
+              options: Option[Path.Operation[A]],
+              head: Option[Path.Operation[A]],
+              patch: Option[Path.Operation[A]],
+              trace: Option[Path.Operation[A]],
+              servers: Option[List[Server]]) =>
+            Path.ItemObject(
+              ref,
+              summary,
+              description,
+              get,
+              put,
+              post,
+              delete,
+              options,
+              head,
+              patch,
+              trace,
+              servers.getOrElse(List.empty))))
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
     Decoder.forProduct2(
       "responses",
       "requestBodies"
-    )(Components.apply)
+    )(
+      (
+          responses: Option[Map[String, Either[Response[A], Reference]]],
+          requestBodies: Option[Map[String, Either[Request[A], Reference]]]) =>
+        Components(responses.getOrElse(Map.empty), requestBodies.getOrElse(Map.empty)))
 
   implicit def openApiDecoder[A: Decoder]: Decoder[OpenApi[A]] =
     Decoder.forProduct7(
@@ -161,6 +289,22 @@ object JsonDecoders {
       "components",
       "tags",
       "externalDocs"
-    )(OpenApi.apply)
+    )(
+      (
+          openapi: String,
+          info: Info,
+          servers: Option[List[Server]],
+          paths: Map[String, Path.ItemObject[A]],
+          components: Option[Components[A]],
+          tags: Option[List[Tag]],
+          externalDocs: Option[ExternalDocs]) =>
+        OpenApi.apply(
+          openapi,
+          info,
+          servers.getOrElse(List.empty),
+          paths,
+          components,
+          tags.getOrElse(List.empty),
+          externalDocs))
 
 }

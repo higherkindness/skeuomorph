@@ -27,12 +27,12 @@ object schema {
       servers: List[Server],
       paths: Map[String, Path.ItemObject[A]],
       components: Option[Components[A]],
-      tags: Option[List[Tag]],
+      tags: List[Tag],
       externalDocs: Option[ExternalDocs])
 
   final case class Info(title: String, description: Option[String], version: String)
 
-  final case class Server(url: String, description: String, variables: Map[String, Server.Variable])
+  final case class Server(url: String, description: Option[String], variables: Map[String, Server.Variable])
 
   object Server {
     final case class Variable(enum: List[String], default: String, description: Option[String])
@@ -40,9 +40,9 @@ object schema {
 
   object Path {
     final case class ItemObject[A](
-        ref: String, // $ref
-        summary: String,
-        description: String,
+        ref: Option[String], // $ref
+        summary: Option[String],
+        description: Option[String],
         get: Option[Operation[A]],
         put: Option[Operation[A]],
         post: Option[Operation[A]],
@@ -55,13 +55,14 @@ object schema {
 
     final case class Operation[A](
         tags: List[String],
-        summary: String,
-        description: String,
-        externalDocs: ExternalDocs,
-        operationId: String,
+        summary: Option[String],
+        description: Option[String],
+        externalDocs: Option[ExternalDocs],
+        operationId: Option[String],
         parameters: List[Either[Parameter[A], Reference]],
+        requestBody: Either[Request[A], Reference],
         responses: Map[String, Either[Response[A], Reference]],
-        callbacks: Map[String, Either[Callback[A], Reference]],
+        // callbacks: Map[String, Either[Callback[A], Reference]],
         deprecated: Boolean,
         servers: List[Server])
   }
@@ -70,16 +71,16 @@ object schema {
       requestBodies: Map[String, Either[Request[A], Reference]]
   )
 
-  final case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
+  final case class Request[A](description: Option[String], content: Map[String, MediaType[A]], required: Boolean)
 
-  final case class MediaType[A](schema: A, encoding: Map[String, Encoding[A]])
+  final case class MediaType[A](schema: Option[A], encoding: Map[String, Encoding[A]])
 
   final case class Encoding[A](
-      contentType: String,
+      contentType: Option[String],
       headers: Map[String, Either[Header[A], Reference]],
-      style: String,
-      explode: Boolean,
-      allowReserved: Boolean)
+      style: Option[String],
+      explode: Option[Boolean],
+      allowReserved: Option[Boolean])
 
   final case class Response[A](
       description: String,
@@ -114,26 +115,50 @@ object schema {
         in: Location,
         description: Option[String],
         required: Boolean,
-        deprecated: Boolean,
-        style: String,
-        explode: Boolean,
+        deprecated: Option[Boolean],
+        style: Option[String],
+        explode: Option[Boolean],
         allowEmptyValue: Option[Boolean],
         allowReserved: Option[Boolean],
         schema: A): Parameter[A] = in match {
-      case Location.Path => Path(name, description, deprecated, style, explode, schema)
+      case Location.Path =>
+        Path(
+          name,
+          description,
+          deprecated.getOrElse(false),
+          style.getOrElse("simple"),
+          explode.getOrElse(false),
+          schema)
       case Location.Query =>
         Query(
           name,
           description,
           required,
-          deprecated,
-          style,
+          deprecated.getOrElse(false),
+          style.getOrElse("form"),
           allowEmptyValue.getOrElse(false),
-          explode,
+          explode.getOrElse(true),
           allowReserved.getOrElse(false),
+          schema
+        )
+      case Location.Header =>
+        Header(
+          name,
+          description,
+          required,
+          deprecated.getOrElse(false),
+          style.getOrElse("simple"),
+          explode.getOrElse(false),
           schema)
-      case Location.Header => Header(name, description, required, deprecated, style, explode, schema)
-      case Location.Cookie => Cookie(name, description, required, deprecated, style, explode, schema)
+      case Location.Cookie =>
+        Cookie(
+          name,
+          description,
+          required,
+          deprecated.getOrElse(false),
+          style.getOrElse("form"),
+          explode.getOrElse(false),
+          schema)
     }
 
     final case class Path[A](

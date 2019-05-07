@@ -64,11 +64,22 @@ object JsonSchemaF {
   type Fixed = Fix[JsonSchemaF]
 
   object Fixed {
-    def reference(value: String): JsonSchemaF.Fixed        = Fix(JsonSchemaF.reference(value))
+    def integer[A](): JsonSchemaF.Fixed  = Fix(JsonSchemaF.integer())
+    def long[A](): JsonSchemaF.Fixed     = Fix(JsonSchemaF.long())
+    def float[A](): JsonSchemaF.Fixed    = Fix(JsonSchemaF.float())
+    def double[A](): JsonSchemaF.Fixed   = Fix(JsonSchemaF.double())
+    def string[A](): JsonSchemaF.Fixed   = Fix(JsonSchemaF.string())
+    def byte[A](): JsonSchemaF.Fixed     = Fix(JsonSchemaF.byte())
+    def binary[A](): JsonSchemaF.Fixed   = Fix(JsonSchemaF.binary())
+    def boolean[A](): JsonSchemaF.Fixed  = Fix(JsonSchemaF.boolean())
+    def date[A](): JsonSchemaF.Fixed     = Fix(JsonSchemaF.date())
+    def dateTime[A](): JsonSchemaF.Fixed = Fix(JsonSchemaF.dateTime())
+    def password[A](): JsonSchemaF.Fixed = Fix(JsonSchemaF.password())
+    def `object`(properties: List[(String, JsonSchemaF.Fixed)], required: List[String]): JsonSchemaF.Fixed =
+      Fix(JsonSchemaF.`object`(properties.map(JsonSchemaF.Property.apply[JsonSchemaF.Fixed] _ tupled), required))
     def array(value: JsonSchemaF.Fixed): JsonSchemaF.Fixed = Fix(JsonSchemaF.array(value))
     def enum(value: List[String]): JsonSchemaF.Fixed       = Fix(JsonSchemaF.enum(value))
-    def `object`(properties: List[Property[JsonSchemaF.Fixed]], required: List[String]): JsonSchemaF.Fixed =
-      Fix(JsonSchemaF.`object`(properties, required))
+    def reference(value: String): JsonSchemaF.Fixed        = Fix(JsonSchemaF.reference(value))
   }
 
   private def jsonType(value: String, attr: (String, Json)*): Json =
@@ -98,11 +109,10 @@ object JsonSchemaF {
         "items" -> Json.obj("type" -> values)
       )
     case EnumF(cases) =>
-      jsonType("string",
-      "enum" -> Json.fromValues(cases.map(Json.fromString)))
+      jsonType("string", "enum" -> Json.fromValues(cases.map(Json.fromString)))
     case ReferenceF(value) =>
       Json.obj(
-        "$$ref" -> Json.fromString(value)
+        s"$$ref" -> Json.fromString(value)
       )
 
   }

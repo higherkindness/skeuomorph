@@ -148,9 +148,9 @@ object JsonEncoders {
         "operationId"  -> op.operationId.asJson,
         "parameters"   -> op.parameters.asJson,
         "responses"    -> op.responses.asJson,
-        "callbacks"    -> op.callbacks.asJson,
-        "deprecated"   -> op.deprecated.asJson,
-        "servers"      -> op.servers.asJson
+        // "callbacks"    -> op.callbacks.asJson,
+        "deprecated" -> op.deprecated.asJson,
+        "servers"    -> op.servers.asJson
       )
     }
 
