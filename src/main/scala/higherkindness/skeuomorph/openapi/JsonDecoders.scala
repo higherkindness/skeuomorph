@@ -187,46 +187,36 @@ object JsonDecoders {
       "schema"
     )(Parameter.apply)
 
-  implicit def operationDecoder[A: Decoder]: Decoder[Path.Operation[A]] = {
-    Decoder.forProduct10(
-      "tags",
-      "summary",
-      "description",
-      "externalDocs",
-      "operationId",
-      "parameters",
-      "requestBody",
-      "responses",
-      // "callbacks",
-      "deprecated",
-      "servers"
-    )(
-      (
-          tags: Option[List[String]],
-          summary: Option[String],
-          description: Option[String],
-          externalDocs: Option[ExternalDocs],
-          operationId: Option[String],
-          parameters: Option[List[Either[Parameter[A], Reference]]],
-          requestBody: Either[Request[A], Reference],
-          responses: Map[String, Either[Response[A], Reference]],
-          // callbacks: Option[Map[String, Either[Callback[A], Reference]]],
-          deprecated: Option[Boolean],
-          servers: Option[List[Server]]) =>
-        Path.Operation.apply(
-          tags.getOrElse(List.empty),
-          summary,
-          description,
-          externalDocs,
-          operationId,
-          parameters.getOrElse(List.empty),
-          requestBody,
-          responses,
-          // callbacks.getOrElse(Map.empty),
-          deprecated.getOrElse(false),
-          servers.getOrElse(List.empty)
-      ))
-  }
+  // Avoid forProductXX
+  implicit def operationDecoder[A: Decoder]: Decoder[Path.Operation[A]] =
+    Decoder.instance(
+      c =>
+        for {
+          tags         <- c.downField("tags").as[Option[List[String]]]
+          summary      <- c.downField("summary").as[Option[String]]
+          description  <- c.downField("description").as[Option[String]]
+          externalDocs <- c.downField("externalDocs").as[Option[ExternalDocs]]
+          operationId  <- c.downField("operationId").as[Option[String]]
+          parameters   <- c.downField("parameters").as[Option[List[Either[Parameter[A], Reference]]]]
+          requestBody  <- c.downField("requestBody").as[Either[Request[A], Reference]]
+          responses    <- c.downField("responses").as[Map[String, Either[Response[A], Reference]]]
+          callbacks    <- c.downField("callbacks").as[Option[Map[String, Either[Callback[A], Reference]]]]
+          deprecated   <- c.downField("deprecated").as[Option[Boolean]]
+          servers      <- c.downField("servers").as[Option[List[Server]]]
+        } yield
+          Path.Operation.apply(
+            tags.getOrElse(List.empty),
+            summary,
+            description,
+            externalDocs,
+            operationId,
+            parameters.getOrElse(List.empty),
+            requestBody,
+            responses,
+            callbacks.getOrElse(Map.empty),
+            deprecated.getOrElse(false),
+            servers.getOrElse(List.empty)
+        ))
 
   implicit def itemObjectDecoder[A: Decoder]: Decoder[Path.ItemObject[A]] =
     Decoder.forProduct12(

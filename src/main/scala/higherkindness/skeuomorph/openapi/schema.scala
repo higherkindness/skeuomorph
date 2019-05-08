@@ -62,7 +62,7 @@ object schema {
         parameters: List[Either[Parameter[A], Reference]],
         requestBody: Either[Request[A], Reference],
         responses: Map[String, Either[Response[A], Reference]],
-        // callbacks: Map[String, Either[Callback[A], Reference]],
+        callbacks: Map[String, Either[Callback[A], Reference]],
         deprecated: Boolean,
         servers: List[Server])
   }
@@ -92,6 +92,12 @@ object schema {
   final case class ExternalDocs(url: String, description: Option[String])
 
   type Callback[A] = Map[String, Path.ItemObject[A]]
+
+  object Callback {
+    def apply[A](values: (String, Path.ItemObject[A])*): Callback[A] =
+      values.toMap
+
+  }
 
   final case class Header[A](description: String, schema: A)
 

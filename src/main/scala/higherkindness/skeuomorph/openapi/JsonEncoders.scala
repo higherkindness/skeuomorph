@@ -136,7 +136,7 @@ object JsonEncoders {
         p.schema)
     }
 
-  // TODO Review: Using forProduct10 produce recursive call
+  // Avoid forProductXX
   implicit def operationEncoder[A: Encoder]: Encoder[Path.Operation[A]] =
     Encoder.instance { op =>
       import io.circe.syntax._
@@ -148,9 +148,9 @@ object JsonEncoders {
         "operationId"  -> op.operationId.asJson,
         "parameters"   -> op.parameters.asJson,
         "responses"    -> op.responses.asJson,
-        // "callbacks"    -> op.callbacks.asJson,
-        "deprecated" -> op.deprecated.asJson,
-        "servers"    -> op.servers.asJson
+        "callbacks"    -> op.callbacks.asJson,
+        "deprecated"   -> op.deprecated.asJson,
+        "servers"      -> op.servers.asJson
       )
     }
 
