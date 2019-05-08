@@ -131,20 +131,20 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         }
       }
       """)
-      val expectedOperation = operation[JsonSchemaF.Fixed](
-        request[JsonSchemaF.Fixed](
-          Map("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))),
-        ).copy(description = "Callback payload".some),
-        responses = Map("200" -> response[JsonSchemaF.Fixed](
-          "webhook successfully processed and no retries will be performed").asLeft)
+
+      val itemObject = post[JsonSchemaF.Fixed](
+        operation(
+          request(
+            "Callback payload".some,
+            Map("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload")))
+          ),
+          responses = Map("200" -> response("webhook successfully processed and no retries will be performed").asLeft)
+        )
       )
       Decoder[Callback[JsonSchemaF.Fixed]].decodeJson(json) should beRight(
-        Callback[JsonSchemaF.Fixed](
+        Callback(
           "http://notificationServer.com?transactionId={$request.body#/id}&email={$request.body#/email}" ->
-            emptyItemObject[JsonSchemaF.Fixed]
-              .copy(
-                post = expectedOperation.some,
-              )
+            itemObject
         ))
     }
   }
@@ -347,52 +347,53 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         "application/xml"  -> noneMediaType[JsonSchemaF.Fixed]
       )
 
-      val expectedResponses = Map(
-        "200" -> response("Pet updated.").copy(content = expectedResponseContent).asLeft,
-        "405" -> response("Method Not Allowed").copy(content = expectedResponseContent).asLeft
-      )
-      val expectedRequest = request[JsonSchemaF.Fixed](
-        content = Map(
-          "application/x-www-form-urlencoded" ->
-            mediaType[JsonSchemaF.Fixed](
-              Fixed
-                .`object`(
-                  List(
-                    "name"   -> Fixed.string(),
-                    "status" -> Fixed.string()
-                  ),
-                  List("status")
-                ))
-        )
-      )
-
       val expectedOperation =
         operation[JsonSchemaF.Fixed](
-          expectedRequest,
-          expectedResponses,
-        ).copy(
-          tags = List("pet"),
-          summary = "Updates a pet in the store with form data".some,
-          operationId = "updatePetWithForm".some,
-          parameters = List(
-            Parameter
-              .Path(
-                name = "petId",
-                description = "ID of pet that needs to be updated".some,
-                schema = JsonSchemaF.Fixed.string())
-              .asLeft)
+          request[JsonSchemaF.Fixed](
+            content = Map(
+              "application/x-www-form-urlencoded" ->
+                mediaType[JsonSchemaF.Fixed](
+                  Fixed
+                    .`object`(
+                      List(
+                        "name"   -> Fixed.string(),
+                        "status" -> Fixed.string()
+                      ),
+                      List("status")
+                    ))
+            )
+          ),
+          Map(
+            "200" -> response("Pet updated.", expectedResponseContent).asLeft,
+            "405" -> response("Method Not Allowed", expectedResponseContent).asLeft
+          )
         )
       Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
-        emptyItemObject[JsonSchemaF.Fixed]
-          .copy(
-            post = expectedOperation.some,
-          ))
+        post[JsonSchemaF.Fixed](
+          expectedOperation
+            .copy(
+              tags = List("pet"),
+              summary = "Updates a pet in the store with form data".some,
+              operationId = "updatePetWithForm".some,
+              parameters = List(
+                Parameter
+                  .Path(
+                    name = "petId",
+                    description = "ID of pet that needs to be updated".some,
+                    schema = JsonSchemaF.Fixed.string())
+                  .asLeft)
+            )))
     }
   }
 }
 object OpenApiDecoderSpecification {
-  def unsafeParse: String => Json                   = parse(_).valueOr(x => sys.error(x.message))
-  def response[A](description: String): Response[A] = Response[A](description, Map.empty, Map.empty)
+  def unsafeParse: String => Json = parse(_).valueOr(x => sys.error(x.message))
+
+  def response[A](
+      description: String,
+      content: Map[String, MediaType[A]] = Map.empty[String, MediaType[A]]): Response[A] =
+    Response[A](description, Map.empty, content)
+
   def operation[A](requestBody: Request[A], responses: Map[String, Either[Response[A], Reference]]): Path.Operation[A] =
     Path.Operation[A](
       List.empty,
@@ -407,14 +408,20 @@ object OpenApiDecoderSpecification {
       false,
       List.empty
     )
-  def request[A](content: Map[String, MediaType[A]]): Request[A] = Request[A](
-    None,
+
+  def request[A](description: Option[String] = None, content: Map[String, MediaType[A]]): Request[A] = Request[A](
+    description,
     content,
     false
   )
 
-  def noneMediaType[A]   = MediaType[A](None, Map.empty)
+  def noneMediaType[A] = MediaType[A](None, Map.empty)
+
   def mediaType[A](a: A) = MediaType[A](a.some, Map.empty)
+
+  def post[A](operation: Path.Operation[A]): Path.ItemObject[A] =
+    emptyItemObject[A].copy(post = operation.some)
+
   def emptyItemObject[A] = Path.ItemObject[A](
     None,
     None,
