@@ -233,6 +233,8 @@ object schema {
     case object Header extends Location("header")
     case object Cookie extends Location("cookie")
 
+    def all = List(Path, Query, Header, Cookie)
+
     def parse(value: String): Either[String, Location] = value match {
       case "path"   => Path.asRight
       case "query"  => Query.asRight

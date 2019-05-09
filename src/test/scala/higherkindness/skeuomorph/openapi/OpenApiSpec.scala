@@ -21,17 +21,27 @@ import org.typelevel.discipline.specs2.Discipline
 import cats.laws.discipline._
 import cats.implicits._
 import org.specs2._
+import schema._
 
+import org.scalacheck._
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
 
   def is = s2"""
-    $traverse
-    $functor
-    $foldable
+      $functor
+      $foldable
+      $traverse
+      $shouldAbleToEncodeAndDecode
     """
-
   val traverse =
     checkAll("Traverse[JsonSchemaF]", TraverseTests[JsonSchemaF].traverse[Int, Int, Int, Set[Int], Option, Option])
   val functor  = checkAll("Functor[JsonSchemaF]", FunctorTests[JsonSchemaF].functor[Int, Int, String])
   val foldable = checkAll("Foldable[JsonSchemaF]", FoldableTests[JsonSchemaF].foldable[Int, Int])
+
+  def shouldAbleToEncodeAndDecode = Prop.forAll { (openApi: OpenApi[Int]) =>
+    import _root_.io.circe._
+    import _root_.io.circe.syntax._
+    import JsonEncoders._
+    import JsonDecoders._
+    Decoder[OpenApi[Int]].decodeJson(openApi.asJson) == (openApi.asRight)
+  }
 }

@@ -147,6 +147,7 @@ object JsonEncoders {
         "externalDocs" -> op.externalDocs.asJson,
         "operationId"  -> op.operationId.asJson,
         "parameters"   -> op.parameters.asJson,
+        "requestBody"  -> op.requestBody.asJson,
         "responses"    -> op.responses.asJson,
         "callbacks"    -> op.callbacks.asJson,
         "deprecated"   -> op.deprecated.asJson,
