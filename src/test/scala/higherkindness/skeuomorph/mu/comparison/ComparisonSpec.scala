@@ -32,9 +32,9 @@ class ComparisonSpec extends Specification {
     s2"""
   Schema comparison
 
-  Should accept numeric widdening $numericWiddening
+  Should accept numeric widening $numericWidening
   Should accept coproduct creation $coproductCreation
-  Should accept coproduct widenning $coproductWiddening
+  Should accept coproduct widenning $coproductWidening
   Should accept field addition in records $fieldAddition
   Should accept field removal in records $fieldRemoval
   Should accept making a type optional $optionalPromotion
@@ -46,18 +46,18 @@ class ComparisonSpec extends Specification {
 
   type T = Mu[MuF]
 
-  def numericWiddening = {
+  def numericWidening = {
 
-    val validWiddenings = List(
+    val validWidenings = List(
       int[T].embed   -> List(long[T].embed, float[T].embed, double[T].embed),
       long[T].embed  -> List(float[T].embed, double[T].embed),
       float[T].embed -> List(double[T].embed)
     )
 
     for {
-      (w, rs) <- validWiddenings
+      (w, rs) <- validWidenings
       r       <- rs
-    } yield Comparison(w, r) must_== Match(List(NumericWiddening(Path.empty, w, r)))
+    } yield Comparison(w, r) must_== Match(List(NumericWidening(Path.empty, w, r)))
   }
 
   def coproductCreation = {
@@ -66,8 +66,8 @@ class ComparisonSpec extends Specification {
 
     Comparison(original, extended) must_== Match(
       List(
-        PromotedToCoproduct(Path.empty, extended),
-        NumericWiddening(Path.empty, original, long[T].embed)
+        PromotionToCoproduct(Path.empty, extended),
+        NumericWidening(Path.empty, original, long[T].embed)
       ))
   }
 
@@ -77,7 +77,7 @@ class ComparisonSpec extends Specification {
 
     Comparison(original, extended) must_== Match(
       List(
-        PromotedToEither(Path.empty, extended)
+        PromotionToEither(Path.empty, extended)
       )
     )
   }
@@ -88,7 +88,7 @@ class ComparisonSpec extends Specification {
 
     Comparison(original, extended) must_== Match(
       List(
-        PromotedToCoproduct(Path.empty, extended)
+        PromotionToCoproduct(Path.empty, extended)
       )
     )
   }
@@ -99,21 +99,21 @@ class ComparisonSpec extends Specification {
 
     Comparison(original, extended) must_== Match(
       List(
-        PromotedToCoproduct(Path.empty, extended),
-        NumericWiddening(Path.empty / LeftBranch, int[T].embed, long[T].embed),
+        PromotionToCoproduct(Path.empty, extended),
+        NumericWidening(Path.empty / LeftBranch, int[T].embed, long[T].embed),
         StringConversion(Path.empty / RightBranch, string[T].embed, byteArray[T].embed)
       )
     )
   }
 
-  def coproductWiddening = {
+  def coproductWidening = {
     val original = coproduct(NonEmptyList.of(string[T].embed, long[T].embed)).embed
     val extended = coproduct(NonEmptyList.of(float[T].embed, byteArray[T].embed, boolean[T].embed)).embed
 
     Comparison(original, extended) must_== Match(
       List(
         StringConversion(Path.empty / Alternative(0), string[T].embed, byteArray[T].embed),
-        NumericWiddening(Path.empty / Alternative(1), long[T].embed, float[T].embed)
+        NumericWidening(Path.empty / Alternative(1), long[T].embed, float[T].embed)
       ))
   }
 
@@ -138,7 +138,8 @@ class ComparisonSpec extends Specification {
     val original = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
     val promoted = product("foo", List(Field("name", string[T].embed), Field("age", option(int[T].embed).embed))).embed
 
-    Comparison(original, promoted) must_== Match(List(MadeOptional[T](Path.empty / Name("foo") / FieldName("age"))))
+    Comparison(original, promoted) must_== Match(
+      List(PromotionToOption[T](Path.empty / Name("foo") / FieldName("age"))))
   }
 
   def eitherPromotion = {
@@ -151,10 +152,10 @@ class ComparisonSpec extends Specification {
       "foo",
       List(Field("name", either(long[T].embed, string[T].embed).embed), Field("age", int[T].embed))).embed
 
-    Comparison(original, promotedL) must_== Match(PromotedToEither(
+    Comparison(original, promotedL) must_== Match(PromotionToEither(
       Path.empty / Name("foo") / FieldName("age"),
       either(int[T].embed, boolean[T].embed).embed) :: Nil)
-    Comparison(original, promotedR) must_== Match(PromotedToEither(
+    Comparison(original, promotedR) must_== Match(PromotionToEither(
       Path.empty / Name("foo") / FieldName("name"),
       either(long[T].embed, string[T].embed).embed) :: Nil)
 

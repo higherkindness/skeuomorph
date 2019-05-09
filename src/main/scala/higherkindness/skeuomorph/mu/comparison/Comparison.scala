@@ -176,7 +176,7 @@ object Comparison extends ComparisonInstances {
 
         // Numeric widdening
         case (TInt(), TLong() | TFloat() | TDouble()) | (TLong(), TFloat() | TDouble()) | (TFloat(), TDouble()) =>
-          End(Match(List(NumericWiddening(path, writer, reader))))
+          End(Match(List(NumericWidening(path, writer, reader))))
 
         // String and Byte arrays are considered compatible
         case (TByteArray(), TString()) | (TString(), TByteArray()) =>
@@ -266,17 +266,17 @@ object Reporter {
   def id[T]: Result[T] => Result[T] = r => r
 
   def madeOptional[T](path: Path): Result[T] => Result[T] = {
-    case Match(tr) => Match(MadeOptional[T](path) +: tr)
+    case Match(tr) => Match(PromotionToOption[T](path) +: tr)
     case mismatch  => mismatch
   }
 
   def promotedToEither[T](path: Path, either: T): Result[T] => Result[T] = {
-    case Match(tr) => Match(PromotedToEither(path, either) +: tr)
+    case Match(tr) => Match(PromotionToEither(path, either) +: tr)
     case mismatch  => mismatch
   }
 
   def promotedToCoproduct[T](path: Path, coproduct: T): Result[T] => Result[T] = {
-    case Match(tr) => Match(PromotedToCoproduct(path, coproduct) +: tr)
+    case Match(tr) => Match(PromotionToCoproduct(path, coproduct) +: tr)
     case mismatch  => mismatch
   }
 

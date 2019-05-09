@@ -22,24 +22,24 @@ import cats.syntax.show._
 sealed trait Transformation[T]
 
 object Transformation {
-  final case class NumericWiddening[T](relativePath: Path, from: T, to: T)  extends Transformation[T]
-  final case class StringConversion[T](relativePath: Path, from: T, to: T)  extends Transformation[T]
-  final case class Addition[T](relativePath: Path, added: T)                extends Transformation[T]
-  final case class Removal[T](relativePath: Path, removed: T)               extends Transformation[T]
-  final case class MadeOptional[T](relativePath: Path)                      extends Transformation[T]
-  final case class PromotedToEither[T](relativePath: Path, either: T)       extends Transformation[T]
-  final case class PromotedToCoproduct[T](relativePath: Path, coproduct: T) extends Transformation[T]
-  final case class CoproductWiddening[T](relativePath: Path, coproduct: T)  extends Transformation[T]
+  final case class NumericWidening[T](relativePath: Path, from: T, to: T)    extends Transformation[T]
+  final case class StringConversion[T](relativePath: Path, from: T, to: T)   extends Transformation[T]
+  final case class Addition[T](relativePath: Path, added: T)                 extends Transformation[T]
+  final case class Removal[T](relativePath: Path, removed: T)                extends Transformation[T]
+  final case class PromotionToOption[T](relativePath: Path)                  extends Transformation[T]
+  final case class PromotionToEither[T](relativePath: Path, either: T)       extends Transformation[T]
+  final case class PromotionToCoproduct[T](relativePath: Path, coproduct: T) extends Transformation[T]
+  final case class CoproductWidening[T](relativePath: Path, coproduct: T)    extends Transformation[T]
 
   implicit def transformationShow[T](implicit showT: Show[T]): Show[Transformation[T]] = Show.show {
-    case NumericWiddening(p, f, t) => p.show ++ ": numeric widdening from " ++ f.show ++ " to " ++ t.show
-    case StringConversion(p, f, t) => p.show ++ ": string conversion from " ++ f.show ++ " to " ++ t.show
-    case Addition(p, a)            => p.show ++ ": added field with schema " ++ a.show
-    case Removal(p, _)             => p.show ++ ": field removed"
-    case MadeOptional(p)           => p.show ++ ": made optional"
-    case PromotedToEither(p, e)    => p.show ++ ": promoted to either " ++ e.show
-    case PromotedToCoproduct(p, c) => p.show ++ ": promoted to coproduct " ++ c.show
-    case CoproductWiddening(p, c)  => p.show ++ ": coproduct widdening to " ++ c.show
+    case NumericWidening(p, f, t)   => p.show ++ ": numeric widening from " ++ f.show ++ " to " ++ t.show
+    case StringConversion(p, f, t)  => p.show ++ ": string conversion from " ++ f.show ++ " to " ++ t.show
+    case Addition(p, a)             => p.show ++ ": added field with schema " ++ a.show
+    case Removal(p, _)              => p.show ++ ": field removed"
+    case PromotionToOption(p)       => p.show ++ ": promotion to option"
+    case PromotionToEither(p, e)    => p.show ++ ": promotion to either " ++ e.show
+    case PromotionToCoproduct(p, c) => p.show ++ ": promotion to coproduct " ++ c.show
+    case CoproductWidening(p, c)    => p.show ++ ": coproduct widening to " ++ c.show
   }
 }
 
