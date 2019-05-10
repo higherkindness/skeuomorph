@@ -22,6 +22,7 @@ import qq.droste.syntax.embed._
 import higherkindness.skeuomorph.mu.MuF, MuF._
 import cats.Functor
 import cats.instances.list._
+import cats.instances.map._
 import cats.instances.string._
 import cats.instances.tuple._
 import cats.syntax.eq._
@@ -47,18 +48,21 @@ object Comparison extends ComparisonInstances {
   /** The schemas being compared at a given path of the current comparison */
   type Context[T] = (Path, Option[T], Option[T])
 
-  type Result[T] = (List[Transformation[T]], List[Incompatibility])
+  type CompatibleDelta[T] = Map[Path, List[Transformation[T]]]
+
+  type Result[T] = (CompatibleDelta[T], List[Incompatibility])
 
   object Result {
-    def empty[T]: Result[T]                                      = (Nil, Nil)
-    def mismatch[T](incompatibility: Incompatibility): Result[T] = (Nil, List(incompatibility))
+    def empty[T]: Result[T]                                      = (Map.empty, Nil)
+    def mismatch[T](incompatibility: Incompatibility): Result[T] = (Map.empty, List(incompatibility))
     def isMatch[T](result: Result[T]): Boolean                   = result._2.isEmpty
 
   }
 
   object Match {
-    def apply[T](transformation: List[Transformation[T]]): Result[T] = (transformation, Nil)
-    def unapply[T](result: Result[T]): Option[List[Transformation[T]]] =
+    def apply[T](path: Path, transformation: Transformation[T]): Result[T] = (Map(path -> List(transformation)), Nil)
+    def apply[T](entries: (Path, List[Transformation[T]])*): Result[T]     = (Map(entries: _*), Nil)
+    def unapply[T](result: Result[T]): Option[CompatibleDelta[T]] =
       if (result._2.isEmpty) Some(result._1) else None
   }
 
@@ -176,11 +180,11 @@ object Comparison extends ComparisonInstances {
 
         // Numeric widdening
         case (TInt(), TLong() | TFloat() | TDouble()) | (TLong(), TFloat() | TDouble()) | (TFloat(), TDouble()) =>
-          End(Match(List(NumericWidening(path, writer, reader))))
+          End(Match(path, NumericWidening(writer, reader)))
 
         // String and Byte arrays are considered compatible
         case (TByteArray(), TString()) | (TString(), TByteArray()) =>
-          End(Match(List(StringConversion(path, writer, reader))))
+          End(Match(path, StringConversion(writer, reader)))
 
         // Promotions
         case (TOption(i1), TCoproduct(is)) =>
@@ -216,8 +220,8 @@ object Comparison extends ComparisonInstances {
         // No compatible transformation found
         case _ => End(Result.mismatch(Different(path)))
       }
-    case (path, None, Some(reader)) => End(Match(List(Addition(path, reader))))
-    case (path, Some(writer), None) => End(Match(List(Removal(path, writer))))
+    case (path, None, Some(reader)) => End(Match(path, Addition(reader)))
+    case (path, Some(writer), None) => End(Match(path, Removal(writer)))
     case (_, None, None)            => same
   }
 
@@ -265,19 +269,17 @@ object Reporter {
 
   def id[T]: Result[T] => Result[T] = r => r
 
-  def madeOptional[T](path: Path): Result[T] => Result[T] = {
-    case Match(tr) => Match(PromotionToOption[T](path) +: tr)
-    case mismatch  => mismatch
+  def appendTransformationToMatch[T](path: Path, transfo: Transformation[T]): Result[T] => Result[T] = { res =>
+    if (Result.isMatch(res)) Match(path, transfo) |+| res
+    else res
   }
 
-  def promotedToEither[T](path: Path, either: T): Result[T] => Result[T] = {
-    case Match(tr) => Match(PromotionToEither(path, either) +: tr)
-    case mismatch  => mismatch
-  }
+  def madeOptional[T](path: Path): Result[T] => Result[T] = appendTransformationToMatch(path, PromotionToOption[T]())
 
-  def promotedToCoproduct[T](path: Path, coproduct: T): Result[T] => Result[T] = {
-    case Match(tr) => Match(PromotionToCoproduct(path, coproduct) +: tr)
-    case mismatch  => mismatch
-  }
+  def promotedToEither[T](path: Path, either: T): Result[T] => Result[T] =
+    appendTransformationToMatch(path, PromotionToEither(either))
+
+  def promotedToCoproduct[T](path: Path, coproduct: T): Result[T] => Result[T] =
+    appendTransformationToMatch(path, PromotionToCoproduct(coproduct))
 
 }
