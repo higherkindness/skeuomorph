@@ -27,7 +27,7 @@ object JsonDecoders {
   implicit def orReferenceDecoder[A: Decoder]: Decoder[Either[A, Reference]] =
     Decoder[Reference].map(_.asRight[A]) orElse Decoder[A].map(_.asLeft[Reference])
 
-  def basicJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] = {
+  private def basicJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] = {
     import JsonSchemaF.Fixed._
     Decoder.forProduct1[String, String]("type") { identity }.emap {
       case "integer"  => integer().asRight
@@ -45,7 +45,7 @@ object JsonDecoders {
     }
   }
 
-  def enumJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+  private def enumJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
     Decoder
       .forProduct2[(String, List[String]), String, List[String]]("type", "enum")(Tuple2.apply)
       .emap {
@@ -53,7 +53,7 @@ object JsonDecoders {
         case x                  => s"$x is not valid enum".asLeft
       }
 
-  def objectJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+  private def objectJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
     Decoder
       .forProduct3[
         (String, Map[String, JsonSchemaF.Fixed], List[String]),
@@ -67,7 +67,7 @@ object JsonDecoders {
           s"$x is not valid object".asLeft
       }
 
-  def arrayJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+  private def arrayJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
     Decoder
       .forProduct2[(String, JsonSchemaF.Fixed), String, JsonSchemaF.Fixed]("type", "items")(Tuple2.apply)
       .emap {
@@ -75,7 +75,7 @@ object JsonDecoders {
           JsonSchemaF.Fixed.array(x).asRight
         case x => s"$x is not an array".asLeft
       }
-  def referenceJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+  private def referenceJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
     Decoder[Reference].map(x => JsonSchemaF.Fixed.reference(x.ref))
 
   implicit val jsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =

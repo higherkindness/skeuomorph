@@ -140,18 +140,4 @@ object JsonSchemaF {
     case _                                  => false
   }
 
-  def addressSchema: Fix[JsonSchemaF] =
-    Fix(
-      ObjectF(
-        List(
-          Property("street_address", Fix(StringF())),
-          Property("city", Fix(StringF())),
-          Property("state", Fix(StringF()))
-        ),
-        List(
-          "street_address",
-          "city",
-          "state"
-        )
-      ))
 }

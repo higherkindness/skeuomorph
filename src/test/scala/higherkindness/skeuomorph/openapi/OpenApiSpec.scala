@@ -27,8 +27,6 @@ import org.scalacheck._
 import _root_.io.circe.testing._
 
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
-  // import org.specs2.scalacheck.Parameters
-  // implicit val params: Parameters = Parameters(minTestsOk = 10)
 
   def is = s2"""
       $shouldAbleCodecRoundTrip

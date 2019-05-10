@@ -180,7 +180,6 @@ object JsonEncoders {
       (i.ref, i.summary, i.description, i.get, i.put, i.post, i.delete, i.options, i.head, i.patch, i.trace, i.servers)
     }
 
-  // (implicit A: Basis[JsonSchemaF, A])
   implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
     Encoder.forProduct2(
       "responses",

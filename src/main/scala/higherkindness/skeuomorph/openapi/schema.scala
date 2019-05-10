@@ -32,7 +32,6 @@ object schema {
       externalDocs: Option[ExternalDocs])
 
   object OpenApi {
-
     implicit def openApiEq[T]: Eq[OpenApi[T]] =
       Eq.fromUniversalEquals
   }
