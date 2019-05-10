@@ -17,8 +17,12 @@
 package higherkindness.skeuomorph.openapi
 
 import schema._
-import io.circe.Decoder
+import io.circe.{Decoder, DecodingFailure}
 import cats.implicits._
+import qq.droste._
+import qq.droste.syntax.embed._
+import scala.language.postfixOps
+import io.circe.HCursor
 
 object JsonDecoders {
 
@@ -27,58 +31,63 @@ object JsonDecoders {
   implicit def orReferenceDecoder[A: Decoder]: Decoder[Either[A, Reference]] =
     Decoder[Reference].map(_.asRight[A]) orElse Decoder[A].map(_.asLeft[Reference])
 
-  private def basicJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] = {
-    import JsonSchemaF.Fixed._
+  private def basicJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] = {
+    import JsonSchemaF._
     Decoder.forProduct1[String, String]("type") { identity }.emap {
-      case "integer"  => integer().asRight
-      case "long"     => long().asRight
-      case "float"    => float().asRight
-      case "double"   => double().asRight
-      case "string"   => string().asRight
-      case "byte"     => byte().asRight
-      case "binary"   => binary().asRight
-      case "boolean"  => boolean().asRight
-      case "date"     => date().asRight
-      case "datetime" => dateTime().asRight
-      case "password" => password().asRight
+      case "integer"  => integer[A].embed.asRight
+      case "long"     => long[A].embed.asRight
+      case "float"    => float[A].embed.asRight
+      case "double"   => double[A].embed.asRight
+      case "string"   => string[A].embed.asRight
+      case "byte"     => byte[A].embed.asRight
+      case "binary"   => binary[A].embed.asRight
+      case "boolean"  => boolean[A].embed.asRight
+      case "date"     => date[A].embed.asRight
+      case "datetime" => dateTime[A].embed.asRight
+      case "password" => password[A].embed.asRight
       case x          => s"$x is not well formed type".asLeft
     }
   }
 
-  private def enumJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
-    Decoder
-      .forProduct2[(String, List[String]), String, List[String]]("type", "enum")(Tuple2.apply)
-      .emap {
-        case ("string", values) => JsonSchemaF.Fixed.enum(values).asRight
-        case x                  => s"$x is not valid enum".asLeft
-      }
+  private def validateType(c: HCursor, expected: String): Decoder.Result[Unit] =
+    c.downField("type").as[String].flatMap {
+      case `expected` => ().asRight
+      case actual     => DecodingFailure(s"$actual is not expected type $expected", List.empty).asLeft
+    }
 
-  private def objectJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
-    Decoder
-      .forProduct3[
-        (String, Map[String, JsonSchemaF.Fixed], List[String]),
-        String,
-        Map[String, JsonSchemaF.Fixed],
-        List[String]]("type", "properties", "required")(Tuple3.apply)
-      .emap {
-        case ("object", properties, required) =>
-          JsonSchemaF.Fixed.`object`(properties.toList, required).asRight
-        case x =>
-          s"$x is not valid object".asLeft
-      }
+  private def enumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+    Decoder.instance(c =>
+      for {
+        values <- c.downField("enum").as[List[String]]
+        _      <- validateType(c, "string")
+      } yield JsonSchemaF.enum[A](values).embed)
 
-  private def arrayJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
-    Decoder
-      .forProduct2[(String, JsonSchemaF.Fixed), String, JsonSchemaF.Fixed]("type", "items")(Tuple2.apply)
-      .emap {
-        case ("array", x) =>
-          JsonSchemaF.Fixed.array(x).asRight
-        case x => s"$x is not an array".asLeft
-      }
-  private def referenceJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
-    Decoder[Reference].map(x => JsonSchemaF.Fixed.reference(x.ref))
+  private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+    Decoder.instance { c =>
+      for {
+        required <- c.downField("required").as[List[String]]
+        properties <- c
+          .downField("properties")
+          .as[Map[String, A]] {
+            implicit lazy val x = jsonSchemaDecoder[A]
+            implicitly[Decoder[Map[String, A]]]
+          }
+          .map(_.toList.map(JsonSchemaF.Property.apply[A] _ tupled))
+        _ <- validateType(c, "object")
+      } yield JsonSchemaF.`object`[A](properties, required).embed
+    }
 
-  implicit val jsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
+  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]: Decoder]: Decoder[A] = Decoder.instance { c =>
+    for {
+      items <- c.downField("items").as[A](jsonSchemaDecoder[A])
+      _     <- validateType(c, "array")
+    } yield JsonSchemaF.array(items).embed
+  }
+
+  private def referenceJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+    Decoder[Reference].map(x => JsonSchemaF.reference[A](x.ref).embed)
+
+  implicit def jsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     referenceJsonSchemaDecoder orElse
       objectJsonSchemaDecoder orElse
       arrayJsonSchemaDecoder orElse
@@ -204,7 +213,7 @@ object JsonDecoders {
           deprecated   <- c.downField("deprecated").as[Option[Boolean]]
           servers      <- c.downField("servers").as[Option[List[Server]]]
         } yield
-          Path.Operation.apply(
+          Path.Operation(
             tags.getOrElse(List.empty),
             summary,
             description,
@@ -288,7 +297,7 @@ object JsonDecoders {
           components: Option[Components[A]],
           tags: Option[List[Tag]],
           externalDocs: Option[ExternalDocs]) =>
-        OpenApi.apply(
+        OpenApi(
           openapi,
           info,
           servers.getOrElse(List.empty),
