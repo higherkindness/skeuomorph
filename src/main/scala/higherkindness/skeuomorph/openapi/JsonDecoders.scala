@@ -69,7 +69,7 @@ object JsonDecoders {
 
   def arrayJsonSchemaDecoder: Decoder[JsonSchemaF.Fixed] =
     Decoder
-      .forProduct2[(String, JsonSchemaF.Fixed), String, JsonSchemaF.Fixed]("type", "values")(Tuple2.apply)
+      .forProduct2[(String, JsonSchemaF.Fixed), String, JsonSchemaF.Fixed]("type", "items")(Tuple2.apply)
       .emap {
         case ("array", x) =>
           JsonSchemaF.Fixed.array(x).asRight

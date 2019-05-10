@@ -24,24 +24,27 @@ import org.specs2._
 import schema._
 
 import org.scalacheck._
+import _root_.io.circe.testing._
+
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
+  // import org.specs2.scalacheck.Parameters
+  // implicit val params: Parameters = Parameters(minTestsOk = 10)
 
   def is = s2"""
+      $shouldAbleCodecRoundTrip
       $functor
       $foldable
       $traverse
-      $shouldAbleToEncodeAndDecode
     """
   val traverse =
     checkAll("Traverse[JsonSchemaF]", TraverseTests[JsonSchemaF].traverse[Int, Int, Int, Set[Int], Option, Option])
   val functor  = checkAll("Functor[JsonSchemaF]", FunctorTests[JsonSchemaF].functor[Int, Int, String])
   val foldable = checkAll("Foldable[JsonSchemaF]", FoldableTests[JsonSchemaF].foldable[Int, Int])
 
-  def shouldAbleToEncodeAndDecode = Prop.forAll { (openApi: OpenApi[Int]) =>
-    import _root_.io.circe._
-    import _root_.io.circe.syntax._
+  def shouldAbleCodecRoundTrip = Prop.forAll { (openApi: OpenApi[JsonSchemaF.Fixed]) =>
     import JsonEncoders._
     import JsonDecoders._
-    Decoder[OpenApi[Int]].decodeJson(openApi.asJson) == (openApi.asRight)
+
+    CodecTests[OpenApi[JsonSchemaF.Fixed]].laws.codecRoundTrip(openApi)
   }
 }

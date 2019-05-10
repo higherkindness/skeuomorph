@@ -26,7 +26,7 @@ import avro.AvroF
 import protobuf._
 import openapi._
 import openapi.schema.OpenApi
-import qq.droste.Basis
+import qq.droste._
 
 import scala.collection.JavaConverters._
 
@@ -263,6 +263,39 @@ object instances {
         Gen.listOfN(5, tagGen),
         Gen.option(externalDocsGen))
         .mapN(OpenApi[T]))
+  }
+
+  implicit def jsonSchemaFOpenApiArbitrary: Arbitrary[JsonSchemaF.Fixed] = {
+    import JsonSchemaF.Fixed
+
+    val basicGen: Gen[JsonSchemaF.Fixed] = Gen.oneOf(
+      Fixed.integer().pure[Gen],
+      Fixed.long().pure[Gen],
+      Fixed.float().pure[Gen],
+      Fixed.double().pure[Gen],
+      Fixed.string().pure[Gen],
+      Fixed.byte().pure[Gen],
+      Fixed.binary().pure[Gen],
+      Fixed.boolean().pure[Gen],
+      Fixed.date().pure[Gen],
+      Fixed.dateTime().pure[Gen],
+      Fixed.password().pure[Gen],
+      Gen.listOfN(2, nonEmptyString) map Fixed.enum,
+      nonEmptyString map Fixed.reference
+    )
+
+    def rec(depth: Int): Gen[JsonSchemaF.Fixed] = depth match {
+      case 1 => basicGen
+      case n =>
+        Gen.oneOf(
+          rec(n - 1) map Fixed.array,
+          Gen.listOfN(3, Gen.zip(nonEmptyString, rec(n - 1))) map { n =>
+            Fixed.`object`(n, n.take(n.size - 1).map(_._1))
+          }
+        )
+    }
+
+    Arbitrary(rec(2))
   }
 
   implicit def jsonSchemaOpenApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[JsonSchemaF[T]] = {

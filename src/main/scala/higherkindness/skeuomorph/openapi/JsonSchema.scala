@@ -19,7 +19,7 @@ package higherkindness.skeuomorph.openapi
 import io.circe.Json
 import qq.droste._
 import cats.implicits._
-import cats.Eq
+import cats._
 
 import qq.droste.data.Fix
 import qq.droste.macros.deriveTraverse
@@ -106,7 +106,7 @@ object JsonSchemaF {
     case ArrayF(values) =>
       jsonType(
         "array",
-        "items" -> Json.obj("type" -> values)
+        "items" -> values
       )
     case EnumF(cases) =>
       jsonType("string", "enum" -> Json.fromValues(cases.map(Json.fromString)))
@@ -116,6 +116,7 @@ object JsonSchemaF {
       )
 
   }
+
   implicit def eqProperty[T: Eq]: Eq[Property[T]] = Eq.instance { (p1, p2) =>
     p1.name === p2.name && p1.tpe === p2.tpe
   }

@@ -20,6 +20,7 @@ import schema._
 import io.circe.{Encoder, Json}
 import qq.droste._
 import qq.droste.syntax.all._
+import qq.droste.data.Fix
 
 object JsonEncoders {
 
@@ -64,6 +65,12 @@ object JsonEncoders {
 
   implicit def jsonSchemaEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[JsonSchemaF[A]] =
     Encoder.instance(sch => scheme.cata[JsonSchemaF, A, Json](JsonSchemaF.render).apply(sch.embed))
+
+  implicit def encoderFix[F[_]](implicit encoder: Encoder[F[Fix[F]]]): Encoder[Fix[F]] =
+    new Encoder[Fix[F]] {
+      def apply(a: Fix[F]): Json =
+        encoder.apply(Fix.un(a))
+    }
 
   implicit def headerEncoder[A: Encoder]: Encoder[Header[A]] =
     Encoder.forProduct2(

@@ -15,6 +15,7 @@
  */
 
 package higherkindness.skeuomorph.openapi
+import cats.kernel.Eq
 
 /**
  * @see https://swagger.io/specification/
@@ -29,6 +30,12 @@ object schema {
       components: Option[Components[A]],
       tags: List[Tag],
       externalDocs: Option[ExternalDocs])
+
+  object OpenApi {
+
+    implicit def openApiEq[T]: Eq[OpenApi[T]] =
+      Eq.fromUniversalEquals
+  }
 
   final case class Info(title: String, description: Option[String], version: String)
 

@@ -76,7 +76,7 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
     "when array object is provided" >> {
       val arrayType = Json.obj(
         "type" -> Json.fromString("array"),
-        "values" -> Json.obj(
+        "items" -> Json.obj(
           "type" -> Json.fromString("integer")
         )
       )
