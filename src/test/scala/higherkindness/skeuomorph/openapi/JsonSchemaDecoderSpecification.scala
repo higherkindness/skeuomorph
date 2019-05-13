@@ -26,39 +26,45 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
   val decoder = Decoder[JsonSchemaF.Fixed]
 
   "Decoder[JsonSchemaF.Fixed] should able to decode" >> {
+    "when integer object is provided without format" >> {
+      decoder.decodeJson(basicTypeFrom("integer")) must beRight(Fixed.integer())
+    }
     "when integer object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("integer"))) must beRight(Fixed.integer())
+      decoder.decodeJson(basicTypeFrom("integer", format = "int32".some)) must beRight(Fixed.integer())
     }
     "when long object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("long"))) must beRight(Fixed.long())
+      decoder.decodeJson(basicTypeFrom("integer", format = "int64".some)) must beRight(Fixed.long())
+    }
+    "when number object is provided without format" >> {
+      decoder.decodeJson(basicTypeFrom("number")) must beRight(Fixed.float())
     }
     "when float object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("float"))) must beRight(Fixed.float())
+      decoder.decodeJson(basicTypeFrom("number", format = "float".some)) must beRight(Fixed.float())
     }
     "when double object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("double"))) must beRight(Fixed.double())
+      decoder.decodeJson(basicTypeFrom("number", format = "double".some)) must beRight(Fixed.double())
     }
     "when string object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("string"))) must beRight(Fixed.string())
+      decoder.decodeJson(basicTypeFrom("string")) must beRight(Fixed.string())
     }
     "when byte object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("byte"))) must beRight(Fixed.byte())
+      decoder.decodeJson(basicTypeFrom("string", format = "byte".some)) must beRight(Fixed.byte())
     }
 
     "when binary object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("binary"))) must beRight(Fixed.binary())
+      decoder.decodeJson(basicTypeFrom("string", format = "binary".some)) must beRight(Fixed.binary())
     }
     "when boolean object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("boolean"))) must beRight(Fixed.boolean())
+      decoder.decodeJson(basicTypeFrom("boolean")) must beRight(Fixed.boolean())
     }
     "when date object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("date"))) must beRight(Fixed.date())
+      decoder.decodeJson(basicTypeFrom("string", format = "date".some)) must beRight(Fixed.date())
     }
     "when datetime object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("datetime"))) must beRight(Fixed.dateTime())
+      decoder.decodeJson(basicTypeFrom("string", format = "date-time".some)) must beRight(Fixed.dateTime())
     }
     "when password object is provided" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("password"))) must beRight(Fixed.password())
+      decoder.decodeJson(basicTypeFrom("string", format = "password".some)) must beRight(Fixed.password())
     }
 
     "when reference object is provided" >> {
@@ -142,4 +148,12 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         .leftMap(_.message) must beLeft("object is not well formed type")
     }
   }
+
+  def basicTypeFrom(tpe: String, format: Option[String] = None): Json =
+    format.fold(
+      Json
+        .obj(
+          "type"                -> Json.fromString(tpe)
+        ))(x => Json.obj("type" -> Json.fromString(tpe), "format" -> Json.fromString(x)))
+
 }

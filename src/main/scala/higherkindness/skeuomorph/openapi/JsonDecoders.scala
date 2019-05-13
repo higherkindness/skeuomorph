@@ -33,19 +33,21 @@ object JsonDecoders {
 
   private def basicJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] = {
     import JsonSchemaF._
-    Decoder.forProduct1[String, String]("type") { identity }.emap {
-      case "integer"  => integer[A].embed.asRight
-      case "long"     => long[A].embed.asRight
-      case "float"    => float[A].embed.asRight
-      case "double"   => double[A].embed.asRight
-      case "string"   => string[A].embed.asRight
-      case "byte"     => byte[A].embed.asRight
-      case "binary"   => binary[A].embed.asRight
-      case "boolean"  => boolean[A].embed.asRight
-      case "date"     => date[A].embed.asRight
-      case "datetime" => dateTime[A].embed.asRight
-      case "password" => password[A].embed.asRight
-      case x          => s"$x is not well formed type".asLeft
+    Decoder.forProduct2[(String, Option[String]), String, Option[String]]("type", "format") { Tuple2.apply }.emap {
+      case ("integer", None)             => integer[A].embed.asRight
+      case ("integer", Some("int32"))    => integer[A].embed.asRight
+      case ("integer", Some("int64"))    => long[A].embed.asRight
+      case ("number", None)              => float[A].embed.asRight
+      case ("number", Some("float"))     => float[A].embed.asRight
+      case ("number", Some("double"))    => double[A].embed.asRight
+      case ("string", None)              => string[A].embed.asRight
+      case ("string", Some("byte"))      => byte[A].embed.asRight
+      case ("string", Some("binary"))    => binary[A].embed.asRight
+      case ("boolean", None)             => boolean[A].embed.asRight
+      case ("string", Some("date"))      => date[A].embed.asRight
+      case ("string", Some("date-time")) => dateTime[A].embed.asRight
+      case ("string", Some("password"))  => password[A].embed.asRight
+      case (x, _)                        => s"$x is not well formed type".asLeft
     }
   }
 

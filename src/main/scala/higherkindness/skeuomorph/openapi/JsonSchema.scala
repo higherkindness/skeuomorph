@@ -85,18 +85,21 @@ object JsonSchemaF {
   private def jsonType(value: String, attr: (String, Json)*): Json =
     Json.obj((("type" -> Json.fromString(value)) :: attr.toList): _*)
 
+  private def format(value: String): (String, Json) =
+    ("format" -> Json.fromString(value))
+
   def render: Algebra[JsonSchemaF, Json] = Algebra {
-    case IntegerF()  => jsonType("integer")
-    case LongF()     => jsonType("long")
-    case FloatF()    => jsonType("float")
-    case DoubleF()   => jsonType("double")
+    case IntegerF()  => jsonType("integer", format("int32"))
+    case LongF()     => jsonType("integer", format("int64"))
+    case FloatF()    => jsonType("number", format("float"))
+    case DoubleF()   => jsonType("number", format("double"))
     case StringF()   => jsonType("string")
-    case ByteF()     => jsonType("byte")
-    case BinaryF()   => jsonType("binary")
+    case ByteF()     => jsonType("string", format("byte"))
+    case BinaryF()   => jsonType("string", format("binary"))
     case BooleanF()  => jsonType("boolean")
-    case DateF()     => jsonType("date")
-    case DateTimeF() => jsonType("datetime")
-    case PasswordF() => jsonType("password")
+    case DateF()     => jsonType("string", format("date"))
+    case DateTimeF() => jsonType("string", format("date-time"))
+    case PasswordF() => jsonType("string", format("password"))
     case ObjectF(properties, required) =>
       jsonType(
         "object",
