@@ -17,8 +17,10 @@
 package higherkindness.skeuomorph.mu
 
 import qq.droste.macros.deriveTraverse
-
+import qq.droste.{Algebra, Project}
+import qq.droste.scheme.cata
 import cats.Eq
+import cats.Show
 import cats.data.NonEmptyList
 import cats.instances.list._
 import cats.instances.string._
@@ -80,6 +82,31 @@ object MuF {
     case (TProduct(n, f), TProduct(n2, f2)) => n === n2 && f === f2
 
     case _ => false
+  }
+
+  implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] = Show.show {
+    cata(Algebra[MuF, String] {
+      case TNull()             => "null"
+      case TDouble()           => "double"
+      case TFloat()            => "float"
+      case TInt()              => "int"
+      case TLong()             => "long"
+      case TBoolean()          => "boolean"
+      case TString()           => "string"
+      case TByteArray()        => "bytes"
+      case TNamedType(n)       => n
+      case TOption(v)          => s"?$v"
+      case TList(e)            => s"[$e]"
+      case TMap(k, v)          => s"$k->$v"
+      case TRequired(v)        => v
+      case TContaining(ts)     => ts.mkString("cont<", ", ", ">")
+      case TEither(l, r)       => s"either<$l, $r>"
+      case TGeneric(g, ps)     => ps.mkString(s"$g<", ", ", ">")
+      case TCoproduct(ts)      => ts.toList.mkString("(", " | ", ")")
+      case TSum(n, vs)         => vs.mkString(s"$n[", ", ", "]")
+      case TProduct(n, fields) => fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
+
+    })
   }
 
   // smart constructors, to avoid scala inferring specific types instead of MuF
