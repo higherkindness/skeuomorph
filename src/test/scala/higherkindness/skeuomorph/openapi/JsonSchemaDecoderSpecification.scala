@@ -105,6 +105,21 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
           List("name")
         ))
     }
+
+    "when object object is provided without required field" >> {
+      val objectType = Json.obj(
+        "type" -> Json.fromString("object"),
+        "properties" -> Json.obj(
+          "valid" -> Json.obj("type" -> Json.fromString("boolean"))
+        )
+      )
+      decoder.decodeJson(objectType) must beRight(
+        Fixed.`object`(
+          List("valid" -> Fixed.boolean()),
+          List.empty
+        ))
+    }
+
   }
 
   "Decoder[JsonSchemaF.Fixed] should not able to decode" >> {

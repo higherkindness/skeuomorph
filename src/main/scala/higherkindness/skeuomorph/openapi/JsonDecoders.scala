@@ -65,7 +65,7 @@ object JsonDecoders {
   private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder.instance { c =>
       for {
-        required <- c.downField("required").as[List[String]]
+        required <- c.downField("required").as[Option[List[String]]]
         properties <- c
           .downField("properties")
           .as[Map[String, A]] {
@@ -74,7 +74,7 @@ object JsonDecoders {
           }
           .map(_.toList.map(JsonSchemaF.Property.apply[A] _ tupled))
         _ <- validateType(c, "object")
-      } yield JsonSchemaF.`object`[A](properties, required).embed
+      } yield JsonSchemaF.`object`[A](properties, required.getOrElse(List.empty)).embed
     }
 
   private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]: Decoder]: Decoder[A] = Decoder.instance { c =>
