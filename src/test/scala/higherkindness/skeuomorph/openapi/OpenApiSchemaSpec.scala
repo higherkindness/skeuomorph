@@ -22,14 +22,15 @@ import cats.laws.discipline._
 import cats.implicits._
 import org.specs2._
 import schema._
-
 import org.scalacheck._
+import _root_.io.circe._
 import _root_.io.circe.testing._
 
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
 
   def is = s2"""
       $shouldAbleCodecRoundTrip
+      $shouldAbleToReadSpecExamples
       $functor
       $foldable
       $traverse
@@ -45,4 +46,33 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
 
     CodecTests[OpenApi[JsonSchemaF.Fixed]].laws.codecRoundTrip(openApi)
   }
+
+  def shouldAbleToReadSpecExamples = Prop.forAll { (json: Json) =>
+    import JsonDecoders._
+
+    Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(json).isRight
+
+  }
+
+  implicit val jsonArbitrary: Arbitrary[Json] = {
+
+    def readSpec(fileName: String): Json =
+      OpenApiDecoderSpecification.unsafeParse(
+        scala.io.Source
+          .fromResource(fileName)
+          .getLines()
+          .toList
+          .mkString("\n"))
+
+    Arbitrary(
+      Gen.oneOf(
+        List(
+          "api-with-examples.json",
+          "callback-example.json",
+          "link-example.json",
+          "petstore-expanded.json",
+          "petstore.json",
+          "uspto.json").map(readSpec)))
+  }
+
 }
