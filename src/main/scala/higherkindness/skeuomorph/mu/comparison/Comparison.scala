@@ -102,7 +102,7 @@ object Comparison extends ComparisonInstances {
    * the structure of hylo: when we want to align something with a coproduct, we test all the possible combinations algthough
    * we're only interested in finding the first successful one.
    *
-   * @tparam T the concrete schema type, must be a [[qq.droste.Basis]] over [[higherkindness.skeuomorph.mu.MuF]]
+   * @tparam T the concrete schema type, must be a qq.droste.Basis over [[higherkindness.skeuomorph.mu.MuF]]
    * @param writer
    * @param reader
    */
