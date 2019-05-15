@@ -59,7 +59,7 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
     def readSpec(fileName: String): Json =
       OpenApiDecoderSpecification.unsafeParse(
         scala.io.Source
-          .fromResource(fileName)
+          .fromInputStream(getClass.getResourceAsStream(s"/$fileName"))
           .getLines()
           .toList
           .mkString("\n"))
