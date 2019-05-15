@@ -250,6 +250,93 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
     }
   }
 
+  "Parameter object should be able to decode" >> {
+    "when path object is provided" >> {
+      val json = unsafeParse("""
+      {
+        "name": "username",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string"
+        }
+      }
+      """)
+      Decoder[Parameter[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        Parameter.Path(name = "username", description = None, schema = Fixed.string())
+      )
+    }
+
+    "when query object is provided" >> {
+      val json = unsafeParse("""
+      {
+        "name": "limit",
+        "in": "query",
+        "description": "How many items to return at one time (max 100)",
+        "required": false,
+        "schema": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+      """)
+      Decoder[Parameter[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        Parameter.Query(
+          name = "limit",
+          description = Some("How many items to return at one time (max 100)"),
+          allowEmptyValue = false,
+          schema = Fixed.integer())
+      )
+    }
+
+    "when header object is provided" >> {
+      val json = unsafeParse("""
+      {
+        "name": "token",
+        "in": "header",
+        "description": "token to be passed as a header",
+        "required": true,
+        "schema": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "style": "simple"
+      }
+      """)
+
+      Decoder[Parameter[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        Parameter.Header(
+          name = "token",
+          description = Some("token to be passed as a header"),
+          required = true,
+          style = "simple",
+          schema = Fixed.array(Fixed.long())
+        ))
+    }
+
+    "when cookie object is provided" >> {
+      val json = unsafeParse("""{
+        "in": "cookie",
+        "name": "csrftoken",
+        "schema": {
+          "type": "string"
+        }
+      }""")
+
+      Decoder[Parameter[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        Parameter.Cookie(
+          name = "csrftoken",
+          description = None,
+          schema = Fixed.string()
+        ))
+
+    }
+
+  }
+
   "Path item object should be able to decode" >> {
     "when only parameters are provided" >> {
       val json = unsafeParse("""{
@@ -402,7 +489,7 @@ object OpenApiDecoderSpecification {
       None,
       None,
       List.empty,
-      requestBody.asLeft,
+      Some(requestBody.asLeft),
       responses,
       Map.empty,
       false,

@@ -17,12 +17,11 @@
 package higherkindness.skeuomorph.openapi
 
 import schema._
-import io.circe.{Decoder, DecodingFailure}
+import io.circe._
 import cats.implicits._
 import qq.droste._
 import qq.droste.syntax.embed._
 import scala.language.postfixOps
-import io.circe.HCursor
 
 object JsonDecoders {
 
@@ -34,19 +33,19 @@ object JsonDecoders {
   private def basicJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] = {
     import JsonSchemaF._
     Decoder.forProduct2[(String, Option[String]), String, Option[String]]("type", "format") { Tuple2.apply }.emap {
-      case ("integer", None)             => integer[A].embed.asRight
       case ("integer", Some("int32"))    => integer[A].embed.asRight
       case ("integer", Some("int64"))    => long[A].embed.asRight
-      case ("number", None)              => float[A].embed.asRight
+      case ("integer", _)                => integer[A].embed.asRight
       case ("number", Some("float"))     => float[A].embed.asRight
       case ("number", Some("double"))    => double[A].embed.asRight
-      case ("string", None)              => string[A].embed.asRight
+      case ("number", _)                 => float[A].embed.asRight
       case ("string", Some("byte"))      => byte[A].embed.asRight
       case ("string", Some("binary"))    => binary[A].embed.asRight
-      case ("boolean", None)             => boolean[A].embed.asRight
+      case ("boolean", _)                => boolean[A].embed.asRight
       case ("string", Some("date"))      => date[A].embed.asRight
       case ("string", Some("date-time")) => dateTime[A].embed.asRight
       case ("string", Some("password"))  => password[A].embed.asRight
+      case ("string", _)                 => string[A].embed.asRight
       case (x, _)                        => s"$x is not well formed type".asLeft
     }
   }
@@ -70,12 +69,12 @@ object JsonDecoders {
         required <- c.downField("required").as[Option[List[String]]]
         properties <- c
           .downField("properties")
-          .as[Map[String, A]] {
-            implicit lazy val x = jsonSchemaDecoder[A]
-            implicitly[Decoder[Map[String, A]]]
-          }
+          .as[Option[Map[String, A]]](
+            Decoder.decodeOption(Decoder.decodeMap[String, A](KeyDecoder.decodeKeyString, jsonSchemaDecoder[A]))
+          )
+          .map(_.getOrElse(Map.empty))
           .map(_.toList.map(JsonSchemaF.Property.apply[A] _ tupled))
-        _ <- validateType(c, "object")
+        _ <- validateType(c, "object") orElse c.downField("properties").as[Map[String, A]].map(_ => ())
       } yield JsonSchemaF.`object`[A](properties, required.getOrElse(List.empty)).embed
     }
 
@@ -209,7 +208,7 @@ object JsonDecoders {
           externalDocs <- c.downField("externalDocs").as[Option[ExternalDocs]]
           operationId  <- c.downField("operationId").as[Option[String]]
           parameters   <- c.downField("parameters").as[Option[List[Either[Parameter[A], Reference]]]]
-          requestBody  <- c.downField("requestBody").as[Either[Request[A], Reference]]
+          requestBody  <- c.downField("requestBody").as[Option[Either[Request[A], Reference]]]
           responses    <- c.downField("responses").as[Map[String, Either[Response[A], Reference]]]
           callbacks    <- c.downField("callbacks").as[Option[Map[String, Either[Callback[A], Reference]]]]
           deprecated   <- c.downField("deprecated").as[Option[Boolean]]

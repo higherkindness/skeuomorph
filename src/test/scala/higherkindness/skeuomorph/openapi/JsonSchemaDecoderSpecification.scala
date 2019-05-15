@@ -38,17 +38,26 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
     "when number object is provided without format" >> {
       decoder.decodeJson(basicTypeFrom("number")) must beRight(Fixed.float())
     }
+    "when meters object is provided" >> {
+      decoder.decodeJson(basicTypeFrom("integer", format = "meters".some)) must beRight(Fixed.integer())
+    }
     "when float object is provided" >> {
       decoder.decodeJson(basicTypeFrom("number", format = "float".some)) must beRight(Fixed.float())
     }
     "when double object is provided" >> {
       decoder.decodeJson(basicTypeFrom("number", format = "double".some)) must beRight(Fixed.double())
     }
+    "when number object is provided without format" >> {
+      decoder.decodeJson(basicTypeFrom("number", format = "dollar".some)) must beRight(Fixed.float())
+    }
     "when string object is provided" >> {
       decoder.decodeJson(basicTypeFrom("string")) must beRight(Fixed.string())
     }
     "when byte object is provided" >> {
       decoder.decodeJson(basicTypeFrom("string", format = "byte".some)) must beRight(Fixed.byte())
+    }
+    "when email object is provided" >> {
+      decoder.decodeJson(basicTypeFrom("string", format = "email".some)) must beRight(Fixed.string())
     }
 
     "when binary object is provided" >> {
@@ -126,6 +135,30 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         ))
     }
 
+    "when object does not have properties" >> {
+      decoder
+        .decodeJson(
+          Json.obj(
+            "type"                 -> Json.fromString("object"),
+            "additionalProperties" -> Json.obj("type" -> Json.fromString("object")))) must beRight(
+        Fixed.`object`(List.empty, List.empty))
+    }
+
+    "when object does have type" >> {
+      decoder.decodeJson(
+        Json.obj(
+          "description" -> Json.fromString("subscription information"),
+          "properties" -> Json.obj(
+            "subscriptionId" -> Json.obj(
+              "description" -> Json.fromString("this unique identifier allows management of the subscription"),
+              "type"        -> Json.fromString("string"),
+              "example"     -> Json.fromString("2531329f-fb09-4ef7-887e-84e648214436")
+            )
+          ),
+          "required" -> Json.arr(Json.fromString("subscriptionId"))
+        )) must beRight(Fixed.`object`(List("subscriptionId" -> Fixed.string()), List("subscriptionId")))
+    }
+
   }
 
   "Decoder[JsonSchemaF.Fixed] should not able to decode" >> {
@@ -142,11 +175,7 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
       decoder.decodeJson(Json.obj("type" -> Json.fromString("array"))).leftMap(_.message) must beLeft(
         "array is not well formed type")
     }
-    "when object does not have properties" >> {
-      decoder
-        .decodeJson(Json.obj("type" -> Json.fromString("object"), "required" -> Json.arr(Json.fromString("foo"))))
-        .leftMap(_.message) must beLeft("object is not well formed type")
-    }
+
   }
 
   def basicTypeFrom(tpe: String, format: Option[String] = None): Json =
