@@ -15,24 +15,30 @@
  */
 
 package higherkindness.skeuomorph.openapi
+import cats.kernel.Eq
 
 /**
  * @see https://swagger.io/specification/
  */
 object schema {
-
+  final case class Reference(ref: String)
   final case class OpenApi[A](
       openapi: String,
       info: Info,
       servers: List[Server],
       paths: Map[String, Path.ItemObject[A]],
       components: Option[Components[A]],
-      tags: Option[List[Tag]],
+      tags: List[Tag],
       externalDocs: Option[ExternalDocs])
+
+  object OpenApi {
+    implicit def openApiEq[T]: Eq[OpenApi[T]] =
+      Eq.fromUniversalEquals
+  }
 
   final case class Info(title: String, description: Option[String], version: String)
 
-  final case class Server(url: String, description: String, variables: Map[String, Server.Variable])
+  final case class Server(url: String, description: Option[String], variables: Map[String, Server.Variable])
 
   object Server {
     final case class Variable(enum: List[String], default: String, description: Option[String])
@@ -40,9 +46,9 @@ object schema {
 
   object Path {
     final case class ItemObject[A](
-        ref: String, // $ref
-        summary: String,
-        description: String,
+        ref: Option[String], // $ref
+        summary: Option[String],
+        description: Option[String],
         get: Option[Operation[A]],
         put: Option[Operation[A]],
         post: Option[Operation[A]],
@@ -55,31 +61,32 @@ object schema {
 
     final case class Operation[A](
         tags: List[String],
-        summary: String,
-        description: String,
-        externalDocs: ExternalDocs,
-        operationId: String,
+        summary: Option[String],
+        description: Option[String],
+        externalDocs: Option[ExternalDocs],
+        operationId: Option[String],
+        parameters: List[Either[Parameter[A], Reference]],
+        requestBody: Option[Either[Request[A], Reference]],
         responses: Map[String, Either[Response[A], Reference]],
         callbacks: Map[String, Either[Callback[A], Reference]],
         deprecated: Boolean,
         servers: List[Server])
   }
-
   final case class Components[A](
       responses: Map[String, Either[Response[A], Reference]],
       requestBodies: Map[String, Either[Request[A], Reference]]
   )
 
-  final case class Request[A](description: String, content: Map[String, MediaType[A]], required: Boolean)
+  final case class Request[A](description: Option[String], content: Map[String, MediaType[A]], required: Boolean)
 
-  final case class MediaType[A](schema: Either[JsonSchemaF[A], Reference], encoding: Map[String, Encoding[A]])
+  final case class MediaType[A](schema: Option[A], encoding: Map[String, Encoding[A]])
 
   final case class Encoding[A](
-      contentType: String,
+      contentType: Option[String],
       headers: Map[String, Either[Header[A], Reference]],
-      style: String,
-      explode: Boolean,
-      allowReserved: Boolean)
+      style: Option[String],
+      explode: Option[Boolean],
+      allowReserved: Option[Boolean])
 
   final case class Response[A](
       description: String,
@@ -92,8 +99,155 @@ object schema {
 
   type Callback[A] = Map[String, Path.ItemObject[A]]
 
-  final case class Reference(ref: String) // $ref
+  object Callback {
+    def apply[A](values: (String, Path.ItemObject[A])*): Callback[A] =
+      values.toMap
 
-  final case class Header[A](description: String, schema: Either[JsonSchemaF[A], Reference])
+  }
+
+  final case class Header[A](description: String, schema: A)
+
+  sealed trait Parameter[A] extends Product with Serializable {
+    def name: String
+    def in: Location
+    def description: Option[String]
+    def required: Boolean
+    def deprecated: Boolean
+    def style: String
+    def explode: Boolean
+    def allowEmptyValue: Boolean
+    def allowReserved: Boolean
+    def schema: A
+  }
+
+  object Parameter {
+
+    def apply[A](
+        name: String,
+        in: Location,
+        description: Option[String],
+        required: Option[Boolean],
+        deprecated: Option[Boolean],
+        style: Option[String],
+        explode: Option[Boolean],
+        allowEmptyValue: Option[Boolean],
+        allowReserved: Option[Boolean],
+        schema: A): Parameter[A] = in match {
+      case Location.Path =>
+        Path(
+          name,
+          description,
+          deprecated.getOrElse(false),
+          style.getOrElse("simple"),
+          explode.getOrElse(false),
+          schema)
+      case Location.Query =>
+        Query(
+          name,
+          description,
+          required.getOrElse(false),
+          deprecated.getOrElse(false),
+          style.getOrElse("form"),
+          allowEmptyValue.getOrElse(false),
+          explode.getOrElse(true),
+          allowReserved.getOrElse(false),
+          schema
+        )
+      case Location.Header =>
+        Header(
+          name,
+          description,
+          required.getOrElse(false),
+          deprecated.getOrElse(false),
+          style.getOrElse("simple"),
+          explode.getOrElse(false),
+          schema)
+      case Location.Cookie =>
+        Cookie(
+          name,
+          description,
+          required.getOrElse(false),
+          deprecated.getOrElse(false),
+          style.getOrElse("form"),
+          explode.getOrElse(false),
+          schema)
+    }
+
+    final case class Path[A](
+        name: String,
+        description: Option[String],
+        deprecated: Boolean = false,
+        style: String = "simple",
+        explode: Boolean = false,
+        schema: A
+    ) extends Parameter[A] {
+      val in: Location             = Location.Path
+      val required: Boolean        = true
+      val allowEmptyValue: Boolean = false
+      val allowReserved: Boolean   = false
+    }
+
+    final case class Query[A](
+        name: String,
+        description: Option[String],
+        required: Boolean = false,
+        deprecated: Boolean = false,
+        style: String = "form",
+        allowEmptyValue: Boolean,
+        explode: Boolean = true,
+        allowReserved: Boolean = false,
+        schema: A
+    ) extends Parameter[A] {
+      val in: Location = Location.Query
+    }
+
+    final case class Header[A](
+        name: String,
+        description: Option[String],
+        required: Boolean = false,
+        deprecated: Boolean = false,
+        style: String = "simple",
+        explode: Boolean = false,
+        schema: A
+    ) extends Parameter[A] {
+      val in: Location             = Location.Header
+      val allowEmptyValue: Boolean = false
+      val allowReserved: Boolean   = false
+    }
+
+    final case class Cookie[A](
+        name: String,
+        description: Option[String],
+        required: Boolean = false,
+        deprecated: Boolean = false,
+        style: String = "form",
+        explode: Boolean = false,
+        schema: A
+    ) extends Parameter[A] {
+      val in: Location             = Location.Cookie
+      val allowEmptyValue: Boolean = false
+      val allowReserved: Boolean   = false
+    }
+
+  }
+
+  sealed abstract class Location(val value: String) extends Product with Serializable
+  object Location {
+    import cats.implicits._
+    case object Path   extends Location("path")
+    case object Query  extends Location("query")
+    case object Header extends Location("header")
+    case object Cookie extends Location("cookie")
+
+    def all = List(Path, Query, Header, Cookie)
+
+    def parse(value: String): Either[String, Location] = value match {
+      case "path"   => Path.asRight
+      case "query"  => Query.asRight
+      case "header" => Header.asRight
+      case "cookie" => Cookie.asRight
+      case _        => s"$value is not valid location".asLeft
+    }
+  }
 
 }

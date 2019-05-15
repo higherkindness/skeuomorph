@@ -16,23 +16,19 @@
 
 package higherkindness.skeuomorph.openapi
 
-import higherkindness.skeuomorph.openapi.schema._
+import schema._
 import io.circe.{Encoder, Json}
 import qq.droste._
 import qq.droste.syntax.all._
+import qq.droste.data.Fix
 
 object JsonEncoders {
 
-  implicit val referenceEncoder: Encoder[Reference] =
-    Encoder.instance(
-      r =>
-        Json.obj(
-          "$$ref" -> Json.fromString(r.ref)
-      ))
+  implicit def referenceEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Reference] =
+    jsonSchemaEncoder.contramap[Reference](x => JsonSchemaF.reference(x.ref))
 
   implicit def orReferenceEncoder[A: Encoder]: Encoder[Either[A, Reference]] =
     Encoder.instance[Either[A, Reference]](_.fold(Encoder[A].apply, Encoder[Reference].apply))
-
   implicit val infoEncoder: Encoder[Info] =
     Encoder.forProduct3(
       "title",
@@ -70,7 +66,13 @@ object JsonEncoders {
   implicit def jsonSchemaEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[JsonSchemaF[A]] =
     Encoder.instance(sch => scheme.cata[JsonSchemaF, A, Json](JsonSchemaF.render).apply(sch.embed))
 
-  implicit def headerEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Header[A]] =
+  implicit def encoderFix[F[_]](implicit encoder: Encoder[F[Fix[F]]]): Encoder[Fix[F]] =
+    new Encoder[Fix[F]] {
+      def apply(a: Fix[F]): Json =
+        encoder.apply(Fix.un(a))
+    }
+
+  implicit def headerEncoder[A: Encoder]: Encoder[Header[A]] =
     Encoder.forProduct2(
       "description",
       "schema"
@@ -78,7 +80,7 @@ object JsonEncoders {
       (h.description, h.schema)
     }
 
-  implicit def encodingEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Encoding[A]] =
+  implicit def encodingEncoder[A: Encoder]: Encoder[Encoding[A]] =
     Encoder.forProduct5(
       "contentType",
       "headers",
@@ -89,7 +91,7 @@ object JsonEncoders {
       (e.contentType, e.headers, e.style, e.explode, e.allowReserved)
     }
 
-  implicit def mediatypeEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[MediaType[A]] =
+  implicit def mediaTypeEncoder[A: Encoder]: Encoder[MediaType[A]] =
     Encoder.forProduct2(
       "schema",
       "encoding"
@@ -97,14 +99,14 @@ object JsonEncoders {
       (m.schema, m.encoding)
     }
 
-  implicit def requestEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Request[A]] =
+  implicit def requestEncoder[A: Encoder]: Encoder[Request[A]] =
     Encoder.forProduct3(
       "description",
       "content",
       "required"
     )(r => (r.description, r.content, r.required))
 
-  implicit def responseEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Response[A]] =
+  implicit def responseEncoder[A: Encoder]: Encoder[Response[A]] =
     Encoder.forProduct3(
       "description",
       "headers",
@@ -113,30 +115,54 @@ object JsonEncoders {
       (r.description, r.headers, r.content)
     }
 
-  implicit def operationEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.Operation[A]] =
-    Encoder.forProduct9(
-      "tags",
-      "summary",
+  implicit val locationEncoder: Encoder[Location] = Encoder.encodeString.contramap(_.value)
+
+  implicit def parameterEncoder[A: Encoder]: Encoder[Parameter[A]] =
+    Encoder.forProduct10(
+      "name",
+      "in",
       "description",
-      "externalDocs",
-      "operationId",
-      "responses",
-      "callbacks",
+      "required",
       "deprecated",
-      "servers") { op =>
+      "style",
+      "explode",
+      "allowEmptyValue",
+      "allowReserved",
+      "schema"
+    ) { p =>
       (
-        op.tags,
-        op.summary,
-        op.description,
-        op.externalDocs,
-        op.operationId,
-        op.responses,
-        op.callbacks,
-        op.deprecated,
-        op.servers)
+        p.name,
+        p.in,
+        p.description,
+        p.required,
+        p.deprecated,
+        p.style,
+        p.explode,
+        p.allowEmptyValue,
+        p.allowReserved,
+        p.schema)
     }
 
-  implicit def itemObjectEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Path.ItemObject[A]] =
+  // Avoid forProductXX
+  implicit def operationEncoder[A: Encoder]: Encoder[Path.Operation[A]] =
+    Encoder.instance { op =>
+      import io.circe.syntax._
+      Json.obj(
+        "tags"         -> op.tags.asJson,
+        "summary"      -> op.summary.asJson,
+        "description"  -> op.description.asJson,
+        "externalDocs" -> op.externalDocs.asJson,
+        "operationId"  -> op.operationId.asJson,
+        "parameters"   -> op.parameters.asJson,
+        "requestBody"  -> op.requestBody.asJson,
+        "responses"    -> op.responses.asJson,
+        "callbacks"    -> op.callbacks.asJson,
+        "deprecated"   -> op.deprecated.asJson,
+        "servers"      -> op.servers.asJson
+      )
+    }
+
+  implicit def itemObjectEncoder[A: Encoder]: Encoder[Path.ItemObject[A]] =
     Encoder.forProduct12(
       "ref",
       "summary",
@@ -154,13 +180,13 @@ object JsonEncoders {
       (i.ref, i.summary, i.description, i.get, i.put, i.post, i.delete, i.options, i.head, i.patch, i.trace, i.servers)
     }
 
-  implicit def componentsEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[Components[A]] =
+  implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
     Encoder.forProduct2(
       "responses",
       "requestBodies"
     )(c => (c.responses, c.requestBodies))
 
-  implicit def openApiEncoder[A](implicit A: Basis[JsonSchemaF, A]): Encoder[OpenApi[A]] =
+  implicit def openApiEncoder[A: Encoder]: Encoder[OpenApi[A]] =
     Encoder.forProduct7(
       "openapi",
       "info",

@@ -24,7 +24,9 @@ import org.scalacheck.cats.implicits._
 import mu.MuF
 import avro.AvroF
 import protobuf._
-import qq.droste.Basis
+import openapi._
+import openapi.schema.OpenApi
+import qq.droste._
 
 import scala.collection.JavaConverters._
 
@@ -175,6 +177,153 @@ object instances {
           MuF.product(n, f)
         }
       ))
+  }
+
+  def eitherGen[A, B](left: Gen[A], right: Gen[B]): Gen[Either[A, B]] =
+    Gen.oneOf(left.map(_.asLeft[B]), right.map(_.asRight[A]))
+
+  def booleanGen: Gen[Boolean] = Gen.oneOf(true, false)
+
+  implicit def openApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[OpenApi[T]] = {
+    import openapi.schema._
+    def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = Gen.mapOfN(2, Gen.zip(nonEmptyString.map(_.take(4)), gen))
+    val optionStringGen                                     = Gen.option(nonEmptyString)
+    val infoGen: Gen[Info]                                  = (nonEmptyString, optionStringGen, nonEmptyString).mapN(Info)
+    val serverVariableGen: Gen[Server.Variable] =
+      (Gen.listOfN(2, nonEmptyString), nonEmptyString, optionStringGen).mapN(Server.Variable)
+    val serverGen: Gen[Server] =
+      (nonEmptyString, Gen.option(nonEmptyString), mapStringToGen(serverVariableGen))
+        .mapN(Server.apply)
+    val serversGen                         = Gen.listOfN(2, serverGen)
+    val externalDocsGen: Gen[ExternalDocs] = (nonEmptyString, optionStringGen).mapN(ExternalDocs)
+    val tagGen: Gen[Tag]                   = (nonEmptyString, optionStringGen, Gen.option(externalDocsGen)).mapN(Tag)
+    val referenceGen: Gen[Reference]       = nonEmptyString map Reference
+    val mediaTypeGen: Gen[MediaType[T]] =
+      (Gen.option(T.arbitrary), Map.empty[String, Encoding[T]].pure[Gen]).mapN(MediaType.apply)
+    val headerGen: Gen[Header[T]]   = (nonEmptyString, T.arbitrary).mapN(Header.apply)
+    val requestGen: Gen[Request[T]] = (optionStringGen, mapStringToGen(mediaTypeGen), booleanGen).mapN(Request.apply)
+    val responseGen: Gen[Response[T]] =
+      (nonEmptyString, mapStringToGen(eitherGen(headerGen, referenceGen)), mapStringToGen(mediaTypeGen))
+        .mapN(Response.apply)
+    val responsesGen = mapStringToGen(eitherGen(responseGen, referenceGen))
+
+    val locationGen: Gen[Location] = Gen.oneOf(Location.all)
+    val parameterGen: Gen[Parameter[T]] =
+      (
+        nonEmptyString,
+        locationGen,
+        Gen.option(nonEmptyString),
+        Gen.option(booleanGen),
+        Gen.option(booleanGen),
+        Gen.option(nonEmptyString),
+        Gen.option(booleanGen),
+        Gen.option(booleanGen),
+        Gen.option(booleanGen),
+        T.arbitrary).mapN(Parameter.apply)
+    val operationGen: Gen[Path.Operation[T]] =
+      (
+        Gen.listOfN(2, nonEmptyString),
+        Gen.option(nonEmptyString),
+        Gen.option(nonEmptyString),
+        Gen.option(externalDocsGen),
+        Gen.option(nonEmptyString),
+        Gen.listOfN(2, eitherGen(parameterGen, referenceGen)),
+        Gen.option(eitherGen(requestGen, referenceGen)),
+        responsesGen,
+        Map.empty[String, Either[Callback[T], Reference]].pure[Gen],
+        booleanGen,
+        serversGen).mapN(Path.Operation.apply)
+
+    val itemObjectsGen: Gen[Path.ItemObject[T]] =
+      (
+        Gen.option(nonEmptyString),
+        Gen.option(nonEmptyString),
+        Gen.option(nonEmptyString),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        Gen.option(operationGen),
+        serversGen).mapN(Path.ItemObject.apply)
+
+    val componentsGen: Gen[Components[T]] =
+      (responsesGen, mapStringToGen(eitherGen(requestGen, referenceGen)))
+        .mapN(Components.apply)
+
+    Arbitrary(
+      (
+        nonEmptyString,
+        infoGen,
+        Gen.listOfN(2, serverGen),
+        mapStringToGen(itemObjectsGen),
+        Gen.option(componentsGen),
+        Gen.listOfN(5, tagGen),
+        Gen.option(externalDocsGen))
+        .mapN(OpenApi[T]))
+  }
+
+  implicit def jsonSchemaFOpenApiArbitrary: Arbitrary[JsonSchemaF.Fixed] = {
+    import JsonSchemaF.Fixed
+
+    val basicGen: Gen[JsonSchemaF.Fixed] = Gen.oneOf(
+      Fixed.integer().pure[Gen],
+      Fixed.long().pure[Gen],
+      Fixed.float().pure[Gen],
+      Fixed.double().pure[Gen],
+      Fixed.string().pure[Gen],
+      Fixed.byte().pure[Gen],
+      Fixed.binary().pure[Gen],
+      Fixed.boolean().pure[Gen],
+      Fixed.date().pure[Gen],
+      Fixed.dateTime().pure[Gen],
+      Fixed.password().pure[Gen],
+      Gen.listOfN(2, nonEmptyString) map Fixed.enum,
+      nonEmptyString map Fixed.reference
+    )
+
+    def rec(depth: Int): Gen[JsonSchemaF.Fixed] = depth match {
+      case 1 => basicGen
+      case n =>
+        Gen.oneOf(
+          rec(n - 1) map Fixed.array,
+          Gen.listOfN(3, Gen.zip(nonEmptyString, rec(n - 1))) map { n =>
+            Fixed.`object`(n, n.take(n.size - 1).map(_._1))
+          }
+        )
+    }
+
+    Arbitrary(rec(2))
+  }
+
+  implicit def jsonSchemaOpenApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[JsonSchemaF[T]] = {
+    val propertyGen: Gen[JsonSchemaF.Property[T]] = (nonEmptyString, T.arbitrary).mapN(JsonSchemaF.Property[T])
+    val objectGen: Gen[JsonSchemaF[T]] = (
+      Gen.listOf(propertyGen),
+      Gen.listOf(nonEmptyString)
+    ).mapN(JsonSchemaF.`object`[T])
+
+    Arbitrary(
+      Gen.oneOf(
+        JsonSchemaF.integer[T]().pure[Gen],
+        JsonSchemaF.long[T]().pure[Gen],
+        JsonSchemaF.float[T]().pure[Gen],
+        JsonSchemaF.double[T]().pure[Gen],
+        JsonSchemaF.string[T]().pure[Gen],
+        JsonSchemaF.byte[T]().pure[Gen],
+        JsonSchemaF.binary[T]().pure[Gen],
+        JsonSchemaF.boolean[T]().pure[Gen],
+        JsonSchemaF.date[T].pure[Gen],
+        JsonSchemaF.dateTime[T].pure[Gen],
+        JsonSchemaF.password[T]().pure[Gen],
+        T.arbitrary map JsonSchemaF.array,
+        Gen.listOf(nonEmptyString) map JsonSchemaF.enum[T],
+        objectGen,
+        nonEmptyString.map(JsonSchemaF.reference[T])
+      )
+    )
   }
 
   implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[AvroF[T]] = {
