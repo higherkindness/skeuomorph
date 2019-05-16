@@ -17,6 +17,8 @@
 package higherkindness.skeuomorph
 
 import catz.contrib.Decidable
+import cats.Show
+import cats.syntax.show._
 import cats.syntax.compose._
 import cats.instances.function._
 
@@ -60,5 +62,7 @@ object Printer {
     def choose[A, B, C](fa: Printer[A], fb: Printer[B])(cab: C => Either[A, B]): Printer[C] =
       Printer(cab(_).fold(fa.print, fb.print))
   }
+
+  implicit def showPrinter[T: Show]: Printer[T] = Printer(x => x.show)
 
 }
