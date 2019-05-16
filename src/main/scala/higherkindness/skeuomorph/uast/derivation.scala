@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.uast
+package higherkindness.skeuomorph
+package uast
 
 import iota.{CopK, TListK}
 import cats._
 
 object derivation {
+
   def copkTraverse[LL <: TListK](implicit M: TraverseMaterializer[LL]): Traverse[CopK[LL, ?]] =
     M.materialize(offset = 0)
   def copkEqual[LL <: TListK](implicit M: EqKMaterializer[LL]): Delay[Eq, CopK[LL, ?]] =
     M.materialize(offset = 0)
+  def copkPrinter[LL <: TListK](implicit M: PrinterKMaterializer[LL]): Delay[Printer, CopK[LL, ?]] =
+    M.materialize(offset = 0)
+
 }
