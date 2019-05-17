@@ -19,8 +19,12 @@ package higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.instances._
 
 import org.typelevel.discipline.specs2.Discipline
+
 import cats.laws.discipline.TraverseTests
-import cats.implicits._
+import cats.instances.int._
+import cats.instances.option._
+import cats.instances.set._
+
 import org.specs2._
 
 class MuTypeSpec extends Specification with ScalaCheck with Discipline {
