@@ -18,15 +18,11 @@ package higherkindness.skeuomorph
 package uast
 
 import higherkindness.skeuomorph.compdata._
-import higherkindness.skeuomorph.uast.Delay
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.protobuf.TProtoEnum
 
 import cats.implicits._
 import cats.data.NonEmptyList
-
-import qq.droste._
-import qq.droste.syntax.compose._
 
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
