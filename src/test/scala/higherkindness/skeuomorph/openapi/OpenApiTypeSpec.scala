@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-// package higherkindness.skeuomorph.openapi
+package higherkindness.skeuomorph.openapi
 
-// import org.typelevel.discipline.specs2.Discipline
-// import cats.laws.discipline.TraverseTests
-// import cats.implicits._
-// import org.specs2._
+import higherkindness.skeuomorph.instances._
 
-// class OpenApiTypeSpec extends Specification with ScalaCheck with Discipline {
+import org.typelevel.discipline.specs2.Discipline
+import cats.laws.discipline.TraverseTests
+import cats.implicits._
+import org.specs2._
 
-//   def is = s2"""
-//  $traverse
-//  """
+class OpenApiTypeSpec extends Specification with ScalaCheck with Discipline {
 
-//   val traverse =
-//     checkAll("Traverse[openapi.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
-// }
+  def is = s2"""
+ $traverse
+ """
+
+  val traverse =
+    checkAll("Traverse[openapi.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
+}
