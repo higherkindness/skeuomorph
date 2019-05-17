@@ -72,8 +72,7 @@ package object avro {
   implicit val InjNamedType: CopK.Inject[TNamedType, Type]   = mkInject[TNamedType, Types](13)
   implicit val InjFixed: CopK.Inject[TNamedFixed, Type]      = mkInject[TNamedFixed, Types](14)
   implicit val eqTAvroRecord: Delay[Eq, TAvroRecord]         = Ann.delayEq[TRecord, AvroMetadata]
-  implicit def avroEq[T](implicit T: Eq[T]): Eq[avro.Type[T]] =
-    derivation.copkEqual[Types].apply(T)
+  implicit val avroEq: Delay[Eq, avro.Type]                  = derivation.delayEqCopK[Types]
 
   def avroRecord[F[α] <: ACopK[α], A](
       name: String,

@@ -164,8 +164,7 @@ package object protobuf {
   implicit val InjMessage: CopK.Inject[TMessage, Type]               = mkInject[TMessage, Types](20)
   implicit val InjFileDescriptor: CopK.Inject[TFileDescriptor, Type] = mkInject[TFileDescriptor, Types](21)
   implicit val protoTraverse: Traverse[protobuf.Type]                = derivation.copkTraverse[Types]
-  implicit def protoEq[T](implicit T: Eq[T]): Eq[protobuf.Type[T]] =
-    derivation.copkEqual[Types].apply(T)
+  implicit val protoEq: Delay[Eq, protobuf.Type]                     = derivation.delayEqCopK[Types]
 
   def message[F[α] <: ACopK[α], A](name: String, fields: List[FieldF[A]], reserved: annotations.Reserved)(
       implicit I: TMessage :<<: F) = I.inj(Ann(TRecord(name, fields), reserved))

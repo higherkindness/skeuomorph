@@ -24,7 +24,7 @@ object derivation {
 
   def copkTraverse[LL <: TListK](implicit M: TraverseMaterializer[LL]): Traverse[CopK[LL, ?]] =
     M.materialize(offset = 0)
-  def copkEqual[LL <: TListK](implicit M: EqKMaterializer[LL]): Delay[Eq, CopK[LL, ?]] =
+  def delayEqCopK[LL <: TListK](implicit M: EqKMaterializer[LL]): Delay[Eq, CopK[LL, ?]] =
     M.materialize(offset = 0)
   def copkPrinter[LL <: TListK](implicit M: PrinterKMaterializer[LL]): Delay[Printer, CopK[LL, ?]] =
     M.materialize(offset = 0)

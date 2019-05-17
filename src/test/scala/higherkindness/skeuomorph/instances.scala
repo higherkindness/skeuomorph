@@ -16,7 +16,11 @@
 
 package higherkindness.skeuomorph
 
-import cats.implicits._
+import cats.Eq
+import cats.instances.list._
+import cats.syntax.apply._
+import cats.syntax.traverse._
+
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.scalacheck.cats.implicits._
@@ -139,4 +143,8 @@ object instances {
       F: Delay[Arbitrary, F],
       A: Arbitrary[A]): Arbitrary[F[A]] = F(A)
 
+  implicit def delayEq[F[_], A](
+      implicit
+      F: Delay[Eq, F],
+      A: Eq[A]): Eq[F[A]] = F(A)
 }
