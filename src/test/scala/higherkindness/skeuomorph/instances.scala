@@ -37,7 +37,7 @@ object instances {
 
   val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
 
-  def copkArbitrary[LL <: TListK](implicit M: ArbitraryKMaterializer[LL]): Delay[Arbitrary, CopK[LL, ?]] =
+  implicit def copkArbitrary[LL <: TListK](implicit M: ArbitraryKMaterializer[LL]): Delay[Arbitrary, CopK[LL, ?]] =
     M.materialize(offset = 0)
 
   implicit val arbAvroMetadata: Arbitrary[AvroMetadata] = {
@@ -129,13 +129,14 @@ object instances {
     Gen.oneOf(primitives, arrayOrMap, union, record)
   }
 
-  implicit def muArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[mu.Type[T]] =
-    copkArbitrary[mu.Types].apply(T)
-  implicit def avroArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[avro.Type[T]] =
-    copkArbitrary[avro.Types].apply(T)
-  implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[protobuf.Type[T]] =
-    copkArbitrary[protobuf.Types].apply(T)
-  implicit def openapiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[openapi.Type[T]] =
-    copkArbitrary[openapi.Types].apply(T)
+  implicit val muArbitrary: Delay[Arbitrary, mu.Type]          = copkArbitrary[mu.Types]
+  implicit val avroArbitrar: Delay[Arbitrary, avro.Type]       = copkArbitrary[avro.Types]
+  implicit val protoArbitrar: Delay[Arbitrary, protobuf.Type]  = copkArbitrary[protobuf.Types]
+  implicit val openapiArbitrar: Delay[Arbitrary, openapi.Type] = copkArbitrary[openapi.Types]
+
+  implicit def delayArbitrary[F[_], A](
+      implicit
+      F: Delay[Arbitrary, F],
+      A: Arbitrary[A]): Arbitrary[F[A]] = F(A)
 
 }
