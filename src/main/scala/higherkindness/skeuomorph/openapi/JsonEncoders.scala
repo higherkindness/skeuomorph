@@ -181,10 +181,11 @@ object JsonEncoders {
     }
 
   implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
-    Encoder.forProduct2(
+    Encoder.forProduct3(
+      "schemas",
       "responses",
       "requestBodies"
-    )(c => (c.responses, c.requestBodies))
+    )(c => (c.schemas, c.responses, c.requestBodies))
 
   implicit def openApiEncoder[A: Encoder]: Encoder[OpenApi[A]] =
     Encoder.forProduct7(

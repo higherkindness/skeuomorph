@@ -73,6 +73,7 @@ object schema {
         servers: List[Server])
   }
   final case class Components[A](
+      schemas: Map[String, A],
       responses: Map[String, Either[Response[A], Reference]],
       requestBodies: Map[String, Either[Request[A], Reference]]
   )

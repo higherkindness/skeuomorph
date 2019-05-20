@@ -53,7 +53,7 @@ object JsonDecoders {
   private def validateType(c: HCursor, expected: String): Decoder.Result[Unit] =
     c.downField("type").as[String].flatMap {
       case `expected` => ().asRight
-      case actual     => DecodingFailure(s"$actual is not expected type $expected", List.empty).asLeft
+      case actual     => DecodingFailure(s"$actual is not expected type $expected", c.history).asLeft
     }
 
   private def enumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
@@ -65,7 +65,17 @@ object JsonDecoders {
 
   private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder.instance { c =>
+      def propertyExists(name: String): Decoder.Result[Unit] =
+        c.downField(name)
+          .success
+          .fold(DecodingFailure(s"$name property does not exist", c.history).asLeft[Unit])(_ =>
+            ().asRight[DecodingFailure])
+      def isObject: Decoder.Result[Unit] =
+        validateType(c, "object") orElse
+          propertyExists("properties") orElse
+          propertyExists("allOf")
       for {
+        _        <- isObject
         required <- c.downField("required").as[Option[List[String]]]
         properties <- c
           .downField("properties")
@@ -74,7 +84,6 @@ object JsonDecoders {
           )
           .map(_.getOrElse(Map.empty))
           .map(_.toList.map(JsonSchemaF.Property.apply[A] _ tupled))
-        _ <- validateType(c, "object") orElse c.downField("properties").as[Map[String, A]].map(_ => ())
       } yield JsonSchemaF.`object`[A](properties, required.getOrElse(List.empty)).embed
     }
 
@@ -271,14 +280,16 @@ object JsonDecoders {
               servers.getOrElse(List.empty))))
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
-    Decoder.forProduct2(
+    Decoder.forProduct3(
+      "schemas",
       "responses",
       "requestBodies"
     )(
       (
+          schemas: Option[Map[String, A]],
           responses: Option[Map[String, Either[Response[A], Reference]]],
           requestBodies: Option[Map[String, Either[Request[A], Reference]]]) =>
-        Components(responses.getOrElse(Map.empty), requestBodies.getOrElse(Map.empty)))
+        Components(schemas.getOrElse(Map.empty), responses.getOrElse(Map.empty), requestBodies.getOrElse(Map.empty)))
 
   implicit def openApiDecoder[A: Decoder]: Decoder[OpenApi[A]] =
     Decoder.forProduct7(
