@@ -16,6 +16,9 @@ it's completely independent from it, so anybody can use it.
 
 Skeuomorph depends heavily on [cats][] and [droste][].
 
+## NOTICE
+The following files `api-with-examples.yaml`, `petstore-expanded.yaml`, `callback-example.yaml`, `petstore.yaml`, `link-example.yaml` and `uspto.yaml` inside the folder (`test/resources/openapi/yaml`) were copied from [**OpenAPI Specification**](https://github.com/OAI/OpenAPI-Specification/) project under the terms of the licence [*Apache License Version 2.0, January 2004*](https://github.com/OAI/OpenAPI-Specification/blob/master/LICENSE).
+
 ## Schemas
 
 Currently skeuomorph supports 3 different schemas:

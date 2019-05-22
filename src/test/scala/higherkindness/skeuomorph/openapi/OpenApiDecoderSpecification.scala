@@ -155,6 +155,55 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         Components[JsonSchemaF.Fixed](
           Map.empty,
+          Map.empty,
+          Map.empty
+        )
+      )
+    }
+    "when an schemas are provided" >> {
+      val json = unsafeParse(""" 
+      {
+        "schemas": {
+          "GeneralError": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "Category": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+      """)
+      Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        Components[JsonSchemaF.Fixed](
+          schemas = Map(
+            "GeneralError" -> Fixed.`object`(
+              List("code" -> Fixed.integer(), "message" -> Fixed.string()),
+              List.empty
+            ),
+            "Category" -> Fixed.`object`(
+              List("id" -> Fixed.long(), "name" -> Fixed.string()),
+              List.empty
+            )
+          ),
+          Map.empty,
           Map.empty
         )
       )
