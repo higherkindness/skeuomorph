@@ -75,9 +75,7 @@ object Spec {
   private def examplesArbitrary[A](f: String => String)(g: String => A): Gen[A] =
     Gen.oneOf(
       examples
-        .map(f)
-        .map(fromResource)
-        .map(g)
+        .map(x => g(fromResource(f(x))))
     )
 
   implicit val yamlArbitrary: Arbitrary[Format] =
