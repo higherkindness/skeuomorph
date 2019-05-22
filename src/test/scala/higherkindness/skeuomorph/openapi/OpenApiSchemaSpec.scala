@@ -25,6 +25,7 @@ import schema._
 import org.scalacheck._
 import _root_.io.circe._
 import _root_.io.circe.testing._
+import Spec._
 
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
 
@@ -47,32 +48,42 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
     CodecTests[OpenApi[JsonSchemaF.Fixed]].laws.codecRoundTrip(openApi)
   }
 
-  def shouldAbleToReadSpecExamples = Prop.forAll { (json: Json) =>
+  def shouldAbleToReadSpecExamples = Prop.forAll { (format: Spec.Format) =>
     import JsonDecoders._
-
-    Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(json).isRight
-
+    import yaml.{Decoder => _, _}
+    format.fold(
+      yaml.Decoder[OpenApi[JsonSchemaF.Fixed]].apply(_).isRight,
+      Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(_).isRight
+    )
   }
+}
 
-  implicit val jsonArbitrary: Arbitrary[Json] = {
+object Spec {
+  type Yaml   = String
+  type Format = Either[String, Json]
 
-    def readSpec(fileName: String): Json =
-      OpenApiDecoderSpecification.unsafeParse(
-        scala.io.Source
-          .fromInputStream(getClass.getResourceAsStream(s"/$fileName"))
-          .getLines()
-          .toList
-          .mkString("\n"))
+  private val examples =
+    List("api-with-examples", "callback-example", "link-example", "petstore-expanded", "petstore", "uspto")
 
+  private def fromResource(fileName: String): String =
+    scala.io.Source
+      .fromInputStream(getClass.getResourceAsStream(fileName))
+      .getLines()
+      .toList
+      .mkString("\n")
+
+  private def examplesArbitrary[A](f: String => String)(g: String => A): Gen[A] =
+    Gen.oneOf(
+      examples
+        .map(f)
+        .map(fromResource)
+        .map(g)
+    )
+
+  implicit val yamlArbitrary: Arbitrary[Format] =
     Arbitrary(
-      Gen.oneOf(
-        List(
-          "api-with-examples.json",
-          "callback-example.json",
-          "link-example.json",
-          "petstore-expanded.json",
-          "petstore.json",
-          "uspto.json").map(readSpec)))
-  }
+      eitherGen(
+        examplesArbitrary(x => s"/openapi/yaml/$x.yaml")(identity),
+        examplesArbitrary(x => s"/openapi/json/$x.json")(OpenApiDecoderSpecification.unsafeParse)))
 
 }
