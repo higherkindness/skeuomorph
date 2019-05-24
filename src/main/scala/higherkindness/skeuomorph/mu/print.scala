@@ -41,7 +41,6 @@ object print {
       case TString()                 => "String"
       case TByteArray()              => "Array[Byte]"
       case TNamedType(name)          => name
-      case TOptionalNamedType(name)  => s"Option[$name]"
       case TOption(value)            => s"Option[$value]"
       case TEither(a, b)             => s"Either[$a, $b]"
       case TMap(Some(key), value)    => s"Map[$key, $value]"

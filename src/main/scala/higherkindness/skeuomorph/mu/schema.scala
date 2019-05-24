@@ -43,7 +43,6 @@ object MuF {
   final case class TString[A]()                                      extends MuF[A]
   final case class TByteArray[A]()                                   extends MuF[A]
   final case class TNamedType[A](name: String)                       extends MuF[A]
-  final case class TOptionalNamedType[A](name: String)               extends MuF[A]
   final case class TOption[A](value: A)                              extends MuF[A]
   final case class TEither[A](left: A, right: A)                     extends MuF[A]
   final case class TList[A](value: A)                                extends MuF[A]
@@ -87,26 +86,25 @@ object MuF {
 
   implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] = Show.show {
     cata(Algebra[MuF, String] {
-      case TNull()               => "null"
-      case TDouble()             => "double"
-      case TFloat()              => "float"
-      case TInt()                => "int"
-      case TLong()               => "long"
-      case TBoolean()            => "boolean"
-      case TString()             => "string"
-      case TByteArray()          => "bytes"
-      case TNamedType(n)         => n
-      case TOptionalNamedType(n) => s"?$n"
-      case TOption(v)            => s"?$v"
-      case TList(e)              => s"[$e]"
-      case TMap(k, v)            => s"$k->$v"
-      case TRequired(v)          => v
-      case TContaining(ts)       => ts.mkString("cont<", ", ", ">")
-      case TEither(l, r)         => s"either<$l, $r>"
-      case TGeneric(g, ps)       => ps.mkString(s"$g<", ", ", ">")
-      case TCoproduct(ts)        => ts.toList.mkString("(", " | ", ")")
-      case TSum(n, vs)           => vs.mkString(s"$n[", ", ", "]")
-      case TProduct(n, fields)   => fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
+      case TNull()             => "null"
+      case TDouble()           => "double"
+      case TFloat()            => "float"
+      case TInt()              => "int"
+      case TLong()             => "long"
+      case TBoolean()          => "boolean"
+      case TString()           => "string"
+      case TByteArray()        => "bytes"
+      case TNamedType(n)       => n
+      case TOption(v)          => s"?$v"
+      case TList(e)            => s"[$e]"
+      case TMap(k, v)          => s"$k->$v"
+      case TRequired(v)        => v
+      case TContaining(ts)     => ts.mkString("cont<", ", ", ">")
+      case TEither(l, r)       => s"either<$l, $r>"
+      case TGeneric(g, ps)     => ps.mkString(s"$g<", ", ", ">")
+      case TCoproduct(ts)      => ts.toList.mkString("(", " | ", ")")
+      case TSum(n, vs)         => vs.mkString(s"$n[", ", ", "]")
+      case TProduct(n, fields) => fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
     })
   }
