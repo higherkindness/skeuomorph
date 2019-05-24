@@ -44,7 +44,7 @@ object Transform {
     case ProtobufF.TBool()                       => TBoolean()
     case ProtobufF.TString()                     => TString()
     case ProtobufF.TBytes()                      => TByteArray()
-    case ProtobufF.TNamedType(name)              => TNamedType(name)
+    case ProtobufF.TNamedType(name)              => TOptionalNamedType(name)
     case ProtobufF.TRepeated(value)              => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _)    => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)     => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
