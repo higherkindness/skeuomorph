@@ -1,5 +1,19 @@
 # Changelog
 
+## 05/28/2019 - Version 0.0.9
+
+Release changes:
+
+* Revert "Use the fully qualified name for fs2 Stream" ([#83](https://github.com/higherkindness/skeuomorph/pull/83))
+* Append the `fs2` prefix to the `Stream` ([#84](https://github.com/higherkindness/skeuomorph/pull/84))
+* Introduce schema comparison ([#82](https://github.com/higherkindness/skeuomorph/pull/82))
+* Fix scaladoc generation ([#88](https://github.com/higherkindness/skeuomorph/pull/88))
+* Adds the parameters to an operation ([#81](https://github.com/higherkindness/skeuomorph/pull/81))
+* Ff/open api to mu ([#90](https://github.com/higherkindness/skeuomorph/pull/90))
+* Make fields optional for non-primitive protobuf fields ([#92](https://github.com/higherkindness/skeuomorph/pull/92))
+* Bump version to release optional fields work ([#93](https://github.com/higherkindness/skeuomorph/pull/93))
+
+
 ## 03/19/2019 - Version 0.0.8
 
 Release changes:
