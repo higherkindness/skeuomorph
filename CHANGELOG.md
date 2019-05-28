@@ -1,5 +1,12 @@
 # Changelog
 
+## 05/28/2019 - Version 0.0.9.1
+
+Release changes:
+
+* Create point release for Sonatype being down earlier ([#94](https://github.com/higherkindness/skeuomorph/pull/94))
+
+
 ## 05/28/2019 - Version 0.0.9
 
 Release changes:
