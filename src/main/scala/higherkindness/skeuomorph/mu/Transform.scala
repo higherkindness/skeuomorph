@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.mu
 
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.protobuf.ProtobufF
-import qq.droste.Trans
+import qq.droste.{Embed, Trans}
 
 object Transform {
 
@@ -27,7 +27,7 @@ object Transform {
   /**
    * transform Protobuf schema into Mu schema
    */
-  def transformProto[A]: Trans[ProtobufF, MuF, A] = Trans {
+  def transformProto[A](implicit A: Embed[MuF, A]): Trans[ProtobufF, MuF, A] = Trans {
     case ProtobufF.TNull()                       => TNull()
     case ProtobufF.TDouble()                     => TDouble()
     case ProtobufF.TFloat()                      => TFloat()
@@ -44,7 +44,7 @@ object Transform {
     case ProtobufF.TBool()                       => TBoolean()
     case ProtobufF.TString()                     => TString()
     case ProtobufF.TBytes()                      => TByteArray()
-    case ProtobufF.TNamedType(name)              => TNamedType(name)
+    case ProtobufF.TNamedType(name)              => TOption(A.algebra(TNamedType(name)))
     case ProtobufF.TRepeated(value)              => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _)    => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)     => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
