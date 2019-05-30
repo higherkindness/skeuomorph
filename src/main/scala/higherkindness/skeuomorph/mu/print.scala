@@ -147,7 +147,7 @@ object print {
     konst("F[") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
 
   def opTypeStream[T](implicit T: Basis[MuF, T]): Printer[T] =
-    konst("fs2.Stream[F, ") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+    konst("Stream[F, ") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
 
   def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
     (

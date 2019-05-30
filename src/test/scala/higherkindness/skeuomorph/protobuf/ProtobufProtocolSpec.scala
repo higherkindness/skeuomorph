@@ -84,9 +84,9 @@ class ProtobufProtocolSpec extends Specification {
       |
       |@service(Protobuf) trait BookService[F[_]] {
       |  def GetBook(req: GetBookRequest): F[Book]
-      |  def GetBooksViaAuthor(req: GetBookViaAuthor): fs2.Stream[F, Book]
-      |  def GetGreatestBook(req: fs2.Stream[F, GetBookRequest]): F[Book]
-      |  def GetBooks(req: fs2.Stream[F, GetBookRequest]): fs2.Stream[F, Book]
+      |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
+      |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
+      |  def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
       |}
       |
       |}""".stripMargin
