@@ -1,5 +1,13 @@
 # Changelog
 
+## 05/30/2019 - Version 0.0.10
+
+Release changes:
+
+* Set version back to 0.0.10-SNAPSHOT following Sonatype issues ([#95](https://github.com/higherkindness/skeuomorph/pull/95))
+* Remove fs2 prefix ([#96](https://github.com/higherkindness/skeuomorph/pull/96))
+
+
 ## 05/28/2019 - Version 0.0.9.1
 
 Release changes:
