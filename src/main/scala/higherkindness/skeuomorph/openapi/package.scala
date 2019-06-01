@@ -22,7 +22,7 @@ import io.circe.Json
 import iota.{TList => _, _}
 import iota.TListK.:::
 
-import qq.droste.Algebra
+import higherkindness.droste.Algebra
 
 import higherkindness.skeuomorph.uast.{derivation, mkInject, Delay}
 import higherkindness.skeuomorph.uast.types._

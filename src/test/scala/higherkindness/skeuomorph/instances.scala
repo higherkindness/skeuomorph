@@ -133,10 +133,10 @@ object instances {
     Gen.oneOf(primitives, arrayOrMap, union, record)
   }
 
-  implicit val muArbitrary: Delay[Arbitrary, mu.Type]          = copkArbitrary[mu.Types]
-  implicit val avroArbitrar: Delay[Arbitrary, avro.Type]       = copkArbitrary[avro.Types]
-  implicit val protoArbitrar: Delay[Arbitrary, protobuf.Type]  = copkArbitrary[protobuf.Types]
-  implicit val openapiArbitrar: Delay[Arbitrary, openapi.Type] = copkArbitrary[openapi.Types]
+  implicit val muArbitrary: Delay[Arbitrary, mu.Type]           = copkArbitrary[mu.Types]
+  implicit val avroArbitrary: Delay[Arbitrary, avro.Type]       = copkArbitrary[avro.Types]
+  implicit val protoArbitrary: Delay[Arbitrary, protobuf.Type]  = copkArbitrary[protobuf.Types]
+  implicit val openapiArbitrary: Delay[Arbitrary, openapi.Type] = copkArbitrary[openapi.Types]
 
   implicit def delayArbitrary[F[_], A](
       implicit

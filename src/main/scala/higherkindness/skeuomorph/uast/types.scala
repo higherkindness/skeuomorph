@@ -25,7 +25,7 @@ import higherkindness.skeuomorph.compdata.Ann
 import higherkindness.skeuomorph.protobuf.OptionValue
 import higherkindness.skeuomorph.avro.types._
 
-import qq.droste.macros.deriveTraverse
+import higherkindness.droste.macros.deriveTraverse
 
 import iota.{CopK, TNilK}
 import iota.TListK.:::

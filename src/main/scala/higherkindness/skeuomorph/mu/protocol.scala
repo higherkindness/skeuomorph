@@ -21,7 +21,7 @@ import cats.implicits._
 import higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.avro.avroTraverse
 
-import qq.droste._
+import higherkindness.droste._
 
 sealed trait SerializationType extends Product with Serializable
 object SerializationType {

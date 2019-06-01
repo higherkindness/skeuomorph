@@ -50,9 +50,9 @@ import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.MuF
 import higherkindness.skeuomorph.mu.print
 import higherkindness.skeuomorph.avro.AvroF.fromAvro
-import qq.droste._
-import qq.droste.data._
-import qq.droste.data.Mu._
+import higherkindness.droste._
+import higherkindness.droste.data._
+import higherkindness.droste.data.Mu._
 import cats.implicits._
 
 

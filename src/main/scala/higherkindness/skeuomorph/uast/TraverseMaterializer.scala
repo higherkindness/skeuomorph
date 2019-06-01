@@ -16,7 +16,7 @@
 
 package higherkindness.skeuomorph.uast
 
-import qq.droste.util.DefaultTraverse
+import higherkindness.droste.util.DefaultTraverse
 
 import iota.TListK.:::
 import iota.{CopK, TListK, TNilK}

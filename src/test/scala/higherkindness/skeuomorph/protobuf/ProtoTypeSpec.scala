@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph.protobuf
+package higherkindness.skeuomorph
+package protobuf
 
-import higherkindness.skeuomorph.instances._
-import org.typelevel.discipline.specs2.Discipline
+import cats.instances.option._
+import cats.instances.int._
+import cats.instances.set._
 import cats.laws.discipline.TraverseTests
-import cats.implicits._
+
+import org.typelevel.discipline.specs2.Discipline
 import org.specs2._
+
+import instances._
 
 class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
 
@@ -28,6 +33,7 @@ class ProtoSchemaSpec extends Specification with ScalaCheck with Discipline {
   $traverse
   """
 
-  val traverse =
-    checkAll("Traverse[protobuf.Type]", TraverseTests[Type].traverse[Int, Int, Int, Set[Int], Option, Option])
+  val traverseTests = TraverseTests[Type]
+  val tests         = traverseTests.traverse[Int, Int, Int, Set[Int], Option, Option]
+  val traverse      = checkAll("Traverse[protobuf.Type]", tests)
 }

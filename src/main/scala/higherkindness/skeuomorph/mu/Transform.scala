@@ -20,7 +20,7 @@ package mu
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.compdata.Ann
 import cats.implicits._
-import qq.droste._
+import higherkindness.droste._
 
 object Transform {
 

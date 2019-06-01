@@ -25,8 +25,8 @@ import cats.implicits._
 import cats.data.NonEmptyList
 import io.circe.Json
 import org.apache.avro.{Schema, Protocol => AvroProtocol}
-import qq.droste._
-import qq.droste.syntax.embed._
+import higherkindness.droste._
+import higherkindness.droste.syntax.embed._
 
 import scala.collection.JavaConverters._
 

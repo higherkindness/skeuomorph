@@ -28,7 +28,7 @@ import higherkindness.skeuomorph.mu.SerializationType._
 
 import cats.implicits._
 
-import qq.droste._
+import higherkindness.droste._
 
 object print {
 

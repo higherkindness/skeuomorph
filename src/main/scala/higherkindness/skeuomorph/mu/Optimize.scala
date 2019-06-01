@@ -19,7 +19,7 @@ package mu
 
 import cats.Functor
 import cats.data.NonEmptyList
-import qq.droste._
+import higherkindness.droste._
 import uast._
 import uast.types._
 

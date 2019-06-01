@@ -23,7 +23,7 @@ import iota.{TList => _, _}
 import iota.TListK.:::
 import org.apache.avro.Schema
 import org.apache.avro.Schema.{Type => SType}
-import qq.droste.{Algebra, Coalgebra}
+import higherkindness.droste.{Algebra, Coalgebra}
 import higherkindness.skeuomorph.uast._
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.avro.types._

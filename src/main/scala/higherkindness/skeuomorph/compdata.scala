@@ -18,7 +18,7 @@ package higherkindness.skeuomorph
 
 import cats.{Applicative, Eq, Traverse}
 
-import qq.droste.util.DefaultTraverse
+import higherkindness.droste.util.DefaultTraverse
 import higherkindness.skeuomorph.uast.Delay
 
 object compdata {

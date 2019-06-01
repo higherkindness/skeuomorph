@@ -32,8 +32,8 @@ import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 import java.util
 
-import qq.droste._
-import qq.droste.syntax.embed._
+import higherkindness.droste._
+import higherkindness.droste.syntax.embed._
 
 import scala.collection.JavaConverters._
 
