@@ -18,17 +18,6 @@ package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.mu.DependentImport
 
-import cats.Eq
-import cats.implicits._
-
-// TODO: DELETE
-final case class OptionValue(name: String, value: String)
-object OptionValue {
-  implicit val optionEq: Eq[OptionValue] = Eq.instance {
-    case (OptionValue(n, v), OptionValue(n2, v2)) => n === n2 && v === v2
-  }
-}
-
 final case class Protocol[T](
     name: String,
     pkg: String,

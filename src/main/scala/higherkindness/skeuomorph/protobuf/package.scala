@@ -55,7 +55,10 @@ package object protobuf {
     object Reserved {
       implicit val eq: Eq[Reserved] = Eq.fromUniversalEquals
     }
-    final case class EnumAnnotation(fieldNumbers: List[Int], options: List[OptionValue], aliases: List[(String, Int)])
+    final case class EnumAnnotation(
+        fieldNumbers: List[Int],
+        options: List[(String, String)],
+        aliases: List[(String, Int)])
     object EnumAnnotation {
       implicit val eq: Eq[EnumAnnotation] = Eq.fromUniversalEquals
     }
@@ -171,7 +174,7 @@ package object protobuf {
   def protoEnum[F[α] <: ACopK[α], A](
       name: String,
       symbols: List[(String, Int)],
-      options: List[OptionValue],
+      options: List[(String, String)],
       aliases: List[(String, Int)])(implicit I: TProtoEnum :<<: F): F[A] =
     I.inj(Ann(TEnum(name, symbols.map(_._1)), annotations.EnumAnnotation(symbols.map(_._2), options, aliases)))
   def int32[F[α] <: ACopK[α], A](implicit I: TInt32 :<<: F) = I.inj(Ann(TInt[A](), annotations.`32`()))

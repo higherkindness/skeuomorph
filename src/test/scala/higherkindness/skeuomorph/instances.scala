@@ -64,8 +64,8 @@ object instances {
       ))
   }
 
-  implicit val arbOptionValue: Arbitrary[OptionValue] =
-    Arbitrary((nonEmptyString, nonEmptyString).mapN(OptionValue.apply))
+  implicit val arbOptionValue: Arbitrary[(String, String)] =
+    Arbitrary((nonEmptyString, nonEmptyString).tupled)
   implicit val arb32: Arbitrary[protobuf.annotations.`32`]       = Arbitrary(Gen.const(protobuf.annotations.`32`()))
   implicit val arb64: Arbitrary[protobuf.annotations.`64`]       = Arbitrary(Gen.const(protobuf.annotations.`64`()))
   implicit val arbSigned: Arbitrary[protobuf.annotations.Signed] = Arbitrary(Gen.const(protobuf.annotations.Signed()))

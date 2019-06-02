@@ -22,7 +22,6 @@ import cats.instances.list._
 import monocle.Lens
 
 import higherkindness.skeuomorph.compdata.Ann
-import higherkindness.skeuomorph.protobuf.OptionValue
 import higherkindness.skeuomorph.avro.types._
 
 import higherkindness.droste.macros.deriveTraverse
@@ -230,7 +229,7 @@ object types {
   def oneOf[F[α] <: ACopK[α], A](name: String, fields: NonEmptyList[FieldF[A]])(implicit I: TOneOf :<<: F): F[A] =
     I.inj(TOneOf(name, fields))
 
-  type FieldFTypes = Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?] :::
+  type FieldFTypes = Ann[Field, (Int, List[(String, String)], Boolean, Boolean), ?] :::
     Ann[Field, AvroMetadata, ?] :::
     Field :::
     TNilK
@@ -240,13 +239,13 @@ object types {
     A
   ]
 
-  implicit val protoField: Traverse[Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?]] =
-    Ann.traverse[Field, (Int, List[OptionValue], Boolean, Boolean)]
+  implicit val protoField: Traverse[Ann[Field, (Int, List[(String, String)], Boolean, Boolean), ?]] =
+    Ann.traverse[Field, (Int, List[(String, String)], Boolean, Boolean)]
   implicit val avroField: Traverse[Ann[Field, AvroMetadata, ?]] = Ann.traverse[Field, AvroMetadata]
   implicit val fieldFTraverse: Traverse[FieldF]                 = derivation.copkTraverse[FieldF[Unit]#L]
 
   object FieldF {
-    val InjProtobufField = mkInject[Ann[Field, (Int, List[OptionValue], Boolean, Boolean), ?], FieldFTypes](0)
+    val InjProtobufField = mkInject[Ann[Field, (Int, List[(String, String)], Boolean, Boolean), ?], FieldFTypes](0)
     val InjAvroField     = mkInject[Ann[Field, AvroMetadata, ?], FieldFTypes](1)
     val InjSimpleField   = mkInject[Field, FieldFTypes](2)
 
@@ -254,7 +253,7 @@ object types {
         name: String,
         tpe: A,
         position: Int,
-        options: List[OptionValue],
+        options: List[(String, String)],
         isRepeated: Boolean,
         isMapField: Boolean): FieldF[A] =
       InjProtobufField.inj(Ann(Field[A](name, tpe), (position, options, isRepeated, isMapField)))

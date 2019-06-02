@@ -29,7 +29,7 @@ import Function.{const => κ}
 
 object print {
 
-  def printOption(o: OptionValue): String = s"${o.name} = ${o.value}"
+  def printOption(o: (String, String)): String = s"${o._1} = ${o._2}"
 
   implicit val printNull: Delay[Printer, TNull] = new Delay[Printer, TNull] {
     def apply[A](x: Printer[A]) = Printer(κ("null"))
@@ -97,7 +97,7 @@ object print {
   implicit val printProtoEnum: Delay[Printer, TProtoEnum] = new Delay[Printer, TProtoEnum] {
     def apply[A](x: Printer[A]) = Printer {
       case Ann(TEnum(name, symbolNames), annotations.EnumAnnotation(symbolNumbers, options, aliases)) =>
-        val printOptions = options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
+        val printOptions = options.map(o => s"\toption ${o._1} = ${o._2};").mkString("\n")
         val printSymbols = symbolNames.zip(symbolNumbers).map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         val printAliases = aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
         show"""
@@ -115,7 +115,7 @@ object print {
         val printReserved: String = reserved
           .map(l => "reserved " + l.mkString(start = "", sep = ", ", end = ";"))
           .mkString("\n  ")
-        def printOptions(options: List[OptionValue]) =
+        def printOptions(options: List[(String, String)]) =
           if (options.isEmpty)
             ""
           else

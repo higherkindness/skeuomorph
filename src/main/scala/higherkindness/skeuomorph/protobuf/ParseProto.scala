@@ -296,15 +296,13 @@ object ParseProto {
       implicit A: Embed[protobuf.Type, A]): A =
     scheme.ana(fromFieldTypeCoalgebra(field, files)).apply(field.getType)
 
-  def fromFieldOptionsMsg(options: FieldOptions): List[OptionValue] =
-    OptionValue("deprecated", options.getDeprecated.toString) ::
-      options.getUninterpretedOptionList.j2s.map(t => OptionValue(toString(t.getNameList.j2s), t.getIdentifierValue))
+  def fromFieldOptionsMsg(options: FieldOptions): List[(String, String)] =
+    ("deprecated", options.getDeprecated.toString) ::
+      options.getUninterpretedOptionList.j2s.map(t => (toString(t.getNameList.j2s), t.getIdentifierValue))
 
-  def fromFieldOptionsEnum(options: EnumOptions): List[OptionValue] = {
-    List(
-      OptionValue("allow_alias", options.getAllowAlias.toString),
-      OptionValue("deprecated", options.getDeprecated.toString)) ++
-      options.getUninterpretedOptionList.j2s.map(t => OptionValue(toString(t.getNameList.j2s), t.getIdentifierValue))
+  def fromFieldOptionsEnum(options: EnumOptions): List[(String, String)] = {
+    List(("allow_alias", options.getAllowAlias.toString), ("deprecated", options.getDeprecated.toString)) ++
+      options.getUninterpretedOptionList.j2s.map(t => (toString(t.getNameList.j2s), t.getIdentifierValue))
   }
 
   def toString(nameParts: Seq[NamePart]): String =
