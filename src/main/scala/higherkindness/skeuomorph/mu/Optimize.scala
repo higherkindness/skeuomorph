@@ -108,7 +108,7 @@ object Optimize {
    * case class Product(field1: Either[Int, String], field2: Option[Int])
    * }}}
    */
-  def knownCoproductTypesTrans[F[α] <: ACopK[α], T](
+  def knownUnionTypesTrans[F[α] <: ACopK[α], T](
       implicit
       U: TUnion :<<: F,
       O: TOption :<<: F,
@@ -125,5 +125,5 @@ object Optimize {
     case other => other
   }
 
-  def knownCoproductTypes[T: Basis[mu.Type, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
+  def knownUnionTypes[T: Basis[mu.Type, ?]]: T => T = scheme.cata(knownUnionTypesTrans.algebra)
 }

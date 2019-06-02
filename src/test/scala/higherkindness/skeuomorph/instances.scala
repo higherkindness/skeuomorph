@@ -28,7 +28,6 @@ import org.scalacheck.cats.implicits._
 import higherkindness.skeuomorph.uast.{ArbitraryKMaterializer, Delay}
 import higherkindness.skeuomorph.uast.arbitraries._
 import higherkindness.skeuomorph.uast.types._
-import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.avro._
 import higherkindness.skeuomorph.avro.types._
 import higherkindness.skeuomorph.protobuf._

@@ -17,10 +17,12 @@
 package higherkindness.skeuomorph
 package uast
 
+import higherkindness.droste.Embed
 import higherkindness.skeuomorph.compdata._
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.protobuf.TProtoEnum
 
+import cats.Functor
 import cats.implicits._
 import cats.data.NonEmptyList
 
@@ -133,5 +135,19 @@ object arbitraries {
     new Delay[Arbitrary, Ann[F, E, ?]] {
       def apply[A](aa: Arbitrary[A]) = Arbitrary((F(aa).arbitrary, E.arbitrary).mapN(Ann.apply))
     }
+
+  implicit def arbitraryEmbedDelay[F[_]: Functor, T](
+      implicit
+      T: Embed[F, T],
+      F: Delay[Arbitrary, F]): Arbitrary[T] =
+    Arbitrary(
+      Gen.sized(size =>
+        F(Arbitrary(
+          if (size <= 0) {
+            Gen.fail[T]
+          } else {
+            Gen.resize(size - 1, arbitraryEmbedDelay[F, T].arbitrary)
+          }
+        )).arbitrary map T.algebra.run))
 
 }
