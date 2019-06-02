@@ -34,14 +34,18 @@ object print {
 
   def schema[T: Project[mu.Type, ?]]: Printer[T] = {
     val algebra: Algebra[mu.Type, String] = Algebra {
-      case mu.InjNull(TNull())                      => "Null"
-      case mu.InjDouble(TDouble())                  => "Double"
-      case mu.InjFloat(TFloat())                    => "Float"
-      case mu.InjInt(TInt())                        => "Int"
-      case mu.InjLong(TLong())                      => "Long"
-      case mu.InjBoolean(TBoolean())                => "Boolean"
-      case mu.InjString(TString())                  => "String"
-      case mu.InjByteArray(TByteArray())            => "Array[Byte]"
+      case mu.InjNull(TNull())           => "Null"
+      case mu.InjDouble(TDouble())       => "Double"
+      case mu.InjFloat(TFloat())         => "Float"
+      case mu.InjInt(TInt())             => "Int"
+      case mu.InjLong(TLong())           => "Long"
+      case mu.InjBoolean(TBoolean())     => "Boolean"
+      case mu.InjString(TString())       => "String"
+      case mu.InjByteArray(TByteArray()) => "Array[Byte]"
+
+      case mu.InjByte(TByte())               => "Byte"
+      case mu.InjNamedType(TNamedType(name)) => name
+
       case mu.InjOption(TOption(value))             => s"Option[$value]"
       case mu.InjEither(TEither(a, b))              => s"Either[$a, $b]"
       case mu.InjMap(TMap(key, value))              => s"Map[$key, $value]"
@@ -71,10 +75,10 @@ object print {
    */
   def protoTuple[T](
       proto: Protocol[T]
-  ): (Option[String], List[(String, String)], String, List[T], List[Service[T]]) =
+  ): (Option[String], List[(String, String)], List[DependentImport[T]], String, List[T], List[Service[T]]) =
     proto match {
-      case Protocol(name, pkg, options, declarations, services) =>
-        (pkg, options, name, declarations, services)
+      case Protocol(name, pkg, options, declarations, services, imports) =>
+        (pkg, options, imports, name, declarations, services)
     }
 
   /**
@@ -83,9 +87,9 @@ object print {
    */
   def opTuple[T](
       op: Service.Operation[T]
-  ): (String, T, T) =
+  ): (String, Service.OperationType[T], Service.OperationType[T]) =
     op match {
-      case Service.Operation(name, Service.OperationType(request, _), Service.OperationType(response, _)) =>
+      case Service.Operation(name, request, response) =>
         (name, request, response)
     }
 
@@ -100,6 +104,14 @@ object print {
       case Service(name, serType, ops) =>
         (serType, name, ops)
     }
+
+  /**
+   * Needed to be able to use the DependentImport case class
+   * as a [[cats.ContravariantMonoidal]].
+   */
+  def importTuple[T](i: DependentImport[T]): (String, String, T) = i match {
+    case DependentImport(pkg, name, tpe) => (pkg, name, tpe)
+  }
 
   /**
    * needed to use SerializationType as a [[catz.contrib.Decidable]].
@@ -118,19 +130,47 @@ object print {
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
+  def opTpeEither[T](op: Service.OperationType[T], isRequest: Boolean): Either[Either[Either[T, T], T], T] =
+    (op.stream, isRequest) match {
+      case (false, true)  => Left(Left(Left(op.tpe)))
+      case (true, true)   => Left(Left(Right(op.tpe)))
+      case (false, false) => Left(Right(op.tpe))
+      case (true, false)  => Right(op.tpe)
+    }
+
+  def opTpe[T](isRequest: Boolean)(implicit T: Basis[mu.Type, T]): Printer[Service.OperationType[T]] =
+    (opTypeRequestNoStream >|< opTypeStream >|< opTypeResponseNoStream >|< opTypeStream)
+      .contramap(t => opTpeEither(t, isRequest))
+
+  def opTypeRequestNoStream[T](implicit T: Basis[mu.Type, T]): Printer[T] =
+    Printer(namedTypes[mu.Type, T] >>> schema.print)
+
+  def opTypeResponseNoStream[T](implicit T: Basis[mu.Type, T]): Printer[T] =
+    konst("F[") *< Printer(namedTypes[mu.Type, T] >>> schema.print) >* konst("]")
+
+  def opTypeStream[T](implicit T: Basis[mu.Type, T]): Printer[T] =
+    konst("Stream[F, ") *< Printer(namedTypes[mu.Type, T] >>> schema.print) >* konst("]")
+
   def operation[T](implicit T: Basis[mu.Type, T]): Printer[Service.Operation[T]] =
     (
-      (konst("def ") *< string),
-      (konst("(req: ") *< Printer(namedTypes[mu.Type, T] >>> schema.print)),
-      (konst("): ") *< Printer(namedTypes[mu.Type, T] >>> schema.print))
+      konst("  def ") *< string,
+      konst("(req: ") *< opTpe(true),
+      konst("): ") *< opTpe(false)
     ).contramapN(opTuple)
 
   def service[T](implicit T: Basis[mu.Type, T]): Printer[Service[T]] =
     (
-      (konst("@service(") *< serializationType >* konst(") trait ")),
-      (string >* konst("[F[_]] {") >* newLine),
-      (sepBy(operation, "\n") >* newLine >* konst("}"))
+      konst("@service(") *< serializationType >* konst(") trait "),
+      string >* konst("[F[_]] {") >* newLine,
+      sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)
+
+  def depImport[T](implicit T: Basis[mu.Type, T]): Printer[DependentImport[T]] =
+    (
+      konst("import ") *< string,
+      konst(".") *< string,
+      konst(".") *< Printer(namedTypes[mu.Type, T] >>> schema.print)
+    ).contramapN(importTuple)
 
   def option: Printer[(String, String)] =
     (konst("@option(name = ") *< string) >*< (konst(", value = ") *< string >* konst(")"))
@@ -139,11 +179,12 @@ object print {
     val lineFeed       = "\n"
     val doubleLineFeed = "\n\n "
     (
-      (konst("package ") *< optional(string) >* newLine >* newLine),
+      konst("package ") *< optional(string) >* newLine >* newLine,
       sepBy(option, lineFeed),
-      (konst("object ") *< string >* konst(" { ") >* newLine >* newLine),
-      (sepBy(schema, lineFeed) >* newLine),
-      (sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}")))
+      sepBy(depImport, lineFeed) >* newLine >* newLine,
+      konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
+      sepBy(schema, lineFeed) >* newLine,
+      sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
     ).contramapN(protoTuple)
   }
 }

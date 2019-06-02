@@ -20,6 +20,8 @@ package mu
 import cats.implicits._
 import higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.avro.avroTraverse
+import higherkindness.skeuomorph.mu.Transform.transformProto
+import higherkindness.skeuomorph.protobuf._
 
 import higherkindness.droste._
 
@@ -35,7 +37,8 @@ final case class Protocol[T](
     pkg: Option[String],
     options: List[(String, String)],
     declarations: List[T],
-    services: List[Service[T]]
+    services: List[Service[T]],
+    imports: List[DependentImport[T]]
 )
 object Protocol {
 
@@ -57,7 +60,33 @@ object Protocol {
       }
 
     (proto.messages.traverse(toOperation), proto.types.traverse(toFreestyle)).mapN((ops, types) =>
-      Protocol(proto.name, proto.namespace, Nil, types, List(Service(proto.name, SerializationType.Avro, ops))))
+      Protocol(proto.name, proto.namespace, Nil, types, List(Service(proto.name, SerializationType.Avro, ops)), Nil))
+  }
+
+  def fromProtobufProto[T, U](
+      protocol: protobuf.Protocol[T])(implicit T: Basis[protobuf.Type, T], U: Basis[mu.Type, U]): Protocol[U] = {
+    val toMu: T => U = scheme.cata(transformProto[U].algebra)
+    val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
+      msg =>
+        Service.Operation(
+          name = msg.name,
+          request = Service.OperationType(toMu(msg.request), msg.requestStreaming),
+          response = Service.OperationType(toMu(msg.response), msg.responseStreaming)
+      )
+
+    val toImports: DependentImport[T] => DependentImport[U] =
+      imp => DependentImport(imp.pkg, imp.protocol, toMu(imp.tpe))
+
+    new Protocol[U](
+      name = protocol.name,
+      pkg = Option(protocol.pkg),
+      options = protocol.options,
+      declarations = protocol.declarations.map(toMu),
+      services = protocol.services
+        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation))),
+      imports = protocol.imports.map(toImports)
+    )
+
   }
 }
 
@@ -66,3 +95,5 @@ object Service {
   final case class OperationType[T](tpe: T, stream: Boolean)
   final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])
 }
+
+final case class DependentImport[T](pkg: String, protocol: String, tpe: T)

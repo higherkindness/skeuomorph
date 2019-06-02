@@ -17,17 +17,19 @@
 package higherkindness.skeuomorph
 package mu
 
+import cats.implicits._
+
 import higherkindness.skeuomorph.uast.types._
 import higherkindness.skeuomorph.compdata.Ann
-import cats.implicits._
 import higherkindness.droste._
+import higherkindness.droste.syntax.embed._
 
 object Transform {
 
   /**
    * transform Protobuf schema into Mu schema
    */
-  def transformProto[A]: Trans[protobuf.Type, mu.Type, A] = Trans {
+  def transformProto[A](implicit A: Embed[mu.Type, A]): Trans[protobuf.Type, mu.Type, A] = Trans {
     case protobuf.InjNull(_)                  => `null`[mu.Type, A]
     case protobuf.InjDouble(_)                => double[mu.Type, A]
     case protobuf.InjFloat(_)                 => float[mu.Type, A]
@@ -44,7 +46,7 @@ object Transform {
     case protobuf.InjBoolean(_)               => boolean[mu.Type, A]
     case protobuf.InjString(_)                => string[mu.Type, A]
     case protobuf.InjByteArray(_)             => byteArray[mu.Type, A]
-    case protobuf.InjNamedType(TNamedType(n)) => namedType[mu.Type, A](n)
+    case protobuf.InjNamedType(TNamedType(n)) => option[mu.Type, A](namedType[mu.Type, A](n).embed)
     case protobuf.InjList(TList(value))       => list[mu.Type, A](value)
     case protobuf.InjOneOf(TOneOf(_, values)) =>
       union[mu.Type, A](values.map(FieldF.fieldType.get))

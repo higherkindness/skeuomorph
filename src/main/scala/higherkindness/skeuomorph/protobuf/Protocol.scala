@@ -16,9 +16,12 @@
 
 package higherkindness.skeuomorph.protobuf
 
+import higherkindness.skeuomorph.mu.DependentImport
+
 import cats.Eq
 import cats.implicits._
 
+// TODO: DELETE
 final case class OptionValue(name: String, value: String)
 object OptionValue {
   implicit val optionEq: Eq[OptionValue] = Eq.instance {
@@ -31,7 +34,8 @@ final case class Protocol[T](
     pkg: String,
     options: List[(String, String)],
     declarations: List[T],
-    services: List[Protocol.Service[T]]
+    services: List[Protocol.Service[T]],
+    imports: List[DependentImport[T]]
 )
 
 object Protocol {
