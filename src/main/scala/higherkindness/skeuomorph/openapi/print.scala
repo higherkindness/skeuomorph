@@ -17,15 +17,22 @@
 package higherkindness.skeuomorph.openapi
 
 import higherkindness.skeuomorph.Printer
+import higherkindness.skeuomorph.Printer._
+import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
+// import higherkindness.skeuomorph.catz.contrib.Decidable._
+import higherkindness.skeuomorph.openapi.JsonSchemaF.{string => _, _}
+import cats.implicits._
+
 import qq.droste._
 
 object print {
-  import JsonSchemaF._
+  import higherkindness.skeuomorph.openapi.schema.Components
 
   val components = """#/components/schemas/(.+)""".r
 
   def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None): Printer[T] = {
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
+      import JsonSchemaF._
       (x, name) match {
         case (IntegerF(), _)  => "Int"
         case (LongF(), _)     => "Long"
@@ -58,5 +65,25 @@ object print {
 
     Printer(scheme.cata(algebra))
   }
+
+  def isBasic[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+    import JsonSchemaF._
+    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
+      case ObjectF(_, _) => false
+      case EnumF(_)      => false
+      case _             => true
+    }
+    scheme.cata(algebra).apply(t)
+  }
+
+  def pair[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
+    case (name, tpe) =>
+      if (isBasic(tpe)) s"type $name = ${schema().print(tpe)}" else schema(name.some).print(tpe)
+  }
+
+  def model[T](implicit T: Basis[JsonSchemaF, T]): Printer[Components[T]] =
+    (
+      (konst("object models {") >* newLine >* space >* space) *< sepBy(pair, "\n  ") >* (newLine >* konst("}"))
+    ).contramap(_.schemas.toList)
 
 }
