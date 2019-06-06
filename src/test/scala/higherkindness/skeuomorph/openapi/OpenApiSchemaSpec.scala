@@ -82,6 +82,6 @@ object Spec {
     Arbitrary(
       eitherGen(
         examplesArbitrary(x => s"/openapi/yaml/$x.yaml")(identity),
-        examplesArbitrary(x => s"/openapi/json/$x.json")(OpenApiDecoderSpecification.unsafeParse)))
+        examplesArbitrary(x => s"/openapi/json/$x.json")(helpers.unsafeParse)))
 
 }

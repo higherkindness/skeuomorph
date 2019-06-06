@@ -18,14 +18,13 @@ package higherkindness.skeuomorph.openapi
 
 import io.circe.Decoder
 import JsonDecoders._
-import io.circe.parser._
+
 import schema._
 import cats.implicits._
-import io.circe.Json
 import JsonSchemaF.Fixed
 
 class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
-  import OpenApiDecoderSpecification._
+  import helpers._
 
   "Info object should be able to decode" >> {
     "when is valid" >> {
@@ -134,13 +133,11 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
 
       val itemObject = post[JsonSchemaF.Fixed](
         operation(
-          request(
-            "Callback payload".some,
-            Map("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload")))
-          ),
-          responses = Map("200" -> response("webhook successfully processed and no retries will be performed").asLeft)
-        )
-      )
+          request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload")))
+            .withDescription("Callback payload"),
+          responses = "200" -> response("webhook successfully processed and no retries will be performed").asLeft
+        ))
+
       Decoder[Callback[JsonSchemaF.Fixed]].decodeJson(json) should beRight(
         Callback(
           "http://notificationServer.com?transactionId={$request.body#/id}&email={$request.body#/email}" ->
@@ -486,7 +483,7 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       val expectedOperation =
         operation[JsonSchemaF.Fixed](
           request[JsonSchemaF.Fixed](
-            content = Map(
+            content =
               "application/x-www-form-urlencoded" ->
                 mediaType[JsonSchemaF.Fixed](
                   Fixed
@@ -497,12 +494,9 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
                       ),
                       List("status")
                     ))
-            )
           ),
-          Map(
-            "200" -> response("Pet updated.", expectedResponseContent).asLeft,
-            "405" -> response("Method Not Allowed", expectedResponseContent).asLeft
-          )
+          "200" -> response("Pet updated.", expectedResponseContent).asLeft,
+          "405" -> response("Method Not Allowed", expectedResponseContent).asLeft
         )
       Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         post[JsonSchemaF.Fixed](
@@ -521,55 +515,4 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
             )))
     }
   }
-}
-object OpenApiDecoderSpecification {
-  def unsafeParse: String => Json = parse(_).valueOr(x => sys.error(x.message))
-
-  def response[A](
-      description: String,
-      content: Map[String, MediaType[A]] = Map.empty[String, MediaType[A]]): Response[A] =
-    Response[A](description, Map.empty, content)
-
-  def operation[A](requestBody: Request[A], responses: Map[String, Either[Response[A], Reference]]): Path.Operation[A] =
-    Path.Operation[A](
-      List.empty,
-      None,
-      None,
-      None,
-      None,
-      List.empty,
-      Some(requestBody.asLeft),
-      responses,
-      Map.empty,
-      false,
-      List.empty
-    )
-
-  def request[A](description: Option[String] = None, content: Map[String, MediaType[A]]): Request[A] = Request[A](
-    description,
-    content,
-    false
-  )
-
-  def noneMediaType[A] = MediaType[A](None, Map.empty)
-
-  def mediaType[A](a: A) = MediaType[A](a.some, Map.empty)
-
-  def post[A](operation: Path.Operation[A]): Path.ItemObject[A] =
-    emptyItemObject[A].copy(post = operation.some)
-
-  def emptyItemObject[A] = Path.ItemObject[A](
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    List.empty
-  )
 }

@@ -19,17 +19,18 @@ package higherkindness.skeuomorph.openapi
 class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   import JsonSchemaF.Fixed
   import print._
-  import higherkindness.skeuomorph.openapi.schema._
+  import helpers._
+  import cats.implicits._
 
-  "components should able to print" >> {
+  "models should able to print" >> {
     "when a basic type is provided" >> {
-      model.print(modelFrom("Foo" -> Fixed.string())) must ===("""|object models {
+      model.print(components("Foo" -> Fixed.string())) must ===("""|object models {
             |  type Foo = String
             |}""".stripMargin)
     }
 
     "when a object type is provided" >> {
-      model.print(modelFrom("Foo" -> Fixed.`object`(List("bar" -> Fixed.string()), List.empty))) must ===(
+      model.print(components("Foo" -> Fixed.`object`(List("bar" -> Fixed.string()), List.empty))) must ===(
         """|object models {
               |  final case class Foo (bar: Option[String])
               |}""".stripMargin)
@@ -37,7 +38,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when multiple types are provided" >> {
       model.print(
-        modelFrom(
+        components(
           "Bar"  -> Fixed.`object`(List("foo" -> Fixed.string()), List("foo")),
           "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar")))) must ===(
         """|object models {
@@ -47,5 +48,48 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
   }
 
-  def modelFrom[T](models: (String, T)*): Components[T] = Components(models.toMap, Map.empty, Map.empty)
+  "Client trait should able to print" >> {
+    import client.print._
+    "when a post operation is provided" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads" -> post(
+            operation[JsonSchemaF.Fixed](
+              request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayload"))),
+              responses = "201"          -> response("Null response").asLeft
+            ).withOperationId("createPayload")))) must ===("""|trait PayloadClient[F[_]] {
+              |  import PayloadClient._
+              |  def createPayload(newPayload: NewPayload): F[Unit]
+              |}
+              |object PayloadClient {
+              |
+              |}""".stripMargin)
+    }
+
+    import client.print._
+    "when a put and delete are provided" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads" -> emptyItemObject
+            .withPut(
+              operation[JsonSchemaF.Fixed](
+                request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))),
+                responses = "200"          -> response("Null response").asLeft
+              ).withOperationId("updatePayload"))
+            .withDelete(operation[JsonSchemaF.Fixed](
+              request(),
+              responses = "200" -> response("Null response").asLeft
+            ).withOperationId("deletePayload"))
+        )) must ===("""|trait PayloadClient[F[_]] {
+              |  import PayloadClient._
+              |  def deletePayload(): F[Unit]
+              |  def updatePayload(updatePayload: UpdatePayload): F[Unit]
+              |}
+              |object PayloadClient {
+                |
+                |}""".stripMargin)
+    }
+    // |  def deletePayload(): F[Unit]
+  }
+
 }
