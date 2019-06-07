@@ -44,22 +44,27 @@ object helpers {
       List.empty
     )
   implicit class OperationOps[A](operation: Path.Operation[A]) {
-    def withParameters(parameters: Either[Parameter[A], Reference]*): Path.Operation[A] =
-      operation.copy(parameters = parameters.toList)
+    def withParameter(parameter: Parameter[A]): Path.Operation[A] =
+      operation.copy(parameters = operation.parameters :+ parameter.asLeft)
+    def withParameter(reference: Reference): Path.Operation[A] =
+      operation.copy(parameters = operation.parameters :+ reference.asRight)
     def withOperationId(operationId: String): Path.Operation[A] =
       operation.copy(operationId = operationId.some)
-
   }
 
   def request[A](content: (String, MediaType[A])*): Request[A] = Request[A](
     None,
     content.toMap,
-    false
+    true
   )
 
   implicit class RequestOps[A](request: Request[A]) {
     def withDescription(description: String): Request[A] = request.copy(description = description.some)
+    def optional: Request[A]                             = request.copy(required = false)
   }
+
+  def path[A](name: String, schema: A): Parameter[A] =
+    Parameter.Path(name = name, description = None, schema = schema)
 
   def noneMediaType[A] = MediaType[A](None, Map.empty)
 
@@ -82,7 +87,6 @@ object helpers {
     None,
     List.empty
   )
-
   implicit class ItemObjectOps[A](item: Path.ItemObject[A]) {
     def withDelete(operation: Path.Operation[A]): Path.ItemObject[A] =
       item.copy(delete = operation.some)

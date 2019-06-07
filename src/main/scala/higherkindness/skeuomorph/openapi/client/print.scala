@@ -49,10 +49,14 @@ object print {
     case _                     => None
   }
 
+  def parameterTuple[T: Basis[JsonSchemaF, ?]](parameter: Either[Parameter[T], Reference]): Option[(String, String)] =
+    parameter.fold(x => typeName(x.schema).map(y => decapitalize(x.name) -> y), referenceTuple)
+
   def opTuple[T: Basis[JsonSchemaF, ?]](operation: OperationWithPath[T]): (String, (List[(String, String)]), String) =
     (
       operation._3.operationId.getOrElse(???), //FIXME What's happen when there is not operationId?
-      operation._3.requestBody.flatMap(_.fold[Option[(String, String)]](requestTuple, referenceTuple)).toList,
+      operation._3.parameters.flatMap(parameterTuple[T]) ++
+        operation._3.requestBody.flatMap(_.fold[Option[(String, String)]](requestTuple, referenceTuple)).toList,
       "Unit")
 
   type OperationWithPath[T] = (String, String, Operation[T])
@@ -60,7 +64,7 @@ object print {
   def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
       konst("  def ") *< string,
-      konst("(") *< sepBy(parameter, ","),
+      konst("(") *< sepBy(parameter, ", "),
       konst("): F[") *< string >* konst("]")
     ).contramapN(opTuple[T])
 
@@ -74,10 +78,12 @@ object print {
     ).flatten
   }
 
-  def reponseSchema[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] = Printer(_ => "")
+  def responseSchema[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] = Printer(_ => "")
 
   def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
-    (konst("object ") *< string >* konst("Client {") >* newLine, sepBy(reponseSchema[T], "") >* (newLine >* konst("}")))
+    (
+      konst("object ") *< string >* konst("Client {") >* newLine,
+      sepBy(responseSchema[T], "") >* (newLine >* konst("}")))
       .contramapN(identity)
 
   def operationsTuple[T: Basis[JsonSchemaF, ?]](x: (TraitName, Map[String, ItemObject[T]])): (

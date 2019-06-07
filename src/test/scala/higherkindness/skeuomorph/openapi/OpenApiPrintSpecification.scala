@@ -68,28 +68,28 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     import client.print._
     "when a put and delete are provided" >> {
+      val pathId = path("id", Fixed.string())
       operations.print(
         "Payload" -> Map(
-          "/payloads" -> emptyItemObject
+          "/payloads/{id}" -> emptyItemObject
             .withPut(
               operation[JsonSchemaF.Fixed](
                 request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))),
                 responses = "200"          -> response("Null response").asLeft
-              ).withOperationId("updatePayload"))
+              ).withOperationId("updatePayload").withParameter(pathId))
             .withDelete(operation[JsonSchemaF.Fixed](
               request(),
               responses = "200" -> response("Null response").asLeft
-            ).withOperationId("deletePayload"))
+            ).withOperationId("deletePayload").withParameter(pathId))
         )) must ===("""|trait PayloadClient[F[_]] {
               |  import PayloadClient._
-              |  def deletePayload(): F[Unit]
-              |  def updatePayload(updatePayload: UpdatePayload): F[Unit]
+              |  def deletePayload(id: String): F[Unit]
+              |  def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit]
               |}
               |object PayloadClient {
                 |
                 |}""".stripMargin)
     }
-    // |  def deletePayload(): F[Unit]
   }
 
 }
