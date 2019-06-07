@@ -53,7 +53,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a post operation is provided" >> {
       operations.print(
         "Payload" -> Map(
-          "/payloads" -> post(
+          "/payloads" -> emptyItemObject.withPost(
             operation[JsonSchemaF.Fixed](
               request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayload"))),
               responses = "201"          -> response("Null response").asLeft
@@ -89,6 +89,37 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |object PayloadClient {
                 |
                 |}""".stripMargin)
+    }
+
+    "when get endpoints are provided" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads" -> emptyItemObject.withGet(
+            operation[JsonSchemaF.Fixed](
+              request(),
+              responses = "200" -> response(
+                "",
+                "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads"))).asLeft
+            ).withOperationId("getPayload")
+              .withParameter(query("limit", Fixed.integer()))
+              .withParameter(query("name", Fixed.string()))
+          ),
+          "/payloads/{id}" -> emptyItemObject
+            .withGet(
+              operation[JsonSchemaF.Fixed](
+                request(),
+                responses = "200" -> response(
+                  "Null response",
+                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload"))).asLeft
+              ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
+        )) must ===("""|trait PayloadClient[F[_]] {
+              |  import PayloadClient._
+              |  def getPayload(limit: Int, name: String): F[Payloads]
+              |  def getPayload(id: String): F[Payload]
+              |}
+              |object PayloadClient {
+              |
+              |}""".stripMargin)
     }
   }
 

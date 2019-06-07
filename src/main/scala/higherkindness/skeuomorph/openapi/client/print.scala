@@ -19,6 +19,7 @@ package higherkindness.skeuomorph.openapi.client
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
+import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi.JsonSchemaF
 import cats.implicits._
 
@@ -52,20 +53,43 @@ object print {
   def parameterTuple[T: Basis[JsonSchemaF, ?]](parameter: Either[Parameter[T], Reference]): Option[(String, String)] =
     parameter.fold(x => typeName(x.schema).map(y => decapitalize(x.name) -> y), referenceTuple)
 
-  def opTuple[T: Basis[JsonSchemaF, ?]](operation: OperationWithPath[T]): (String, (List[(String, String)]), String) =
+  def opTuple[T: Basis[JsonSchemaF, ?]](
+      operation: OperationWithPath[T]): (String, (List[(String, String)]), ResponsesWithOperationId[T]) = {
+    val operationId = operation._3.operationId.getOrElse(???) //FIXME What's happen when there is not operationId?
     (
-      operation._3.operationId.getOrElse(???), //FIXME What's happen when there is not operationId?
+      operationId,
       operation._3.parameters.flatMap(parameterTuple[T]) ++
         operation._3.requestBody.flatMap(_.fold[Option[(String, String)]](requestTuple, referenceTuple)).toList,
-      "Unit")
+      operationId -> operation._3.responses)
+  }
 
-  type OperationWithPath[T] = (String, String, Operation[T])
-  type TraitName            = String
+  type OperationWithPath[T]        = (String, String, Operation[T])
+  type ResponsesWithOperationId[T] = (String, Map[String, Either[Response[T], Reference]])
+  type TraitName                   = String
+
+  def referenceType: Printer[Reference] = (string).contramap(_.ref)
+  def responseType[T: Basis[JsonSchemaF, ?]](name: String): Printer[Response[T]] = Printer {
+    _.content.get("application/json").flatMap(_.schema).map(schema(name.some).print(_)).getOrElse("Unit")
+  }
+
+  def responseOrType[T: Basis[JsonSchemaF, ?]](operationId: String): Printer[Either[Response[T], Reference]] =
+    responseType(operationId) >|< referenceType
+
+  def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
+    case (x, y) =>
+      val defaultName = s"${x.capitalize}Response"
+      y.size match {
+        case 0 => "Unit"
+        case 1 => responseOrType(defaultName).print(y.head._2)
+        case _ => defaultName
+      }
+  }
+
   def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
       konst("  def ") *< string,
       konst("(") *< sepBy(parameter, ", "),
-      konst("): F[") *< string >* konst("]")
+      konst("): F[") *< responsesTypes >* konst("]")
     ).contramapN(opTuple[T])
 
   def itemObjectTuple[T: Basis[JsonSchemaF, ?]](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {

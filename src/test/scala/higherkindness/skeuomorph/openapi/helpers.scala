@@ -24,10 +24,8 @@ object helpers {
 
   def unsafeParse: String => Json = parse(_).valueOr(x => sys.error(x.message))
 
-  def response[A](
-      description: String,
-      content: Map[String, MediaType[A]] = Map.empty[String, MediaType[A]]): Response[A] =
-    Response[A](description, Map.empty, content)
+  def response[A](description: String, content: (String, MediaType[A])*): Response[A] =
+    Response[A](description, Map.empty, content.toMap)
 
   def operation[A](requestBody: Request[A], responses: (String, Either[Response[A], Reference])*): Path.Operation[A] =
     Path.Operation[A](
@@ -63,15 +61,18 @@ object helpers {
     def optional: Request[A]                             = request.copy(required = false)
   }
 
-  def path[A](name: String, schema: A): Parameter[A] =
-    Parameter.Path(name = name, description = None, schema = schema)
+  def path[A](name: String, schema: A, description: Option[String] = None): Parameter[A] =
+    Parameter.Path(name = name, description = description, schema = schema)
+  def query[A](
+      name: String,
+      schema: A,
+      allowEmptyValue: Boolean = false,
+      description: Option[String] = None): Parameter[A] =
+    Parameter.Query(name = name, description = description, allowEmptyValue = allowEmptyValue, schema = schema)
 
   def noneMediaType[A] = MediaType[A](None, Map.empty)
 
   def mediaType[A](a: A) = MediaType[A](a.some, Map.empty)
-
-  def post[A](operation: Path.Operation[A]): Path.ItemObject[A] =
-    emptyItemObject[A].copy(post = operation.some)
 
   def emptyItemObject[A] = Path.ItemObject[A](
     None,
