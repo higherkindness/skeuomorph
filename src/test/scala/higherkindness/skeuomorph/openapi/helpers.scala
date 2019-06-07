@@ -27,7 +27,20 @@ object helpers {
   def response[A](description: String, content: (String, MediaType[A])*): Response[A] =
     Response[A](description, Map.empty, content.toMap)
 
-  def operation[A](requestBody: Request[A], responses: (String, Either[Response[A], Reference])*): Path.Operation[A] =
+  def operationWithReferences[A](request: Reference, responses: (String, Reference)*): Path.Operation[A] =
+    operationFrom(request.asRight.some, responses.toMap.mapValues(_.asRight))
+
+  def operationWithResponses[A](responses: (String, Response[A])*): Path.Operation[A] =
+    operationFrom(none, responses.toMap.mapValues(_.asLeft))
+
+  def operation[A](request: Request[A], responses: (String, Response[A])*): Path.Operation[A] =
+    operationFrom(request.asLeft.some, responses.toMap.mapValues(_.asLeft))
+
+  def reference(value: String): Reference = Reference(value)
+
+  private def operationFrom[A](
+      requestBody: Option[Either[Request[A], Reference]],
+      responses: Map[String, Either[Response[A], Reference]]): Path.Operation[A] =
     Path.Operation[A](
       List.empty,
       None,
@@ -35,8 +48,8 @@ object helpers {
       None,
       None,
       List.empty,
-      Some(requestBody.asLeft),
-      responses.toMap,
+      requestBody,
+      responses,
       Map.empty,
       false,
       List.empty
@@ -48,13 +61,18 @@ object helpers {
       operation.copy(parameters = operation.parameters :+ reference.asRight)
     def withOperationId(operationId: String): Path.Operation[A] =
       operation.copy(operationId = operationId.some)
+    def withTag(tag: String): Path.Operation[A] =
+      operation.copy(tags = operation.tags :+ tag)
+    def withSummary(summary: String): Path.Operation[A] =
+      operation.copy(summary = summary.some)
   }
 
-  def request[A](content: (String, MediaType[A])*): Request[A] = Request[A](
-    None,
-    content.toMap,
-    true
-  )
+  def request[A](content: (String, MediaType[A])*): Request[A] =
+    Request[A](
+      None,
+      content.toMap,
+      true
+    )
 
   implicit class RequestOps[A](request: Request[A]) {
     def withDescription(description: String): Request[A] = request.copy(description = description.some)
@@ -67,8 +85,14 @@ object helpers {
       name: String,
       schema: A,
       allowEmptyValue: Boolean = false,
+      required: Boolean = false,
       description: Option[String] = None): Parameter[A] =
-    Parameter.Query(name = name, description = description, allowEmptyValue = allowEmptyValue, schema = schema)
+    Parameter.Query(
+      name = name,
+      description = description,
+      allowEmptyValue = allowEmptyValue,
+      schema = schema,
+      required = required)
 
   def noneMediaType[A] = MediaType[A](None, Map.empty)
 

@@ -135,7 +135,7 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         operation(
           request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))).optional
             .withDescription("Callback payload"),
-          responses = "200" -> response("webhook successfully processed and no retries will be performed").asLeft
+          responses = "200" -> response("webhook successfully processed and no retries will be performed")
         ))
 
       Decoder[Callback[JsonSchemaF.Fixed]].decodeJson(json) should beRight(
@@ -486,18 +486,18 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
                       List("status")
                     ))
           ).optional,
-          "200" -> response("Pet updated.", expectedResponseContent: _*).asLeft,
-          "405" -> response("Method Not Allowed", expectedResponseContent: _*).asLeft
+          "200" -> response("Pet updated.", expectedResponseContent: _*),
+          "405" -> response("Method Not Allowed", expectedResponseContent: _*)
         )
       Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         emptyItemObject[JsonSchemaF.Fixed].withPost(
           expectedOperation
             .withParameter(path("petId", JsonSchemaF.Fixed.string(), "ID of pet that needs to be updated".some))
             .withOperationId("updatePetWithForm")
-            .copy(
-              tags = List("pet"),
-              summary = "Updates a pet in the store with form data".some,
-            )))
+            .withTag("pet")
+            .withSummary("Updates a pet in the store with form data")
+        )
+      )
     }
   }
 }

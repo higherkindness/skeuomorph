@@ -56,8 +56,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           "/payloads" -> emptyItemObject.withPost(
             operation[JsonSchemaF.Fixed](
               request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayload"))),
-              responses = "201"          -> response("Null response").asLeft
-            ).withOperationId("createPayload")))) must ===("""|trait PayloadClient[F[_]] {
+              responses = "201"          -> response("Null response")
+            ).withOperationId("createPayload")
+          )
+        )
+      ) must ===("""|trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def createPayload(newPayload: NewPayload): F[Unit]
               |}
@@ -66,7 +69,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |}""".stripMargin)
     }
 
-    import client.print._
     "when a put and delete are provided" >> {
       val pathId = path("id", Fixed.string())
       operations.print(
@@ -75,13 +77,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             .withPut(
               operation[JsonSchemaF.Fixed](
                 request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))),
-                responses = "200"          -> response("Null response").asLeft
+                responses = "200"          -> response("Null response")
               ).withOperationId("updatePayload").withParameter(pathId))
             .withDelete(operation[JsonSchemaF.Fixed](
               request(),
-              responses = "200" -> response("Null response").asLeft
+              responses = "200" -> response("Null response")
             ).withOperationId("deletePayload").withParameter(pathId))
-        )) must ===("""|trait PayloadClient[F[_]] {
+        )
+      ) must ===("""|trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def deletePayload(id: String): F[Unit]
               |  def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit]
@@ -95,31 +98,68 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       operations.print(
         "Payload" -> Map(
           "/payloads" -> emptyItemObject.withGet(
-            operation[JsonSchemaF.Fixed](
-              request(),
+            operationWithResponses[JsonSchemaF.Fixed](
               responses = "200" -> response(
                 "",
-                "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads"))).asLeft
+                "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
             ).withOperationId("getPayload")
               .withParameter(query("limit", Fixed.integer()))
               .withParameter(query("name", Fixed.string()))
           ),
           "/payloads/{id}" -> emptyItemObject
             .withGet(
-              operation[JsonSchemaF.Fixed](
-                request(),
+              operationWithResponses[JsonSchemaF.Fixed](
                 responses = "200" -> response(
                   "Null response",
-                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload"))).asLeft
+                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload")))
               ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
-        )) must ===("""|trait PayloadClient[F[_]] {
+        )
+      ) must ===("""|trait PayloadClient[F[_]] {
               |  import PayloadClient._
-              |  def getPayload(limit: Int, name: String): F[Payloads]
+              |  def getPayload(limit: Option[Int], name: Option[String]): F[Payloads]
               |  def getPayload(id: String): F[Payload]
               |}
               |object PayloadClient {
               |
               |}""".stripMargin)
+    }
+
+    "when optional body and not optional query parameters is provided" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads/{id}" -> emptyItemObject
+            .withDelete(operation[JsonSchemaF.Fixed](
+              request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))).optional,
+              responses = "200" -> response("Null response")
+            ).withOperationId("deletePayload")
+              .withParameter(path("id", Fixed.string()))
+              .withParameter(query("size", Fixed.long(), required = true)))
+        )
+      ) must ===("""|trait PayloadClient[F[_]] {
+              |  import PayloadClient._
+              |  def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit]
+              |}
+              |object PayloadClient {
+                |
+                |}""".stripMargin)
+    }
+
+    "when references in the request and the responses" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads" -> emptyItemObject
+            .withPut(
+              operationWithReferences[JsonSchemaF.Fixed](
+                reference("#/components/schemas/UpdatePayload"),
+                responses = "200" -> reference("#/components/schemas/UpdatedPayload")
+              ).withOperationId("updatePayload"))
+        )) must ===("""|trait PayloadClient[F[_]] {
+        |  import PayloadClient._
+        |  def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload]
+        |}
+        |object PayloadClient {
+          |
+          |}""".stripMargin)
     }
   }
 
