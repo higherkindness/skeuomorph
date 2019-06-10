@@ -112,6 +112,9 @@ object helpers {
     None,
     List.empty
   )
+
+  def obj(properties: (String, JsonSchemaF.Fixed)*)(required: String*): JsonSchemaF.Fixed =
+    JsonSchemaF.Fixed.`object`(properties.toList, required.toList)
   implicit class ItemObjectOps[A](item: Path.ItemObject[A]) {
     def withDelete(operation: Path.Operation[A]): Path.ItemObject[A] =
       item.copy(delete = operation.some)

@@ -186,14 +186,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       """)
       Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         components[JsonSchemaF.Fixed](
-          "GeneralError" -> Fixed.`object`(
-            List("code" -> Fixed.integer(), "message" -> Fixed.string()),
-            List.empty
-          ),
-          "Category" -> Fixed.`object`(
-            List("id" -> Fixed.long(), "name" -> Fixed.string()),
-            List.empty
-          )
+          "GeneralError" -> obj("code" -> Fixed.integer(), "message" -> Fixed.string())(),
+          "Category"     -> obj("id"   -> Fixed.long(), "name"       -> Fixed.string())()
         )
       )
     }
@@ -477,14 +471,10 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
             content =
               "application/x-www-form-urlencoded" ->
                 mediaType(
-                  Fixed
-                    .`object`(
-                      List(
-                        "name"   -> Fixed.string(),
-                        "status" -> Fixed.string()
-                      ),
-                      List("status")
-                    ))
+                  obj(
+                    "name"   -> Fixed.string(),
+                    "status" -> Fixed.string()
+                  )("status"))
           ).optional,
           "200" -> response("Pet updated.", expectedResponseContent: _*),
           "405" -> response("Method Not Allowed", expectedResponseContent: _*)

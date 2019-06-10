@@ -30,7 +30,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when a object type is provided" >> {
-      model.print(components("Foo" -> Fixed.`object`(List("bar" -> Fixed.string()), List.empty))) must ===(
+      model.print(components("Foo" -> obj("bar" -> Fixed.string())())) must ===(
         """|object models {
               |  final case class Foo (bar: Option[String])
               |}""".stripMargin)
@@ -39,9 +39,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when multiple types are provided" >> {
       model.print(
         components(
-          "Bar"  -> Fixed.`object`(List("foo" -> Fixed.string()), List("foo")),
-          "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar")))) must ===(
-        """|object models {
+          "Bar"  -> obj("foo" -> Fixed.string())("foo"),
+          "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
+        )) must ===("""|object models {
                 |  final case class Bar (foo: String)
                 |  type Bars = List[Bar]
                 |}""".stripMargin)
@@ -60,7 +60,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             ).withOperationId("createPayload")
           )
         )
-      ) must ===("""|trait PayloadClient[F[_]] {
+      ) must ===("""|import shapeless.{:+:, CNil}
+              |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def createPayload(newPayload: NewPayload): F[Unit]
               |}
@@ -84,7 +85,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               responses = "200" -> response("Null response")
             ).withOperationId("deletePayload").withParameter(pathId))
         )
-      ) must ===("""|trait PayloadClient[F[_]] {
+      ) must ===("""|import shapeless.{:+:, CNil}
+              |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def deletePayload(id: String): F[Unit]
               |  def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit]
@@ -114,7 +116,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                   "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload")))
               ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
         )
-      ) must ===("""|trait PayloadClient[F[_]] {
+      ) must ===("""|import shapeless.{:+:, CNil}
+              |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def getPayload(limit: Option[Int], name: Option[String]): F[Payloads]
               |  def getPayload(id: String): F[Payload]
@@ -135,7 +138,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               .withParameter(path("id", Fixed.string()))
               .withParameter(query("size", Fixed.long(), required = true)))
         )
-      ) must ===("""|trait PayloadClient[F[_]] {
+      ) must ===("""|import shapeless.{:+:, CNil}
+              |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit]
               |}
@@ -153,13 +157,41 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                 reference("#/components/schemas/UpdatePayload"),
                 responses = "200" -> reference("#/components/schemas/UpdatedPayload")
               ).withOperationId("updatePayload"))
-        )) must ===("""|trait PayloadClient[F[_]] {
+        )) must ===("""|import shapeless.{:+:, CNil}
+        |trait PayloadClient[F[_]] {
         |  import PayloadClient._
         |  def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload]
         |}
         |object PayloadClient {
           |
           |}""".stripMargin)
+    }
+
+    "when there are multiple responses" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads/{id}" -> emptyItemObject
+            .withGet(
+              operationWithResponses[JsonSchemaF.Fixed](
+                responses = "200" -> response(
+                  "Null response",
+                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload"))
+                ),
+                "default" -> response(
+                  "Unexpected error",
+                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Error"))
+                )
+              ).withOperationId("getPayload").withParameter(path("id", Fixed.string()))
+            )
+        )
+      ) must ===("""|import shapeless.{:+:, CNil}
+        |trait PayloadClient[F[_]] {
+        |  import PayloadClient._
+        |  def getPayload(id: String): F[GetPayloadResponse]
+        |}
+        |object PayloadClient {
+        |  type GetPayloadResponse = Payload :+: Error :+: CNil
+        |}""".stripMargin)
     }
   }
 

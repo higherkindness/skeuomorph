@@ -59,6 +59,7 @@ object print {
       |  $printFields
       |}""".stripMargin
         case (ReferenceF(componentsRegex(ref)), _) => ref
+        case (ReferenceF(ref), _)                  => ref
       }
     }
 
