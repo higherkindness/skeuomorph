@@ -37,10 +37,14 @@ object print {
     def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
       Tpe(tpe.asRight, required, description)
 
+    def nameFrom(description: String): String = description.split(" ").map(_.filter(_.isLetter).capitalize).mkString
+
     def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
       identity,
       x =>
-        Printer(Optimize.namedTypes[T](tpe.description.replaceAll(" ", "")) >>> schema(none).print).print(x).capitalize
+        Printer(Optimize.namedTypes[T](nameFrom(tpe.description)) >>> schema(none).print)
+          .print(x)
+          .capitalize
     )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
       if (tpe.required)
@@ -108,23 +112,25 @@ object print {
   def defaultResponseName[T](name: String): String =
     s"${name}Response".capitalize
 
-  def responseTpe[T](name: String, response: Response[T]): Tpe[T] =
-    response.content.get("application/json").map(_.schema.fold(Tpe[T](name))(Tpe(_, true, name))).getOrElse(Tpe.unit[T])
-
-  def responseType[T: Basis[JsonSchemaF, ?]](name: String): Printer[Response[T]] =
-    tpe.contramap(responseTpe(name, _))
+  def responseType[T: Basis[JsonSchemaF, ?]]: Printer[Response[T]] =
+    tpe.contramap(
+      response =>
+        response.content
+          .get("application/json")
+          .flatMap(_.schema.map(Tpe(_, true, response.description)))
+          .getOrElse(Tpe.unit[T]))
 
   def referenceTpe[T: Basis[JsonSchemaF, ?]](x: Reference): Tpe[T] = referenceTuple(x).map(_.tpe).getOrElse(Tpe.unit)
 
-  def responseOrType[T: Basis[JsonSchemaF, ?]](operationId: String): Printer[Either[Response[T], Reference]] =
-    responseType(operationId) >|< tpe.contramap(referenceTpe[T])
+  def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
+    responseType >|< tpe.contramap(referenceTpe[T])
 
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
     case (x, y) =>
       val defaultName = defaultResponseName(x)
       y.size match {
         case 0 => "Unit"
-        case 1 => responseOrType(defaultName).print(y.head._2)
+        case 1 => responseOrType.print(y.head._2)
         case _ => defaultName
       }
   }
@@ -149,10 +155,24 @@ object print {
   def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] = Printer { s =>
     if (s._3.responses.size > 1) {
       val defaultName = defaultResponseName(operationIdFrom(s))
-      val types =
-        s._3.responses.map(_._2.fold(responseTpe[T]("", _), referenceTpe[T](_))).map(x => Tpe.name(x)).mkString(" :+: ")
-
-      s"  type $defaultName = ${types} :+: CNil"
+      val (newTypes: List[String], schemas: List[String]) = second(s._3.responses.map {
+        case (status, r) =>
+          val tpe        = responseOrType.print(r)
+          val intPattern = """(\d+)""".r
+          status match {
+            case intPattern(code) if code.toInt >= 200 && code.toInt < 400 =>
+              tpe -> none
+            case intPattern(_) =>
+              r.fold(r => {
+                val newTpe = defaultResponseName(Tpe.nameFrom(r.description))
+                newTpe -> s"  final case class $newTpe(value: $tpe)".some
+              }, _ => tpe -> none)
+            case "default" =>
+              "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
+          }
+      }.unzip)(_.flatten)
+      s"""|${schemas.mkString("\n")}
+          |  type $defaultName = ${newTypes.mkString(" :+: ")} :+: CNil""".stripMargin
     } else
       ""
   }

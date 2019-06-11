@@ -167,7 +167,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |}""".stripMargin)
     }
 
-    "when there are multiple responses" >> {
+    "when there are multiple responses with a default one" >> {
       operations.print(
         "Payload" -> Map(
           "/payloads/{id}" -> emptyItemObject
@@ -190,9 +190,42 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def getPayload(id: String): F[GetPayloadResponse]
         |}
         |object PayloadClient {
-        |  type GetPayloadResponse = Payload :+: Error :+: CNil
+        |  final case class UnexpectedError(statusCode: Int, value: Error)
+        |  type GetPayloadResponse = Payload :+: UnexpectedError :+: CNil
         |}""".stripMargin)
     }
+
+    "when there are multiple responses with not found responses" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads/{id}" -> emptyItemObject
+            .withGet(
+              operationWithResponses[JsonSchemaF.Fixed](
+                responses = "200" -> response(
+                  "Null response",
+                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload"))
+                ),
+                "404" -> response(
+                  "Not found",
+                  "application/json" -> mediaType(Fixed.string())
+                )
+              ).withOperationId("getPayload").withParameter(path("id", Fixed.string()))
+            )
+        )
+      ) must ===(
+        """|import shapeless.{:+:, CNil}
+        |trait PayloadClient[F[_]] {
+        |  import PayloadClient._
+        |  def getPayload(id: String): F[GetPayloadResponse]
+        |}
+        |object PayloadClient {
+        |  final case class NotFoundResponse(value: String)
+        |  type GetPayloadResponse = Payload :+: NotFoundResponse :+: CNil
+        |}""".stripMargin
+      )
+
+    }
+
   }
 
 }
