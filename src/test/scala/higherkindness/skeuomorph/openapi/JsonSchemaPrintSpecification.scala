@@ -68,13 +68,13 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
               "age"     -> Fixed.integer(),
               "email"   -> Fixed.string()),
             List("name", "surname"))) must ===(
-        "final case class Person (name: String, surname: String, age: Option[Int], email: Option[String])")
+        "final case class Person(name: String, surname: String, age: Option[Int], email: Option[String])")
     }
 
     "when object is provided without required fields" >> {
       schema("Person".some)
         .print(Fixed.`object`(List("age" -> Fixed.integer(), "email" -> Fixed.string()), List("name", "surname"))) must ===(
-        "final case class Person (age: Option[Int], email: Option[String])")
+        "final case class Person(age: Option[Int], email: Option[String])")
     }
 
     "when object is provided without optional fields" >> {
@@ -85,7 +85,7 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
               "name"    -> Fixed.string(),
               "surname" -> Fixed.string()
             ),
-            List("name", "surname"))) must ===("final case class Person (name: String, surname: String)")
+            List("name", "surname"))) must ===("final case class Person(name: String, surname: String)")
     }
 
     "when enum is provided" >> {

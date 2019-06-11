@@ -30,6 +30,8 @@ object print {
   import higherkindness.skeuomorph.openapi.schema._
   import higherkindness.skeuomorph.openapi.schema.Path._
 
+  private val jsonMediaType = "application/json"
+
   case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
     def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
@@ -72,7 +74,7 @@ object print {
 
   def requestTuple[T: Basis[JsonSchemaF, ?]](name: String, request: Request[T]): Option[Var[T]] =
     request.content
-      .get("application/json")
+      .get(jsonMediaType)
       .flatMap(x =>
         x.schema.map(x =>
           Var.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(name))))))
@@ -109,16 +111,15 @@ object print {
 
   def defaultRequestName[T](name: String): String =
     s"${name}Request".capitalize
+
   def defaultResponseName[T](name: String): String =
     s"${name}Response".capitalize
 
+  def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
+    response.content.get(jsonMediaType).flatMap(_.schema)
+
   def responseType[T: Basis[JsonSchemaF, ?]]: Printer[Response[T]] =
-    tpe.contramap(
-      response =>
-        response.content
-          .get("application/json")
-          .flatMap(_.schema.map(Tpe(_, true, response.description)))
-          .getOrElse(Tpe.unit[T]))
+    tpe.contramap(response => typeFromResponse(response).map(Tpe(_, true, response.description)).getOrElse(Tpe.unit))
 
   def referenceTpe[T: Basis[JsonSchemaF, ?]](x: Reference): Tpe[T] = referenceTuple(x).map(_.tpe).getOrElse(Tpe.unit)
 
@@ -152,21 +153,33 @@ object print {
     ).flatten
   }
 
+  def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](response: Response[T], tpe: String): (String, Option[String]) = {
+    val x           = typeFromResponse(response).map(schema(Tpe.nameFrom(response.description).some).print).getOrElse("")
+    val newTpe      = defaultResponseName(Tpe.nameFrom(response.description))
+    val newTypeCode = s"  final case class $newTpe(value: $tpe)"
+    tpe match {
+      case _ if (tpe === x) => newTpe -> newTypeCode.some
+      case _                => newTpe -> s"  $x\n$newTypeCode".some
+    }
+
+  }
+
   def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] = Printer { s =>
     if (s._3.responses.size > 1) {
       val defaultName = defaultResponseName(operationIdFrom(s))
-      val (newTypes: List[String], schemas: List[String]) = second(s._3.responses.map {
+      val (newTypes, schemas) = second(s._3.responses.map {
         case (status, r) =>
           val tpe        = responseOrType.print(r)
           val intPattern = """(\d+)""".r
           status match {
             case intPattern(code) if code.toInt >= 200 && code.toInt < 400 =>
               tpe -> none
+
             case intPattern(_) =>
-              r.fold(r => {
-                val newTpe = defaultResponseName(Tpe.nameFrom(r.description))
-                newTpe -> s"  final case class $newTpe(value: $tpe)".some
-              }, _ => tpe -> none)
+              r.fold(
+                typeAndSchemaFor(_, tpe),
+                _ => tpe -> none
+              )
             case "default" =>
               "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
           }

@@ -32,7 +32,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a object type is provided" >> {
       model.print(components("Foo" -> obj("bar" -> Fixed.string())())) must ===(
         """|object models {
-              |  final case class Foo (bar: Option[String])
+              |  final case class Foo(bar: Option[String])
               |}""".stripMargin)
     }
 
@@ -42,7 +42,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           "Bar"  -> obj("foo" -> Fixed.string())("foo"),
           "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
         )) must ===("""|object models {
-                |  final case class Bar (foo: String)
+                |  final case class Bar(foo: String)
                 |  type Bars = List[Bar]
                 |}""".stripMargin)
     }
@@ -195,7 +195,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |}""".stripMargin)
     }
 
-    "when there are multiple responses with not found responses" >> {
+    "when there are multiple responses with not found response" >> {
       operations.print(
         "Payload" -> Map(
           "/payloads/{id}" -> emptyItemObject
@@ -223,9 +223,36 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  type GetPayloadResponse = Payload :+: NotFoundResponse :+: CNil
         |}""".stripMargin
       )
-
     }
 
+    "when there are multiple responses with anonymous objects" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads/{id}" -> emptyItemObject
+            .withPut(
+              operationWithResponses[JsonSchemaF.Fixed](
+                responses = "200" -> response(
+                  "Updated payload"
+                ),
+                "404" -> response(
+                  "Not found",
+                  "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
+                )
+              ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
+            )
+        )
+      ) must ===(
+        """|import shapeless.{:+:, CNil}
+        |trait PayloadClient[F[_]] {
+        |  import PayloadClient._
+        |  def updatePayload(id: String): F[UpdatePayloadResponse]
+        |}
+        |object PayloadClient {
+        |  final case class NotFound(isDone: Boolean)
+        |  final case class NotFoundResponse(value: NotFound)
+        |  type UpdatePayloadResponse = Unit :+: NotFoundResponse :+: CNil
+        |}""".stripMargin
+      )
+    }
   }
-
 }
