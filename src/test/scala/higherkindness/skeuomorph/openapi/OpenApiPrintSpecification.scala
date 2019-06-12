@@ -255,5 +255,35 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |}""".stripMargin
       )
     }
+
+    "when there are simple response and response with anonymous objects" >> {
+      operations.print(
+        "AnotherPayload" -> Map(
+          "/payloads/{id}" -> emptyItemObject
+            .withPut(
+              operation[JsonSchemaF.Fixed](
+                request(
+                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+                ),
+                responses = "200" -> response(
+                  "Updated payload",
+                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+                )
+              ).withOperationId("updateAnotherPayload").withParameter(path("id", Fixed.string()))
+            )
+        )
+      ) must ===(
+        """|import shapeless.{:+:, CNil}
+        |trait AnotherPayloadClient[F[_]] {
+        |  import AnotherPayloadClient._
+        |  def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload]
+        |}
+        |object AnotherPayloadClient {
+        |  final case class UpdateAnotherPayloadRequest(name: String)
+        |  final case class UpdatedPayload(name: String)
+        |}""".stripMargin
+      )
+
+    }
   }
 }

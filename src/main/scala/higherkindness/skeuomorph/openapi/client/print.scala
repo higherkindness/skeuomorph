@@ -119,7 +119,11 @@ object print {
     response.content.get(jsonMediaType).flatMap(_.schema)
 
   def responseType[T: Basis[JsonSchemaF, ?]]: Printer[Response[T]] =
-    tpe.contramap(response => typeFromResponse(response).map(Tpe(_, true, response.description)).getOrElse(Tpe.unit))
+    tpe.contramap(
+      response =>
+        typeFromResponse(response)
+          .map(Tpe(_, true, Tpe.nameFrom(response.description)))
+          .getOrElse(Tpe.unit))
 
   def referenceTpe[T: Basis[JsonSchemaF, ?]](x: Reference): Tpe[T] = referenceTuple(x).map(_.tpe).getOrElse(Tpe.unit)
 
@@ -158,51 +162,88 @@ object print {
     val newSchema =
       typeFromResponse(response).map(schema(Tpe.nameFrom(response.description).some).print).getOrElse("")
     tpe match {
-      case _ if (tpe === newSchema) => success
-      case _                        => Tpe.nameFrom(response.description) -> s"  $newSchema".some
+      case _ if (tpe === newSchema)  => success
+      case _ if (newSchema.nonEmpty) => Tpe.nameFrom(response.description) -> s"  $newSchema".some
+      case _                         => tpe -> none
     }
   }
 
   def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[(String, Map[String, Either[Response[T], Reference]])] =
-    Printer { foo =>
-      val (defaultName, responses) = foo
-      if (responses.size > 1) {
-        val (newTypes, schemas) = second(responses.map {
-          case (status, r) =>
-            val tpe        = responseOrType.print(r)
-            val intPattern = """(\d+)""".r
-            status match {
-              case intPattern(code) if code.toInt >= 200 && code.toInt < 400 =>
-                r.fold(
-                  typeAndSchemaFor(_, tpe) {
-                    tpe -> none
-                  },
-                  _ => tpe -> none
-                )
-              case intPattern(_) =>
-                r.fold(
-                  response =>
-                    typeAndSchemaFor(response, tpe) {
-                      val newTpe = defaultResponseName(Tpe.nameFrom(response.description))
-                      newTpe -> s"  final case class $newTpe(value: $tpe)".some
-                  },
-                  _ => tpe -> none
-                )
-              case "default" =>
-                "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
-            }
-        }.unzip)(_.flatten)
-        s"""|${schemas.mkString("\n")}
+    Printer {
+      case (defaultName, responses) =>
+        if (responses.size > 1) {
+          val (newTypes, schemas) = second(responses.map {
+            case (status, r) =>
+              val tpe        = responseOrType.print(r)
+              val intPattern = """(\d+)""".r
+              status match {
+                case intPattern(code) if code.toInt >= 200 && code.toInt < 400 =>
+                  r.fold(
+                    typeAndSchemaFor(_, tpe) {
+                      tpe -> none
+                    },
+                    _ => tpe -> none
+                  )
+                case intPattern(_) =>
+                  r.fold(
+                    response =>
+                      typeAndSchemaFor(response, tpe) {
+                        val newTpe = defaultResponseName(Tpe.nameFrom(response.description))
+                        newTpe -> s"  final case class $newTpe(value: $tpe)".some
+                    },
+                    _ => tpe -> none
+                  )
+                case "default" =>
+                  "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
+              }
+          }.unzip)(_.flatten)
+          s"""|${schemas.mkString("\n")}
           |  type $defaultName = ${newTypes.mkString(" :+: ")} :+: CNil""".stripMargin
-      } else
-        ""
+        } else {
+          val tpe = responseOrType.print(responses.head._2)
+          responses.head._2.fold(response => {
+            typeAndSchemaFor(response, tpe) { tpe -> none }._2.getOrElse("")
+          }, _ => "")
+        }
     }
+  def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(String, Option[Either[Request[T], Reference]])] = Printer {
+    case (operationId, request) =>
+      request
+        .flatMap {
+          _.fold(
+            requestTuple(operationId, _)
+              .map(_.tpe)
+              .flatMap { x =>
+                val name = tpe.print(x)
+                x.tpe.fold(
+                  _ => none,
+                  t => {
+                    val newType = defaultRequestName(Tpe.nameFrom(operationId))
+                    name match {
+                      case _ if (name === newType) => s"  ${schema(newType.some).print(t)}\n".some
+                      case _                       => none
+                    }
+                  }
+                )
+              },
+            _ => none
+          )
+        }
+        .getOrElse("")
+  }
 
   def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
     (
       konst("object ") *< string >* konst("Client {") >* newLine,
+      sepBy(requestSchema[T], ""),
       sepBy(responsesSchema[T], "") >* (newLine >* konst("}")))
-      .contramapN(second(_)(_.map(x => defaultResponseName(operationIdFrom(x)) -> x._3.responses)))
+      .contramapN { x =>
+        un(second(x)(_.map { x =>
+          val operationId = operationIdFrom(x)
+          (operationId                        -> x._3.requestBody) ->
+            (defaultResponseName(operationId) -> x._3.responses)
+        }.unzip))
+      }
 
   def operationsTuple[T: Basis[JsonSchemaF, ?]](x: (TraitName, Map[String, ItemObject[T]])): (
       TraitName,
@@ -220,6 +261,7 @@ object print {
     ).contramapN(operationsTuple[T])
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
+  def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)
   def duplicate[A, B](pair: (A, B)): ((A, A), (B, B))      = (pair._1 -> pair._1, pair._2 -> pair._2)
   def second[A, B, C](pair: (A, B))(f: B => C): (A, C)     = (pair._1, f(pair._2))
   def decapitalize(s: String)                              = if (s.isEmpty) s else s(0).toLower + s.substring(1)
