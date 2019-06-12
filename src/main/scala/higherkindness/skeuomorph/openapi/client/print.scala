@@ -194,7 +194,17 @@ object print {
                     _ => tpe -> none
                   )
                 case "default" =>
-                  "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
+                  r.fold(
+                    response =>
+                      "UnexpectedErrorResponse" -> {
+                        val newTypeCode = s"  final case class UnexpectedErrorResponse(statusCode: Int, value: $tpe)"
+                        typeAndSchemaFor(response, tpe) { tpe -> none }._2
+                          .fold(newTypeCode)(x => s"$x\n$newTypeCode")
+                          .some
+                    },
+                    _ =>
+                      "UnexpectedErrorResponse" -> s"  final case class UnexpectedErrorResponse(statusCode: Int, value: $tpe)".some
+                  )
               }
           }.unzip)(_.flatten)
           s"""|${schemas.mkString("\n")}
@@ -208,35 +218,25 @@ object print {
     }
   def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(String, Option[Either[Request[T], Reference]])] = Printer {
     case (operationId, request) =>
-      request
-        .flatMap {
-          _.fold(
-            requestTuple(operationId, _)
-              .map(_.tpe)
-              .flatMap { x =>
-                val name = tpe.print(x)
-                x.tpe.fold(
-                  _ => none,
-                  t => {
-                    val newType = defaultRequestName(Tpe.nameFrom(operationId))
-                    name match {
-                      case _ if (name === newType) => s"  ${schema(newType.some).print(t)}\n".some
-                      case _                       => none
-                    }
-                  }
-                )
-              },
-            _ => none
-          )
+      (for {
+        request <- request.flatMap(_.left.toOption)
+        requestTuple <- requestTuple(operationId, request)
+          .map(_.tpe)
+        requestTpe <- requestTuple.tpe.toOption
+        schema <- {
+          val name    = tpe.print(requestTuple)
+          val newType = defaultRequestName(Tpe.nameFrom(operationId))
+          if (name === newType) s"  ${schema(newType.some).print(requestTpe)}\n".some else none
         }
-        .getOrElse("")
+      } yield schema).getOrElse("")
+
   }
 
   def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
     (
       konst("object ") *< string >* konst("Client {") >* newLine,
-      sepBy(requestSchema[T], ""),
-      sepBy(responsesSchema[T], "") >* (newLine >* konst("}")))
+      sepBy(requestSchema[T], "\n"),
+      sepBy(responsesSchema[T], "\n") >* (newLine >* konst("}")))
       .contramapN { x =>
         un(second(x)(_.map { x =>
           val operationId = operationIdFrom(x)

@@ -93,6 +93,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |}
               |object PayloadClient {
                 |
+                |
+                |
                 |}""".stripMargin)
     }
 
@@ -123,6 +125,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |  def getPayload(id: String): F[Payload]
               |}
               |object PayloadClient {
+              |
+              |
               |
               |}""".stripMargin)
     }
@@ -190,8 +194,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def getPayload(id: String): F[GetPayloadResponse]
         |}
         |object PayloadClient {
-        |  final case class UnexpectedError(statusCode: Int, value: Error)
-        |  type GetPayloadResponse = Payload :+: UnexpectedError :+: CNil
+        |  final case class UnexpectedErrorResponse(statusCode: Int, value: Error)
+        |  type GetPayloadResponse = Payload :+: UnexpectedErrorResponse :+: CNil
         |}""".stripMargin)
     }
 
@@ -283,7 +287,38 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  final case class UpdatedPayload(name: String)
         |}""".stripMargin
       )
+    }
 
+    "when  multiple responses with anonymous objects with default response" >> {
+      operations.print(
+        "Payload" -> Map(
+          "/payloads/{id}" -> emptyItemObject
+            .withPut(
+              operationWithResponses[JsonSchemaF.Fixed](
+                responses = "200" -> response(
+                  "Updated payload",
+                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+                ),
+                "default" -> response(
+                  "Unexpected error",
+                  "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
+                )
+              ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
+            )
+        )
+      ) must ===(
+        """|import shapeless.{:+:, CNil}
+        |trait PayloadClient[F[_]] {
+        |  import PayloadClient._
+        |  def updatePayload(id: String): F[UpdatePayloadResponse]
+        |}
+        |object PayloadClient {
+        |  final case class UpdatedPayload(name: String)
+        |  final case class UnexpectedError(isDone: Boolean)
+        |  final case class UnexpectedErrorResponse(statusCode: Int, value: UnexpectedError)
+        |  type UpdatePayloadResponse = UpdatedPayload :+: UnexpectedErrorResponse :+: CNil
+        |}""".stripMargin
+      )
     }
   }
 }
