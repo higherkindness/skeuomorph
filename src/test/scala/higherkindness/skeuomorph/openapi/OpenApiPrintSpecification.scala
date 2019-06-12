@@ -232,7 +232,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             .withPut(
               operationWithResponses[JsonSchemaF.Fixed](
                 responses = "200" -> response(
-                  "Updated payload"
+                  "Updated payload",
+                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
                 ),
                 "404" -> response(
                   "Not found",
@@ -248,9 +249,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def updatePayload(id: String): F[UpdatePayloadResponse]
         |}
         |object PayloadClient {
+        |  final case class UpdatedPayload(name: String)
         |  final case class NotFound(isDone: Boolean)
-        |  final case class NotFoundResponse(value: NotFound)
-        |  type UpdatePayloadResponse = Unit :+: NotFoundResponse :+: CNil
+        |  type UpdatePayloadResponse = UpdatedPayload :+: NotFound :+: CNil
         |}""".stripMargin
       )
     }

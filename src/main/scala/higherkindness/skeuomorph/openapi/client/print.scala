@@ -153,48 +153,56 @@ object print {
     ).flatten
   }
 
-  def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](response: Response[T], tpe: String): (String, Option[String]) = {
-    val x           = typeFromResponse(response).map(schema(Tpe.nameFrom(response.description).some).print).getOrElse("")
-    val newTpe      = defaultResponseName(Tpe.nameFrom(response.description))
-    val newTypeCode = s"  final case class $newTpe(value: $tpe)"
+  def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](response: Response[T], tpe: String)(
+      success: => (String, Option[String])): (String, Option[String]) = {
+    val newSchema =
+      typeFromResponse(response).map(schema(Tpe.nameFrom(response.description).some).print).getOrElse("")
     tpe match {
-      case _ if (tpe === x) => newTpe -> newTypeCode.some
-      case _                => newTpe -> s"  $x\n$newTypeCode".some
+      case _ if (tpe === newSchema) => success
+      case _                        => Tpe.nameFrom(response.description) -> s"  $newSchema".some
     }
-
   }
 
-  def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] = Printer { s =>
-    if (s._3.responses.size > 1) {
-      val defaultName = defaultResponseName(operationIdFrom(s))
-      val (newTypes, schemas) = second(s._3.responses.map {
-        case (status, r) =>
-          val tpe        = responseOrType.print(r)
-          val intPattern = """(\d+)""".r
-          status match {
-            case intPattern(code) if code.toInt >= 200 && code.toInt < 400 =>
-              tpe -> none
-
-            case intPattern(_) =>
-              r.fold(
-                typeAndSchemaFor(_, tpe),
-                _ => tpe -> none
-              )
-            case "default" =>
-              "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
-          }
-      }.unzip)(_.flatten)
-      s"""|${schemas.mkString("\n")}
+  def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[(String, Map[String, Either[Response[T], Reference]])] =
+    Printer { foo =>
+      val (defaultName, responses) = foo
+      if (responses.size > 1) {
+        val (newTypes, schemas) = second(responses.map {
+          case (status, r) =>
+            val tpe        = responseOrType.print(r)
+            val intPattern = """(\d+)""".r
+            status match {
+              case intPattern(code) if code.toInt >= 200 && code.toInt < 400 =>
+                r.fold(
+                  typeAndSchemaFor(_, tpe) {
+                    tpe -> none
+                  },
+                  _ => tpe -> none
+                )
+              case intPattern(_) =>
+                r.fold(
+                  response =>
+                    typeAndSchemaFor(response, tpe) {
+                      val newTpe = defaultResponseName(Tpe.nameFrom(response.description))
+                      newTpe -> s"  final case class $newTpe(value: $tpe)".some
+                  },
+                  _ => tpe -> none
+                )
+              case "default" =>
+                "UnexpectedError" -> s"  final case class UnexpectedError(statusCode: Int, value: $tpe)".some
+            }
+        }.unzip)(_.flatten)
+        s"""|${schemas.mkString("\n")}
           |  type $defaultName = ${newTypes.mkString(" :+: ")} :+: CNil""".stripMargin
-    } else
-      ""
-  }
+      } else
+        ""
+    }
 
   def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
     (
       konst("object ") *< string >* konst("Client {") >* newLine,
       sepBy(responsesSchema[T], "") >* (newLine >* konst("}")))
-      .contramapN(identity)
+      .contramapN(second(_)(_.map(x => defaultResponseName(operationIdFrom(x)) -> x._3.responses)))
 
   def operationsTuple[T: Basis[JsonSchemaF, ?]](x: (TraitName, Map[String, ItemObject[T]])): (
       TraitName,
