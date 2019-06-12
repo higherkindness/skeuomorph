@@ -29,6 +29,11 @@ object print {
 
   val componentsRegex = """#/components/schemas/(.+)""".r
 
+  def schemaWithName[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
+    case (x, t) =>
+      schema[T](x.some).print(t)
+  }
+
   def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None): Printer[T] = {
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._

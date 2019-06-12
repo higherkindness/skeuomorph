@@ -67,6 +67,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |}
               |object PayloadClient {
               |
+              |
               |}""".stripMargin)
     }
 
@@ -92,6 +93,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |  def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit]
               |}
               |object PayloadClient {
+                |
                 |
                 |
                 |
@@ -128,6 +130,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |
               |
               |
+              |
               |}""".stripMargin)
     }
 
@@ -149,6 +152,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |}
               |object PayloadClient {
                 |
+                |
                 |}""".stripMargin)
     }
 
@@ -167,6 +171,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload]
         |}
         |object PayloadClient {
+          |
           |
           |}""".stripMargin)
     }
@@ -194,6 +199,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def getPayload(id: String): F[GetPayloadResponse]
         |}
         |object PayloadClient {
+        |
         |  final case class UnexpectedErrorResponse(statusCode: Int, value: Error)
         |  type GetPayloadResponse = Payload :+: UnexpectedErrorResponse :+: CNil
         |}""".stripMargin)
@@ -223,6 +229,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def getPayload(id: String): F[GetPayloadResponse]
         |}
         |object PayloadClient {
+        |
         |  final case class NotFoundResponse(value: String)
         |  type GetPayloadResponse = Payload :+: NotFoundResponse :+: CNil
         |}""".stripMargin
@@ -253,6 +260,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def updatePayload(id: String): F[UpdatePayloadResponse]
         |}
         |object PayloadClient {
+        |
         |  final case class UpdatedPayload(name: String)
         |  final case class NotFound(isDone: Boolean)
         |  type UpdatePayloadResponse = UpdatedPayload :+: NotFound :+: CNil
@@ -313,6 +321,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |  def updatePayload(id: String): F[UpdatePayloadResponse]
         |}
         |object PayloadClient {
+        |
         |  final case class UpdatedPayload(name: String)
         |  final case class UnexpectedError(isDone: Boolean)
         |  final case class UnexpectedErrorResponse(statusCode: Int, value: UnexpectedError)
