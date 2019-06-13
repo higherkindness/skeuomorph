@@ -329,5 +329,47 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |}""".stripMargin
       )
     }
+
+    "when a post operation is provided and operation id is not provided" >> {
+      operations.print(
+        "Pets" -> Map(
+          "/pets" -> emptyItemObject.withPost(
+            operation[JsonSchemaF.Fixed](
+              request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPet"))),
+              responses = "200"          -> response("Null response")
+            )
+          ),
+          "/pets/{id}" -> emptyItemObject.withPut(
+            operation[JsonSchemaF.Fixed](
+              request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePet"))),
+              responses = "201"          -> response("Null response")
+            ).withParameter(path("id", Fixed.string()))
+          ),
+          "/pets/{id}/owners/" -> emptyItemObject.withGet(
+            operation[JsonSchemaF.Fixed](
+              request(),
+              responses = "201" -> response(
+                "Null response",
+                "application/json" -> mediaType(Fixed.reference("#/components/schemas/Owners")))
+            ).withParameter(path("id", Fixed.string()))
+          )
+        )
+      ) must ===("""|import shapeless.{:+:, CNil}
+              |trait PetsClient[F[_]] {
+              |  import PetsClient._
+              |  def createPets(newPet: NewPet): F[Unit]
+              |  def updatePets(id: String, updatePet: UpdatePet): F[Unit]
+              |  def getOwnersPets(id: String): F[Owners]
+              |}
+              |object PetsClient {
+              |
+              |
+              |
+              |
+              |
+              |
+              |}""".stripMargin)
+    }
+
   }
 }
