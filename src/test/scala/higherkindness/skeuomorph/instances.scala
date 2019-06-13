@@ -18,8 +18,10 @@ package higherkindness.skeuomorph
 
 import cats.Eq
 import cats.instances.list._
+import cats.instances.string._
 import cats.syntax.apply._
 import cats.syntax.traverse._
+import cats.syntax.semigroup._
 
 import org.apache.avro.Schema
 import org.scalacheck._
@@ -38,7 +40,9 @@ import iota.{CopK, TListK}
 
 object instances {
 
-  val nonEmptyString = Gen.nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar, Gen.const(' '))).map(_.mkString)
+  val nonEmptyString = Gen.alphaChar.map(_.toString) |+| Gen
+    .nonEmptyListOf(Gen.oneOf(Gen.alphaNumChar, Gen.alphaChar))
+    .map(_.mkString)
 
   implicit def copkArbitrary[LL <: TListK](implicit M: ArbitraryKMaterializer[LL]): Delay[Arbitrary, CopK[LL, ?]] =
     M.materialize(offset = 0)

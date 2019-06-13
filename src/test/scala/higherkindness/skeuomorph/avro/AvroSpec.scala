@@ -14,59 +14,61 @@
  * limitations under the License.
  */
 
-// package higherkindness.skeuomorph.avro
+package higherkindness.skeuomorph.avro
 
-// import higherkindness.skeuomorph.uast.types._
-//
-// import higherkindness.skeuomorph.compdata.Ann
-// import higherkindness.skeuomorph.instances._
+import higherkindness.skeuomorph.uast.types._
 
-// import org.apache.avro.Schema
-// import org.scalacheck._
-// import org.specs2._
-// import higherkindness.droste._
+import higherkindness.skeuomorph.compdata.Ann
+import higherkindness.skeuomorph.instances._
 
-// import scala.collection.JavaConverters._
+import org.apache.avro.Schema
+import org.scalacheck._
+import org.specs2._
+import higherkindness.droste._
 
-// class AvroSpec extends Specification with ScalaCheck {
+import scala.collection.JavaConverters._
 
-//   def is = s2"""
-//   Avro Schema
+class AvroSpec extends Specification with ScalaCheck {
 
-//   It should be possible to create a Schema from org.apache.Schema. $convertSchema
+  def is = s2"""
+  Avro Schema
 
-//   It should be possible to create a Protocol from org.apache.Protocol. $convertProtocol
-//   """
+  It should be possible to create a Schema from org.apache.Schema. $convertSchema
 
-//   def convertSchema = Prop.forAll { (schema: Schema) =>
-//     val test = scheme.hylo(checkSchema(schema), Type.fromAvro)
+  It should be possible to create a Protocol from org.apache.Protocol. $convertProtocol
+  """
 
-//     test(schema)
-//   }
+  def convertSchema = Prop.forAll { (schema: Schema) =>
+    val test = scheme.hylo(checkSchema(schema), Type.fromAvro)
 
-//   def convertProtocol = todo
+    test(schema)
+  }
 
-//   def checkSchema(sch: Schema): Algebra[Type, Boolean] = Algebra {
-//     case InjNull(_)      => sch.getType should_== Schema.Type.NULL
-//     case InjBoolean(_)   => sch.getType should_== Schema.Type.BOOLEAN
-//     case InjInt(_)       => sch.getType should_== Schema.Type.INT
-//     case InjLong(_)      => sch.getType should_== Schema.Type.LONG
-//     case InjFloat(_)     => sch.getType should_== Schema.Type.FLOAT
-//     case InjDouble(_)    => sch.getType should_== Schema.Type.DOUBLE
-//     case InjByteArray(_) => sch.getType should_== Schema.Type.BYTES
-//     case InjString(_)    => sch.getType should_== Schema.Type.STRING
+  def convertProtocol = todo
 
-//     case InjNamedType(_)                      => false
-//     case InjList(_)                           => sch.getType should_== Schema.Type.ARRAY
-//     case InjMap(_)                            => sch.getType should_== Schema.Type.MAP
-//     case InjAvroRecord(Ann(TRecord(_, _), _)) =>
-//       // (sch.getName should_== name)
-//       //   .and(sch.getFields.asScala.toList.map(f => (f.name, f.schema.getType)) should_== fields.map(f =>
-//       //     (f.name, f.doc.getOrElse(""))))
-//       true
+  def checkSchema(sch: Schema): Algebra[Type, Boolean] = Algebra {
+    case InjNull(_)      => sch.getType should_== Schema.Type.NULL
+    case InjBoolean(_)   => sch.getType should_== Schema.Type.BOOLEAN
+    case InjInt(_)       => sch.getType should_== Schema.Type.INT
+    case InjLong(_)      => sch.getType should_== Schema.Type.LONG
+    case InjFloat(_)     => sch.getType should_== Schema.Type.FLOAT
+    case InjDouble(_)    => sch.getType should_== Schema.Type.DOUBLE
+    case InjByteArray(_) => sch.getType should_== Schema.Type.BYTES
+    case InjString(_)    => sch.getType should_== Schema.Type.STRING
 
-//     case InjEnum(_)  => true
-//     case InjUnion(_) => true
-//     case InjFixed(_) => true
-//   }
-// }
+    case InjNamedType(_) => false
+    case InjList(_)      => sch.getType should_== Schema.Type.ARRAY
+    case InjMap(_)       => sch.getType should_== Schema.Type.MAP
+    case InjAvroRecord(Ann(TRecord(name, fields), _)) =>
+      (sch.getName should_== name)
+        .and(
+          sch.getFields.asScala.toList.map(_.name) should_== fields
+            .map(FieldF.InjAvroField.prj.apply)
+            .map(_.get)
+            .map(_.fa.name))
+
+    case InjEnum(_)  => true
+    case InjUnion(_) => true
+    case InjFixed(_) => true
+  }
+}

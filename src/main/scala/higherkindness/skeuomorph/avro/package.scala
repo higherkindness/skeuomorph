@@ -105,7 +105,7 @@ package object avro {
         case SType.DOUBLE  => double[Type, Schema]
         case SType.BYTES   => byteArray[Type, Schema]
         case SType.STRING  => string[Type, Schema]
-        case SType.ARRAY   => list[Type, Schema](sch.getValueType)
+        case SType.ARRAY   => list[Type, Schema](sch.getElementType)
         case SType.MAP     => map[Type, Schema](Schema.create(SType.STRING), sch.getValueType)
         case SType.RECORD =>
           avroRecord[Type, Schema](
