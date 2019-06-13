@@ -60,7 +60,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             ).withOperationId("createPayload")
           )
         )
-      ) must ===("""|import shapeless.{:+:, CNil}
+      ) must ===("""|import models._
+              |import shapeless.{:+:, CNil}
               |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def createPayload(newPayload: NewPayload): F[Unit]
@@ -86,7 +87,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               responses = "200" -> response("Null response")
             ).withOperationId("deletePayload").withParameter(pathId))
         )
-      ) must ===("""|import shapeless.{:+:, CNil}
+      ) must ===("""|import models._
+              |import shapeless.{:+:, CNil}
               |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def deletePayload(id: String): F[Unit]
@@ -120,7 +122,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                   "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload")))
               ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
         )
-      ) must ===("""|import shapeless.{:+:, CNil}
+      ) must ===("""|import models._
+              |import shapeless.{:+:, CNil}
               |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def getPayload(limit: Option[Int], name: Option[String]): F[Payloads]
@@ -145,7 +148,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               .withParameter(path("id", Fixed.string()))
               .withParameter(query("size", Fixed.long(), required = true)))
         )
-      ) must ===("""|import shapeless.{:+:, CNil}
+      ) must ===("""|import models._
+              |import shapeless.{:+:, CNil}
               |trait PayloadClient[F[_]] {
               |  import PayloadClient._
               |  def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit]
@@ -165,7 +169,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                 reference("#/components/schemas/UpdatePayload"),
                 responses = "200" -> reference("#/components/schemas/UpdatedPayload")
               ).withOperationId("updatePayload"))
-        )) must ===("""|import shapeless.{:+:, CNil}
+        )) must ===("""|import models._
+        |import shapeless.{:+:, CNil}
         |trait PayloadClient[F[_]] {
         |  import PayloadClient._
         |  def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload]
@@ -193,7 +198,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               ).withOperationId("getPayload").withParameter(path("id", Fixed.string()))
             )
         )
-      ) must ===("""|import shapeless.{:+:, CNil}
+      ) must ===("""|import models._
+        |import shapeless.{:+:, CNil}
         |trait PayloadClient[F[_]] {
         |  import PayloadClient._
         |  def getPayload(id: String): F[GetPayloadResponse]
@@ -223,7 +229,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             )
         )
       ) must ===(
-        """|import shapeless.{:+:, CNil}
+        """|import models._
+        |import shapeless.{:+:, CNil}
         |trait PayloadClient[F[_]] {
         |  import PayloadClient._
         |  def getPayload(id: String): F[GetPayloadResponse]
@@ -254,7 +261,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             )
         )
       ) must ===(
-        """|import shapeless.{:+:, CNil}
+        """|import models._
+        |import shapeless.{:+:, CNil}
         |trait PayloadClient[F[_]] {
         |  import PayloadClient._
         |  def updatePayload(id: String): F[UpdatePayloadResponse]
@@ -285,7 +293,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             )
         )
       ) must ===(
-        """|import shapeless.{:+:, CNil}
+        """|import models._
+        |import shapeless.{:+:, CNil}
         |trait AnotherPayloadClient[F[_]] {
         |  import AnotherPayloadClient._
         |  def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload]
@@ -315,7 +324,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             )
         )
       ) must ===(
-        """|import shapeless.{:+:, CNil}
+        """|import models._
+        |import shapeless.{:+:, CNil}
         |trait PayloadClient[F[_]] {
         |  import PayloadClient._
         |  def updatePayload(id: String): F[UpdatePayloadResponse]
@@ -354,7 +364,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             ).withParameter(path("id", Fixed.string()))
           )
         )
-      ) must ===("""|import shapeless.{:+:, CNil}
+      ) must ===("""|import models._
+              |import shapeless.{:+:, CNil}
               |trait PetsClient[F[_]] {
               |  import PetsClient._
               |  def createPets(newPet: NewPet): F[Unit]

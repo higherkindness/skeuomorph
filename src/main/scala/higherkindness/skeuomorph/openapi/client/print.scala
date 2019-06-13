@@ -272,7 +272,8 @@ object print {
 
   def operations[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, Map[String, ItemObject[T]])] =
     (
-      (konst("import shapeless.{:+:, CNil}") >* newLine >* konst("trait ")) *< string >* konst("Client[F[_]] {") >* newLine,
+      (konst("import models._") >* newLine >* konst("import shapeless.{:+:, CNil}") >* newLine >* konst("trait ")) *< string >* konst(
+        "Client[F[_]] {") >* newLine,
       (space >* space >* konst("import ")) *< string >* konst("Client._") >* newLine,
       sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
       clientTypes[T]
