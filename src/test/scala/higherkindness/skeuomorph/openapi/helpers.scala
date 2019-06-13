@@ -128,4 +128,23 @@ object helpers {
 
   def components[T](models: (String, T)*): Components[T] = Components(models.toMap, Map.empty, Map.empty)
 
+  def openApi[A](name: String, version: String = "0.0.0"): OpenApi[A] = OpenApi(
+    "",
+    Info(name, None, version),
+    List.empty,
+    Map.empty,
+    None,
+    List.empty,
+    None
+  )
+
+  implicit class OpenApiOps[A](openApi: OpenApi[A]) {
+    def withPath(path: (String, Path.ItemObject[A])): OpenApi[A] =
+      openApi.copy(paths = openApi.paths.+(path))
+    def withSchema(model: (String, A)): OpenApi[A] =
+      openApi.copy(
+        components = openApi.components.fold(components(model))(x => x.copy(x.schemas + model)).some
+      )
+  }
+
 }

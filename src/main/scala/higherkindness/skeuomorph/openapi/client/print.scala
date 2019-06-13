@@ -32,6 +32,8 @@ object print {
 
   private val jsonMediaType = "application/json"
 
+  def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
+
   case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
     def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
@@ -39,12 +41,10 @@ object print {
     def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
       Tpe(tpe.asRight, required, description)
 
-    def nameFrom(description: String): String = description.split(" ").map(_.filter(_.isLetter).capitalize).mkString
-
     def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
       identity,
       x =>
-        Printer(Optimize.namedTypes[T](nameFrom(tpe.description)) >>> schema(none).print)
+        Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
           .print(x)
           .capitalize
     )
@@ -100,10 +100,17 @@ object print {
           .flatMap(_.fold[Option[Var[T]]](requestTuple(operationId, _), referenceTuple)),
       operationId -> operation._3.responses)
   }
-
-  type OperationWithPath[T]        = (String, String, Operation[T])
+  type HttpVerb                    = String
+  type HttpPath                    = String
+  type OperationWithPath[T]        = (HttpVerb, HttpPath, Operation[T])
   type ResponsesWithOperationId[T] = (String, Map[String, Either[Response[T], Reference]])
   type TraitName                   = String
+  type ImplName                    = String
+  case class PackageName(value: String)
+  object PackageName {
+    import cats.Show
+    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
+  }
 
   ///get,/payloads/{id}, Operation??
   private def operationIdFrom[T](operationWithPath: OperationWithPath[T]): String =
@@ -131,7 +138,7 @@ object print {
     tpe.contramap(
       response =>
         typeFromResponse(response)
-          .map(Tpe(_, true, Tpe.nameFrom(response.description)))
+          .map(Tpe(_, true, normalize(response.description)))
           .getOrElse(Tpe.unit))
 
   private def referenceTpe[T: Basis[JsonSchemaF, ?]](x: Reference): Tpe[T] =
@@ -150,14 +157,14 @@ object print {
       }
   }
 
-  private def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
+  def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
       konst("  def ") *< string,
       konst("(") *< sepBy(parameter, ", "),
       konst("): F[") *< responsesTypes >* konst("]")
     ).contramapN(operationTuple[T])
 
-  private def itemObjectTuple[T: Basis[JsonSchemaF, ?]](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {
+  private def itemObjectTuple[T](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {
     val (path, itemObject) = xs
     List(
       itemObject.get.map(("get", path, _)),
@@ -170,10 +177,10 @@ object print {
   private def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](response: Response[T], tpe: String)(
       success: => (String, List[String])): (String, List[String]) = {
     val newSchema =
-      typeFromResponse(response).map(schema(Tpe.nameFrom(response.description).some).print).getOrElse("")
+      typeFromResponse(response).map(schema(normalize(response.description).some).print).getOrElse("")
     tpe match {
       case _ if (tpe === newSchema)  => success
-      case _ if (newSchema.nonEmpty) => Tpe.nameFrom(response.description) -> List(newSchema)
+      case _ if (newSchema.nonEmpty) => normalize(response.description) -> List(newSchema)
       case _                         => tpe -> Nil
     }
   }
@@ -194,7 +201,7 @@ object print {
               if (code.toInt >= 200 && code.toInt < 400)
                 tpe -> Nil
               else {
-                val newTpe = defaultResponseName(Tpe.nameFrom(response.description))
+                val newTpe = defaultResponseName(normalize(response.description))
                 newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
               }
           }
@@ -243,7 +250,7 @@ object print {
         .map(_.tpe)
       requestTpe <- requestTuple.tpe.toOption
       name    = tpe.print(requestTuple)
-      newType = defaultRequestName(Tpe.nameFrom(operationId))
+      newType = defaultRequestName(normalize(operationId))
       if name === newType
     } yield (newType -> requestTpe)
 
@@ -263,12 +270,15 @@ object print {
         }.unzip))
       }
 
+  def toOperationsWithPath[T](x: (TraitName, Map[String, ItemObject[T]])): (TraitName, List[OperationWithPath[T]]) =
+    second(x)(_.toList.flatMap(itemObjectTuple[T]))
+
   private def operationsTuple[T: Basis[JsonSchemaF, ?]](x: (TraitName, Map[String, ItemObject[T]])): (
       TraitName,
       TraitName,
       List[OperationWithPath[T]],
       (TraitName, List[OperationWithPath[T]])) =
-    un(second(duplicate(second(x)(_.toList.flatMap(itemObjectTuple[T])))) { case (a, b) => (a, (x._1, b)) })
+    un(second(duplicate(toOperationsWithPath(x))) { case (a, b) => (a, (x._1, b)) })
 
   def operations[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, Map[String, ItemObject[T]])] =
     (
@@ -278,6 +288,13 @@ object print {
       sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
       clientTypes[T]
     ).contramapN(operationsTuple[T])
+
+  def packages: Printer[List[PackageName]] =
+    (
+      sepBy(
+        (konst("import ") *< string),
+        "\n")
+    ).contramap(_.map(_.show))
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
   def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)

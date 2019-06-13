@@ -21,6 +21,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   import print._
   import helpers._
   import cats.implicits._
+  import OpenApiPrintSpecification._
 
   "models should able to print" >> {
     "when a basic type is provided" >> {
@@ -51,16 +52,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "Client trait should able to print" >> {
     import client.print._
     "when a post operation is provided" >> {
-      operations.print(
-        "Payload" -> Map(
-          "/payloads" -> emptyItemObject.withPost(
-            operation[JsonSchemaF.Fixed](
-              request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayload"))),
-              responses = "201"          -> response("Null response")
-            ).withOperationId("createPayload")
-          )
-        )
-      ) must ===("""|import models._
+      operations.print("Payload" -> Map(simplePost)) must ===("""|import models._
               |import shapeless.{:+:, CNil}
               |trait PayloadClient[F[_]] {
               |  import PayloadClient._
@@ -381,6 +373,51 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
               |
               |}""".stripMargin)
     }
-
   }
+
+  "http4s 0.20.x should able to print" >> {
+    import client.print._
+    import client.http4s.print._
+
+    "when a post operation is provided" >> {
+      v20.openApi.print(PackageName("petstore") -> openApi("Petstore").withPath(simplePost)) must ===(
+        """|import cats.effect._
+        |import cats.syntax.functor._
+        |import cats.syntax.either._
+        |import cats.syntax.show._
+        |import cats.implicits.catsStdShowForLong
+        |import org.http4s._
+        |import org.http4s.client.Client
+        |import org.http4s.client.blaze._
+        |import org.http4s.circe._
+        |import org.http4s.Status.Successful
+        |import io.circe._
+        |import io.circe.generic.semiauto._
+        |import shapeless.Coproduct
+        |import scala.concurrent.ExecutionContext
+        |import petstore.PetstoreClient
+        |import petstore.models._
+        |object PetstoreHttpClient {
+        |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+        |    import PetstoreClient._
+        |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withBody(updatePet)
+        |  }
+        |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, PetstoreClient[F]] = BlazeClientBuilder(executionContext).resource.map(PetstoreHttpClient.build(_, baseUrl))
+        |}""".stripMargin
+      )
+    }
+  }
+}
+
+object OpenApiPrintSpecification {
+  import JsonSchemaF.Fixed
+  import helpers._
+
+  val simplePost = "/payloads" -> emptyItemObject.withPost(
+    operation[JsonSchemaF.Fixed](
+      request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayload"))),
+      responses = "201"          -> response("Null response")
+    ).withOperationId("createPayload")
+  )
+
 }
