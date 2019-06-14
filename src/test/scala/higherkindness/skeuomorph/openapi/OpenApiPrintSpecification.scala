@@ -52,7 +52,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "Client trait should able to print" >> {
     import client.print._
     "when a post operation is provided" >> {
-      operations.print("Payload" -> Map(simplePost)) must ===("""|import models._
+      operations.print(paths()(simplePost)) must ===("""|import models._
               |import shapeless.{:+:, CNil}
               |trait PayloadClient[F[_]] {
               |  import PayloadClient._
@@ -67,7 +67,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a put and delete are provided" >> {
       val pathId = path("id", Fixed.string())
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads/{id}" -> emptyItemObject
             .withPut(
               operation[JsonSchemaF.Fixed](
@@ -96,7 +96,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when get endpoints are provided" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads" -> emptyItemObject.withGet(
             operationWithResponses[JsonSchemaF.Fixed](
               responses = "200" -> response(
@@ -131,7 +131,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when optional body and not optional query parameters is provided" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads/{id}" -> emptyItemObject
             .withDelete(operation[JsonSchemaF.Fixed](
               request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))).optional,
@@ -154,7 +154,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when references in the request and the responses" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads" -> emptyItemObject
             .withPut(
               operationWithReferences[JsonSchemaF.Fixed](
@@ -175,7 +175,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are multiple responses with a default one" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads/{id}" -> emptyItemObject
             .withGet(
               operationWithResponses[JsonSchemaF.Fixed](
@@ -205,7 +205,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are multiple responses with not found response" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads/{id}" -> emptyItemObject
             .withGet(
               operationWithResponses[JsonSchemaF.Fixed](
@@ -237,7 +237,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are multiple responses with anonymous objects" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads/{id}" -> emptyItemObject
             .withPut(
               operationWithResponses[JsonSchemaF.Fixed](
@@ -270,7 +270,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are simple response and response with anonymous objects" >> {
       operations.print(
-        "AnotherPayload" -> Map(
+        paths("AnotherPayloadClient")(
           "/payloads/{id}" -> emptyItemObject
             .withPut(
               operation[JsonSchemaF.Fixed](
@@ -300,7 +300,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when  multiple responses with anonymous objects with default response" >> {
       operations.print(
-        "Payload" -> Map(
+        paths()(
           "/payloads/{id}" -> emptyItemObject
             .withPut(
               operationWithResponses[JsonSchemaF.Fixed](
@@ -334,7 +334,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when a post operation is provided and operation id is not provided" >> {
       operations.print(
-        "Pets" -> Map(
+        paths("PetsClient")(
           "/pets" -> emptyItemObject.withPost(
             operation[JsonSchemaF.Fixed](
               request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPet"))),
@@ -400,7 +400,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |object PetstoreHttpClient {
         |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
         |    import PetstoreClient._
-        |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withBody(updatePet)
+        |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withBody(newPayload)
         |  }
         |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, PetstoreClient[F]] = BlazeClientBuilder(executionContext).resource.map(PetstoreHttpClient.build(_, baseUrl))
         |}""".stripMargin
@@ -412,6 +412,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 object OpenApiPrintSpecification {
   import JsonSchemaF.Fixed
   import helpers._
+  import client.print.TraitName
+  import schema.Path.ItemObject
+
+  def paths[T](traitName: String = "PayloadClient")(
+      xs: (String, ItemObject[T])*): (TraitName, Map[String, ItemObject[T]]) = TraitName(traitName) -> xs.toMap
 
   val simplePost = "/payloads" -> emptyItemObject.withPost(
     operation[JsonSchemaF.Fixed](

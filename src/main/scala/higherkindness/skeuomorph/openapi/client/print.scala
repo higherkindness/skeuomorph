@@ -22,6 +22,7 @@ import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
 import cats.implicits._
+import cats.Show
 
 import qq.droste._
 
@@ -55,34 +56,93 @@ object print {
         name(tpe).asLeft
 
   }
-  case class Var[T](name: Option[String], tpe: Tpe[T])
+  case class Var[T](name: String, tpe: Tpe[T])
   object Var {
-    def tpe[T](tpe: Tpe[T]): Var[T] = Var(None, tpe)
+    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
     def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
-      Var(name.some, Tpe(tpe.asRight, required, description))
+      Var(decapitalize(name), Tpe(tpe.asRight, required, description))
+  }
+
+  type HttpVerb                    = String
+  type HttpPath                    = String
+  type OperationWithPath[T]        = (HttpVerb, HttpPath, Operation[T])
+  type ResponsesWithOperationId[T] = (OperationId, Map[String, Either[Response[T], Reference]])
+  final case class TraitName(value: String) extends AnyVal
+  object TraitName {
+    def apply[T](openApi: OpenApi[T]): TraitName = TraitName(s"${normalize(openApi.info.title)}Client")
+    implicit val traitNameShow: Show[TraitName]  = Show.show(_.value)
+  }
+  final case class ImplName(value: String) extends AnyVal
+  object ImplName {
+    def apply[T](openApi: OpenApi[T]): ImplName = ImplName(s"${normalize(openApi.info.title)}HttpClient")
+    implicit val implNameShow: Show[ImplName]   = Show.show(_.value)
+  }
+
+  final case class PackageName(value: String) extends AnyVal
+  object PackageName {
+    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
+  }
+
+  final case class OperationId(value: String) extends AnyVal
+
+  object OperationId {
+
+    def from(name: String): OperationId = OperationId(normalize(name))
+
+    def apply[T](operationWithPath: OperationWithPath[T]): OperationId =
+      OperationId(operationWithPath._3.operationId.getOrElse {
+        val verb = operationWithPath._1.toLowerCase() match {
+          case "post" => "create"
+          case "put"  => "update"
+          case x      => x
+        }
+        val path =
+          operationWithPath._2
+            .split("/")
+            .filterNot(_.contains("{"))
+            .filter(_.nonEmpty)
+            .reverse
+            .map(_.capitalize)
+            .mkString
+        s"${verb}${path}"
+      })
+
+    implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
   }
 
   private def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
     ((konst("Option[") *< string >* konst("]")) >|< string)
       .contramap(Tpe.option[T])
 
+  def imports: Printer[List[PackageName]] =
+    (
+      sepBy(
+        (konst("import ") *< show[PackageName]),
+        "\n")
+    ).contramap(identity)
+
   private def parameter[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
     (
       string >* konst(": "),
       tpe
-    ).contramapN(x => decapitalize(x.name.getOrElse(Tpe.name(x.tpe))) -> x.tpe)
+    ).contramapN(x => x.name -> x.tpe)
 
-  private def requestTuple[T: Basis[JsonSchemaF, ?]](name: String, request: Request[T]): Option[Var[T]] =
+  private def requestTuple[T: Basis[JsonSchemaF, ?]](operationId: OperationId, request: Request[T]): Option[Var[T]] =
     request.content
       .get(jsonMediaType)
       .flatMap(x =>
         x.schema.map(x =>
-          Var.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(name))))))
+          Var.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId))))))
 
   private def referenceTuple[T: Basis[JsonSchemaF, ?]](reference: Reference): Option[Var[T]] = reference.ref match {
     case componentsRegex(name) => Var.tpe(Tpe.apply(name)).some
     case _                     => none
   }
+
+  def requestOrTuple[T: Basis[JsonSchemaF, ?]](
+      operationId: OperationId,
+      requestOr: Either[Request[T], Reference]): Option[Var[T]] =
+    requestOr.fold[Option[Var[T]]](requestTuple(operationId, _), referenceTuple)
 
   private def parameterTuple[T: Basis[JsonSchemaF, ?]](parameter: Either[Parameter[T], Reference]): Option[Var[T]] =
     parameter.fold(
@@ -91,45 +151,21 @@ object print {
     )
 
   private def operationTuple[T: Basis[JsonSchemaF, ?]](
-      operation: OperationWithPath[T]): (String, (List[Var[T]]), ResponsesWithOperationId[T]) = {
-    val operationId = operationIdFrom(operation)
+      operation: OperationWithPath[T]): (OperationId, (List[Var[T]]), ResponsesWithOperationId[T]) = {
+    val operationId = OperationId(operation)
     (
       operationId,
       operation._3.parameters.flatMap(parameterTuple[T]) ++
         operation._3.requestBody
-          .flatMap(_.fold[Option[Var[T]]](requestTuple(operationId, _), referenceTuple)),
+          .flatMap(requestOrTuple[T](operationId, _)),
       operationId -> operation._3.responses)
   }
-  type HttpVerb                    = String
-  type HttpPath                    = String
-  type OperationWithPath[T]        = (HttpVerb, HttpPath, Operation[T])
-  type ResponsesWithOperationId[T] = (String, Map[String, Either[Response[T], Reference]])
-  type TraitName                   = String
-  type ImplName                    = String
-  case class PackageName(value: String)
-  object PackageName {
-    import cats.Show
-    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
-  }
 
-  ///get,/payloads/{id}, Operation??
-  private def operationIdFrom[T](operationWithPath: OperationWithPath[T]): String =
-    operationWithPath._3.operationId.getOrElse {
-      val verb = operationWithPath._1.toLowerCase() match {
-        case "post" => "create"
-        case "put"  => "update"
-        case x      => x
-      }
-      val path =
-        operationWithPath._2.split("/").filterNot(_.contains("{")).filter(_.nonEmpty).reverse.map(_.capitalize).mkString
-      s"${verb}${path}"
-    }
+  private def defaultRequestName[T](operationId: OperationId): String =
+    s"${operationId.show}Request".capitalize
 
-  private def defaultRequestName[T](name: String): String =
-    s"${name}Request".capitalize
-
-  private def defaultResponseName[T](name: String): String =
-    s"${name}Response".capitalize
+  private def defaultResponseName[T](operationId: OperationId): String =
+    s"${operationId.show}Response".capitalize
 
   private def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
     response.content.get(jsonMediaType).flatMap(_.schema)
@@ -159,7 +195,7 @@ object print {
 
   def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
-      konst("  def ") *< string,
+      konst("  def ") *< show[OperationId],
       konst("(") *< sepBy(parameter, ", "),
       konst("): F[") *< responsesTypes >* konst("]")
     ).contramapN(operationTuple[T])
@@ -201,7 +237,7 @@ object print {
               if (code.toInt >= 200 && code.toInt < 400)
                 tpe -> Nil
               else {
-                val newTpe = defaultResponseName(normalize(response.description))
+                val newTpe = defaultResponseName(OperationId.from(response.description))
                 newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
               }
           }
@@ -241,8 +277,8 @@ object print {
     (String, Map[String, Either[Response[T], Reference]])] =
     (multipleResponsesSchema >|< sepBy((space >* space) *< string, "\n")).contramap((responsesSchemaTuple[T] _).tupled)
 
-  private def requestsSchemaTuple[T: Basis[JsonSchemaF, ?]](
-      operationId: String,
+  private def requestSchemaTuple[T: Basis[JsonSchemaF, ?]](
+      operationId: OperationId,
       request: Option[Either[Request[T], Reference]]): Option[(String, T)] =
     for {
       request <- request.flatMap(_.left.toOption)
@@ -250,21 +286,21 @@ object print {
         .map(_.tpe)
       requestTpe <- requestTuple.tpe.toOption
       name    = tpe.print(requestTuple)
-      newType = defaultRequestName(normalize(operationId))
+      newType = defaultRequestName(operationId)
       if name === newType
     } yield (newType -> requestTpe)
 
-  private def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(String, Option[Either[Request[T], Reference]])] =
-    (optional((space >* space) *< schemaWithName[T])).contramap((requestsSchemaTuple[T] _).tupled)
+  private def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, Option[Either[Request[T], Reference]])] =
+    (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
   private def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
     (
-      konst("object ") *< string >* konst("Client {") >* newLine,
+      konst("object ") *< show[TraitName] >* konst(" {") >* newLine,
       sepBy(requestSchema[T], "\n") >* newLine,
       sepBy(responsesSchema[T], "\n") >* (newLine >* konst("}")))
       .contramapN { x =>
         un(second(x)(_.map { x =>
-          val operationId = operationIdFrom(x)
+          val operationId = OperationId(x)
           (operationId                        -> x._3.requestBody) ->
             (defaultResponseName(operationId) -> x._3.responses)
         }.unzip))
@@ -274,27 +310,23 @@ object print {
     second(x)(_.toList.flatMap(itemObjectTuple[T]))
 
   private def operationsTuple[T: Basis[JsonSchemaF, ?]](x: (TraitName, Map[String, ItemObject[T]])): (
+      List[PackageName],
       TraitName,
       TraitName,
       List[OperationWithPath[T]],
-      (TraitName, List[OperationWithPath[T]])) =
-    un(second(duplicate(toOperationsWithPath(x))) { case (a, b) => (a, (x._1, b)) })
+      (TraitName, List[OperationWithPath[T]])) = {
+    val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(x))) { case (a, b) => (a, (x._1, b)) })
+    (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, d)
+  }
 
   def operations[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, Map[String, ItemObject[T]])] =
     (
-      (konst("import models._") >* newLine >* konst("import shapeless.{:+:, CNil}") >* newLine >* konst("trait ")) *< string >* konst(
-        "Client[F[_]] {") >* newLine,
-      (space >* space >* konst("import ")) *< string >* konst("Client._") >* newLine,
+      imports >* newLine,
+      konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
+      space *< space *< konst("import ") *< show[TraitName] >* konst("._") >* newLine,
       sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
       clientTypes[T]
     ).contramapN(operationsTuple[T])
-
-  def packages: Printer[List[PackageName]] =
-    (
-      sepBy(
-        (konst("import ") *< string),
-        "\n")
-    ).contramap(_.map(_.show))
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
   def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)

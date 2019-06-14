@@ -29,7 +29,7 @@ object print {
 
   object v20 {
 
-    val imports = List(
+    val packages = List(
       "cats.effect._",
       "cats.syntax.functor._",
       "cats.syntax.either._",
@@ -49,19 +49,16 @@ object print {
     def applyMethod: Printer[(TraitName, ImplName)] =
       (
         (konst(
-          "  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, ")) *< string >* konst(
-          "[F]] = "),
-        konst("BlazeClientBuilder(executionContext).resource.map(") *< string >* konst(".build(_, baseUrl))")
+          "  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, ")) *< show[
+          TraitName] >* konst("[F]] = "),
+        konst("BlazeClientBuilder(executionContext).resource.map(") *< show[ImplName] >* konst(".build(_, baseUrl))")
       ).contramapN(identity)
 
     def openApi[T: Basis[JsonSchemaF, ?]]: Printer[(PackageName, OpenApi[T])] =
       (print.openApiTemplate(applyMethod)).contramap { x =>
-        un(imports -> x)
+        un(packages -> x)
       }
   }
-
-  def traitName[T](openApi: OpenApi[T]): TraitName = s"${normalize(openApi.info.title)}Client"
-  def implName[T](openApi: OpenApi[T]): ImplName   = s"${normalize(openApi.info.title)}HttpClient"
 
   def path: Printer[String] = Printer { s =>
     s"/${s.split("/").filter(_.nonEmpty).map(s => s""" "$s"""").mkString("/")}"
@@ -75,32 +72,33 @@ object print {
       space *< space *< method[T],
       konst(" = client.expect[Unit](Request[F](method = Method.") *< string,
       konst(", uri = baseUrl ") *< path >* konst("))"),
-      optional(body)).contramapN(x => (x, x._1.toUpperCase(), x._2, "updatePet".some)) // FIXME Needs to be implemented
+      optional(body)).contramapN(x =>
+      (x, x._1.toUpperCase(), x._2, x._3.requestBody.flatMap { requestOrTuple[T](OperationId(x), _) }.map(_.name)))
 
   def impl[T: Basis[JsonSchemaF, ?]](applyMethod: Printer[(TraitName, ImplName)]): Printer[OpenApi[T]] =
     (
-      konst("object ") *< string >* konst(" {") *< newLine,
-      konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< string >* konst("[F]"),
-      konst(" = new ") *< string >* konst("[F] {") >* newLine,
-      space *< space *< space *< space *< packages >* newLine,
+      konst("object ") *< show[ImplName] >* konst(" {") *< newLine,
+      konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
+      konst(" = new ") *< show[TraitName] >* konst("[F] {") >* newLine,
+      space *< space *< space *< space *< imports >* newLine,
       sepBy(methodImpl, "\n") >* newLine *< konst("  }") *< newLine,
       applyMethod >* (newLine *< konst("}"))).contramapN { x =>
       (
-        implName(x),
-        traitName(x),
-        traitName(x),
-        List(PackageName(s"${traitName(x)}._")),
-        toOperationsWithPath(traitName(x) -> x.paths)._2,
-        traitName(x) -> implName(x))
+        ImplName(x),
+        TraitName(x),
+        TraitName(x),
+        List(PackageName(s"${TraitName(x).show}._")),
+        toOperationsWithPath(TraitName(x) -> x.paths)._2,
+        TraitName(x) -> ImplName(x))
     }
 
   def openApiTemplate[T: Basis[JsonSchemaF, ?]](
       applyMethod: Printer[(TraitName, ImplName)]): Printer[(List[PackageName], PackageName, OpenApi[T])] =
-    (packages >* newLine, impl[T](applyMethod)).contramapN {
+    (imports >* newLine, impl[T](applyMethod)).contramapN {
       case (imports, packageName, openApi) =>
         (
           imports ++ List(
-            s"${packageName.show}.${traitName(openApi)}",
+            s"${packageName.show}.${TraitName(openApi).show}",
             s"${packageName.show}.models._"
           ).map(PackageName.apply),
           openApi)
