@@ -60,8 +60,22 @@ object print {
       }
   }
 
-  def path: Printer[String] = Printer { s =>
-    s"/${s.split("/").filter(_.nonEmpty).map(s => s""" "$s"""").mkString("/")}"
+  def queryParameters[T]: Printer[List[Parameter.Query[T]]] = Printer { q =>
+    def op(x: Parameter.Query[T]): String = if (x.required) "+?" else "+??"
+    q.map(x => s""" ${op(x)} ("${x.name}", ${x.name})""").mkString
+  }
+  def httpPath[T]: Printer[HttpPath] = Printer {
+    case s =>
+      s"/ ${s.show
+        .split("/")
+        .filter(_.nonEmpty)
+        .map { s =>
+          if (s.startsWith("{") && s.endsWith("}"))
+            s"${s.tail.init}.show"
+          else
+            s""""$s""""
+        }
+        .mkString(" / ")}"
   }
 
   def body: Printer[String] =
@@ -70,10 +84,15 @@ object print {
   def methodImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
       space *< space *< method[T],
-      konst(" = client.expect[Unit](Request[F](method = Method.") *< string,
-      konst(", uri = baseUrl ") *< path >* konst("))"),
-      optional(body)).contramapN(x =>
-      (x, x._1.toUpperCase(), x._2, x._3.requestBody.flatMap { requestOrTuple[T](OperationId(x), _) }.map(_.name)))
+      konst(" = client.expect[") *< responsesTypes >* konst("]"),
+      konst("(Request[F](method = Method.") *< show[HttpVerb],
+      konst(", uri = baseUrl ") *< pair(httpPath[T], queryParameters[T]) >* konst("))"),
+      optional(body)).contramapN { x =>
+      val operationId = OperationId(x)
+      (x, operationId -> x._3.responses, x._1, (x._2, x._3.parameters.flatMap(_.left.toOption).collect {
+        case x: Parameter.Query[T] => x
+      }), x._3.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name))
+    }
 
   def impl[T: Basis[JsonSchemaF, ?]](applyMethod: Printer[(TraitName, ImplName)]): Printer[OpenApi[T]] =
     (

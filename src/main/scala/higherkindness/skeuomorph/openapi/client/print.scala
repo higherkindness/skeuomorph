@@ -35,6 +35,8 @@ object print {
 
   def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
 
+  def pair[A, B](p1: Printer[A], p2: Printer[B]): Printer[(A, B)] = (p1, p2).contramapN[(A, B)](identity)
+
   case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
     def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
@@ -63,8 +65,41 @@ object print {
       Var(decapitalize(name), Tpe(tpe.asRight, required, description))
   }
 
-  type HttpVerb                    = String
-  type HttpPath                    = String
+  sealed trait HttpVerb
+
+  object HttpVerb {
+    final case object Put    extends HttpVerb
+    final case object Post   extends HttpVerb
+    final case object Get    extends HttpVerb
+    final case object Delete extends HttpVerb
+
+    def methodFrom: HttpVerb => String = {
+      case Post => "create"
+      case Put  => "update"
+      case x    => x.show.toLowerCase()
+    }
+
+    implicit val httpVerbShow: Show[HttpVerb] = Show.show {
+      case Put    => "PUT"
+      case Post   => "POST"
+      case Get    => "GET"
+      case Delete => "DELETE"
+    }
+  }
+
+  final case class HttpPath(value: String) extends AnyVal {
+    def method: String =
+      value
+        .split("/")
+        .filterNot(_.contains("{"))
+        .filter(_.nonEmpty)
+        .reverse
+        .map(_.capitalize)
+        .mkString
+  }
+  object HttpPath {
+    implicit val httpPathShow: Show[HttpPath] = Show.show(_.value)
+  }
   type OperationWithPath[T]        = (HttpVerb, HttpPath, Operation[T])
   type ResponsesWithOperationId[T] = (OperationId, Map[String, Either[Response[T], Reference]])
   final case class TraitName(value: String) extends AnyVal
@@ -91,26 +126,13 @@ object print {
 
     def apply[T](operationWithPath: OperationWithPath[T]): OperationId =
       OperationId(operationWithPath._3.operationId.getOrElse {
-        val verb = operationWithPath._1.toLowerCase() match {
-          case "post" => "create"
-          case "put"  => "update"
-          case x      => x
-        }
-        val path =
-          operationWithPath._2
-            .split("/")
-            .filterNot(_.contains("{"))
-            .filter(_.nonEmpty)
-            .reverse
-            .map(_.capitalize)
-            .mkString
-        s"${verb}${path}"
+        s"${HttpVerb.methodFrom(operationWithPath._1)}${operationWithPath._2.method}"
       })
 
     implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
   }
 
-  private def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
+  def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
     ((konst("Option[") *< string >* konst("]")) >|< string)
       .contramap(Tpe.option[T])
 
@@ -183,7 +205,7 @@ object print {
   private def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     responseType >|< tpe.contramap(referenceTpe[T])
 
-  private def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
+  def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
     case (x, y) =>
       val defaultName = defaultResponseName(x)
       y.size match {
@@ -201,12 +223,13 @@ object print {
     ).contramapN(operationTuple[T])
 
   private def itemObjectTuple[T](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {
-    val (path, itemObject) = xs
+    val (itemObject, path) = second(flip(xs))(HttpPath.apply)
+
     List(
-      itemObject.get.map(("get", path, _)),
-      itemObject.delete.map(("delete", path, _)),
-      itemObject.post.map(("post", path, _)),
-      itemObject.put.map(("put", path, _))
+      itemObject.get.map((HttpVerb.Get, path, _)),
+      itemObject.delete.map((HttpVerb.Delete, path, _)),
+      itemObject.post.map((HttpVerb.Post, path, _)),
+      itemObject.put.map((HttpVerb.Put, path, _))
     ).flatten
   }
 
@@ -332,6 +355,7 @@ object print {
   def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)
   def duplicate[A, B](pair: (A, B)): ((A, A), (B, B))      = (pair._1 -> pair._1, pair._2 -> pair._2)
   def second[A, B, C](pair: (A, B))(f: B => C): (A, C)     = (pair._1, f(pair._2))
+  def flip[A, B](pair: (A, B)): (B, A)                     = (pair._2, pair._1)
   def decapitalize(s: String)                              = if (s.isEmpty) s else s(0).toLower + s.substring(1)
 
 }
