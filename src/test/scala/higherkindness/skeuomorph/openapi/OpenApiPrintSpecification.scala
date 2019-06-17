@@ -367,8 +367,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a put and delete are provided" >> {
       printer.print(openApi("Petstore").withPath(mediaTypeReferencePutDelete)) must ===(
         """|object PetstoreHttpClient {
+           |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |
            |    def deletePayload(id: String): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show))
            |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
            |  }
@@ -379,8 +381,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when get endpoints are provided" >> {
       printer.print(openApi("Petstore").withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
         """|object PetstoreHttpClient {
+           |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |
            |    def getPayload(limit: Option[Int], name: Option[String]): F[Payloads] = client.expect[Payloads](Request[F](method = Method.GET, uri = baseUrl / "payloads" +?? ("limit", limit) +?? ("name", name)))
            |    def getPayload(id: String): F[Payload] = client.expect[Payload](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show))
            |  }
@@ -397,7 +401,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     import client.http4s.print.v20._
 
     "when a post operation is provided" >> {
-      printer.print(PackageName("petstore") -> openApi("Petstore").withPath(mediaTypeReferencePost)) must ===(
+      printer.print(
+        PackageName("petstore") -> openApi("Petstore")
+          .withPath(mediaTypeReferencePost)
+          .withSchema("NewPayload" -> Fixed.string())) must ===(
         """|import cats.effect._
            |import cats.syntax.functor._
            |import cats.syntax.either._
@@ -415,8 +422,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import petstore.PetstoreClient
            |import petstore.models._
            |object PetstoreHttpClient {
+           |  implicit val NewPayloadEncoder: Encoder[NewPayload] = deriveEncoder[NewPayload]
+           |  implicit val NewPayloadDecoder: Decoder[NewPayload] = deriveDecoder[NewPayload]
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |    implicit val NewPayloadEntityEncoder: EntityEncoder[F, NewPayload] = jsonEncoderOf[F, NewPayload]
+           |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
            |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withBody(newPayload)
            |  }
            |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, PetstoreClient[F]] = BlazeClientBuilder(executionContext).resource.map(PetstoreHttpClient.build(_, baseUrl))
@@ -432,7 +443,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when a post operation is provided" >> {
 
-      printer.print(PackageName("petstore") -> openApi("Petstore").withPath(mediaTypeReferencePost)) must ===(
+      printer.print(
+        PackageName("petstore") -> openApi("Petstore")
+          .withPath(mediaTypeReferencePost)
+          .withSchema("NewPayload" -> Fixed.string())) must ===(
         """|import cats.effect._
            |import cats.syntax.functor._
            |import cats.syntax.either._
@@ -450,8 +464,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import petstore.PetstoreClient
            |import petstore.models._
            |object PetstoreHttpClient {
+           |  implicit val NewPayloadEncoder: Encoder[NewPayload] = deriveEncoder[NewPayload]
+           |  implicit val NewPayloadDecoder: Decoder[NewPayload] = deriveDecoder[NewPayload]
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |    implicit val NewPayloadEntityEncoder: EntityEncoder[F, NewPayload] = jsonEncoderOf[F, NewPayload]
+           |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
            |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withEntity(newPayload)
            |  }
            |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): F[PetstoreClient[F]] = Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(PetstoreHttpClient.build(_, baseUrl))

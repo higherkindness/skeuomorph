@@ -19,6 +19,7 @@ package higherkindness.skeuomorph.openapi.client.http4s
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
+import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
 import higherkindness.skeuomorph.openapi.client.print._
 import cats.implicits._
@@ -41,23 +42,62 @@ object print {
   def impl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] =
     (
       konst("object ") *< show[ImplName] >* konst(" {") *< newLine,
+      sepBy(twoSpaces *< (circeEncoder >|< circeDecoder), "\n") >* newLine,
       konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
       konst(" = new ") *< show[TraitName] >* konst("[F] {") >* newLine,
-      space *< space *< space *< space *< imports >* newLine,
-      sepBy(methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
+      twoSpaces *< twoSpaces *< imports >* newLine,
+      sepBy(twoSpaces *< twoSpaces *< (entityEncoder >|< entityDecoder), "\n") >* newLine,
+      sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
       http4sSpecifics.applyMethod >* (newLine *< konst("}"))).contramapN { x =>
+      val encoderAndDecoders = encoderAndDecodersFrom(x)
       (
         ImplName(x),
+        encoderAndDecoders,
         TraitName(x),
         TraitName(x),
         List(PackageName(s"${TraitName(x).show}._")),
+        encoderAndDecoders,
         toOperationsWithPath(TraitName(x) -> x.paths)._2,
         TraitName(x) -> ImplName(x))
     }
 
+  def encoderAndDecodersFrom[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[Either[EncoderName, DecoderName]] = {
+    val xs = openApi.components.toList.flatMap(_.schemas.map(_._1))
+
+    xs.map(EncoderName.apply).map(_.asLeft) ++ xs.map(DecoderName.apply).map(_.asRight)
+  }
+
+  def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[DecoderName] =
+    (
+      konst("implicit val ") *< show[DecoderName] >* konst("Decoder: "),
+      konst("Decoder[") *< show[DecoderName] >* konst("] = "),
+      konst("deriveDecoder[") *< show[DecoderName] >* konst("]"))
+      .contramapN(x => (x, x, x))
+
+  def circeEncoder[T: Basis[JsonSchemaF, ?]]: Printer[EncoderName] =
+    (
+      konst("implicit val ") *< show[EncoderName] >* konst("Encoder: "),
+      konst("Encoder[") *< show[EncoderName] >* konst("] = "),
+      konst("deriveEncoder[") *< show[EncoderName] >* konst("]"))
+      .contramapN(x => (x, x, x))
+
+  def entityDecoder[T: Basis[JsonSchemaF, ?]]: Printer[DecoderName] =
+    (
+      konst("implicit val ") *< show[DecoderName] >* konst("EntityDecoder: "),
+      konst("EntityDecoder[F, ") *< show[DecoderName] >* konst("] = "),
+      konst("jsonOf[F, ") *< show[DecoderName] >* konst("]"))
+      .contramapN(x => (x, x, x)) //
+
+  def entityEncoder[T: Basis[JsonSchemaF, ?]]: Printer[EncoderName] =
+    (
+      konst("implicit val ") *< show[EncoderName] >* konst("EntityEncoder: "),
+      konst("EntityEncoder[F, ") *< show[EncoderName] >* konst("] = "),
+      konst("jsonEncoderOf[F, ") *< show[EncoderName] >* konst("]"))
+      .contramapN(x => (x, x, x)) //
+
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
-      space *< space *< method[T],
+      method[T],
       konst(" = client.expect[") *< responsesTypes >* konst("]"),
       konst("(Request[F](method = Method.") *< show[HttpVerb],
       konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst("))"),
@@ -105,6 +145,8 @@ object print {
     "shapeless.Coproduct",
     "scala.concurrent.ExecutionContext"
   ).map(PackageName.apply)
+
+  private val twoSpaces: Printer[Unit] = space *< space
 
   trait Http4sSpecifics {
     def applyMethod: Printer[(TraitName, ImplName)]
