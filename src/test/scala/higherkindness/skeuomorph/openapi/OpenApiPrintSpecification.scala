@@ -354,15 +354,23 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   }
 
   "share http4s impl should able to print" >> {
+    import client.print._
     import client.http4s.print.impl
-    val printer = impl(Printer.unit.contramap(_ => ()))
+    import client.http4s.print.Http4sSpecifics
+    implicit val none: Http4sSpecifics = new Http4sSpecifics {
+      def none[A]                                     = Printer.unit.contramap[A](_ => ())
+      def applyMethod: Printer[(TraitName, ImplName)] = none
+      def withBody: Printer[String]                   = none
+
+    }
+    val printer = impl
     "when a put and delete are provided" >> {
       printer.print(openApi("Petstore").withPath(mediaTypeReferencePutDelete)) must ===(
         """|object PetstoreHttpClient {
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |    def deletePayload(id: String): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show))
-           |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)).withBody(updatePayload)
+           |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
            |  }
            |
            |}""".stripMargin)
@@ -385,10 +393,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "http4s 0.20.x should able to print" >> {
     import client.print._
-    import client.http4s.print._
+    import client.http4s.print.{openApi => printer}
+    import client.http4s.print.v20._
 
     "when a post operation is provided" >> {
-      v20.openApi.print(PackageName("petstore") -> openApi("Petstore").withPath(mediaTypeReferencePost)) must ===(
+      printer.print(PackageName("petstore") -> openApi("Petstore").withPath(mediaTypeReferencePost)) must ===(
         """|import cats.effect._
            |import cats.syntax.functor._
            |import cats.syntax.either._
@@ -414,7 +423,41 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}""".stripMargin
       )
     }
+  }
 
+  "http4s 0.18.x should able to print" >> {
+    import client.print._
+    import client.http4s.print.{openApi => printer}
+    import client.http4s.print.v18._
+
+    "when a post operation is provided" >> {
+
+      printer.print(PackageName("petstore") -> openApi("Petstore").withPath(mediaTypeReferencePost)) must ===(
+        """|import cats.effect._
+           |import cats.syntax.functor._
+           |import cats.syntax.either._
+           |import cats.syntax.show._
+           |import cats.implicits.catsStdShowForLong
+           |import org.http4s._
+           |import org.http4s.client.Client
+           |import org.http4s.client.blaze._
+           |import org.http4s.circe._
+           |import org.http4s.Status.Successful
+           |import io.circe._
+           |import io.circe.generic.semiauto._
+           |import shapeless.Coproduct
+           |import scala.concurrent.ExecutionContext
+           |import petstore.PetstoreClient
+           |import petstore.models._
+           |object PetstoreHttpClient {
+           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |    import PetstoreClient._
+           |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withEntity(newPayload)
+           |  }
+           |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): F[PetstoreClient[F]] = Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(PetstoreHttpClient.build(_, baseUrl))
+           |}""".stripMargin
+      )
+    }
   }
 }
 

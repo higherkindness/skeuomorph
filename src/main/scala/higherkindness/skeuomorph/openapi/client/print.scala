@@ -35,7 +35,8 @@ object print {
 
   def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
 
-  def pair[A, B](p1: Printer[A], p2: Printer[B]): Printer[(A, B)] = (p1, p2).contramapN[(A, B)](identity)
+  def divBy[A, B](p1: Printer[A], p2: Printer[B])(sep: Printer[Unit]): Printer[(A, B)] =
+    (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
 
   case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
