@@ -107,13 +107,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when optional body and not optional query parameters is provided" >> {
       operations.print(
         paths()(
-          "/payloads/{id}" -> emptyItemObject
-            .withDelete(operation[JsonSchemaF.Fixed](
-              request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))).optional,
-              responses = "200" -> response("Null response")
-            ).withOperationId("deletePayload")
-              .withParameter(path("id", Fixed.string()))
-              .withParameter(query("size", Fixed.long(), required = true)))
+          mediaTypeOptionBody
         )
       ) must ===( //
         """|import models._
@@ -129,15 +123,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when references in the request and the responses" >> {
-      operations.print(
-        paths()(
-          "/payloads" -> emptyItemObject
-            .withPut(
-              operationWithReferences[JsonSchemaF.Fixed](
-                reference("#/components/schemas/UpdatePayload"),
-                responses = "200" -> reference("#/components/schemas/UpdatedPayload")
-              ).withOperationId("updatePayload"))
-        )) must ===( //
+      operations.print(paths()(references)) must ===( //
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -393,6 +379,34 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       )
     }
 
+    "when optional body and not optional query parameters is provided" >> {
+      printer.print(openApi("Petstore").withPath(mediaTypeOptionBody)) must ===(
+        """|object PetstoreHttpClient {
+           |
+           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |    import PetstoreClient._
+           |
+           |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)))
+           |  }
+           |
+           |}""".stripMargin
+      )
+    }
+
+    "when references in the request and the responses" >> {
+      printer.print(openApi("Petstore").withPath(references)) must ===(
+        """|object PetstoreHttpClient {
+           |
+           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |    import PetstoreClient._
+           |
+           |    def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads"))
+           |  }
+           |
+           |}""".stripMargin
+      )
+    }
+
   }
 
   "http4s 0.20.x should able to print" >> {
@@ -495,9 +509,11 @@ object OpenApiPrintSpecification {
     ).withOperationId("createPayload")
   )
 
-  val pathId = path("id", Fixed.string())
+  private val pathId        = path("id", Fixed.string())
+  private val payloadPath   = "/payloads"
+  private val payloadPathId = s"$payloadPath/{id}"
 
-  val mediaTypeReferencePutDelete = "/payloads/{id}" -> emptyItemObject
+  val mediaTypeReferencePutDelete = payloadPathId -> emptyItemObject
     .withPut(
       operation[JsonSchemaF.Fixed](
         request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))),
@@ -509,7 +525,7 @@ object OpenApiPrintSpecification {
         responses = "200" -> response("Null response")
       ).withOperationId("deletePayload").withParameter(pathId))
 
-  val mediaTypeReferenceGet = "/payloads" -> emptyItemObject.withGet(
+  val mediaTypeReferenceGet = payloadPath -> emptyItemObject.withGet(
     operationWithResponses[JsonSchemaF.Fixed](
       responses = "200" -> response(
         "",
@@ -518,12 +534,28 @@ object OpenApiPrintSpecification {
       .withParameter(query("limit", Fixed.integer()))
       .withParameter(query("name", Fixed.string()))
   )
-  val mediaTypeReferenceGetId = "/payloads/{id}" -> emptyItemObject
+  val mediaTypeReferenceGetId = payloadPathId -> emptyItemObject
     .withGet(
       operationWithResponses[JsonSchemaF.Fixed](
         responses = "200" -> response(
           "Null response",
           "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload")))
       ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
+
+  val mediaTypeOptionBody = payloadPathId -> emptyItemObject
+    .withDelete(
+      operation[JsonSchemaF.Fixed](
+        request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))).optional,
+        responses = "200" -> response("Null response")
+      ).withOperationId("deletePayload")
+        .withParameter(path("id", Fixed.string()))
+        .withParameter(query("size", Fixed.long(), required = true)))
+
+  val references = "/payloads" -> emptyItemObject
+    .withPut(
+      operationWithReferences[JsonSchemaF.Fixed](
+        reference("#/components/schemas/UpdatePayload"),
+        responses = "200" -> reference("#/components/schemas/UpdatedPayload")
+      ).withOperationId("updatePayload"))
 
 }
