@@ -124,7 +124,7 @@ object print {
           if (s.startsWith("{") && s.endsWith("}"))
             s"${s.tail.init}.show"
           else
-            s""""$s""""
+            "\"" + s + "\""
         }
         .toList
     }

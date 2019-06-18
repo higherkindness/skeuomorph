@@ -42,17 +42,17 @@ object helpers {
       requestBody: Option[Either[Request[A], Reference]],
       responses: Map[String, Either[Response[A], Reference]]): Path.Operation[A] =
     Path.Operation[A](
-      List.empty,
-      None,
-      None,
-      None,
-      None,
-      List.empty,
-      requestBody,
-      responses,
-      Map.empty,
-      false,
-      List.empty
+      tags = List.empty,
+      summary = None,
+      description = None,
+      externalDocs = None,
+      operationId = None,
+      parameters = List.empty,
+      requestBody = requestBody,
+      responses = responses,
+      callbacks = Map.empty,
+      deprecated = false,
+      servers = List.empty
     )
   implicit class OperationOps[A](operation: Path.Operation[A]) {
     def withParameter(parameter: Parameter[A]): Path.Operation[A] =
@@ -69,9 +69,9 @@ object helpers {
 
   def request[A](content: (String, MediaType[A])*): Request[A] =
     Request[A](
-      None,
-      content.toMap,
-      true
+      description = None,
+      content = content.toMap,
+      required = true
     )
 
   implicit class RequestOps[A](request: Request[A]) {
@@ -94,23 +94,23 @@ object helpers {
       schema = schema,
       required = required)
 
-  def noneMediaType[A] = MediaType[A](None, Map.empty)
+  def noneMediaType[A] = MediaType[A](schema = None, encoding = Map.empty)
 
-  def mediaType[A](a: A) = MediaType[A](a.some, Map.empty)
+  def mediaType[A](a: A) = MediaType[A](schema = a.some, encoding = Map.empty)
 
   def emptyItemObject[A] = Path.ItemObject[A](
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None,
-    List.empty
+    ref = None,
+    summary = None,
+    description = None,
+    get = None,
+    put = None,
+    post = None,
+    delete = None,
+    options = None,
+    head = None,
+    patch = None,
+    trace = None,
+    servers = List.empty
   )
 
   def obj(properties: (String, JsonSchemaF.Fixed)*)(required: String*): JsonSchemaF.Fixed =
@@ -126,16 +126,17 @@ object helpers {
       item.copy(get = operation.some)
   }
 
-  def components[T](models: (String, T)*): Components[T] = Components(models.toMap, Map.empty, Map.empty)
+  def components[T](models: (String, T)*): Components[T] =
+    Components(schemas = models.toMap, responses = Map.empty, requestBodies = Map.empty)
 
   def openApi[A](name: String, version: String = "0.0.0"): OpenApi[A] = OpenApi(
-    "",
-    Info(name, None, version),
-    List.empty,
-    Map.empty,
-    None,
-    List.empty,
-    None
+    openapi = "",
+    info = Info(name, None, version),
+    servers = List.empty,
+    paths = Map.empty,
+    components = None,
+    tags = List.empty,
+    externalDocs = None
   )
 
   implicit class OpenApiOps[A](openApi: OpenApi[A]) {
