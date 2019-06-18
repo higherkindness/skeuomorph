@@ -109,10 +109,9 @@ object print {
     }
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =
-    (space *< string >* space, konst("""("""") *< divBy(string, string)(konst("""", """)) >* konst(")")).contramapN {
-      q =>
-        def op(x: Parameter.Query[T]): String = if (x.required) "+?" else "+??"
-        (op(q), q.name -> q.name)
+    (space *< string >* space, konst("(\"") *< divBy(string, string)(konst("\", ")) >* konst(")")).contramapN { q =>
+      def op(x: Parameter.Query[T]): String = if (x.required) "+?" else "+??"
+      (op(q), q.name -> q.name)
     }
 
   def httpPath[T]: Printer[HttpPath] =
