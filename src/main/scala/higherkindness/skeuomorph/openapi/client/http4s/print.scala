@@ -86,14 +86,14 @@ object print {
       konst("implicit val ") *< show[DecoderName] >* konst("EntityDecoder: "),
       konst("EntityDecoder[F, ") *< show[DecoderName] >* konst("] = "),
       konst("jsonOf[F, ") *< show[DecoderName] >* konst("]"))
-      .contramapN(x => (x, x, x)) //
+      .contramapN(x => (x, x, x))
 
   def entityEncoder[T: Basis[JsonSchemaF, ?]]: Printer[EncoderName] =
     (
       konst("implicit val ") *< show[EncoderName] >* konst("EntityEncoder: "),
       konst("EntityEncoder[F, ") *< show[EncoderName] >* konst("] = "),
       konst("jsonEncoderOf[F, ") *< show[EncoderName] >* konst("]"))
-      .contramapN(x => (x, x, x)) //
+      .contramapN(x => (x, x, x))
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
