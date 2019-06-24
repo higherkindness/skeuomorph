@@ -86,9 +86,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when get endpoints are provided" >> {
-      operations.print(
-        paths()(mediaTypeReferenceGet, mediaTypeReferenceGetId)
-      ) must ===( //
+      operations.print(paths()(mediaTypeReferenceGet, mediaTypeReferenceGetId)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -105,11 +103,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when optional body and not optional query parameters is provided" >> {
-      operations.print(
-        paths()(
-          mediaTypeOptionBody
-        )
-      ) must ===( //
+      operations.print(paths()(mediaTypeOptionBody)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -123,7 +117,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when references in the request and the responses" >> {
-      operations.print(paths()(references)) must ===( //
+      operations.print(paths()(references)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -137,9 +131,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with a default one" >> {
-      operations.print(
-        paths()(multipleResponsesWithDefaultOne)
-      ) must ===( //
+      operations.print(paths()(multipleResponsesWithDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -191,22 +183,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are simple response and response with anonymous objects" >> {
-      operations.print(
-        paths("AnotherPayloadClient")(
-          "/payloads/{id}" -> emptyItemObject
-            .withPut(
-              operation[JsonSchemaF.Fixed](
-                request(
-                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
-                ),
-                responses = "200" -> response(
-                  "Updated payload",
-                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
-                )
-              ).withOperationId("updateAnotherPayload").withParameter(path("id", Fixed.string()))
-            )
-        )
-      ) must ===(
+      operations.print(paths("AnotherPayloadClient")(simpleResponseResponseAnonymousObjects)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait AnotherPayloadClient[F[_]] {
@@ -221,23 +198,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when  multiple responses with anonymous objects with default response" >> {
-      operations.print(
-        paths()(
-          "/payloads/{id}" -> emptyItemObject
-            .withPut(
-              operationWithResponses[JsonSchemaF.Fixed](
-                responses = "200" -> response(
-                  "Updated payload",
-                  "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
-                ),
-                "default" -> response(
-                  "Unexpected error",
-                  "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
-                )
-              ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
-            )
-        )
-      ) must ===(
+      operations.print(paths()(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -366,9 +327,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with a default one" >> {
-      printer.print(
-        openApi("Petstore").withPath(multipleResponsesWithDefaultOne)
-      ) must ===( //
+      printer.print(openApi("Petstore").withPath(multipleResponsesWithDefaultOne)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -384,9 +343,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with not found response" >> {
-      printer.print(
-        openApi("Petstore").withPath(notFoundResponse)
-      ) must ===( //
+      printer.print(openApi("Petstore").withPath(notFoundResponse)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -401,6 +358,34 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}""".stripMargin)
     }
 
+    "when there are simple response and response with anonymous objects" >> {
+      printer.print(openApi("Petstore").withPath(simpleResponseResponseAnonymousObjects)) must ===(
+        """|object PetstoreHttpClient {
+          |
+          |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+          |    import PetstoreClient._
+          |
+          |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
+          |  }
+          |
+          |}""".stripMargin)
+    }
+
+    "when  multiple responses with anonymous objects with default response" >> {
+      printer.print(openApi("Payload").withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
+        """|object PayloadHttpClient {
+          |
+          |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+          |    import PayloadClient._
+          |
+          |    def updatePayload(id: String): F[UpdatePayloadResponse] = client.fetch[UpdatePayloadResponse](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
+          |      case Successful(response) => response.as[UpdatedPayload].map(x => Coproduct[UpdatedPayload](x))
+          |      case default => default.as[UnexpectedError].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))
+          |    }
+          |  }
+          |
+          |}""".stripMargin)
+    }
   }
 
   "http4s 0.20.x should able to print" >> {
@@ -588,6 +573,33 @@ object OpenApiPrintSpecification {
         ),
         "404" -> response(
           "Not found",
+          "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
+        )
+      ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
+    )
+
+  val simpleResponseResponseAnonymousObjects = "/payloads/{id}" -> emptyItemObject
+    .withPut(
+      operation[JsonSchemaF.Fixed](
+        request(
+          "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+        ),
+        responses = "200" -> response(
+          "Updated payload",
+          "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+        )
+      ).withOperationId("updateAnotherPayload").withParameter(path("id", Fixed.string()))
+    )
+
+  val multipleResponsesWithAnonymousObjectAndDefaultOne = "/payloads/{id}" -> emptyItemObject
+    .withPut(
+      operationWithResponses[JsonSchemaF.Fixed](
+        responses = "200" -> response(
+          "Updated payload",
+          "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+        ),
+        "default" -> response(
+          "Unexpected error",
           "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
         )
       ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
