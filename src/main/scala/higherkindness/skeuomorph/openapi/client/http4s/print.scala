@@ -95,17 +95,68 @@ object print {
       konst("jsonEncoderOf[F, ") *< show[EncoderName] >* konst("]"))
       .contramapN(x => (x, x, x))
 
+  def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
+    (
+      konst("case Successful(response) => response.as[") *< responseOrType[T] >* konst("]"),
+      konst(".map(x => Coproduct[") *< responseOrType[T] >* konst("](x))")).contramapN(x => x -> x)
+
+  def statusResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, Either[Response[T], Reference])] =
+    (
+      konst("case response if response.status.code == ") *< string >* konst(" => "),
+      konst("response.as[") *< string >* konst("]"),
+      konst(".map(x => Coproduct[") *< string >* konst("]"),
+      konst("(") *< string >* konst("(x)))")).contramapN {
+      case (s, x) =>
+        val tpe         = responseOrType.print(x)
+        val (auxTpe, _) = typesAndSchemas[T](s, x)
+        (s, tpe, auxTpe, auxTpe)
+    }
+
+  def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
+    (konst("case default => default.as[") *< responseOrType[T] >* konst(
+      "].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))"))
+      .contramap(identity)
+
+  def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, Either[Response[T], Reference])] =
+    (successResponseImpl[T] >|< statusResponseImpl[T] >|< defaultResponseImpl[T]).contramap {
+      case (statusCodePattern(code), x) if successStatusCode(code) => (x.asLeft).asLeft
+      case ("default", x)                                          => x.asRight
+      case (s, x)                                                  => (s -> x).asRight.asLeft
+    }
+
+  def requestImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
+    (
+      konst("Request[F](method = Method.") *< show[HttpVerb],
+      konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst(")"))
+      .contramapN(x =>
+        (x._1, (x._2, x._3.parameters.flatMap(_.left.toOption).collect {
+          case x: Parameter.Query[T] => x
+        })))
+
+  def fetchImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
+    (
+      konst("fetch[") *< responsesTypes >* konst("]("),
+      requestImpl[T] >* konst(") {") >* newLine,
+      sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
+      twoSpaces *< twoSpaces *< konst("}"))
+      .contramapN { x =>
+        val operationId = OperationId(x)
+        ((operationId -> x._3.responses), x, x._3.responses.toList, ())
+      }
+
+  def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
+    (konst("expect[") *< responsesTypes >* konst("]("), requestImpl[T] >* konst(")"), optional(withBody))
+      .contramapN { x =>
+        val operationId = OperationId(x)
+        (operationId -> x._3.responses, x, x._3.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name))
+      }
+
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
-      method[T],
-      konst(" = client.expect[") *< responsesTypes >* konst("]"),
-      konst("(Request[F](method = Method.") *< show[HttpVerb],
-      konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst("))"),
-      optional(withBody)).contramapN { x =>
-      val operationId = OperationId(x)
-      (x, operationId -> x._3.responses, x._1, (x._2, x._3.parameters.flatMap(_.left.toOption).collect {
-        case x: Parameter.Query[T] => x
-      }), x._3.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name))
+      method[T] >* konst(" = client."),
+      expectImpl[T](withBody) >|< fetchImpl[T]
+    ).contramapN { x =>
+      (x, if (x._3.responses.size > 1) x.asRight else x.asLeft)
     }
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =

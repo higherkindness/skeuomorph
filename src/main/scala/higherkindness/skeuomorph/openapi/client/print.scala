@@ -31,14 +31,16 @@ object print {
   import higherkindness.skeuomorph.openapi.schema._
   import higherkindness.skeuomorph.openapi.schema.Path._
 
-  private val jsonMediaType = "application/json"
+  private val jsonMediaType                    = "application/json"
+  val statusCodePattern                        = """(\d+)""".r
+  def successStatusCode(code: String): Boolean = code.toInt >= 200 && code.toInt < 400
 
   def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
 
   def divBy[A, B](p1: Printer[A], p2: Printer[B])(sep: Printer[Unit]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
 
-  case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
+  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
     def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
     def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
@@ -59,7 +61,7 @@ object print {
         name(tpe).asLeft
 
   }
-  case class Var[T](name: String, tpe: Tpe[T])
+  final case class Var[T](name: String, tpe: Tpe[T])
   object Var {
     def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
     def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
@@ -213,7 +215,7 @@ object print {
   private def referenceTpe[T: Basis[JsonSchemaF, ?]](x: Reference): Tpe[T] =
     referenceTuple(x).map(_.tpe).getOrElse(Tpe.unit)
 
-  private def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
+  def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     responseType >|< tpe.contramap(referenceTpe[T])
 
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
@@ -258,17 +260,19 @@ object print {
   private def newCaseClass(name: String, fields: (String, String)*): String =
     s"final case class $name(${fields.map { case (x, y) => s"$x: $y" }.mkString(", ")})"
 
-  private def typesAndSchemas[T: Basis[JsonSchemaF, ?]](
+  def typesAndSchemas[T: Basis[JsonSchemaF, ?]](
       status: String,
       responseOr: Either[Response[T], Reference]): (String, List[String]) = {
-    val tpe        = responseOrType.print(responseOr)
-    val intPattern = """(\d+)""".r
+    val statusCodePattern = """(\d+)""".r
+
+    val tpe = responseOrType.print(responseOr)
+
     (status match {
-      case intPattern(code) =>
+      case statusCodePattern(code) =>
         responseOr.left.toOption.map(
           response =>
             typeAndSchemaFor(response, tpe) {
-              if (code.toInt >= 200 && code.toInt < 400)
+              if (successStatusCode(code))
                 tpe -> Nil
               else {
                 val newTpe = defaultResponseName(OperationId.from(response.description))
