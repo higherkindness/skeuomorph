@@ -121,15 +121,9 @@ object print {
     implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
   }
 
-  final case class EncoderName(value: String) extends AnyVal
-  object EncoderName {
-    implicit val encoderNameShow: Show[EncoderName] = Show.show(_.value)
-  }
+  final case class Encoder[T](value: Var[T]) extends AnyVal
 
-  final case class DecoderName(value: String) extends AnyVal
-  object DecoderName {
-    implicit val decoderNameShow: Show[DecoderName] = Show.show(_.value)
-  }
+  final case class Decoder[T](value: Var[T]) extends AnyVal
 
   final case class OperationId(value: String) extends AnyVal
 

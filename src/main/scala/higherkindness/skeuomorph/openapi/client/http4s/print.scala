@@ -61,39 +61,45 @@ object print {
         TraitName(x) -> ImplName(x))
     }
 
-  def encoderAndDecodersFrom[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[Either[EncoderName, DecoderName]] = {
+  def encoderAndDecodersFrom[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[Either[Encoder[T], Decoder[T]]] = {
     val xs = openApi.components.toList.flatMap(_.schemas.map(_._1))
-
-    xs.map(EncoderName.apply).map(_.asLeft) ++ xs.map(DecoderName.apply).map(_.asRight)
+    xs.flatMap { x =>
+      List(
+        Encoder[T](Var(x, Tpe.apply(x))).asLeft,
+        Encoder[T](Var(s"Option$x", Tpe.apply[T](x).copy(required = false))).asLeft)
+    } ++
+      xs.map(x => Decoder[T](Var(x, Tpe.apply(x))).asRight)
   }
 
-  def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[DecoderName] =
-    (
-      konst("implicit val ") *< show[DecoderName] >* konst("Decoder: "),
-      konst("Decoder[") *< show[DecoderName] >* konst("] = "),
-      konst("deriveDecoder[") *< show[DecoderName] >* konst("]"))
-      .contramapN(x => (x, x, x))
+  def varTuple[T](x: Var[T]): (String, Tpe[T], Tpe[T]) = ((x.name, x.tpe, x.tpe))
 
-  def circeEncoder[T: Basis[JsonSchemaF, ?]]: Printer[EncoderName] =
+  def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[Decoder[T]] =
     (
-      konst("implicit val ") *< show[EncoderName] >* konst("Encoder: "),
-      konst("Encoder[") *< show[EncoderName] >* konst("] = "),
-      konst("deriveEncoder[") *< show[EncoderName] >* konst("]"))
-      .contramapN(x => (x, x, x))
+      konst("implicit val ") *< string >* konst("Decoder: "),
+      konst("Decoder[") *< tpe[T] >* konst("] = "),
+      konst("deriveDecoder[") *< tpe[T] >* konst("]"))
+      .contramapN(x => varTuple(x.value))
 
-  def entityDecoder[T: Basis[JsonSchemaF, ?]]: Printer[DecoderName] =
+  def circeEncoder[T: Basis[JsonSchemaF, ?]]: Printer[Encoder[T]] =
     (
-      konst("implicit val ") *< show[DecoderName] >* konst("EntityDecoder: "),
-      konst("EntityDecoder[F, ") *< show[DecoderName] >* konst("] = "),
-      konst("jsonOf[F, ") *< show[DecoderName] >* konst("]"))
-      .contramapN(x => (x, x, x))
+      konst("implicit val ") *< string >* konst("Encoder: "),
+      konst("Encoder[") *< tpe[T] >* konst("] = "),
+      konst("deriveEncoder[") *< tpe[T] >* konst("]"))
+      .contramapN(x => varTuple(x.value))
 
-  def entityEncoder[T: Basis[JsonSchemaF, ?]]: Printer[EncoderName] =
+  def entityDecoder[T: Basis[JsonSchemaF, ?]]: Printer[Decoder[T]] =
     (
-      konst("implicit val ") *< show[EncoderName] >* konst("EntityEncoder: "),
-      konst("EntityEncoder[F, ") *< show[EncoderName] >* konst("] = "),
-      konst("jsonEncoderOf[F, ") *< show[EncoderName] >* konst("]"))
-      .contramapN(x => (x, x, x))
+      konst("implicit val ") *< string >* konst("EntityDecoder: "),
+      konst("EntityDecoder[F, ") *< tpe[T] >* konst("] = "),
+      konst("jsonOf[F, ") *< tpe[T] >* konst("]"))
+      .contramapN(x => varTuple(x.value))
+
+  def entityEncoder[T: Basis[JsonSchemaF, ?]]: Printer[Encoder[T]] =
+    (
+      konst("implicit val ") *< string >* konst("EntityEncoder: "),
+      konst("EntityEncoder[F, ") *< tpe[T] >* konst("] = "),
+      konst("jsonEncoderOf[F, ") *< tpe[T] >* konst("]"))
+      .contramapN(x => varTuple(x.value))
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     (

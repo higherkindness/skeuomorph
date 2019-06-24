@@ -299,12 +299,16 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when optional body and not optional query parameters is provided" >> {
-      printer.print(openApi("Petstore").withPath(mediaTypeOptionBody)) must ===(
+      printer.print(openApi("Petstore").withPath(mediaTypeOptionBody).withSchema("UpdatePayload" -> Fixed.string())) must ===(
         """|object PetstoreHttpClient {
-           |
+           |  implicit val UpdatePayloadEncoder: Encoder[UpdatePayload] = deriveEncoder[UpdatePayload]
+           |  implicit val OptionUpdatePayloadEncoder: Encoder[Option[UpdatePayload]] = deriveEncoder[Option[UpdatePayload]]
+           |  implicit val UpdatePayloadDecoder: Decoder[UpdatePayload] = deriveDecoder[UpdatePayload]
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |
+           |    implicit val UpdatePayloadEntityEncoder: EntityEncoder[F, UpdatePayload] = jsonEncoderOf[F, UpdatePayload]
+           |    implicit val OptionUpdatePayloadEntityEncoder: EntityEncoder[F, Option[UpdatePayload]] = jsonEncoderOf[F, Option[UpdatePayload]]
+           |    implicit val UpdatePayloadEntityDecoder: EntityDecoder[F, UpdatePayload] = jsonOf[F, UpdatePayload]
            |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)))
            |  }
            |
@@ -416,10 +420,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import petstore.models._
            |object PetstoreHttpClient {
            |  implicit val NewPayloadEncoder: Encoder[NewPayload] = deriveEncoder[NewPayload]
+           |  implicit val OptionNewPayloadEncoder: Encoder[Option[NewPayload]] = deriveEncoder[Option[NewPayload]]
            |  implicit val NewPayloadDecoder: Decoder[NewPayload] = deriveDecoder[NewPayload]
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |    implicit val NewPayloadEntityEncoder: EntityEncoder[F, NewPayload] = jsonEncoderOf[F, NewPayload]
+           |    implicit val OptionNewPayloadEntityEncoder: EntityEncoder[F, Option[NewPayload]] = jsonEncoderOf[F, Option[NewPayload]]
            |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
            |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withBody(newPayload)
            |  }
@@ -458,10 +464,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import petstore.models._
            |object PetstoreHttpClient {
            |  implicit val NewPayloadEncoder: Encoder[NewPayload] = deriveEncoder[NewPayload]
+           |  implicit val OptionNewPayloadEncoder: Encoder[Option[NewPayload]] = deriveEncoder[Option[NewPayload]]
            |  implicit val NewPayloadDecoder: Decoder[NewPayload] = deriveDecoder[NewPayload]
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |    implicit val NewPayloadEntityEncoder: EntityEncoder[F, NewPayload] = jsonEncoderOf[F, NewPayload]
+           |    implicit val OptionNewPayloadEntityEncoder: EntityEncoder[F, Option[NewPayload]] = jsonEncoderOf[F, Option[NewPayload]]
            |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
            |    def createPayload(newPayload: NewPayload): F[Unit] = client.expect[Unit](Request[F](method = Method.POST, uri = baseUrl / "payloads")).withEntity(newPayload)
            |  }
