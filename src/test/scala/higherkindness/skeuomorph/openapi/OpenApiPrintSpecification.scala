@@ -135,12 +135,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def getPayload(id: String): F[Either[GetPayloadResponse, Payload]]
+           |  def getPayload(id: String): F[Either[GetPayloadError, Payload]]
            |}
            |object PayloadClient {
            |
            |  final case class UnexpectedErrorResponse(statusCode: Int, value: Error)
-           |  type GetPayloadResponse = UnexpectedErrorResponse
+           |  type GetPayloadError = UnexpectedErrorResponse
            |}""".stripMargin)
     }
 
@@ -152,12 +152,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def getPayload(id: String): F[Either[GetPayloadResponse, Payload]]
+           |  def getPayload(id: String): F[Either[GetPayloadError, Payload]]
            |}
            |object PayloadClient {
            |
-           |  final case class NotFoundResponse(value: String)
-           |  type GetPayloadResponse = NotFoundResponse
+           |  final case class NotFoundError(value: String)
+           |  type GetPayloadError = NotFoundError
            |}""".stripMargin
       )
     }
@@ -170,13 +170,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def updatePayload(id: String): F[Either[UpdatePayloadResponse, UpdatedPayload]]
+           |  def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]]
            |}
            |object PayloadClient {
            |
            |  final case class UpdatedPayload(name: String)
            |  final case class NotFound(isDone: Boolean)
-           |  type UpdatePayloadResponse = NotFound
+           |  type UpdatePayloadError = NotFound
            |}""".stripMargin
       )
     }
@@ -202,14 +202,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def updatePayload(id: String): F[Either[UpdatePayloadResponse, UpdatedPayload]]
+           |  def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]]
            |}
            |object PayloadClient {
            |
            |  final case class UpdatedPayload(name: String)
            |  final case class UnexpectedError(isDone: Boolean)
            |  final case class UnexpectedErrorResponse(statusCode: Int, value: UnexpectedError)
-           |  type UpdatePayloadResponse = UnexpectedErrorResponse
+           |  type UpdatePayloadError = UnexpectedErrorResponse
            |}""".stripMargin
       )
     }
@@ -336,7 +336,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |
-           |    def getPayload(id: String): F[Either[GetPayloadResponse, Payload]] = client.fetch[Either[GetPayloadResponse, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
+           |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(x => Coproduct[Payload](x))
            |      case default => default.as[Error].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))
            |    }
@@ -352,9 +352,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |
-           |    def getPayload(id: String): F[Either[GetPayloadResponse, Payload]] = client.fetch[Either[GetPayloadResponse, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
+           |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(x => Coproduct[Payload](x))
-           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[NotFoundResponse](NotFoundResponse(x)))
+           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[NotFoundError](NotFoundError(x)))
            |    }
            |  }
            |
@@ -381,7 +381,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
           |    import PayloadClient._
           |
-          |    def updatePayload(id: String): F[Either[UpdatePayloadResponse, UpdatedPayload]] = client.fetch[Either[UpdatePayloadResponse, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
+          |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
           |      case Successful(response) => response.as[UpdatedPayload].map(x => Coproduct[UpdatedPayload](x))
           |      case default => default.as[UnexpectedError].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))
           |    }

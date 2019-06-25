@@ -193,8 +193,8 @@ object print {
   private def defaultRequestName[T](operationId: OperationId): String =
     s"${operationId.show}Request".capitalize
 
-  private def defaultResponseName[T](operationId: OperationId): String =
-    s"${operationId.show}Response".capitalize
+  private def defaultResponseErrorName[T](operationId: OperationId): String =
+    s"${operationId.show}Error".capitalize
 
   private def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
     response.content.get(jsonMediaType).flatMap(_.schema)
@@ -217,7 +217,7 @@ object print {
 
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
     case (x, y) =>
-      val defaultName = defaultResponseName(x)
+      val defaultName = defaultResponseErrorName(x)
       y.size match {
         case 0 => "Unit"
         case 1 => responseOrType.print(y.head._2)
@@ -274,7 +274,7 @@ object print {
               if (successStatusCode(code))
                 tpe -> Nil
               else {
-                val newTpe = defaultResponseName(OperationId.from(response.description))
+                val newTpe = defaultResponseErrorName(OperationId.from(response.description))
                 newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
               }
           }
@@ -340,8 +340,8 @@ object print {
       .contramapN { x =>
         un(second(x)(_.map { x =>
           val operationId = OperationId(x)
-          (operationId                        -> x._3.requestBody) ->
-            (defaultResponseName(operationId) -> x._3.responses)
+          (operationId                             -> x._3.requestBody) ->
+            (defaultResponseErrorName(operationId) -> x._3.responses)
         }.unzip))
       }
 
