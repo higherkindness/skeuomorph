@@ -20,6 +20,7 @@ import io.circe.Decoder
 import JsonDecoders._
 import io.circe.Json
 import cats.implicits._
+import helpers._
 
 class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
   import JsonSchemaF.Fixed
@@ -112,13 +113,11 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         "required" -> Json.arr(Json.fromString("name"))
       )
       decoder.decodeJson(objectType) must beRight(
-        Fixed.`object`(
-          List(
-            "name"    -> Fixed.string(),
-            "age"     -> Fixed.integer(),
-            "address" -> Fixed.reference("#/components/schemas/Address")),
-          List("name")
-        ))
+        obj(
+          "name"    -> Fixed.string(),
+          "age"     -> Fixed.integer(),
+          "address" -> Fixed.reference("#/components/schemas/Address"))("name")
+      )
     }
 
     "when object object is provided without required field" >> {
@@ -128,11 +127,7 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
           "valid" -> Json.obj("type" -> Json.fromString("boolean"))
         )
       )
-      decoder.decodeJson(objectType) must beRight(
-        Fixed.`object`(
-          List("valid" -> Fixed.boolean()),
-          List.empty
-        ))
+      decoder.decodeJson(objectType) must beRight(obj("valid" -> Fixed.boolean())())
     }
 
     "when object does not have properties" >> {
@@ -140,8 +135,7 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         .decodeJson(
           Json.obj(
             "type"                 -> Json.fromString("object"),
-            "additionalProperties" -> Json.obj("type" -> Json.fromString("object")))) must beRight(
-        Fixed.`object`(List.empty, List.empty))
+            "additionalProperties" -> Json.obj("type" -> Json.fromString("object")))) must beRight(obj()())
     }
 
     "when object does have type" >> {
@@ -156,7 +150,7 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
             )
           ),
           "required" -> Json.arr(Json.fromString("subscriptionId"))
-        )) must beRight(Fixed.`object`(List("subscriptionId" -> Fixed.string()), List("subscriptionId")))
+        )) must beRight(obj("subscriptionId" -> Fixed.string())("subscriptionId"))
     }
 
   }

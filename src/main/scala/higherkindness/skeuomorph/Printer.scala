@@ -19,6 +19,8 @@ package higherkindness.skeuomorph
 import catz.contrib.Decidable
 import cats.syntax.compose._
 import cats.instances.function._
+import cats.Show
+import cats.syntax.show._
 
 trait Printer[A] {
   def print(a: A): String
@@ -41,6 +43,8 @@ object Printer {
   val string: Printer[String] = Printer(identity)
 
   val unit: Printer[Unit] = Printer(_ => "")
+
+  def show[F: Show]: Printer[F] = Printer { _.show }
 
   def optional[A](p: Printer[A]): Printer[Option[A]] =
     Printer(_.fold("")(p.print))

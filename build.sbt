@@ -25,6 +25,18 @@ lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
+  .settings( libraryDependencies ++= Seq(
+    ("com.lihaoyi" % "ammonite" % "1.5.0" % "test").cross(CrossVersion.full)
+  ))
+  .settings(
+    sourceGenerators in Test += Def.task {
+      val file = (sourceManaged in Test).value / "amm.scala"
+      IO.write(file, """object amm extends App { 
+        ammonite.Main.main(args) 
+      }""")
+      Seq(file)
+    }.taskValue
+  )
 
 lazy val docs = project
   .in(file("docs"))
