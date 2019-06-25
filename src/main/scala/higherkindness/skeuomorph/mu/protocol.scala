@@ -32,6 +32,12 @@ object SerializationType {
   case object AvroWithSchema extends SerializationType
 }
 
+sealed trait CompressionType extends Product with Serializable
+object CompressionType {
+  case object Gzip     extends CompressionType
+  case object Identity extends CompressionType
+}
+
 final case class Protocol[T](
     name: String,
     pkg: Option[String],
@@ -61,7 +67,7 @@ object Protocol {
       proto.namespace,
       Nil,
       proto.types.map(toMu),
-      List(Service(proto.name, SerializationType.Avro, proto.messages.map(toOperation))),
+      List(Service(proto.name, SerializationType.Avro, CompressionType.Identity, proto.messages.map(toOperation))),
       Nil
     )
   }
@@ -86,7 +92,8 @@ object Protocol {
       options = protocol.options,
       declarations = protocol.declarations.map(toMu),
       services = protocol.services
-        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation))),
+        .map(s =>
+          new Service[U](s.name, SerializationType.Protobuf, CompressionType.Identity, s.operations.map(toOperation))),
       imports = protocol.imports.map(toImports)
     )
 
@@ -94,7 +101,11 @@ object Protocol {
 
 }
 
-final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
+final case class Service[T](
+    name: String,
+    serializationType: SerializationType,
+    compressionType: CompressionType,
+    operations: List[Service.Operation[T]])
 object Service {
   final case class OperationType[T](tpe: T, stream: Boolean)
   final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])

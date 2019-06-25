@@ -16,16 +16,15 @@
 
 package higherkindness.skeuomorph.mu
 
+import cats.implicits._
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
+import higherkindness.skeuomorph.mu.CompressionType.{Gzip, Identity}
 import higherkindness.skeuomorph.mu.MuF.{string => _, _}
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
 import higherkindness.skeuomorph.mu.SerializationType._
-
-import cats.implicits._
-
 import qq.droste._
 
 object print {
@@ -97,10 +96,10 @@ object print {
    */
   def serviceTuple[T](
       s: Service[T]
-  ): (SerializationType, String, List[Service.Operation[T]]) =
+  ): (SerializationType, CompressionType, String, List[Service.Operation[T]]) =
     s match {
-      case Service(name, serType, ops) =>
-        (serType, name, ops)
+      case Service(name, serType, compType, ops) =>
+        (serType, compType, name, ops)
     }
 
   /**
@@ -127,6 +126,15 @@ object print {
 
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
+
+  def gzip: Printer[Gzip.type]         = Printer(_.toString)
+  def identity: Printer[Identity.type] = Printer(_.toString)
+
+  def compressionType: Printer[CompressionType] =
+    (gzip >|< identity).contramap({
+      case Gzip     => Left(Gzip)
+      case Identity => Right(Identity)
+    })
 
   def opTpeEither[T](op: Service.OperationType[T], isRequest: Boolean): Either[Either[Either[T, T], T], T] =
     (op.stream, isRequest) match {
@@ -158,7 +166,8 @@ object print {
 
   def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
     (
-      konst("@service(") *< serializationType >* konst(") trait "),
+      konst("@service(") *< serializationType,
+      konst(", ") *< compressionType >* konst(") trait "),
       string >* konst("[F[_]] {") >* newLine,
       sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)
