@@ -212,13 +212,18 @@ object print {
   def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     responseType >|< tpe.contramap(referenceTpe[T])
 
+  def successType[T](x: Map[String, Either[Response[T], Reference]]) =
+    x.find(x => successStatusCode(x._1)).map(_._2)
+
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
     case (x, y) =>
       val defaultName = defaultResponseName(x)
       y.size match {
         case 0 => "Unit"
         case 1 => responseOrType.print(y.head._2)
-        case _ => defaultName
+        case _ =>
+          val success = successType(y).fold("Unit")(responseOrType.print)
+          s"Either[$defaultName, $success]"
       }
   }
 
@@ -289,8 +294,9 @@ object print {
     (List[String], String, List[String]),
     List[String]] =
     if (responses.size > 1) {
+      val xsuccessType        = successType(responses).map(responseOrType[T].print)
       val (newTypes, schemas) = second(responses.map((typesAndSchemas[T] _).tupled).toList.unzip)(_.flatten)
-      (schemas.toList.filter(_.nonEmpty), defaultName, newTypes.toList).asLeft
+      (schemas.toList.filter(_.nonEmpty), defaultName, newTypes.toList.filterNot(_.some === xsuccessType)).asLeft
     } else
       responses.toList
         .map(_._2)
@@ -302,8 +308,9 @@ object print {
     (
       sepBy((space >* space) *< string, "\n") >* newLine,
       konst("  type ") *< string >* konst(" = "),
-      sepBy(string, " :+: ") >* konst(" :+: CNil"))
-      .contramapN(identity)
+      sepBy(string, " :+: "),
+      (konst(" :+: CNil") >|< unit)
+    ).contramapN(x => (x._1, x._2, x._3, if (x._3.size > 1) ().asLeft else ().asRight))
 
   private def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[
     (String, Map[String, Either[Response[T], Reference]])] =
