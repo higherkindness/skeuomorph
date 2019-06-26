@@ -102,25 +102,22 @@ object print {
       .contramapN(x => varTuple(x.value))
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
-    (
-      konst("case Successful(response) => response.as[") *< responseOrType[T] >* konst("]"),
-      konst(".map(x => Coproduct[") *< responseOrType[T] >* konst("](x))")).contramapN(x => x -> x)
+    (konst("case Successful(response) => response.as[") *< responseOrType[T] >* konst("].map(_.asRight)"))
+      .contramap(identity)
 
   def statusResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, Either[Response[T], Reference])] =
     (
       konst("case response if response.status.code == ") *< string >* konst(" => "),
-      konst("response.as[") *< string >* konst("]"),
-      konst(".map(x => Coproduct[") *< string >* konst("]"),
-      konst("(") *< string >* konst("(x)))")).contramapN {
-      case (s, x) =>
-        val tpe         = responseOrType.print(x)
-        val (auxTpe, _) = typesAndSchemas[T](s, x)
-        (s, tpe, auxTpe, auxTpe)
+      konst("response.as[") *< responseOrType[T] >* konst("]"),
+      konst(".map(x => ") *< string >* konst("(x).asLeft)")).contramapN {
+      case (status, tpe) =>
+        val (innerTpe, _) = typesAndSchemas[T](status, tpe)
+        (status, tpe, innerTpe)
     }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     (konst("case default => default.as[") *< responseOrType[T] >* konst(
-      "].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))"))
+      "].map(x => UnexpectedErrorResponse(default.status.code, x).asLeft)"))
       .contramap(identity)
 
   def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, Either[Response[T], Reference])] =

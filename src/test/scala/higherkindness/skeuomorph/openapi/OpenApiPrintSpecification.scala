@@ -28,8 +28,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a basic type is provided" >> {
       model.print(components("Foo" -> Fixed.string())) must
         ===("""|object models {
-             |  type Foo = String
-             |}""".stripMargin)
+               |  type Foo = String
+               |}""".stripMargin)
     }
 
     "when a object type is provided" >> {
@@ -337,8 +337,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    import PetstoreClient._
            |
            |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
-           |      case Successful(response) => response.as[Payload].map(x => Coproduct[Payload](x))
-           |      case default => default.as[Error].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))
+           |      case Successful(response) => response.as[Payload].map(_.asRight)
+           |      case default => default.as[Error].map(x => UnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
            |  }
            |
@@ -353,8 +353,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    import PetstoreClient._
            |
            |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
-           |      case Successful(response) => response.as[Payload].map(x => Coproduct[Payload](x))
-           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[NotFoundError](NotFoundError(x)))
+           |      case Successful(response) => response.as[Payload].map(_.asRight)
+           |      case response if response.status.code == 404 => response.as[String].map(x => NotFoundError(x).asLeft)
            |    }
            |  }
            |
@@ -382,8 +382,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |    import PayloadClient._
           |
           |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
-          |      case Successful(response) => response.as[UpdatedPayload].map(x => Coproduct[UpdatedPayload](x))
-          |      case default => default.as[UnexpectedError].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)))
+          |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
+          |      case default => default.as[UnexpectedError].map(x => UnexpectedErrorResponse(default.status.code, x).asLeft)
           |    }
           |  }
           |
