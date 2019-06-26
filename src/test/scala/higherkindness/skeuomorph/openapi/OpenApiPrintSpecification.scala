@@ -54,8 +54,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "Client trait should able to print" >> {
     import client.print._
     "when a post operation is provided" >> {
-      operations.print(paths()(mediaTypeReferencePost)) must
-        ===("""|import models._
+      operations.print(paths()(mediaTypeReferencePost)) must ===( //
+        """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
@@ -145,9 +145,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with not found response" >> {
-      operations.print(
-        paths()(notFoundResponse)
-      ) must ===(
+      operations.print(paths()(notFoundResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -163,9 +161,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with anonymous objects" >> {
-      operations.print(
-        paths()(multipleResponsesWithAnonymousObject)
-      ) must ===(
+      operations.print(paths()(multipleResponsesWithAnonymousObject)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -196,7 +192,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       )
     }
 
-    "when  multiple responses with anonymous objects with default response" >> {
+    "when multiple responses with anonymous objects with default response" >> {
       operations.print(paths()(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -210,6 +206,23 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  final case class UnexpectedError(isDone: Boolean)
            |  final case class UnexpectedErrorResponse(statusCode: Int, value: UnexpectedError)
            |  type UpdatePayloadError = UnexpectedErrorResponse
+           |}""".stripMargin
+      )
+    }
+
+    "when multiple responses and multiple error scenarios" >> {
+      operations.print(paths()(multipleResponses)) must ===(
+        """|import models._
+           |import shapeless.{:+:, CNil}
+           |trait PayloadClient[F[_]] {
+           |  import PayloadClient._
+           |  def createPayload(): F[Either[CreatePayloadError, Unit]]
+           |}
+           |object PayloadClient {
+           |
+           |  final case class NotFoundError(value: String)
+           |  final case class UnexpectedErrorResponse(statusCode: Int, value: Error)
+           |  type CreatePayloadError = NotFoundError :+: UnexpectedErrorResponse :+: CNil
            |}""".stripMargin
       )
     }
@@ -374,20 +387,38 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |}""".stripMargin)
     }
 
-    "when  multiple responses with anonymous objects with default response" >> {
+    "when multiple responses with anonymous objects with default response" >> {
       printer.print(openApi("Payload").withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|object PayloadHttpClient {
-          |
-          |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
-          |    import PayloadClient._
-          |
-          |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
-          |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
-          |      case default => default.as[UnexpectedError].map(x => UnexpectedErrorResponse(default.status.code, x).asLeft)
-          |    }
-          |  }
-          |
-          |}""".stripMargin)
+           |
+           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |    import PayloadClient._
+           |
+           |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
+           |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
+           |      case default => default.as[UnexpectedError].map(x => UnexpectedErrorResponse(default.status.code, x).asLeft)
+           |    }
+           |  }
+           |
+           |}""".stripMargin)
+    }
+
+    "when multiple responses and multiple error scenarios" >> {
+      printer.print(openApi("Payload").withPath(multipleResponses)) must ===(
+        """|object PayloadHttpClient {
+           |
+           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |    import PayloadClient._
+           |
+           |    def createPayload(): F[Either[CreatePayloadError, Unit]] = client.fetch[Either[CreatePayloadError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads")) {
+           |      case Successful(response) => response.as[Unit].map(_.asRight)
+           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[NotFoundError](NotFoundError(x)).asLeft)
+           |      case default => default.as[Error].map(x => Coproduct[UnexpectedErrorResponse](UnexpectedErrorResponse(default.status.code, x)).asLeft)
+           |    }
+           |  }
+           |
+           |}""".stripMargin
+      )
     }
   }
 
@@ -400,7 +431,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       printer.print(
         PackageName("petstore") -> openApi("Petstore")
           .withPath(mediaTypeReferencePost)
-          .withSchema("NewPayload" -> Fixed.string())) must ===(
+          .withSchema("NewPayload" -> Fixed.string())
+      ) must ===(
         """|import cats.effect._
            |import cats.syntax.functor._
            |import cats.syntax.either._
@@ -440,7 +472,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     import client.http4s.print.v18._
 
     "when a post operation is provided" >> {
-
       printer.print(
         PackageName("petstore") -> openApi("Petstore")
           .withPath(mediaTypeReferencePost)
@@ -492,12 +523,22 @@ object OpenApiPrintSpecification {
   def paths[T](traitName: String = "PayloadClient")(
       xs: (String, ItemObject[T])*): (TraitName, Map[String, ItemObject[T]]) = TraitName(traitName) -> xs.toMap
 
-  private val successPayloadResponse = "200" -> response(
+  private val successPayload = "200" -> response(
     "Null response",
     "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payload"))
   )
 
-  private val successNullResponse = "200" -> response[JsonSchemaF.Fixed]("Null response")
+  private val successNull = "200" -> response[JsonSchemaF.Fixed]("Null response")
+
+  private val defaultError = "default" -> response(
+    "Unexpected error",
+    "application/json" -> mediaType(Fixed.reference("#/components/schemas/Error"))
+  )
+
+  private val notFound = "404" -> response(
+    "Not found",
+    "application/json" -> mediaType(Fixed.string())
+  )
 
   val mediaTypeReferencePost = "/payloads" -> emptyItemObject.withPost(
     operation[JsonSchemaF.Fixed](
@@ -510,12 +551,12 @@ object OpenApiPrintSpecification {
     .withPut(
       operation[JsonSchemaF.Fixed](
         request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))),
-        successNullResponse
+        successNull
       ).withOperationId("updatePayload").withParameter(pathId))
     .withDelete(
       operation[JsonSchemaF.Fixed](
         request(),
-        successNullResponse
+        successNull
       ).withOperationId("deletePayload").withParameter(pathId))
 
   val mediaTypeReferenceGet = payloadPath -> emptyItemObject.withGet(
@@ -529,7 +570,7 @@ object OpenApiPrintSpecification {
   )
   val mediaTypeReferenceGetId = payloadPathId -> emptyItemObject
     .withGet(
-      operationWithResponses[JsonSchemaF.Fixed](successPayloadResponse)
+      operationWithResponses[JsonSchemaF.Fixed](successPayload)
         .withOperationId("getPayload")
         .withParameter(path("id", Fixed.string())))
 
@@ -537,7 +578,7 @@ object OpenApiPrintSpecification {
     .withDelete(
       operation[JsonSchemaF.Fixed](
         request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))).optional,
-        successNullResponse
+        successNull
       ).withOperationId("deletePayload")
         .withParameter(path("id", Fixed.string()))
         .withParameter(query("size", Fixed.long(), required = true)))
@@ -552,22 +593,16 @@ object OpenApiPrintSpecification {
   val multipleResponsesWithDefaultOne = payloadPathId -> emptyItemObject
     .withGet(
       operationWithResponses[JsonSchemaF.Fixed](
-        responses = successPayloadResponse,
-        "default" -> response(
-          "Unexpected error",
-          "application/json" -> mediaType(Fixed.reference("#/components/schemas/Error"))
-        )
+        responses = successPayload,
+        defaultError
       ).withOperationId("getPayload").withParameter(path("id", Fixed.string()))
     )
 
   val notFoundResponse = payloadPathId -> emptyItemObject
     .withGet(
       operationWithResponses[JsonSchemaF.Fixed](
-        responses = successPayloadResponse,
-        "404" -> response(
-          "Not found",
-          "application/json" -> mediaType(Fixed.string())
-        )
+        responses = successPayload,
+        notFound
       ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
 
   val multipleResponsesWithAnonymousObject = payloadPathId -> emptyItemObject
@@ -609,6 +644,11 @@ object OpenApiPrintSpecification {
           "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
         )
       ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
+    )
+
+  val multipleResponses = "/payloads" -> emptyItemObject
+    .withPost(
+      operationWithResponses[JsonSchemaF.Fixed](successNull, notFound, defaultError).withOperationId("createPayload")
     )
 
 }

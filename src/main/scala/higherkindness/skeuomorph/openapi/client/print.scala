@@ -31,9 +31,12 @@ object print {
   import higherkindness.skeuomorph.openapi.schema._
   import higherkindness.skeuomorph.openapi.schema.Path._
 
-  private val jsonMediaType                    = "application/json"
-  val statusCodePattern                        = """(\d+)""".r
-  def successStatusCode(code: String): Boolean = code.toInt >= 200 && code.toInt < 400
+  private val jsonMediaType = "application/json"
+  val statusCodePattern     = """(\d+)""".r
+  def successStatusCode(code: String): Boolean = code match {
+    case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
+    case _                       => false
+  }
 
   def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
 
@@ -212,8 +215,8 @@ object print {
   def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     responseType >|< tpe.contramap(referenceTpe[T])
 
-  def successType[T](x: Map[String, Either[Response[T], Reference]]) =
-    x.find(x => successStatusCode(x._1)).map(_._2)
+  def successType[T](responses: Map[String, Either[Response[T], Reference]]): Option[Either[Response[T], Reference]] =
+    responses.find(x => successStatusCode(x._1)).map(_._2)
 
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
     case (x, y) =>
@@ -294,9 +297,11 @@ object print {
     (List[String], String, List[String]),
     List[String]] =
     if (responses.size > 1) {
-      val xsuccessType        = successType(responses).map(responseOrType[T].print)
       val (newTypes, schemas) = second(responses.map((typesAndSchemas[T] _).tupled).toList.unzip)(_.flatten)
-      (schemas.toList.filter(_.nonEmpty), defaultName, newTypes.toList.filterNot(_.some === xsuccessType)).asLeft
+      (
+        schemas.toList.filter(_.nonEmpty),
+        defaultName,
+        newTypes.toList.filterNot(_.some === successType(responses).map(responseOrType[T].print))).asLeft
     } else
       responses.toList
         .map(_._2)
