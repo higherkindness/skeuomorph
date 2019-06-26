@@ -119,9 +119,12 @@ object print {
       konst("case response if response.status.code == ") *< string >* konst(" => "),
       konst("response.as[") *< responseOrType[T] >* konst("]"),
       konst(".map(x => ") *< coproductIf(string >* konst("(x)")) >* konst(".asLeft)")).contramapN {
-      case (status, (tpe, n)) =>
-        val (innerTpe, _) = typesAndSchemas[T](status, tpe)
-        (status, tpe, (innerTpe, innerTpe, n))
+      case x @ (status, _) =>
+        un(second(x) {
+          case (t, n) =>
+            val (innerTpe, _) = typesAndSchemas[T](status, t)
+            (t, (innerTpe, innerTpe, n))
+        })
     }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(Either[Response[T], Reference], Int)] =
@@ -134,19 +137,24 @@ object print {
 
   def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, (Either[Response[T], Reference], Int))] =
     (successResponseImpl[T] >|< statusResponseImpl[T] >|< defaultResponseImpl[T]).contramap {
-      case (statusCodePattern(code), x) if successStatusCode(code) => (x._1.asLeft).asLeft
-      case ("default", x)                                          => x.asRight
-      case (s, x)                                                  => (s -> x).asRight.asLeft
+      case (statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
+      case ("default", x)                                               => x.asRight
+      case x                                                            => x.asRight.asLeft
+    }
+
+  private def queryParametersFrom[T]: Path.Operation[T] => List[Parameter.Query[T]] =
+    _.parameters.flatMap(_.left.toOption).collect {
+      case x: Parameter.Query[T] => x
     }
 
   def requestImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
       konst("Request[F](method = Method.") *< show[HttpVerb],
       konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst(")"))
-      .contramapN(x =>
-        (x._1, (x._2, x._3.parameters.flatMap(_.left.toOption).collect {
-          case x: Parameter.Query[T] => x
-        })))
+      .contramapN {
+        case (verb, path, operation) =>
+          second(verb -> path)(_ -> queryParametersFrom(operation))
+      }
 
   def fetchImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
@@ -154,30 +162,35 @@ object print {
       requestImpl[T] >* konst(") {") >* newLine,
       sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
       twoSpaces *< twoSpaces *< konst("}"))
-      .contramapN { x =>
-        val operationId       = OperationId(x)
-        val (_, _, operation) = x
-        (
-          (operationId -> operation.responses),
-          x,
-          operation.responses.toList.map(second(_)(y =>
-            y -> operation.responses.filterNot(x => successStatusCode(x._1)).size)),
-          ())
+      .contramapN {
+        case x @ (_, _, operation) =>
+          val operationId = OperationId(x)
+          (
+            (operationId -> operation.responses),
+            x,
+            operation.responses.toList.map(second(_)(y =>
+              y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size)),
+            ())
       }
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (konst("expect[") *< responsesTypes >* konst("]("), requestImpl[T] >* konst(")"), optional(withBody))
-      .contramapN { x =>
-        val operationId = OperationId(x)
-        (operationId -> x._3.responses, x, x._3.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name))
+      .contramapN {
+        case x @ (_, _, operation) =>
+          val operationId = OperationId(x)
+          (
+            operationId -> operation.responses,
+            x,
+            operation.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name))
       }
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
       method[T] >* konst(" = client."),
       expectImpl[T](withBody) >|< fetchImpl[T]
-    ).contramapN { x =>
-      (x, if (x._3.responses.size > 1) x.asRight else x.asLeft)
+    ).contramapN {
+      case x @ (_, _, operation) =>
+        (x, if (operation.responses.size > 1) x.asRight else x.asLeft)
     }
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =

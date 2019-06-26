@@ -315,7 +315,9 @@ object print {
       konst("  type ") *< string >* konst(" = "),
       sepBy(string, " :+: "),
       (konst(" :+: CNil") >|< unit)
-    ).contramapN(x => (x._1, x._2, x._3, if (x._3.size > 1) ().asLeft else ().asRight))
+    ).contramapN {
+      case (schemas, tpe, errorTypes) => (schemas, tpe, errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight)
+    }
 
   private def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[
     (String, Map[String, Either[Response[T], Reference]])] =
