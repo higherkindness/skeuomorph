@@ -114,32 +114,32 @@ object print {
       case (_, y, _)                                    => y.asLeft
     }
 
-  def statusResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, (Either[Response[T], Reference], Int))] =
+  def statusResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[
+    (OperationId, String, (Either[Response[T], Reference], Int))] =
     (
       konst("case response if response.status.code == ") *< string >* konst(" => "),
       konst("response.as[") *< responseOrType[T] >* konst("]"),
       konst(".map(x => ") *< coproductIf(string >* konst("(x)")) >* konst(".asLeft)")).contramapN {
-      case x @ (status, _) =>
-        un(second(x) {
-          case (t, n) =>
-            val (innerTpe, _) = typesAndSchemas[T](status, t)
-            (t, (innerTpe, innerTpe, n))
-        })
+      case (operationId, status, (t, n)) =>
+        val (innerTpe, _) = typesAndSchemas[T](operationId)(status, t)
+        (status, t, (innerTpe, innerTpe, n))
     }
 
-  def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(Either[Response[T], Reference], Int)] =
+  def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, (Either[Response[T], Reference], Int))] =
     (
-      konst("case default => default.as[") *< responseOrType[T] >* konst("]"),
-      konst(".map(x => ") *< coproductIf(konst("UnexpectedErrorResponse(default.status.code, x)")) >* konst(".asLeft)"))
-      .contramapN { x =>
-        second(x)(y => ("UnexpectedErrorResponse", (), y))
+      konst("case default => default.as[") *< string >* konst("]"),
+      konst(".map(x => ") *< coproductIf(string >* konst("(default.status.code, x)")) >* konst(".asLeft)"))
+      .contramapN {
+        case (operationId, (x, n)) =>
+          val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
+          (innerTpe, (tpe, tpe, n))
       }
 
-  def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(String, (Either[Response[T], Reference], Int))] =
-    (successResponseImpl[T] >|< statusResponseImpl[T] >|< defaultResponseImpl[T]).contramap {
-      case (statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
-      case ("default", x)                                               => x.asRight
-      case x                                                            => x.asRight.asLeft
+  def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
+    (successResponseImpl[T] >|< defaultResponseImpl[T] >|< statusResponseImpl[T]).contramap {
+      case (_, statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
+      case (operationId, "default", x)                                     => (operationId -> x).asRight.asLeft
+      case x                                                               => x.asRight
     }
 
   private def queryParametersFrom[T]: Path.Operation[T] => List[Parameter.Query[T]] =
@@ -168,9 +168,12 @@ object print {
           (
             (operationId -> operation.responses),
             x,
-            operation.responses.toList.map(second(_)(y =>
-              y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size)),
-            ())
+            operation.responses.toList.map { x =>
+              un(operationId -> second(x)(y =>
+                y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size))
+            },
+            ()
+          )
       }
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
