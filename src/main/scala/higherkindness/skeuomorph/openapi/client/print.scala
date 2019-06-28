@@ -277,36 +277,55 @@ object print {
     def statusCaseClass(tpe: String): String = newCaseClass(newType, "statusCode" -> "Int", "value" -> tpe)
     responseOr.fold(
       r => {
-        val (_, innerType, schemas) = typeAndSchemaFor(operationId.some, r, tpe) { tpe -> List.empty }
+        val (_, anonymousType, schemas) = typeAndSchemaFor(operationId.some, r, tpe) { tpe -> List.empty }
         un(second(newType -> schemas) { x =>
-          innerType.getOrElse(tpe) -> (x ++ List(statusCaseClass(innerType.getOrElse(tpe))))
+          anonymousType.getOrElse(tpe) -> (x ++ List(statusCaseClass(anonymousType.getOrElse(tpe))))
         })
       },
       _ => (newType, tpe, List(statusCaseClass(tpe)))
     )
   }
 
+  def statusTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
+      operationId: OperationId,
+      responseOr: Either[Response[T], Reference]): (String, Option[String], List[String]) = {
+    val tpe = responseOrType.print(responseOr)
+    responseOr.left.toOption
+      .map { response =>
+        val (newTpe, anonymousType, schemas) = typeAndSchemaFor(operationId.some, response, tpe) {
+          val newTpe = defaultResponseErrorName(operationId, response.description.some)
+          newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
+        }
+        (newTpe, anonymousType, schemas)
+      }
+      .getOrElse(
+        (tpe, None, List.empty)
+      )
+  }
+
   def typesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId)(status: String, responseOr: Either[Response[T], Reference]): (String, List[String]) = {
     val statusCodePattern = """(\d+)""".r
     val tpe               = responseOrType.print(responseOr)
-    (status match {
-      case statusCodePattern(code) =>
-        responseOr.left.toOption.map { response =>
-          val (newTpe, _, schemas) = typeAndSchemaFor(none, response, tpe) {
-            if (successStatusCode(code))
+    status match {
+      case statusCodePattern(code) if (successStatusCode(code)) =>
+        responseOr.left.toOption
+          .map { response =>
+            val (newTpe, _, schemas) = typeAndSchemaFor(none, response, tpe) {
               tpe -> Nil
-            else {
-              val newTpe = defaultResponseErrorName(operationId, response.description.some)
-              newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
             }
+            newTpe -> schemas
           }
-          newTpe -> schemas
-        }
+          .getOrElse(tpe -> List.empty)
+
+      case statusCodePattern(_) =>
+        val (x, a, y) = statusTypesAndSchemas(operationId, responseOr)
+        a.getOrElse(x) -> y
+
       case "default" =>
         val (x, _, y) = defaultTypesAndSchemas(operationId, responseOr)
-        (x -> y).some
-    }).getOrElse(tpe -> List.empty)
+        x -> y
+    }
   }
 
   private def responsesSchemaTuple[T: Basis[JsonSchemaF, ?]](
@@ -367,10 +386,11 @@ object print {
       sepBy(requestSchema[T], "\n") >* newLine,
       sepBy(responsesSchema[T], "\n") >* (newLine >* konst("}")))
       .contramapN { x =>
-        un(second(x)(_.map { case y@(_, _, operation) =>
-          val operationId = OperationId(y)
-          (operationId   -> operation.requestBody) ->
-            (operationId -> operation.responses)
+        un(second(x)(_.map {
+          case y @ (_, _, operation) =>
+            val operationId = OperationId(y)
+            (operationId   -> operation.requestBody) ->
+              (operationId -> operation.responses)
         }.unzip))
       }
 

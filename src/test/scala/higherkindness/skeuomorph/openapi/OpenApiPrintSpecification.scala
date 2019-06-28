@@ -171,8 +171,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |  final case class UpdatedPayload(name: String)
-           |  final case class NotFound(isDone: Boolean)
-           |  type UpdatePayloadError = NotFound
+           |  final case class UpdatePayloadNotFound(isDone: Boolean)
+           |  type UpdatePayloadError = UpdatePayloadNotFound
            |}""".stripMargin
       )
     }
@@ -440,6 +440,23 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  }
            |
            |}""".stripMargin
+      )
+    }
+
+    "when there are multiple responses with anonymous objects" >> {
+      printer.print(openApi("Payload").withPath(multipleResponsesWithAnonymousObject)) must ===(
+        """|object PayloadHttpClient {
+          |
+          |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+          |    import PayloadClient._
+          |
+          |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
+          |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
+          |      case response if response.status.code == 404 => response.as[UpdatePayloadNotFound].map(x => x.asLeft)
+          |    }
+          |  }
+          |
+          |}""".stripMargin
       )
     }
   }

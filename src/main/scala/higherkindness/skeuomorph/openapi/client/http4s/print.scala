@@ -118,11 +118,14 @@ object print {
     (OperationId, String, (Either[Response[T], Reference], Int))] =
     (
       konst("case response if response.status.code == ") *< string >* konst(" => "),
-      konst("response.as[") *< responseOrType[T] >* konst("]"),
-      konst(".map(x => ") *< coproductIf(string >* konst("(x)")) >* konst(".asLeft)")).contramapN {
-      case (operationId, status, (t, n)) =>
-        val (innerTpe, _) = typesAndSchemas[T](operationId)(status, t)
-        (status, t, (innerTpe, innerTpe, n))
+      konst("response.as[") *< string >* konst("]"),
+      konst(".map(x => ") *< coproductIf(string >* konst("(x)") >|< konst("x")) >* konst(".asLeft)")).contramapN {
+      case (operationId, status, (r, n)) =>
+        val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
+        (
+          status,
+          anonymousType.getOrElse(responseOrType.print(r)),
+          (tpe, anonymousType.fold[Either[String, Unit]](tpe.asLeft)(_ => ().asRight), n))
     }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, (Either[Response[T], Reference], Int))] =
