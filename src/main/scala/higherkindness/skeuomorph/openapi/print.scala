@@ -25,7 +25,7 @@ import cats.implicits._
 import qq.droste._
 
 object print {
-  import higherkindness.skeuomorph.openapi.schema.Components
+  import higherkindness.skeuomorph.openapi.schema.OpenApi
 
   val componentsRegex = """#/components/schemas/(.+)""".r
 
@@ -86,9 +86,9 @@ object print {
       if (isBasic(tpe)) s"type $name = ${schema().print(tpe)}" else schema(name.some).print(tpe)
   }
 
-  def model[T: Basis[JsonSchemaF, ?]]: Printer[Components[T]] =
+  def model[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
     (
       (konst("object models {") >* newLine >* space >* space) *< sepBy(schemaPair, "\n  ") >* (newLine >* konst("}"))
-    ).contramap(_.schemas.toList)
+    ).contramap(_.components.toList.flatMap(_.schemas))
 
 }

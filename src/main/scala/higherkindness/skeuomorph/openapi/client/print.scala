@@ -397,17 +397,20 @@ object print {
   def toOperationsWithPath[T](x: (TraitName, Map[String, ItemObject[T]])): (TraitName, List[OperationWithPath[T]]) =
     second(x)(_.toList.flatMap(itemObjectTuple[T]))
 
-  private def operationsTuple[T: Basis[JsonSchemaF, ?]](x: (TraitName, Map[String, ItemObject[T]])): (
+  private def operationsTuple[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): (
       List[PackageName],
       TraitName,
       TraitName,
       List[OperationWithPath[T]],
       (TraitName, List[OperationWithPath[T]])) = {
-    val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(x))) { case (a, b) => (a, (x._1, b)) })
+    val traitName = TraitName(openApi)
+    val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName -> openApi.paths))) {
+      case (a, b) => (a, (traitName, b))
+    })
     (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, d)
   }
 
-  def operations[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, Map[String, ItemObject[T]])] =
+  def operations[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
     (
       imports >* newLine,
       konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
