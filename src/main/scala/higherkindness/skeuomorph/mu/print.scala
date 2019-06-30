@@ -96,10 +96,10 @@ object print {
    */
   def serviceTuple[T](
       s: Service[T]
-  ): (SerializationType, CompressionType, String, List[Service.Operation[T]]) =
+  ): (SerializationType, CompressionType, IdiomaticEndpoints, String, List[Service.Operation[T]]) =
     s match {
-      case Service(name, serType, compType, ops) =>
-        (serType, compType, name, ops)
+      case Service(name, serType, compType, idiomEndpoints, ops) =>
+        (serType, compType, idiomEndpoints, name, ops)
     }
 
   /**
@@ -136,6 +136,13 @@ object print {
       case Identity => Right(Identity)
     })
 
+  def idiomaticEndpoints: Printer[IdiomaticEndpoints] =
+    Printer {
+      case IdiomaticEndpoints(Some(pkg), true) => ", namespace = Some(\"" + pkg + "\"), methodNameStyle = Capitalize"
+      case IdiomaticEndpoints(None, true)      => ", methodNameStyle = Capitalize\""
+      case _                                   => ""
+    }
+
   def opTpeEither[T](op: Service.OperationType[T], isRequest: Boolean): Either[Either[Either[T, T], T], T] =
     (op.stream, isRequest) match {
       case (false, true)  => Left(Left(Left(op.tpe)))
@@ -167,7 +174,8 @@ object print {
   def service[T](implicit T: Basis[MuF, T]): Printer[Service[T]] =
     (
       konst("@service(") *< serializationType,
-      konst(", ") *< compressionType >* konst(") trait "),
+      konst(", ") *< compressionType,
+      idiomaticEndpoints >* konst(") trait "),
       string >* konst("[F[_]] {") >* newLine,
       sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)

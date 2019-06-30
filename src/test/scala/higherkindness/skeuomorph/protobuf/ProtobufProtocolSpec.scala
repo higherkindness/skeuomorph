@@ -37,12 +37,13 @@ class ProtobufProtocolSpec extends Specification {
 
     val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
     val path                                      = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
-    val source                                    = ProtoSource("book.proto", path)
+    val source                                    = ProtoSource(s"book.proto", path)
     val protobufProtocol: Protocol[Mu[ProtobufF]] = parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
-    val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+    def parseProtocol(
+        useIdiomaticEndpoints: Boolean): Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
       p: Protocol[Mu[ProtobufF]] =>
-        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(p)
+        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(useIdiomaticEndpoints)(p)
     }
 
     val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
@@ -50,14 +51,21 @@ class ProtobufProtocolSpec extends Specification {
         higherkindness.skeuomorph.mu.print.proto.print(p)
     }
 
-    val result = (parseProtocol andThen printProtocol)(protobufProtocol)
+    def check(useIdiomaticEndpoints: Boolean) =
+      (parseProtocol(useIdiomaticEndpoints) andThen printProtocol)(protobufProtocol).clean must beEqualTo(
+        expectation(useIdiomaticEndpoints).clean)
 
-    result.clean must beEqualTo(expectation.clean)
-
+    List(false, true).forall(check)
   }
 
-  val expectation =
-    """package com.acme
+  def expectation(useIdiomaticEndpoints: Boolean): String = {
+
+    val serviceParams: String = "Protobuf, Identity" + (
+      if (useIdiomaticEndpoints) ", namespace = Some(\"com.acme\"), methodNameStyle = Capitalize"
+      else ""
+    )
+
+    s"""package com.acme
       |
       |import com.acme.author.Author
       |
@@ -82,7 +90,7 @@ class ProtobufProtocolSpec extends Specification {
       |  case object PAPERBACK extends BindingType
       |}
       |
-      |@service(Protobuf, Identity) trait BookService[F[_]] {
+      |@service($serviceParams) trait BookService[F[_]] {
       |  def GetBook(req: GetBookRequest): F[Book]
       |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
       |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
@@ -90,6 +98,7 @@ class ProtobufProtocolSpec extends Specification {
       |}
       |
       |}""".stripMargin
+  }
 
   implicit class StringOps(self: String) {
     def clean: String = self.replaceAll("\\s", "")
