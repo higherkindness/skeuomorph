@@ -226,10 +226,7 @@ object print {
 
   private val packages = List(
     "cats.effect._",
-    "cats.syntax.functor._",
-    "cats.syntax.either._",
-    "cats.syntax.show._",
-    "cats.implicits.catsStdShowForLong",
+    "cats.implicits._",
     "org.http4s._",
     "org.http4s.client.Client",
     "org.http4s.client.blaze._",

@@ -543,10 +543,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           .withSchema("NewPayload" -> Fixed.string())
       ) must ===(
         """|import cats.effect._
-           |import cats.syntax.functor._
-           |import cats.syntax.either._
-           |import cats.syntax.show._
-           |import cats.implicits.catsStdShowForLong
+           |import cats.implicits._
            |import org.http4s._
            |import org.http4s.client.Client
            |import org.http4s.client.blaze._
@@ -586,10 +583,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           .withPath(mediaTypeReferencePost)
           .withSchema("NewPayload" -> Fixed.string())) must ===(
         """|import cats.effect._
-           |import cats.syntax.functor._
-           |import cats.syntax.either._
-           |import cats.syntax.show._
-           |import cats.implicits.catsStdShowForLong
+           |import cats.implicits._
            |import org.http4s._
            |import org.http4s.client.Client
            |import org.http4s.client.blaze._
