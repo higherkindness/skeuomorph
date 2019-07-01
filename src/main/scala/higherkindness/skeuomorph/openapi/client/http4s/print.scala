@@ -127,7 +127,7 @@ object print {
           status,
           responseTpe,
           (
-            tpe,
+            defaultResponseErrorName(operationId, none),
             anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
               ().asRight),
             n))
@@ -140,7 +140,7 @@ object print {
       .contramapN {
         case (operationId, (x, n)) =>
           val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
-          (innerTpe, (tpe, tpe, n))
+          (innerTpe, (defaultResponseErrorName(operationId, none), tpe, n))
       }
 
   def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =

@@ -469,8 +469,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |    def createPayload(): F[Either[CreatePayloadError, Unit]] = client.fetch[Either[CreatePayloadError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
-           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[CreatePayloadNotFoundError](CreatePayloadNotFoundError(x)).asLeft)
-           |      case default => default.as[Error].map(x => Coproduct[CreatePayloadUnexpectedErrorResponse](CreatePayloadUnexpectedErrorResponse(default.status.code, x)).asLeft)
+           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[CreatePayloadError](CreatePayloadNotFoundError(x)).asLeft)
+           |      case default => default.as[Error].map(x => Coproduct[CreatePayloadError](CreatePayloadUnexpectedErrorResponse(default.status.code, x)).asLeft)
            |    }
            |  }
            |
@@ -521,8 +521,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
-           |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsNotFoundError](DeletePayloadsNotFoundError(x)).asLeft)
-           |      case default => default.as[Unit].map(x => Coproduct[DeletePayloadsUnexpectedErrorResponse](DeletePayloadsUnexpectedErrorResponse(default.status.code, x)).asLeft)
+           |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsNotFoundError(x)).asLeft)
+           |      case default => default.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsUnexpectedErrorResponse(default.status.code, x)).asLeft)
            |    }
            |  }
            |
