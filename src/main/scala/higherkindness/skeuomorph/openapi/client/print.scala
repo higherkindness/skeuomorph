@@ -255,7 +255,7 @@ object print {
       tpe: String)(success: => (String, List[String])): (String, Option[String], List[String]) = {
     val innerType = s"${operationId.fold("")(_.show.capitalize)}${normalize(response.description).capitalize}"
     val newSchema =
-      typeFromResponse(response).map(schema(innerType.some).print).getOrElse("")
+      typeFromResponse(response).map(schema(innerType.some).print).getOrElse("Unit")
     tpe match {
       case _ if (tpe === newSchema) =>
         un(second(success) { x =>

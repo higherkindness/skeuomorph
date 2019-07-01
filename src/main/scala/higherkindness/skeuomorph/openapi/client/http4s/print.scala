@@ -122,10 +122,15 @@ object print {
       konst(".map(x => ") *< coproductIf(string >* konst("(x)") >|< konst("x")) >* konst(".asLeft)")).contramapN {
       case (operationId, status, (r, n)) =>
         val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
+        val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
         (
           status,
-          anonymousType.getOrElse(responseOrType.print(r)),
-          (tpe, anonymousType.fold[Either[String, Unit]](tpe.asLeft)(_ => ().asRight), n))
+          responseTpe,
+          (
+            tpe,
+            anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
+              ().asRight),
+            n))
     }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, (Either[Response[T], Reference], Int))] =
