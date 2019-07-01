@@ -410,7 +410,7 @@ object print {
     (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, d)
   }
 
-  def operations[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
+  def interfaceDefinition[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
     (
       imports >* newLine,
       konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,

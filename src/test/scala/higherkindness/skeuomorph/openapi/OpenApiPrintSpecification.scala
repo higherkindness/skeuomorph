@@ -55,7 +55,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "Client trait should able to print" >> {
     import client.print._
     "when a post operation is provided" >> {
-      operations.print(payloadOpenApi.withPath(mediaTypeReferencePost)) must ===( //
+      interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferencePost)) must ===( //
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -69,7 +69,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when a put and delete are provided" >> {
-      operations.print(payloadOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -86,7 +86,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when get endpoints are provided" >> {
-      operations.print(payloadOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -103,7 +103,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when optional body and not optional query parameters is provided" >> {
-      operations.print(payloadOpenApi.withPath(mediaTypeOptionBody)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeOptionBody)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -117,7 +117,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when references in the request and the responses" >> {
-      operations.print(payloadOpenApi.withPath(references)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(references)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -131,7 +131,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with a default one" >> {
-      operations.print(payloadOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -146,7 +146,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with not found response" >> {
-      operations.print(payloadOpenApi.withPath(notFoundResponse)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(notFoundResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -162,7 +162,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with anonymous objects" >> {
-      operations.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -179,7 +179,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are simple response and response with anonymous objects" >> {
-      operations.print(anotherPayloadOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
+      interfaceDefinition.print(anotherPayloadOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait AnotherPayloadClient[F[_]] {
@@ -194,7 +194,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple responses with anonymous objects with default response" >> {
-      operations.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -212,7 +212,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple responses and multiple error scenarios" >> {
-      operations.print(payloadOpenApi.withPath(multipleResponses)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(multipleResponses)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -229,7 +229,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "two operations with default response" >> {
-      operations.print(payloadOpenApi.withPath(twoOperationsWithDefaultResponse)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(twoOperationsWithDefaultResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -251,7 +251,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when the failure response is empty" >> {
-      operations.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -266,7 +266,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple failure response are empty" >> {
-      operations.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
+      interfaceDefinition.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
@@ -282,7 +282,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when a post operation is provided and operation id is not provided" >> {
-      operations.print(
+      interfaceDefinition.print(
         petstoreOpenApi
           .withPath(
             "/pets" -> emptyItemObject.withPost(
@@ -329,7 +329,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "share http4s impl should able to print" >> {
     import client.print._
-    import client.http4s.print.impl
+    import client.http4s.print.implDefinition
     import client.http4s.print.Http4sSpecifics
     implicit val none: Http4sSpecifics = new Http4sSpecifics {
       def none[A]                                     = Printer.unit.contramap[A](_ => ())
@@ -337,9 +337,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       def withBody: Printer[String]                   = none
 
     }
-    val printer = impl
+
     "when a put and delete are provided" >> {
-      printer.print(petstoreOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -353,7 +353,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when get endpoints are provided" >> {
-      printer.print(petstoreOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -368,7 +368,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when optional body and not optional query parameters is provided" >> {
-      printer.print(petstoreOpenApi.withPath(mediaTypeOptionBody).withSchema("UpdatePayload" -> Fixed.string())) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(mediaTypeOptionBody).withSchema("UpdatePayload" -> Fixed.string())) must ===(
         """|object PetstoreHttpClient {
            |  implicit val UpdatePayloadEncoder: Encoder[UpdatePayload] = deriveEncoder[UpdatePayload]
            |  implicit val OptionUpdatePayloadEncoder: Encoder[Option[UpdatePayload]] = deriveEncoder[Option[UpdatePayload]]
@@ -386,7 +386,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when references in the request and the responses" >> {
-      printer.print(petstoreOpenApi.withPath(references)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(references)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -400,7 +400,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with a default one" >> {
-      printer.print(petstoreOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -416,7 +416,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with not found response" >> {
-      printer.print(petstoreOpenApi.withPath(notFoundResponse)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(notFoundResponse)) must ===(
         """|object PetstoreHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -432,7 +432,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are simple response and response with anonymous objects" >> {
-      printer.print(petstoreOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
         """|object PetstoreHttpClient {
           |
           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
@@ -445,7 +445,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple responses with anonymous objects with default response" >> {
-      printer.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
+      implDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|object PayloadHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
@@ -461,7 +461,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple responses and multiple error scenarios" >> {
-      printer.print(payloadOpenApi.withPath(multipleResponses)) must ===(
+      implDefinition.print(payloadOpenApi.withPath(multipleResponses)) must ===(
         """|object PayloadHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
@@ -479,7 +479,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with anonymous objects" >> {
-      printer.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
+      implDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
         """|object PayloadHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
@@ -496,7 +496,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when the failure response is empty" >> {
-      printer.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
+      implDefinition.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
         """|object PayloadHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
@@ -513,7 +513,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple failure response are empty" >> {
-      printer.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
+      implDefinition.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
         """|object PayloadHttpClient {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
@@ -533,11 +533,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "http4s 0.20.x should able to print" >> {
     import client.print._
-    import client.http4s.print.{openApi => printer}
+    import client.http4s.print.impl
     import client.http4s.print.v20._
 
     "when a post operation is provided" >> {
-      printer.print(
+      impl.print(
         PackageName("petstore") -> petstoreOpenApi
           .withPath(mediaTypeReferencePost)
           .withSchema("NewPayload" -> Fixed.string())
@@ -577,11 +577,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "http4s 0.18.x should able to print" >> {
     import client.print._
-    import client.http4s.print.{openApi => printer}
+    import client.http4s.print.impl
     import client.http4s.print.v18._
 
     "when a post operation is provided" >> {
-      printer.print(
+      impl.print(
         PackageName("petstore") -> petstoreOpenApi
           .withPath(mediaTypeReferencePost)
           .withSchema("NewPayload" -> Fixed.string())) must ===(

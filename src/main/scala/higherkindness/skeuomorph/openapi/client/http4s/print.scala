@@ -28,8 +28,8 @@ import qq.droste._
 object print {
   import schema._
 
-  def openApi[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[(PackageName, OpenApi[T])] =
-    (imports >* newLine, impl[T]).contramapN {
+  def impl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[(PackageName, OpenApi[T])] =
+    (imports >* newLine, implDefinition[T]).contramapN {
       case (packageName, openApi) =>
         (
           packages ++ List(
@@ -39,7 +39,7 @@ object print {
           openApi)
     }
 
-  def impl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] =
+  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] =
     (
       konst("object ") *< show[ImplName] >* konst(" {") *< newLine,
       sepBy(twoSpaces *< (circeEncoder >|< circeDecoder), "\n") >* newLine,
