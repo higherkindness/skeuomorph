@@ -1,7 +1,7 @@
 
 [comment]: # (Start Badges)
 
-[![Build Status](https://travis-ci.org/frees-io/skeuomorph.svg?branch=master)](https://travis-ci.org/frees-io/skeuomorph) [![codecov.io](http://codecov.io/github/frees-io/skeuomorph/coverage.svg?branch=master)](http://codecov.io/github/frees-io/skeuomorph?branch=master) [![Maven Central](https://img.shields.io/badge/maven%20central-0.0.1-green.svg)](https://oss.sonatype.org/#nexus-search;gav~io.frees~skeuomorph*) [![Latest version](https://img.shields.io/badge/skeuomorph-0.0.1-green.svg)](https://index.scala-lang.org/frees-io/skeuomorph) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/frees-io/skeuomorph/master/LICENSE) [![Join the chat at https://gitter.im/frees-io/skeuomorph](https://badges.gitter.im/frees-io/skeuomorph.svg)](https://gitter.im/frees-io/skeuomorph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GitHub Issues](https://img.shields.io/github/issues/frees-io/skeuomorph.svg)](https://github.com/frees-io/skeuomorph/issues)
+[![Build Status](https://travis-ci.org/higherkindness/skeuomorph.svg?branch=master)](https://travis-ci.org/higherkindness/skeuomorph) [![codecov.io](http://codecov.io/gh/higherkindness/skeuomorph/branch/master/graph/badge.svg)](http://codecov.io/gh/higherkindness/skeuomorph) [![Maven Central](https://img.shields.io/badge/maven%20central-0.0.5-green.svg)](https://oss.sonatype.org/#nexus-search;gav~io.higherkindness~skeuomorph*) [![Latest version](https://img.shields.io/badge/skeuomorph-0.0.5-green.svg)](https://index.scala-lang.org/higherkindness/skeuomorph) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/higherkindness/skeuomorph/master/LICENSE) [![Join the chat at https://gitter.im/higherkindness/skeuomorph](https://badges.gitter.im/higherkindness/skeuomorph.svg)](https://gitter.im/higherkindness/skeuomorph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GitHub Issues](https://img.shields.io/github/issues/higherkindness/skeuomorph.svg)](https://github.com/higherkindness/skeuomorph/issues)
 
 [comment]: # (End Badges)
 
@@ -16,12 +16,18 @@ it's completely independent from it, so anybody can use it.
 
 Skeuomorph depends heavily on [cats][] and [droste][].
 
+<hr/>
+**DISCLAIMER**. You're reading the `series/0.2.x` README.md.  If
+you want to visit the `series/0.1.x` docs, go to [series/0.1.x][].
+<hr/>
+
 ## Schemas
 
-Currently skeuomorph supports 3 different schemas:
+Currently skeuomorph supports 4 different schemas:
 - [Avro][]
 - [Protobuf][]
 - [mu][]
+- [Openapi][]
 
 And provides conversions between them.  This means that you can get a
 `org.apache.avro.Schema` value, and convert it to protobuf, for
@@ -34,7 +40,7 @@ You can install skeuomorph as follows:
 
 [comment]: # (Start Replace)
 
-```scala
+```
 libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.5"
 ```
 
@@ -94,9 +100,139 @@ val printAsScala: Mu[MuF] => String =
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
-```tut:evaluated
-(parseAvro >>> println)(avroSchema)
-(printAsScala >>> println)(parseAvro(avroSchema))
+```
+Mu(TRecord(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
+@message final case class User(name: String, favorite_number: Cop[Int :: Null:: TNil], favorite_color: Cop[String :: Null:: TNil])
+```
+
+## Protobuf
+
+### Parsing nested `.proto` files and converting into Scala code
+
+Given these proto files below:
+
+_author.proto_
+
+```protobuf
+syntax = "proto3";
+package com.acme;
+
+message Author {
+    string name = 1;
+    string nick = 2;
+}
+```
+
+_book.proto_
+
+```protobuf
+syntax = "proto3";
+package com.acme;
+import "author.proto";
+
+message Book {
+    reserved 4, 8;
+    reserved 12 to 15;
+    int64 isbn = 1;
+    string title = 2;
+    repeated Author author = 3;
+    BindingType binding_type = 9;
+}
+
+message GetBookRequest {
+    int64 isbn = 1;
+}
+
+message GetBookViaAuthor {
+    Author author = 1;
+}
+
+message BookStore {
+    string name = 1;
+    map<int64, string> books = 2;
+    repeated Genre genres = 3;
+
+    oneof payment_method {
+        int64 credit_card_number = 4;
+        int32 cash = 5;
+        string iou_note = 6;
+        Book barter = 7;
+    }
+}
+
+enum Genre {
+    option allow_alias = true;
+    UNKNOWN = 0;
+    SCIENCE_FICTION = 1;
+    SPECULATIVE_FICTION = 1;
+    POETRY = 2;
+    SCI_FI = 1;
+}
+
+enum BindingType {
+    HARDCOVER = 0;
+    PAPERBACK = 1;
+}
+
+service BookService {
+    rpc GetBook (GetBookRequest) returns (Book) {}
+    rpc GetBooksViaAuthor (GetBookViaAuthor) returns (stream Book) {}
+    rpc GetGreatestBook (stream GetBookRequest) returns (Book) {}
+    rpc GetBooks (stream GetBookRequest) returns (stream Book) {}
+}
+```
+
+We can parse and convert them into Scala code as:
+
+```scala
+val source = ParseProto.ProtoSource("book.proto", "resources")
+val nativeDescriptor: NativeFile = parseProto[IO].parse(source).unsafeRunSync()
+
+val parseNative: NativeFile => Protocol[Mu[protobuf.Type]] = Protocol.fromProto(_)
+
+val parseProtocol: Protocol[Mu[protobuf.Type]] => mu.Protocol[Mu[MuF]] =
+{ p: Protocol[Mu[protobuf.Type]] => mu.Protocol.fromProtobufProto(p) }
+
+val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
+  higherkindness.skeuomorph.mu.print.proto.print(p)
+}
+
+(parseNative andThen parseProtocol andThen printProtocol)(nativeDescriptor)
+```
+
+It would generate:
+
+```scala
+package com.acme
+
+object book {
+
+  @message final case class Author(name: String, nick: String)
+  @message final case class Book(isbn: Long, title: String, author: List[Author], binding_type: BindingType)
+  @message final case class GetBookRequest(isbn: Long)
+  @message final case class GetBookViaAuthor(author: Author)
+  @message final case class BookStore(name: String, books: Map[Long, String], genres: List[Genre], payment_method: Cop[Long :: Int :: String :: Book:: TNil])
+
+  sealed trait Genre
+  object Genre {
+    case object UNKNOWN extends Genre
+    case object SCIENCE_FICTION extends Genre
+    case object POETRY extends Genre
+  }
+
+  sealed trait BindingType
+  object BindingType {
+    case object HARDCOVER extends BindingType
+    case object PAPERBACK extends BindingType
+  }
+
+  @service(Protobuf) trait BookService[F[_]] {
+    def GetBook(req: GetBookRequest): F[Book]
+    def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
+    def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
+    def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
+  }
+}
 ```
 
 ## Skeuomorph in the wild
@@ -104,13 +240,15 @@ val printAsScala: Mu[MuF] => String =
 If you wish to add your library here please consider a PR to include
 it in the list below.
 
-| **Name**                                       | **Description**                                                                                    |
-|------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| [**mu**](https://higherkindness.github.io/mu/) | purely functional library for building RPC endpoint based services with support for RPC and HTTP/2 |
+| **Name**                                                       | **Description**                                                                                    |
+|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| [**mu**](https://higherkindness.github.io/mu/)                 | purely functional library for building RPC endpoint based services with support for RPC and HTTP/2 |
+| [**compendium**](https://higherkindness.github.io/compendium/) |                                                                                                    |
 
 [Avro]: https://avro.apache.org/
 [Protobuf]: https://developers.google.com/protocol-buffers/
 [mu]: https://higherkindness.github.io/mu/
+[Openapi]: https://www.openapis.org/
 [cats]: http://typelevel.org/cats
 [droste]: http://github.com/andyscott/droste
 
@@ -119,6 +257,6 @@ it in the list below.
 
 Skeuomorph is designed and developed by 47 Degrees
 
-Copyright (C) 2018 47 Degrees. <http://47deg.com>
+Copyright (C) 2018-2019 47 Degrees. <http://47deg.com>
 
 [comment]: # (End Copyright)

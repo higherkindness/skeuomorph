@@ -229,24 +229,15 @@ object book {
 }
 ```
 
-## Phases
-
-
-| phase       | consumes                  | produces                 | comments                                                                                            |
-|-------------|---------------------------|--------------------------|-----------------------------------------------------------------------------------------------------|
-| parsing     | `String`                  | `Fix[Protobuf]`          | the annotation in this case would be specifics that do not fit the overall schema                   |
-| naming      | `Fix[Protobuf]`           | `Fix[Named[Protobuf]#λ]` | this phase transforms all needed nested types into their string representation for the specific IDL |
-| codegen     | `Cofree[Named[F]#λ, Ann]` | `String`                 | generates the code for the given IDL                                                                |
-| translation | `Fix[Protobuf]`           | `Cofree[Avro, Ann]`      | transforms between two idls.  It carries an annotation to make it lossless                          |
-
 ## Skeuomorph in the wild
 
 If you wish to add your library here please consider a PR to include
 it in the list below.
 
-| **Name**                                       | **Description**                                                                                    |
-|------------------------------------------------|----------------------------------------------------------------------------------------------------|
-| [**mu**](https://higherkindness.github.io/mu/) | purely functional library for building RPC endpoint based services with support for RPC and HTTP/2 |
+| **Name**                                                       | **Description**                                                                                    |
+|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------|
+| [**mu**](https://higherkindness.github.io/mu/)                 | purely functional library for building RPC endpoint based services with support for RPC and HTTP/2 |
+| [**compendium**](https://higherkindness.github.io/compendium/) |                                                                                                    |
 
 [Avro]: https://avro.apache.org/
 [Protobuf]: https://developers.google.com/protocol-buffers/
