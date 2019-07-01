@@ -265,6 +265,22 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}""".stripMargin)
     }
 
+    "when multiple failure response are empty" >> {
+      operations.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
+        """|import models._
+           |import shapeless.{:+:, CNil}
+           |trait PayloadClient[F[_]] {
+           |  import PayloadClient._
+           |  def deletePayloads(): F[Either[DeletePayloadsError, Unit]]
+           |}
+           |object PayloadClient {
+           |
+           |  final case class DeletePayloadsNotFoundError(value: Unit)
+           |  final case class DeletePayloadsUnexpectedErrorResponse(statusCode: Int, value: Unit)
+           |  type DeletePayloadsError = DeletePayloadsNotFoundError :+: DeletePayloadsUnexpectedErrorResponse :+: CNil
+           |}""".stripMargin)
+    }
+
     "when a post operation is provided and operation id is not provided" >> {
       operations.print(
         petstoreOpenApi
@@ -308,6 +324,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                     |
                     |}""".stripMargin)
     }
+
   }
 
   "share http4s impl should able to print" >> {
@@ -488,6 +505,24 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[Unit].map(x => DeletePayloadsNotFoundError(x).asLeft)
+           |    }
+           |  }
+           |
+           |}""".stripMargin
+      )
+    }
+
+    "when multiple failure response are empty" >> {
+      printer.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
+        """|object PayloadHttpClient {
+           |
+           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |    import PayloadClient._
+           |
+           |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
+           |      case Successful(response) => response.as[Unit].map(_.asRight)
+           |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsNotFoundError](DeletePayloadsNotFoundError(x)).asLeft)
+           |      case default => default.as[Unit].map(x => Coproduct[DeletePayloadsUnexpectedErrorResponse](DeletePayloadsUnexpectedErrorResponse(default.status.code, x)).asLeft)
            |    }
            |  }
            |
@@ -747,7 +782,15 @@ object OpenApiPrintSpecification {
   val emptyErrorResponse = "/payloads/" -> emptyItemObject.withDelete(
     operationWithResponses[JsonSchemaF.Fixed](
       responses = successNull,
-      "404" -> response("Not Found")
+      "404" -> response("Not found")
+    )
+  )
+
+  val multipleEmptyErrorResponse = "payloads" -> emptyItemObject.withDelete(
+    operationWithResponses[JsonSchemaF.Fixed](
+      responses = successNull,
+      "404"     -> response("Not found"),
+      "default" -> response("Unexpected error")
     )
   )
 
