@@ -21,6 +21,7 @@ import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
+import higherkindness.skeuomorph.openapi.print.isArray
 import higherkindness.skeuomorph.openapi.client.print._
 import cats.implicits._
 import qq.droste._
@@ -49,20 +50,20 @@ object print {
       sepBy(twoSpaces *< twoSpaces *< (entityEncoder >|< entityDecoder), "\n") >* newLine,
       sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
       http4sSpecifics.applyMethod >* (newLine *< konst("}"))).contramapN { x =>
-      val encoderAndDecoders = encoderAndDecodersFrom(x)
       (
         ImplName(x),
-        encoderAndDecoders,
+        encoderAndDecodersFrom(x)(isArray),
         TraitName(x),
         TraitName(x),
         List(PackageName(s"${TraitName(x).show}._")),
-        encoderAndDecoders,
+        encoderAndDecodersFrom(x)(_ => false),
         toOperationsWithPath(TraitName(x) -> x.paths)._2,
         TraitName(x) -> ImplName(x))
     }
 
-  def encoderAndDecodersFrom[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[Either[Encoder[T], Decoder[T]]] = {
-    val xs = openApi.components.toList.flatMap(_.schemas.map(_._1))
+  def encoderAndDecodersFrom[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T])(
+      f: T => Boolean): List[Either[Encoder[T], Decoder[T]]] = {
+    val xs = openApi.components.toList.flatMap(_.schemas).filterNot { case (_, x) => f(x) }.map(_._1)
     xs.flatMap { x =>
       List(
         Encoder[T](Var(x, Tpe.apply(x))).asLeft,
@@ -155,19 +156,23 @@ object print {
       case x: Parameter.Query[T] => x
     }
 
-  def requestImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
+  def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
       konst("Request[F](method = Method.") *< show[HttpVerb],
-      konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst(")"))
+      konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst(")"),
+      optional(withBody))
       .contramapN {
-        case (verb, path, operation) =>
-          second(verb -> path)(_ -> queryParametersFrom(operation))
+        case x @ (verb, path, operation) =>
+          val operationId = OperationId(x)
+          un(
+            second(second(verb -> path)(_ -> queryParametersFrom(operation)))(
+              _ -> operation.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name)))
       }
 
-  def fetchImpl[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
+  def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
       konst("fetch[") *< responsesTypes >* konst("]("),
-      requestImpl[T] >* konst(") {") >* newLine,
+      requestImpl[T](withBody) >* konst(") {") >* newLine,
       sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
       twoSpaces *< twoSpaces *< konst("}"))
       .contramapN {
@@ -185,20 +190,17 @@ object print {
       }
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
-    (konst("expect[") *< responsesTypes >* konst("]("), requestImpl[T] >* konst(")"), optional(withBody))
+    (konst("expect[") *< responsesTypes >* konst("]("), requestImpl[T](withBody) >* konst(")"))
       .contramapN {
         case x @ (_, _, operation) =>
           val operationId = OperationId(x)
-          (
-            operationId -> operation.responses,
-            x,
-            operation.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name))
+          (operationId -> operation.responses, x)
       }
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
       method[T] >* konst(" = client."),
-      expectImpl[T](withBody) >|< fetchImpl[T]
+      expectImpl[T](withBody) >|< fetchImpl[T](withBody)
     ).contramapN {
       case x @ (_, _, operation) =>
         (x, if (operation.responses.size > 1) x.asRight else x.asLeft)

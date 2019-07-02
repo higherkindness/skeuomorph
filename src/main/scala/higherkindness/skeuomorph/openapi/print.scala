@@ -81,6 +81,15 @@ object print {
     scheme.cata(algebra).apply(t)
   }
 
+  def isArray[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+    import JsonSchemaF._
+    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
+      case ArrayF(_) => true
+      case _         => false
+    }
+    scheme.cata(algebra).apply(t)
+  }
+
   def schemaPair[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
     case (name, tpe) =>
       if (isBasic(tpe)) s"type $name = ${schema().print(tpe)}" else schema(name.some).print(tpe)
