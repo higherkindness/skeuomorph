@@ -19,12 +19,23 @@ package higherkindness.skeuomorph.protobuf
 import cats.effect.IO
 import higherkindness.skeuomorph.mu.MuF
 import higherkindness.skeuomorph.protobuf.ProtobufF._
-import qq.droste.data.Mu
-import org.specs2.Specification
 import higherkindness.skeuomorph.protobuf.ParseProto._
+import higherkindness.skeuomorph.mu.CompressionType
+import org.scalacheck.{Arbitrary, Gen}
+import org.specs2.{ScalaCheck, Specification}
+import qq.droste.data.Mu
 import qq.droste.data.Mu._
 
-class ProtobufProtocolSpec extends Specification {
+class ProtobufProtocolSpec extends Specification with ScalaCheck {
+
+  val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
+  val path                                      = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
+  val source                                    = ProtoSource(s"book.proto", path)
+  val protobufProtocol: Protocol[Mu[ProtobufF]] = parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+
+  implicit val arbCompressionType: Arbitrary[CompressionType] = Arbitrary {
+    Gen.oneOf(CompressionType.Identity, CompressionType.Gzip)
+  }
 
   def is = s2"""
   Protobuf Protocol
@@ -33,17 +44,10 @@ class ProtobufProtocolSpec extends Specification {
 
   """
 
-  def printProtobufProtocol = {
-
-    val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
-    val path                                      = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
-    val source                                    = ProtoSource(s"book.proto", path)
-    val protobufProtocol: Protocol[Mu[ProtobufF]] = parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
-
-    def parseProtocol(
-        useIdiomaticEndpoints: Boolean): Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+  def printProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
+    val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
       p: Protocol[Mu[ProtobufF]] =>
-        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(useIdiomaticEndpoints)(p)
+        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
     }
 
     val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
@@ -51,19 +55,14 @@ class ProtobufProtocolSpec extends Specification {
         higherkindness.skeuomorph.mu.print.proto.print(p)
     }
 
-    def check(useIdiomaticEndpoints: Boolean) =
-      (parseProtocol(useIdiomaticEndpoints) andThen printProtocol)(protobufProtocol).clean must beEqualTo(
-        expectation(useIdiomaticEndpoints).clean)
-
-    List(false, true).forall(check)
+    (parseProtocol andThen printProtocol)(protobufProtocol).clean must beEqualTo(expectation(ct, useIdiom).clean)
   }
 
-  def expectation(useIdiomaticEndpoints: Boolean): String = {
+  def expectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
 
-    val serviceParams: String = "Protobuf, Identity" + (
-      if (useIdiomaticEndpoints) ", namespace = Some(\"com.acme\"), methodNameStyle = Capitalize"
-      else ""
-    )
+    val serviceParams: String = "Protobuf" +
+      (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
+      (if (useIdiomaticEndpoints) ", namespace = Some(\"com.acme\"), methodNameStyle = Capitalize" else "")
 
     s"""package com.acme
       |

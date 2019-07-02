@@ -53,7 +53,7 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Service]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](useIdiomaticEndpoints: Boolean)(
+  def fromAvroProtocol[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
       proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
 
     val toMu: T => U = scheme.cata(transformAvro[U].algebra)
@@ -74,14 +74,14 @@ object Protocol {
         Service(
           proto.name,
           SerializationType.Avro,
-          CompressionType.Identity,
+          compressionType,
           IdiomaticEndpoints(proto.namespace, useIdiomaticEndpoints),
           proto.messages.map(toOperation))),
       Nil
     )
   }
 
-  def fromProtobufProto[T, U](useIdiomaticEndpoints: Boolean)(
+  def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
       protocol: protobuf.Protocol[T])(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
@@ -106,7 +106,7 @@ object Protocol {
             new Service[U](
               s.name,
               SerializationType.Protobuf,
-              CompressionType.Identity,
+              compressionType,
               IdiomaticEndpoints(Option(protocol.pkg), useIdiomaticEndpoints),
               s.operations.map(toOperation)
           )),
