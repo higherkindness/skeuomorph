@@ -21,8 +21,8 @@ import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.uast.types.{string => _, _}
-
 import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.mu.CompressionType.{Gzip, Identity}
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
 import higherkindness.skeuomorph.mu.SerializationType._
 
@@ -99,10 +99,10 @@ object print {
    */
   def serviceTuple[T](
       s: Service[T]
-  ): (SerializationType, String, List[Service.Operation[T]]) =
+  ): (SerializationType, CompressionType, IdiomaticEndpoints, String, List[Service.Operation[T]]) =
     s match {
-      case Service(name, serType, ops) =>
-        (serType, name, ops)
+      case Service(name, serType, compType, idiomEndpoints, ops) =>
+        (serType, compType, idiomEndpoints, name, ops)
     }
 
   /**
@@ -129,6 +129,22 @@ object print {
 
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
+
+  def gzip: Printer[Gzip.type]         = Printer(_.toString)
+  def identity: Printer[Identity.type] = Printer(_.toString)
+
+  def compressionType: Printer[CompressionType] =
+    (gzip >|< identity).contramap({
+      case Gzip     => Left(Gzip)
+      case Identity => Right(Identity)
+    })
+
+  def idiomaticEndpoints: Printer[IdiomaticEndpoints] =
+    Printer {
+      case IdiomaticEndpoints(Some(pkg), true) => ", namespace = Some(\"" + pkg + "\"), methodNameStyle = Capitalize"
+      case IdiomaticEndpoints(None, true)      => ", methodNameStyle = Capitalize\""
+      case _                                   => ""
+    }
 
   def opTpeEither[T](op: Service.OperationType[T], isRequest: Boolean): Either[Either[Either[T, T], T], T] =
     (op.stream, isRequest) match {
@@ -160,7 +176,9 @@ object print {
 
   def service[T](implicit T: Basis[mu.Type, T]): Printer[Service[T]] =
     (
-      konst("@service(") *< serializationType >* konst(") trait "),
+      konst("@service(") *< serializationType,
+      konst(", ") *< compressionType,
+      idiomaticEndpoints >* konst(") trait "),
       string >* konst("[F[_]] {") >* newLine,
       sepBy(operation, "\n") >* newLine >* konst("}")
     ).contramapN(serviceTuple)

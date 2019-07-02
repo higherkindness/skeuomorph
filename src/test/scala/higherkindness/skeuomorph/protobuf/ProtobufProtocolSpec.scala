@@ -18,13 +18,24 @@ package higherkindness.skeuomorph
 package protobuf
 
 import cats.effect.IO
-import org.specs2.Specification
-import higherkindness.skeuomorph.mu._
-import higherkindness.skeuomorph.protobuf.ParseProto._
-import higherkindness.droste.data.Mu._
 import higherkindness.droste.data.Mu
+import higherkindness.droste.data.Mu._
+import higherkindness.skeuomorph.mu._
+import higherkindness.skeuomorph.mu.CompressionType
+import higherkindness.skeuomorph.protobuf.ParseProto._
+import org.scalacheck.{Arbitrary, Gen}
+import org.specs2.{ScalaCheck, Specification}
 
-class ProtobufProtocolSpec extends Specification {
+class ProtobufProtocolSpec extends Specification with ScalaCheck {
+
+  val currentDirectory: String                      = new java.io.File(".").getCanonicalPath
+  val path                                          = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
+  val source                                        = ProtoSource("book.proto", path)
+  val protobufProtocol: Protocol[Mu[protobuf.Type]] = parseProto[IO, Mu[protobuf.Type]].parse(source).unsafeRunSync()
+
+  implicit val arbCompressionType: Arbitrary[CompressionType] = Arbitrary {
+    Gen.oneOf(CompressionType.Identity, CompressionType.Gzip)
+  }
 
   def is = s2"""
   Protobuf Protocol
@@ -33,16 +44,10 @@ class ProtobufProtocolSpec extends Specification {
 
   """
 
-  def printProtobufProtocol = {
-
-    val currentDirectory: String                      = new java.io.File(".").getCanonicalPath
-    val path                                          = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
-    val source                                        = ProtoSource("book.proto", path)
-    val protobufProtocol: Protocol[Mu[protobuf.Type]] = parseProto[IO, Mu[protobuf.Type]].parse(source).unsafeRunSync()
-
+  def printProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
     val parseProtocol: Protocol[Mu[protobuf.Type]] => higherkindness.skeuomorph.mu.Protocol[Mu[mu.Type]] = {
       p: Protocol[Mu[protobuf.Type]] =>
-        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto[Mu[protobuf.Type], Mu[mu.Type]](p)
+        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto[Mu[protobuf.Type], Mu[mu.Type]](ct, useIdiom)(p)
     }
 
     val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[mu.Type]] => String = {
@@ -50,14 +55,16 @@ class ProtobufProtocolSpec extends Specification {
         higherkindness.skeuomorph.mu.print.proto.print(p)
     }
 
-    val result = (parseProtocol andThen printProtocol)(protobufProtocol)
-
-    result.clean must beEqualTo(expectation.clean)
-
+    (parseProtocol andThen printProtocol)(protobufProtocol).clean must beEqualTo(expectation(ct, useIdiom).clean)
   }
 
-  val expectation =
-    """package com.acme
+  def expectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
+
+    val serviceParams: String = "Protobuf" +
+      (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
+      (if (useIdiomaticEndpoints) ", namespace = Some(\"com.acme\"), methodNameStyle = Capitalize" else "")
+
+    s"""package com.acme
       |
       |import com.acme.author.Author
       |
@@ -82,7 +89,7 @@ class ProtobufProtocolSpec extends Specification {
       |  case object PAPERBACK extends BindingType
       |}
       |
-      |@service(Protobuf) trait BookService[F[_]] {
+      |@service($serviceParams) trait BookService[F[_]] {
       |  def GetBook(req: GetBookRequest): F[Book]
       |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
       |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
@@ -90,6 +97,7 @@ class ProtobufProtocolSpec extends Specification {
       |}
       |
       |}""".stripMargin
+  }
 
   implicit class StringOps(self: String) {
     def clean: String = self.replaceAll("\\s", "")
