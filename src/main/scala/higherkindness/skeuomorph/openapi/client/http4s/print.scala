@@ -261,7 +261,7 @@ object print {
         )(space)
 
       def withBody: Printer[String] =
-        konst(".withBody(") *< string >* konst(")")
+        konst(".withEntity(") *< string >* konst(")")
     }
   }
   object v18 {
@@ -276,7 +276,7 @@ object print {
         )(space)
 
       def withBody: Printer[String] =
-        konst(".withEntity(") *< string >* konst(")")
+        konst(".withBody(") *< string >* konst(")")
     }
   }
 }

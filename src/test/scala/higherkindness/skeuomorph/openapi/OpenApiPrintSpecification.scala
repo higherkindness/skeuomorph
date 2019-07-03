@@ -568,11 +568,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    implicit val OptionNewPayloadsEntityEncoder: EntityEncoder[F, Option[NewPayloads]] = jsonEncoderOf[F, Option[NewPayloads]]
            |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
            |    implicit val NewPayloadsEntityDecoder: EntityDecoder[F, NewPayloads] = jsonOf[F, NewPayloads]
-           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
+           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
-           |    def updatePayloads(payloads: Payloads): F[Payloads] = client.expect[Payloads](Request[F](method = Method.PUT, uri = baseUrl / "payloads").withBody(payloads))
+           |    def updatePayloads(payloads: Payloads): F[Payloads] = client.expect[Payloads](Request[F](method = Method.PUT, uri = baseUrl / "payloads").withEntity(payloads))
            |  }
            |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, PetstoreClient[F]] = BlazeClientBuilder(executionContext).resource.map(PetstoreHttpClient.build(_, baseUrl))
            |}""".stripMargin
@@ -616,11 +616,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    implicit val OptionNewPayloadsEntityEncoder: EntityEncoder[F, Option[NewPayloads]] = jsonEncoderOf[F, Option[NewPayloads]]
            |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
            |    implicit val NewPayloadsEntityDecoder: EntityDecoder[F, NewPayloads] = jsonOf[F, NewPayloads]
-           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
+           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
-           |    def updatePayloads(payloads: Payloads): F[Payloads] = client.expect[Payloads](Request[F](method = Method.PUT, uri = baseUrl / "payloads").withEntity(payloads))
+           |    def updatePayloads(payloads: Payloads): F[Payloads] = client.expect[Payloads](Request[F](method = Method.PUT, uri = baseUrl / "payloads").withBody(payloads))
            |  }
            |  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): F[PetstoreClient[F]] = Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(PetstoreHttpClient.build(_, baseUrl))
            |}""".stripMargin
