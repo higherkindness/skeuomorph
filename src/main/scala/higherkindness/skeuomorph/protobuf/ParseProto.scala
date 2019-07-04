@@ -300,10 +300,9 @@ object ParseProto {
     ("deprecated", options.getDeprecated.toString) ::
       options.getUninterpretedOptionList.j2s.map(t => (toString(t.getNameList.j2s), t.getIdentifierValue))
 
-  def fromFieldOptionsEnum(options: EnumOptions): List[(String, String)] = {
+  def fromFieldOptionsEnum(options: EnumOptions): List[(String, String)] =
     List(("allow_alias", options.getAllowAlias.toString), ("deprecated", options.getDeprecated.toString)) ++
       options.getUninterpretedOptionList.j2s.map(t => (toString(t.getNameList.j2s), t.getIdentifierValue))
-  }
 
   def toString(nameParts: Seq[NamePart]): String =
     nameParts.foldLeft("")((l, r) => if (r.getIsExtension) s"$l.($r)" else s"$l.$r")
