@@ -58,6 +58,11 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
   }
 
   "complex types should able to print" >> {
+    "when an empty object is provided" >> {
+      schema("Person".some)
+        .print(Fixed.`object`(List.empty, List.empty)) must ===("type Person = io.circe.Json")
+    }
+
     "when object is provided" >> {
       schema("Person".some)
         .print(

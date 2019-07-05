@@ -56,7 +56,10 @@ object print {
           val comma                            = if (requiredFields.nonEmpty && optionalFields.nonEmpty) ", " else ""
           val printRequired                    = requiredFields.map(x => s"${x.name}: ${x.tpe}").mkString(", ")
           val printOptional                    = optionalFields.map(x => s"${x.name}: Option[${x.tpe}]").mkString(", ")
-          s"final case class $name($printRequired$comma$printOptional)"
+          if (properties.isEmpty)
+            s"type $name = io.circe.Json"
+          else
+            s"final case class $name($printRequired$comma$printOptional)"
         case (ArrayF(x), _) => s"List[$x]"
         case (EnumF(fields), Some(name)) =>
           val printFields = fields.map(f => s"final case object ${f.capitalize} extends $name").mkString("\n  ")
