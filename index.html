@@ -47,7 +47,7 @@ example.  Or to a mu service description.</p>
 <span class="k">import</span> <span class="nn">cats.implicits._</span>
 
 
-<span class="k">val</span> <span class="n">definition</span> <span class="k">=</span> <span class="s">"""
+<span class="k">val</span> <span class="nv">definition</span> <span class="k">=</span> <span class="s">"""
 {
   "namespace": "example.avro",
   "type": "record",
@@ -75,14 +75,14 @@ example.  Or to a mu service description.</p>
 }
   """</span>
 
-<span class="k">val</span> <span class="n">avroSchema</span><span class="k">:</span> <span class="kt">Schema</span> <span class="o">=</span> <span class="k">new</span> <span class="nc">Schema</span><span class="o">.</span><span class="nc">Parser</span><span class="o">().</span><span class="n">parse</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">avroSchema</span><span class="k">:</span> <span class="kt">Schema</span> <span class="o">=</span> <span class="k">new</span> <span class="nv">Schema</span><span class="o">.</span><span class="py">Parser</span><span class="o">().</span><span class="py">parse</span><span class="o">(</span><span class="n">definition</span><span class="o">)</span>
 
-<span class="k">val</span> <span class="n">parseAvro</span><span class="k">:</span> <span class="kt">Schema</span> <span class="o">=&gt;</span> <span class="nc">Mu</span><span class="o">[</span><span class="kt">MuF</span><span class="o">]</span> <span class="k">=</span>
-  <span class="n">scheme</span><span class="o">.</span><span class="n">hylo</span><span class="o">(</span><span class="n">transformAvro</span><span class="o">[</span><span class="kt">Mu</span><span class="o">[</span><span class="kt">MuF</span><span class="o">]].</span><span class="n">algebra</span><span class="o">,</span> <span class="n">fromAvro</span><span class="o">)</span>
-<span class="k">val</span> <span class="n">printAsScala</span><span class="k">:</span> <span class="kt">Mu</span><span class="o">[</span><span class="kt">MuF</span><span class="o">]</span> <span class="k">=&gt;</span> <span class="nc">String</span> <span class="k">=</span> 
-  <span class="n">print</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">print</span> <span class="k">_</span>
+<span class="k">val</span> <span class="nv">parseAvro</span><span class="k">:</span> <span class="kt">Schema</span> <span class="o">=&gt;</span> <span class="nc">Mu</span><span class="o">[</span><span class="kt">MuF</span><span class="o">]</span> <span class="k">=</span>
+  <span class="nv">scheme</span><span class="o">.</span><span class="py">hylo</span><span class="o">(</span><span class="n">transformAvro</span><span class="o">[</span><span class="kt">Mu</span><span class="o">[</span><span class="kt">MuF</span><span class="o">]].</span><span class="py">algebra</span><span class="o">,</span> <span class="n">fromAvro</span><span class="o">)</span>
+<span class="k">val</span> <span class="nv">printAsScala</span><span class="k">:</span> <span class="kt">Mu</span><span class="o">[</span><span class="kt">MuF</span><span class="o">]</span> <span class="k">=&gt;</span> <span class="nc">String</span> <span class="k">=</span> 
+  <span class="nv">print</span><span class="o">.</span><span class="py">schema</span><span class="o">.</span><span class="py">print</span> <span class="nf">_</span>
 <span class="o">(</span><span class="n">parseAvro</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">println</span><span class="o">)(</span><span class="n">avroSchema</span><span class="o">)</span>
-<span class="o">(</span><span class="n">printAsScala</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">println</span><span class="o">)(</span><span class="n">parseAvro</span><span class="o">(</span><span class="n">avroSchema</span><span class="o">))</span>
+<span class="o">(</span><span class="n">printAsScala</span> <span class="o">&gt;&gt;&gt;</span> <span class="n">println</span><span class="o">)(</span><span class="nf">parseAvro</span><span class="o">(</span><span class="n">avroSchema</span><span class="o">))</span>
 </code></pre></div></div>
 
 <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Mu(TProduct(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
