@@ -1,5 +1,15 @@
 # Changelog
 
+## 07/05/2019 - Version 0.0.11
+
+Release changes:
+
+* Support for compression ([#99](https://github.com/higherkindness/skeuomorph/pull/99))
+* Ff/print open api ([#97](https://github.com/higherkindness/skeuomorph/pull/97))
+* CompressionType and useIdiomaticEndpoints for Protobuf and Avro ([#101](https://github.com/higherkindness/skeuomorph/pull/101))
+* Release 0.0.11 ([#107](https://github.com/higherkindness/skeuomorph/pull/107))
+
+
 ## 05/30/2019 - Version 0.0.10
 
 Release changes:
