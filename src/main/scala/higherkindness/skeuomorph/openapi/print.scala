@@ -73,11 +73,21 @@ object print {
     Printer(scheme.cata(algebra))
   }
 
+  def isTypeAlias[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+    import JsonSchemaF._
+    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
+      case ObjectF(_, _) => false
+      case EnumF(_)      => false
+      case _             => true
+    }
+    scheme.cata(algebra).apply(t)
+  }
   def isBasic[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
     val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
       case ObjectF(_, _) => false
       case EnumF(_)      => false
+      case ArrayF(_)     => false
       case _             => true
     }
     scheme.cata(algebra).apply(t)
@@ -94,7 +104,7 @@ object print {
 
   def schemaPair[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
     case (name, tpe) =>
-      if (isBasic(tpe)) s"type $name = ${schema().print(tpe)}" else schema(name.some).print(tpe)
+      if (isTypeAlias(tpe)) s"type $name = ${schema().print(tpe)}" else schema(name.some).print(tpe)
   }
 
   final case class Codecs[T](name: String, tpe: T)

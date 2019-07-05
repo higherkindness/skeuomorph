@@ -92,7 +92,23 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}""".stripMargin
       )
     }
+  }
 
+  "circe encoders/decoders should able to print empty" >> {
+    import client.http4s.circe._
+    val printer = implicitly[Printer[Codecs[JsonSchemaF.Fixed]]]
+    "when a basic type is provided " >> {
+      printer.print(Codecs("Bars", Fixed.string())) must ===(
+        """|object Bars {
+           |}""".stripMargin
+      )
+    }
+    "when a reference is provided " >> {
+      printer.print(Codecs("Bars", Fixed.reference("Foo"))) must ===(
+        """|object Bars {
+           |}""".stripMargin
+      )
+    }
   }
 
   "Client trait should able to print" >> {

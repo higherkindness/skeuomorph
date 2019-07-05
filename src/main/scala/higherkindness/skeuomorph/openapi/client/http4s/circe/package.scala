@@ -39,21 +39,22 @@ package object circe {
   implicit def circeCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[Codecs[T]] =
     (
       konst("object ") *< tpe[T] >* konst(" {") *< newLine,
-      sepBy(space *< space *< importDef, "\n") >* newLine,
+      optional(sepBy(space *< space *< importDef, "\n") >* newLine),
       optional(space *< space *< circeEncoder[T] >* newLine),
       optional(space *< space *< circeDecoder[T] >* newLine),
-      space *< space *< entityEncoder[T] >* newLine,
-      space *< space *< entityEncoder[T] >* newLine,
-      space *< space *< entityDecoder[T] >* newLine >* konst("}"))
+      optional(space *< space *< entityEncoder[T] >* newLine),
+      optional(space *< space *< entityEncoder[T] >* newLine),
+      optional(space *< space *< entityDecoder[T] >* newLine) >* konst("}"))
       .contramapN { x =>
-        val tpe     = Tpe[T](x.name)
-        val default = x.name -> tpe
-        val (imports, tpeWithName) =
-          if (isArray(x.tpe))
-            http4sPackages -> none
-          else
-            packages -> default.some
-        (tpe, imports, tpeWithName, tpeWithName, default, s"Option${x.name}" -> tpe.copy(required = false), default)
+        val tpe        = Tpe[T](x.name)
+        val default    = (x.name -> tpe).some
+        val optionType = (s"Option${x.name}" -> tpe.copy(required = false)).some
+        val (imports, circeCodecs, optionCodec, http4sCodecs) = x.tpe match {
+          case _ if (isArray(x.tpe)) => (http4sPackages.some, none, (optionType), default)
+          case _ if (isBasic(x.tpe)) => (none, none, none, none)
+          case _                     => (packages.some, default, (optionType), default)
+        }
+        (tpe, imports, circeCodecs, circeCodecs, http4sCodecs, optionCodec, http4sCodecs)
       }
 
   implicit def http4sCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[EntityCodecs[T]] =
