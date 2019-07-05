@@ -21,6 +21,7 @@ import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
+import higherkindness.skeuomorph.openapi.print._
 import cats.implicits._
 import cats.Show
 
@@ -36,39 +37,6 @@ object print {
   def successStatusCode(code: String): Boolean = code match {
     case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
     case _                       => false
-  }
-
-  def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
-
-  def divBy[A, B](p1: Printer[A], p2: Printer[B])(sep: Printer[Unit]): Printer[(A, B)] =
-    (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
-
-  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
-  object Tpe {
-    def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
-    def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
-    def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
-      Tpe(tpe.asRight, required, description)
-
-    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
-      identity,
-      x =>
-        Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
-          .print(x)
-          .capitalize
-    )
-    def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
-      if (tpe.required)
-        name(tpe).asRight
-      else
-        name(tpe).asLeft
-
-  }
-  final case class Var[T](name: String, tpe: Tpe[T])
-  object Var {
-    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
-    def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
-      Var(decapitalize(name), Tpe(tpe.asRight, required, description))
   }
 
   sealed trait HttpVerb
@@ -119,15 +87,6 @@ object print {
     implicit val implNameShow: Show[ImplName]   = Show.show(_.value)
   }
 
-  final case class PackageName(value: String) extends AnyVal
-  object PackageName {
-    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
-  }
-
-  final case class Encoder[T](value: Var[T]) extends AnyVal
-
-  final case class Decoder[T](value: Var[T]) extends AnyVal
-
   final case class OperationId(value: String) extends AnyVal
 
   object OperationId {
@@ -139,23 +98,6 @@ object print {
 
     implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
   }
-
-  def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
-    ((konst("Option[") *< string >* konst("]")) >|< string)
-      .contramap(Tpe.option[T])
-
-  def imports: Printer[List[PackageName]] =
-    (
-      sepBy(
-        (konst("import ") *< show[PackageName]),
-        "\n")
-    ).contramap(identity)
-
-  private def parameter[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
-    (
-      string >* konst(": "),
-      tpe
-    ).contramapN(x => x.name -> x.tpe)
 
   private def requestTuple[T: Basis[JsonSchemaF, ?]](operationId: OperationId, request: Request[T]): Option[Var[T]] =
     request.content
@@ -234,7 +176,7 @@ object print {
   def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
       konst("  def ") *< show[OperationId],
-      konst("(") *< sepBy(parameter, ", "),
+      konst("(") *< sepBy(argumentDef, ", "),
       konst("): F[") *< responsesTypes >* konst("]")
     ).contramapN(operationTuple[T])
 
@@ -412,18 +354,11 @@ object print {
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
     (
-      imports >* newLine,
+      sepBy(importDef, "\n") >* newLine,
       konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
       space *< space *< konst("import ") *< show[TraitName] >* konst("._") >* newLine,
       sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
       clientTypes[T]
     ).contramapN(operationsTuple[T])
-
-  def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
-  def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)
-  def duplicate[A, B](pair: (A, B)): ((A, A), (B, B))      = (pair._1 -> pair._1, pair._2 -> pair._2)
-  def second[A, B, C](pair: (A, B))(f: B => C): (A, C)     = (pair._1, f(pair._2))
-  def flip[A, B](pair: (A, B)): (B, A)                     = (pair._2, pair._1)
-  def decapitalize(s: String)                              = if (s.isEmpty) s else s(0).toLower + s.substring(1)
 
 }

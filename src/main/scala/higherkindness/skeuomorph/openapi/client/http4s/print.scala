@@ -21,86 +21,48 @@ import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
-import higherkindness.skeuomorph.openapi.print.isArray
+
+import higherkindness.skeuomorph.openapi.print.{schema => _, _}
 import higherkindness.skeuomorph.openapi.client.print._
 import cats.implicits._
 import qq.droste._
 
 object print {
   import schema._
+  final case class EntityCodecs[T](name: String, tpe: T)
 
   def impl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[(PackageName, OpenApi[T])] =
-    (imports >* newLine, implDefinition[T]).contramapN {
+    (sepBy(importDef, "\n") >* newLine, implDefinition[T]).contramapN {
       case (packageName, openApi) =>
+        val arrays = openApi.components.toList.flatMap(_.schemas.toList).filter { case (_, x) => isArray(x) }.map(_._1)
         (
-          packages ++ List(
+          packages ++ (List(
             s"${packageName.show}.${TraitName(openApi).show}",
             s"${packageName.show}.models._"
-          ).map(PackageName.apply),
+          ) ++ arrays.map(x => s"$x._")).map(PackageName.apply),
           openApi)
     }
 
-  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] =
-    (
-      konst("object ") *< show[ImplName] >* konst(" {") *< newLine,
-      sepBy(twoSpaces *< (circeEncoder >|< circeDecoder), "\n") >* newLine,
-      konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
-      konst(" = new ") *< show[TraitName] >* konst("[F] {") >* newLine,
-      twoSpaces *< twoSpaces *< imports >* newLine,
-      sepBy(twoSpaces *< twoSpaces *< (entityEncoder >|< entityDecoder), "\n") >* newLine,
-      sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
-      http4sSpecifics.applyMethod >* (newLine *< konst("}"))).contramapN { x =>
+  type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[OperationWithPath[T]], (TraitName, ImplName))
+  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] = {
+    objectDef[ImplName, ImplDef[T]](
+      (
+        konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
+        konst(" = new ") *< show[TraitName] >* konst("[F] {") >* newLine,
+        twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine,
+        sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
+        http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
         ImplName(x),
-        encoderAndDecodersFrom(x)(isArray),
-        TraitName(x),
-        TraitName(x),
-        List(PackageName(s"${TraitName(x).show}._")),
-        encoderAndDecodersFrom(x)(_ => false),
-        toOperationsWithPath(TraitName(x) -> x.paths)._2,
-        TraitName(x) -> ImplName(x))
+        List.empty,
+        (
+          TraitName(x),
+          TraitName(x),
+          List(PackageName(s"${TraitName(x).show}._")),
+          toOperationsWithPath(TraitName(x) -> x.paths)._2,
+          TraitName(x) -> ImplName(x)))
     }
-
-  def encoderAndDecodersFrom[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T])(
-      f: T => Boolean): List[Either[Encoder[T], Decoder[T]]] = {
-    val xs = openApi.components.toList.flatMap(_.schemas).filterNot { case (_, x) => f(x) }.map(_._1)
-    xs.flatMap { x =>
-      List(
-        Encoder[T](Var(x, Tpe.apply(x))).asLeft,
-        Encoder[T](Var(s"Option$x", Tpe.apply[T](x).copy(required = false))).asLeft)
-    } ++
-      xs.map(x => Decoder[T](Var(x, Tpe.apply(x))).asRight)
   }
-
-  def varTuple[T](x: Var[T]): (String, Tpe[T], Tpe[T]) = ((x.name, x.tpe, x.tpe))
-
-  def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[Decoder[T]] =
-    (
-      konst("implicit val ") *< string >* konst("Decoder: "),
-      konst("Decoder[") *< tpe[T] >* konst("] = "),
-      konst("deriveDecoder[") *< tpe[T] >* konst("]"))
-      .contramapN(x => varTuple(x.value))
-
-  def circeEncoder[T: Basis[JsonSchemaF, ?]]: Printer[Encoder[T]] =
-    (
-      konst("implicit val ") *< string >* konst("Encoder: "),
-      konst("Encoder[") *< tpe[T] >* konst("] = "),
-      konst("deriveEncoder[") *< tpe[T] >* konst("]"))
-      .contramapN(x => varTuple(x.value))
-
-  def entityDecoder[T: Basis[JsonSchemaF, ?]]: Printer[Decoder[T]] =
-    (
-      konst("implicit val ") *< string >* konst("EntityDecoder: "),
-      konst("EntityDecoder[F, ") *< tpe[T] >* konst("] = "),
-      konst("jsonOf[F, ") *< tpe[T] >* konst("]"))
-      .contramapN(x => varTuple(x.value))
-
-  def entityEncoder[T: Basis[JsonSchemaF, ?]]: Printer[Encoder[T]] =
-    (
-      konst("implicit val ") *< string >* konst("EntityEncoder: "),
-      konst("EntityEncoder[F, ") *< tpe[T] >* konst("] = "),
-      konst("jsonEncoderOf[F, ") *< tpe[T] >* konst("]"))
-      .contramapN(x => varTuple(x.value))
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     (konst("case Successful(response) => response.as[") *< responseOrType[T] >* konst("].map(_.asRight)"))
@@ -234,8 +196,6 @@ object print {
     "org.http4s.client.blaze._",
     "org.http4s.circe._",
     "org.http4s.Status.Successful",
-    "io.circe._",
-    "io.circe.generic.semiauto._",
     "shapeless.Coproduct",
     "scala.concurrent.ExecutionContext"
   ).map(PackageName.apply)
