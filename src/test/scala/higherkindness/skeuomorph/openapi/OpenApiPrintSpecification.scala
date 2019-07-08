@@ -105,7 +105,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "Client trait should able to print" >> {
     import client.print._
+
     "when a post operation is provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferencePost)) must ===( //
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -122,6 +124,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when a put and delete are provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -141,6 +144,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when get endpoints are provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -160,6 +164,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when optional body and not optional query parameters is provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeOptionBody)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -176,6 +181,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when references in the request and the responses" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(references)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -192,6 +198,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with a default one" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -209,6 +216,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with not found response" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(notFoundResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -227,6 +235,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with anonymous objects" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -240,11 +249,33 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  final case class UpdatedPayload(name: String)
            |object UpdatedPayload {
            |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdatedPayloadEncoder: Encoder[UpdatedPayload] = deriveEncoder[UpdatedPayload]
+           |  implicit val UpdatedPayloadDecoder: Decoder[UpdatedPayload] = deriveDecoder[UpdatedPayload]
+           |  implicit def UpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdatedPayload] = jsonEncoderOf[F, UpdatedPayload]
+           |  implicit def OptionUpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdatedPayload]] = jsonEncoderOf[F, Option[UpdatedPayload]]
+           |  implicit def UpdatedPayloadEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatedPayload] = jsonOf[F, UpdatedPayload]
            |
            |}
            |  final case class UpdatePayloadNotFound(isDone: Boolean)
            |object UpdatePayloadNotFound {
            |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdatePayloadNotFoundEncoder: Encoder[UpdatePayloadNotFound] = deriveEncoder[UpdatePayloadNotFound]
+           |  implicit val UpdatePayloadNotFoundDecoder: Decoder[UpdatePayloadNotFound] = deriveDecoder[UpdatePayloadNotFound]
+           |  implicit def UpdatePayloadNotFoundEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdatePayloadNotFound] = jsonEncoderOf[F, UpdatePayloadNotFound]
+           |  implicit def OptionUpdatePayloadNotFoundEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdatePayloadNotFound]] = jsonEncoderOf[F, Option[UpdatePayloadNotFound]]
+           |  implicit def UpdatePayloadNotFoundEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatePayloadNotFound] = jsonOf[F, UpdatePayloadNotFound]
            |
            |}
            |  type UpdatePayloadError = UpdatePayloadNotFound
@@ -254,6 +285,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are simple response and response with anonymous objects" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(anotherPayloadOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -271,14 +303,38 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  final case class UpdatedPayload(name: String)
            |object UpdatedPayload {
            |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdatedPayloadEncoder: Encoder[UpdatedPayload] = deriveEncoder[UpdatedPayload]
+           |  implicit val UpdatedPayloadDecoder: Decoder[UpdatedPayload] = deriveDecoder[UpdatedPayload]
+           |  implicit def UpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdatedPayload] = jsonEncoderOf[F, UpdatedPayload]
+           |  implicit def OptionUpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdatedPayload]] = jsonEncoderOf[F, Option[UpdatedPayload]]
+           |  implicit def UpdatedPayloadEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatedPayload] = jsonOf[F, UpdatedPayload]
            |
            |}
            |
            |}""".stripMargin
       )
+      // |  import io.circe._
+      //   |  import io.circe.generic.semiauto._
+      //   |  import org.http4s.{EntityEncoder, EntityDecoder}
+      //   |  import org.http4s.circe._
+      //   |  import cats.Applicative
+      //   |  import cats.effect.Sync
+      //   |  implicit val UpdateAnotherPayloadRequestEncoder: Encoder[UpdateAnotherPayloadRequest] = deriveEncoder[UpdateAnotherPayloadRequest]
+      //   |  implicit val UpdateAnotherPayloadRequestDecoder: Decoder[UpdateAnotherPayloadRequest] = deriveDecoder[UpdateAnotherPayloadRequest]
+      //   |  implicit def UpdateAnotherPayloadRequestEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdateAnotherPayloadRequest] = jsonEncoderOf[F, UpdatedPayload]
+      //   |  implicit def OptionUpdateAnotherPayloadRequestEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdateAnotherPayloadRequest]] = jsonEncoderOf[F, Option[UpdatedPayload]]
+      //   |  implicit def UpdateAnotherPayloadRequestdEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdateAnotherPayloadRequest] = jsonOf[F, UpdateAnotherPayloadRequest]
+
     }
 
     "when multiple responses with anonymous objects with default response" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -307,6 +363,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple responses and multiple error scenarios" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponses)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -326,6 +383,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "two operations with default response" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(twoOperationsWithDefaultResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -358,6 +416,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when the failure response is empty" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -375,6 +434,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when multiple failure response are empty" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -393,6 +453,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when a post operation is provided and operation id is not provided" >> {
+      import Printer.avoid._
       interfaceDefinition.print(
         petstoreOpenApi
           .withPath(
@@ -444,6 +505,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     import client.print._
     import client.http4s.print.implDefinition
     import client.http4s.print.Http4sSpecifics
+    import Printer.avoid._
     implicit val none: Http4sSpecifics = new Http4sSpecifics {
       def none[A]                                     = Printer.unit.contramap[A](_ => ())
       def applyMethod: Printer[(TraitName, ImplName)] = none
@@ -631,6 +693,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "http4s 0.20.x should able to print" >> {
     import client.http4s.print.impl
     import client.http4s.print.v20._
+    import Printer.avoid._
 
     "when a post operation is provided" >> {
       impl.print(
@@ -668,6 +731,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "http4s 0.18.x should able to print" >> {
     import client.http4s.print.impl
     import client.http4s.print.v18._
+    import Printer.avoid._
 
     "when a post operation is provided" >> {
       impl.print(PackageName("petstore") -> petstoreOpenApi.withPath(mediaTypeReferences)) must ===(

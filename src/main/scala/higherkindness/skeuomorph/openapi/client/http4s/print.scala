@@ -31,7 +31,9 @@ object print {
   import schema._
   final case class EntityCodecs[T](name: String, tpe: T)
 
-  def impl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[(PackageName, OpenApi[T])] =
+  def impl[T: Basis[JsonSchemaF, ?]](
+      implicit http4sSpecifics: Http4sSpecifics,
+      codecs: Printer[Codecs]): Printer[(PackageName, OpenApi[T])] =
     (sepBy(importDef, "\n") >* newLine, implDefinition[T]).contramapN {
       case (packageName, openApi) =>
         val arrays = openApi.components.toList.flatMap(_.schemas.toList).filter { case (_, x) => isArray(x) }.map(_._1)
@@ -44,7 +46,9 @@ object print {
     }
 
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[OperationWithPath[T]], (TraitName, ImplName))
-  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] =
+  def implDefinition[T: Basis[JsonSchemaF, ?]](
+      implicit http4sSpecifics: Http4sSpecifics,
+      codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     objectDef[ImplDef[T]](
       (
         konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
@@ -76,8 +80,8 @@ object print {
       case (_, y, _)                                    => y.asLeft
     }
 
-  def statusResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[
-    (OperationId, String, (Either[Response[T], Reference], Int))] =
+  def statusResponseImpl[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
     (
       konst("case response if response.status.code == ") *< string >* konst(" => "),
       konst("response.as[") *< string >* konst("]"),
@@ -95,7 +99,8 @@ object print {
             n))
     }
 
-  def defaultResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, (Either[Response[T], Reference], Int))] =
+  def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, (Either[Response[T], Reference], Int))] =
     (
       konst("case default => default.as[") *< string >* konst("]"),
       konst(".map(x => ") *< coproductIf(string >* konst("(default.status.code, x)")) >* konst(".asLeft)"))
@@ -105,7 +110,8 @@ object print {
           (innerTpe, (defaultResponseErrorName(operationId, none), tpe, n))
       }
 
-  def responseImpl[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
+  def responseImpl[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
     (successResponseImpl[T] >|< defaultResponseImpl[T] >|< statusResponseImpl[T]).contramap {
       case (_, statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
       case (operationId, "default", x)                                     => (operationId -> x).asRight.asLeft
@@ -130,7 +136,8 @@ object print {
               _ -> operation.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name)))
       }
 
-  def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
+  def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String])(
+      implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
     (
       konst("fetch[") *< responsesTypes >* konst("]("),
       requestImpl[T](withBody) >* konst(") {") >* newLine,
@@ -158,7 +165,8 @@ object print {
           (operationId -> operation.responses, x)
       }
 
-  def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
+  def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String])(
+      implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
     (
       method[T] >* konst(" = client."),
       expectImpl[T](withBody) >|< fetchImpl[T](withBody)

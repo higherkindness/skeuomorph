@@ -194,9 +194,9 @@ object print {
   def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](
       operationId: Option[OperationId],
       response: Response[T],
-      tpe: String)(success: => (String, List[String])): (String, Option[String], List[String]) = {
+      tpe: String)(success: => (String, List[String]))(
+      implicit codecs: Printer[Codecs]): (String, Option[String], List[String]) = {
     val innerType = s"${operationId.fold("")(_.show.capitalize)}${normalize(response.description).capitalize}"
-    import Printer.avoid._ //TODO Review this
     val newSchema =
       typeFromResponse(response).map(schema(innerType.some).print).getOrElse("Unit")
     tpe match {
@@ -211,7 +211,7 @@ object print {
 
   def defaultTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      responseOr: Either[Response[T], Reference]): (String, String, List[String]) = {
+      responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, String, List[String]) = {
     val tpe     = responseOrType.print(responseOr)
     val newType = unexpectedErrorName(operationId)
     def statusCaseClass(tpe: String): String =
@@ -229,7 +229,8 @@ object print {
 
   def statusTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      responseOr: Either[Response[T], Reference]): (String, Option[String], List[String]) = {
+      responseOr: Either[Response[T], Reference])(
+      implicit codecs: Printer[Codecs]): (String, Option[String], List[String]) = {
     val tpe = responseOrType.print(responseOr)
     responseOr.left.toOption
       .map { response =>
@@ -244,8 +245,9 @@ object print {
       )
   }
 
-  def typesAndSchemas[T: Basis[JsonSchemaF, ?]](
-      operationId: OperationId)(status: String, responseOr: Either[Response[T], Reference]): (String, List[String]) = {
+  def typesAndSchemas[T: Basis[JsonSchemaF, ?]](operationId: OperationId)(
+      status: String,
+      responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, List[String]) = {
     val statusCodePattern = """(\d+)""".r
     val tpe               = responseOrType.print(responseOr)
     status match {
@@ -271,9 +273,8 @@ object print {
 
   private def responsesSchemaTuple[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      responses: Map[String, Either[Response[T], Reference]]): Either[
-    (List[String], String, List[String]),
-    List[String]] =
+      responses: Map[String, Either[Response[T], Reference]])(
+      implicit codecs: Printer[Codecs]): Either[(List[String], String, List[String]), List[String]] =
     if (responses.size > 1) {
       val (newTypes, schemas) =
         second(responses.map((typesAndSchemas[T](operationId) _).tupled).toList.unzip)(_.flatten)
@@ -301,8 +302,8 @@ object print {
       case (schemas, tpe, errorTypes) => (schemas, tpe, errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight)
     }
 
-  private def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[
-    (OperationId, Map[String, Either[Response[T], Reference]])] =
+  private def responsesSchema[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, Map[String, Either[Response[T], Reference]])] =
     (multipleResponsesSchema >|< sepBy((space >* space) *< string, "\n")).contramap((responsesSchemaTuple[T] _).tupled)
 
   private def requestSchemaTuple[T: Basis[JsonSchemaF, ?]](
@@ -321,7 +322,8 @@ object print {
   private def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
-  private def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[List[OperationWithPath[T]]] =
+  private def clientTypes[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[List[OperationWithPath[T]]] =
     (sepBy(requestSchema[T], "\n") >* newLine, sepBy(responsesSchema[T], "\n") >* newLine)
       .contramapN {
         _.map {
@@ -349,7 +351,7 @@ object print {
     (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, (d._1.show, List.empty, d._2))
   }
 
-  def interfaceDefinition[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
+  def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     (
       sepBy(importDef, "\n") >* newLine,
       konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
