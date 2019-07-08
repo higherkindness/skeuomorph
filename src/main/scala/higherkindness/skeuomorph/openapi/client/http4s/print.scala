@@ -44,8 +44,8 @@ object print {
     }
 
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[OperationWithPath[T]], (TraitName, ImplName))
-  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] = {
-    objectDef[ImplName, ImplDef[T]](
+  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[OpenApi[T]] =
+    objectDef[ImplDef[T]](
       (
         konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
         konst(" = new ") *< show[TraitName] >* konst("[F] {") >* newLine,
@@ -53,7 +53,7 @@ object print {
         sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
         http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
-        ImplName(x),
+        ObjectName(ImplName(x).show),
         List.empty,
         (
           TraitName(x),
@@ -62,7 +62,6 @@ object print {
           toOperationsWithPath(TraitName(x) -> x.paths)._2,
           TraitName(x) -> ImplName(x)))
     }
-  }
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
     (konst("case Successful(response) => response.as[") *< responseOrType[T] >* konst("].map(_.asRight)"))
@@ -114,8 +113,8 @@ object print {
     }
 
   private def queryParametersFrom[T]: Path.Operation[T] => List[Parameter.Query[T]] =
-    _.parameters.flatMap(_.left.toOption).collect {
-      case x: Parameter.Query[T] => x
+    _.parameters.collect {
+      case Left(x: Parameter.Query[T]) => x
     }
 
   def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =

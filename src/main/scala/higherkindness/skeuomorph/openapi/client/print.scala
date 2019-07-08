@@ -322,18 +322,15 @@ object print {
   private def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
-  private def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
-    (
-      konst("object ") *< show[TraitName] >* konst(" {") >* newLine,
-      sepBy(requestSchema[T], "\n") >* newLine,
-      sepBy(responsesSchema[T], "\n") >* (newLine >* konst("}")))
-      .contramapN { x =>
-        un(second(x)(_.map {
+  private def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[List[OperationWithPath[T]]] =
+    (sepBy(requestSchema[T], "\n") >* newLine, sepBy(responsesSchema[T], "\n") >* newLine)
+      .contramapN {
+        _.map {
           case y @ (_, _, operation) =>
             val operationId = OperationId(y)
             (operationId   -> operation.requestBody) ->
               (operationId -> operation.responses)
-        }.unzip))
+        }.unzip
       }
 
   def toOperationsWithPath[T](x: (TraitName, Map[String, ItemObject[T]])): (TraitName, List[OperationWithPath[T]]) =
@@ -344,12 +341,18 @@ object print {
       TraitName,
       TraitName,
       List[OperationWithPath[T]],
-      (TraitName, List[OperationWithPath[T]])) = {
+      (ObjectName, List[PackageName], List[OperationWithPath[T]])) = {
     val traitName = TraitName(openApi)
+
     val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName -> openApi.paths))) {
       case (a, b) => (a, (traitName, b))
     })
-    (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, d)
+    (
+      List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply),
+      a,
+      b,
+      c,
+      (ObjectName(d._1.show), List.empty, d._2))
   }
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
@@ -358,7 +361,7 @@ object print {
       konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
       space *< space *< konst("import ") *< show[TraitName] >* konst("._") >* newLine,
       sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
-      clientTypes[T]
+      objectDef(clientTypes[T])
     ).contramapN(operationsTuple[T])
 
 }

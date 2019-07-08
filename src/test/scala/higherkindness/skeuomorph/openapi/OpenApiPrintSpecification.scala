@@ -29,16 +29,20 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a basic type is provided" >> {
       model.print(petstoreOpenApi.withSchema("Foo" -> Fixed.string())) must
         ===("""|object models {
+               |
                |  type Foo = String
                |  
+               |
                |}""".stripMargin)
     }
 
     "when a object type is provided" >> {
       model.print(petstoreOpenApi.withSchema("Foo" -> obj("bar" -> Fixed.string())())) must ===(
         """|object models {
+           |
            |  final case class Foo(bar: Option[String])
            |  
+           |
            |}""".stripMargin)
     }
 
@@ -49,10 +53,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           .withSchema(
             "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
           )) must ===("""|object models {
+                         |
                          |  final case class Bar(foo: String)
                          |  type Bars = List[Bar]
                          |  
                          |  
+                         |
                          |}""".stripMargin)
     }
   }
@@ -124,6 +130,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
@@ -137,6 +145,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit]
            |}
            |object PayloadClient {
+           |
+           |
            |
            |
            |
@@ -158,6 +168,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
@@ -170,6 +182,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit]
            |}
            |object PayloadClient {
+           |
+           |
            |
            |
            |}""".stripMargin)
@@ -186,6 +200,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
@@ -199,8 +215,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class GetPayloadUnexpectedErrorResponse(statusCode: Int, value: Error)
            |  type GetPayloadError = GetPayloadUnexpectedErrorResponse
+           |
            |}""".stripMargin)
     }
 
@@ -214,8 +232,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class GetPayloadNotFoundError(value: String)
            |  type GetPayloadError = GetPayloadNotFoundError
+           |
            |}""".stripMargin
       )
     }
@@ -230,9 +250,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class UpdatedPayload(name: String)
            |  final case class UpdatePayloadNotFound(isDone: Boolean)
            |  type UpdatePayloadError = UpdatePayloadNotFound
+           |
            |}""".stripMargin
       )
     }
@@ -246,8 +268,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload]
            |}
            |object AnotherPayloadClient {
+           |
            |  final case class UpdateAnotherPayloadRequest(name: String)
            |  final case class UpdatedPayload(name: String)
+           |
            |}""".stripMargin
       )
     }
@@ -262,10 +286,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class UpdatedPayload(name: String)
            |  final case class UpdatePayloadUnexpectedError(isDone: Boolean)
            |  final case class UpdatePayloadUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadUnexpectedError)
            |  type UpdatePayloadError = UpdatePayloadUnexpectedErrorResponse
+           |
            |}""".stripMargin
       )
     }
@@ -280,9 +306,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class CreatePayloadNotFoundError(value: String)
            |  final case class CreatePayloadUnexpectedErrorResponse(statusCode: Int, value: Error)
            |  type CreatePayloadError = CreatePayloadNotFoundError :+: CreatePayloadUnexpectedErrorResponse :+: CNil
+           |
            |}""".stripMargin
       )
     }
@@ -299,12 +327,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
            |  final case class CreatePayloadsUnexpectedError(name: String)
            |  final case class CreatePayloadsUnexpectedErrorResponse(statusCode: Int, value: CreatePayloadsUnexpectedError)
            |  type CreatePayloadsError = CreatePayloadsUnexpectedErrorResponse
            |  final case class UpdatePayloadsUnexpectedError(isDone: Boolean)
            |  final case class UpdatePayloadsUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadsUnexpectedError)
            |  type UpdatePayloadsError = UpdatePayloadsUnexpectedErrorResponse
+           |
            |}""".stripMargin
       )
     }
@@ -319,8 +349,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class DeletePayloadsNotFoundError(value: Unit)
            |  type DeletePayloadsError = DeletePayloadsNotFoundError
+           |
            |}""".stripMargin)
     }
 
@@ -334,9 +366,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class DeletePayloadsNotFoundError(value: Unit)
            |  final case class DeletePayloadsUnexpectedErrorResponse(statusCode: Int, value: Unit)
            |  type DeletePayloadsError = DeletePayloadsNotFoundError :+: DeletePayloadsUnexpectedErrorResponse :+: CNil
+           |
            |}""".stripMargin)
     }
 
@@ -375,6 +409,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                     |  def getOwnersPets(id: String): F[Owners]
                     |}
                     |object PetstoreClient {
+                    |
+                    |
                     |
                     |
                     |

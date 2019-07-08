@@ -112,13 +112,19 @@ object print {
 
   final case class Codecs[T](name: String, tpe: T)
 
-  def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs[T]]): Printer[OpenApi[T]] =
+  private def modelBodyDef[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs[T]]): Printer[OpenApi[T]] =
     (
-      konst("object models {") *< newLine *< sepBy(space *< space *< schemaPair, "\n") >* newLine,
-      sepBy(space *< space *< codecs, "\n") >* newLine *< konst("}")
+      sepBy(space *< space *< schemaPair, "\n") >* newLine,
+      sepBy(space *< space *< codecs, "\n") >* newLine
     ).contramapN { x =>
       val y = x.components.toList.flatMap(_.schemas)
+
       y -> y.map((Codecs.apply[T] _).tupled)
+    }
+
+  def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs[T]]): Printer[OpenApi[T]] =
+    objectDef(modelBodyDef[T]).contramap { x =>
+      (ObjectName("models"), List.empty, x)
     }
 
   def caseClassDef[T: Basis[JsonSchemaF, ?], A]: Printer[(Tpe[T], List[(String, Tpe[T])])] =
@@ -126,9 +132,9 @@ object print {
       case (x, y) => x -> y.map { case (x, y) => Var[T](x, y) }
     }
 
-  def objectDef[T: Show, A](body: Printer[A]): Printer[(T, List[PackageName], A)] =
+  def objectDef[A](body: Printer[A]): Printer[(ObjectName, List[PackageName], A)] =
     (
-      konst("object ") *< show[T] >* konst(" {") *< newLine,
+      konst("object ") *< show[ObjectName] >* konst(" {") *< newLine,
       sepBy(importDef, "\n") >* newLine,
       body >* newLine *< konst("}")).contramapN(identity)
 
@@ -165,6 +171,11 @@ object print {
 
   def importDef: Printer[PackageName] =
     (konst("import ") *< show[PackageName]).contramap(identity)
+
+  final case class ObjectName(value: String) extends AnyVal
+  object ObjectName {
+    implicit val objectNameShow: Show[ObjectName] = Show.show(_.value)
+  }
 
   final case class PackageName(value: String) extends AnyVal
   object PackageName {
