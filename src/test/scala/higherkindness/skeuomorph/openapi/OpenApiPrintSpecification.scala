@@ -25,51 +25,23 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   import OpenApiPrintSpecification._
 
   "models should able to print" >> {
-    implicit def none[T]: Printer[Codecs[T]] = Printer(_ => "")
     "when a basic type is provided" >> {
+      import client.http4s.circe._
       model.print(petstoreOpenApi.withSchema("Foo" -> Fixed.string())) must
         ===("""|object models {
                |
-               |  type Foo = String
-               |  
-               |
+               |type Foo = String
                |}""".stripMargin)
     }
 
     "when a object type is provided" >> {
-      model.print(petstoreOpenApi.withSchema("Foo" -> obj("bar" -> Fixed.string())())) must ===(
+      import client.http4s.circe._
+      model.print(petstoreOpenApi.withSchema("Bar" -> obj("foo" -> Fixed.string())())) must ===(
         """|object models {
            |
-           |  final case class Foo(bar: Option[String])
-           |  
+           |final case class Bar(foo: Option[String])
+           |object Bar {
            |
-           |}""".stripMargin)
-    }
-
-    "when multiple types are provided" >> {
-      model.print(
-        petstoreOpenApi
-          .withSchema("Bar" -> obj("foo" -> Fixed.string())("foo"))
-          .withSchema(
-            "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
-          )) must ===("""|object models {
-                         |
-                         |  final case class Bar(foo: String)
-                         |  type Bars = List[Bar]
-                         |  
-                         |  
-                         |
-                         |}""".stripMargin)
-    }
-  }
-
-  "circe encoders/decoders should able to print" >> {
-    import client.http4s.circe._
-    val printer = implicitly[Printer[Codecs[JsonSchemaF.Fixed]]]
-    "when a object type is provided" >> {
-
-      printer.print(Codecs("Bar", obj("foo" -> Fixed.string())("foo"))) must ===(
-        """|object Bar {
            |  import io.circe._
            |  import io.circe.generic.semiauto._
            |  import org.http4s.{EntityEncoder, EntityDecoder}
@@ -81,13 +53,21 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  implicit def BarEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Bar] = jsonEncoderOf[F, Bar]
            |  implicit def OptionBarEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Bar]] = jsonEncoderOf[F, Option[Bar]]
            |  implicit def BarEntityDecoder[F[_]:Sync]: EntityDecoder[F, Bar] = jsonOf[F, Bar]
-           |}""".stripMargin
-      )
+           |
+           |}
+           |}""".stripMargin)
     }
-
-    "when a array of object is provided" >> {
-      printer.print(Codecs("Bars", Fixed.array(Fixed.reference("Bar")))) must ===(
-        """|object Bars {
+    "when an array is provided" >> {
+      import client.http4s.circe._
+      model.print(
+        petstoreOpenApi.withSchema(
+          "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
+        )) must ===(
+        """|object models {
+           |
+           |type Bars = List[Bar]
+           |object Bars {
+           |
            |  import org.http4s.{EntityEncoder, EntityDecoder}
            |  import org.http4s.circe._
            |  import cats.Applicative
@@ -95,25 +75,31 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  implicit def BarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Bars] = jsonEncoderOf[F, Bars]
            |  implicit def OptionBarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Bars]] = jsonEncoderOf[F, Option[Bars]]
            |  implicit def BarsEntityDecoder[F[_]:Sync]: EntityDecoder[F, Bars] = jsonOf[F, Bars]
-           |}""".stripMargin
-      )
+           |
+           |}
+           |}""".stripMargin)
     }
-  }
 
-  "circe encoders/decoders should able to print empty" >> {
-    import client.http4s.circe._
-    val printer = implicitly[Printer[Codecs[JsonSchemaF.Fixed]]]
-    "when a basic type is provided " >> {
-      printer.print(Codecs("Bars", Fixed.string())) must ===(
-        """|object Bars {
-           |}""".stripMargin
-      )
-    }
-    "when a reference is provided " >> {
-      printer.print(Codecs("Bars", Fixed.reference("Foo"))) must ===(
-        """|object Bars {
-           |}""".stripMargin
-      )
+    "when multiple types are provided" >> {
+      import Printer.avoid._
+      model.print(
+        petstoreOpenApi
+          .withSchema("Bar" -> obj("foo" -> Fixed.string())("foo"))
+          .withSchema(
+            "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
+          )) must ===("""|object models {
+                         |
+                         |final case class Bar(foo: String)
+                         |object Bar {
+                         |
+                         |
+                         |}
+                         |type Bars = List[Bar]
+                         |object Bars {
+                         |
+                         |
+                         |}
+                         |}""".stripMargin)
     }
   }
 
@@ -252,7 +238,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |  final case class UpdatedPayload(name: String)
+           |object UpdatedPayload {
+           |
+           |
+           |}
            |  final case class UpdatePayloadNotFound(isDone: Boolean)
+           |object UpdatePayloadNotFound {
+           |
+           |
+           |}
            |  type UpdatePayloadError = UpdatePayloadNotFound
            |
            |}""".stripMargin
@@ -270,7 +264,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object AnotherPayloadClient {
            |
            |  final case class UpdateAnotherPayloadRequest(name: String)
+           |object UpdateAnotherPayloadRequest {
+           |
+           |
+           |}
            |  final case class UpdatedPayload(name: String)
+           |object UpdatedPayload {
+           |
+           |
+           |}
            |
            |}""".stripMargin
       )
@@ -288,7 +290,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |  final case class UpdatedPayload(name: String)
+           |object UpdatedPayload {
+           |
+           |
+           |}
            |  final case class UpdatePayloadUnexpectedError(isDone: Boolean)
+           |object UpdatePayloadUnexpectedError {
+           |
+           |
+           |}
            |  final case class UpdatePayloadUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadUnexpectedError)
            |  type UpdatePayloadError = UpdatePayloadUnexpectedErrorResponse
            |
@@ -329,9 +339,17 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |  final case class CreatePayloadsUnexpectedError(name: String)
+           |object CreatePayloadsUnexpectedError {
+           |
+           |
+           |}
            |  final case class CreatePayloadsUnexpectedErrorResponse(statusCode: Int, value: CreatePayloadsUnexpectedError)
            |  type CreatePayloadsError = CreatePayloadsUnexpectedErrorResponse
            |  final case class UpdatePayloadsUnexpectedError(isDone: Boolean)
+           |object UpdatePayloadsUnexpectedError {
+           |
+           |
+           |}
            |  final case class UpdatePayloadsUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadsUnexpectedError)
            |  type UpdatePayloadsError = UpdatePayloadsUnexpectedErrorResponse
            |

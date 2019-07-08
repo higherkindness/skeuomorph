@@ -33,10 +33,11 @@ object print {
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
     case (x, t) =>
+      import Printer.avoid._
       schema[T](x.some).print(t)
   }
 
-  def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None): Printer[T] = {
+  def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(implicit codecs: Printer[Codecs]): Printer[T] = {
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._
       (x, name) match {
@@ -52,14 +53,21 @@ object print {
         case (DateTimeF(), _) => "java.time.ZonedDateTime"
         case (PasswordF(), _) => "String"
         case (ObjectF(properties, required), Some(name)) =>
-          val (requiredFields, optionalFields) = properties.partition(x => required.contains(x.name))
-          val comma                            = if (requiredFields.nonEmpty && optionalFields.nonEmpty) ", " else ""
-          val printRequired                    = requiredFields.map(x => s"${x.name}: ${x.tpe}").mkString(", ")
-          val printOptional                    = optionalFields.map(x => s"${x.name}: Option[${x.tpe}]").mkString(", ")
           if (properties.isEmpty)
             s"type $name = io.circe.Json"
           else
-            s"final case class $name($printRequired$comma$printOptional)"
+            caseClassWithCodecsDef.print(
+              (
+                name,
+                properties
+                  .map(x => x.name -> Tpe[T](x.tpe))
+                  .map {
+                    case (name, tpe) =>
+                      if (required.contains(name))
+                        name -> tpe
+                      else
+                        name -> tpe.copy(required = false)
+                  }))
         case (ArrayF(x), _) => s"List[$x]"
         case (EnumF(fields), Some(name)) =>
           val printFields = fields.map(f => s"final case object ${f.capitalize} extends $name").mkString("\n  ")
@@ -85,16 +93,6 @@ object print {
     }
     scheme.cata(algebra).apply(t)
   }
-  def isBasic[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
-    import JsonSchemaF._
-    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
-      case ObjectF(_, _) => false
-      case EnumF(_)      => false
-      case ArrayF(_)     => false
-      case _             => true
-    }
-    scheme.cata(algebra).apply(t)
-  }
 
   def isArray[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
@@ -105,36 +103,42 @@ object print {
     scheme.cata(algebra).apply(t)
   }
 
-  def schemaPair[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
-    case (name, tpe) =>
-      if (isTypeAlias(tpe)) s"type $name = ${schema().print(tpe)}" else schema(name.some).print(tpe)
-  }
+  def typeDef[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
+    (konst("type ") *< string >* konst(" = "), schema(), optional(newLine *< objectDef(codecs))).contramapN {
+      case (name, tpe) if isArray(tpe) => (name, tpe, (name, List.empty, ListCodecs(name)).some)
+      case (name, tpe)                 => (name, tpe, none)
 
-  final case class Codecs[T](name: String, tpe: T)
-
-  private def modelBodyDef[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs[T]]): Printer[OpenApi[T]] =
-    (
-      sepBy(space *< space *< schemaPair, "\n") >* newLine,
-      sepBy(space *< space *< codecs, "\n") >* newLine
-    ).contramapN { x =>
-      val y = x.components.toList.flatMap(_.schemas)
-
-      y -> y.map((Codecs.apply[T] _).tupled)
     }
 
-  def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs[T]]): Printer[OpenApi[T]] =
-    objectDef(modelBodyDef[T]).contramap { x =>
-      (ObjectName("models"), List.empty, x)
+  def schemaDef[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
+    (typeDef >|< string).contramap {
+      case (name, tpe) if (isTypeAlias(tpe)) => (name -> tpe).asLeft
+      case (name, tpe)                       => schema(name.some).print(tpe).asRight
     }
 
-  def caseClassDef[T: Basis[JsonSchemaF, ?], A]: Printer[(Tpe[T], List[(String, Tpe[T])])] =
-    (konst("final case class ") *< tpe[T], konst("(") *< sepBy(argumentDef[T], ", ") >* konst(")")).contramapN {
+  sealed trait Codecs
+  final case class CaseClassCodecs(name: String) extends Codecs
+  final case class ListCodecs(name: String)      extends Codecs
+
+  def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
+    objectDef(sepBy(schemaDef, "\n")).contramap { x =>
+      ("models", List.empty, x.components.toList.flatMap(_.schemas))
+    }
+
+  def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
+    (konst("final case class ") *< string, konst("(") *< sepBy(argumentDef[T], ", ") >* konst(")")).contramapN {
       case (x, y) => x -> y.map { case (x, y) => Var[T](x, y) }
     }
 
-  def objectDef[A](body: Printer[A]): Printer[(ObjectName, List[PackageName], A)] =
+  def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](
+      implicit codecs: Printer[Codecs]): Printer[(String, List[(String, Tpe[T])])] =
+    (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
+      ((x._1 -> x._2), (x._1, List.empty[PackageName], CaseClassCodecs(x._1)).some)
+    }
+
+  def objectDef[A](body: Printer[A]): Printer[(String, List[PackageName], A)] =
     (
-      konst("object ") *< show[ObjectName] >* konst(" {") *< newLine,
+      konst("object ") *< string >* konst(" {") *< newLine,
       sepBy(importDef, "\n") >* newLine,
       body >* newLine *< konst("}")).contramapN(identity)
 
@@ -145,6 +149,8 @@ object print {
 
   final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
+
+    import Printer.avoid._
     def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
     def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
     def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
@@ -171,11 +177,6 @@ object print {
 
   def importDef: Printer[PackageName] =
     (konst("import ") *< show[PackageName]).contramap(identity)
-
-  final case class ObjectName(value: String) extends AnyVal
-  object ObjectName {
-    implicit val objectNameShow: Show[ObjectName] = Show.show(_.value)
-  }
 
   final case class PackageName(value: String) extends AnyVal
   object PackageName {

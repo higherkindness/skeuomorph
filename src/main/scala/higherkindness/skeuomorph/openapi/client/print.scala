@@ -196,6 +196,7 @@ object print {
       response: Response[T],
       tpe: String)(success: => (String, List[String])): (String, Option[String], List[String]) = {
     val innerType = s"${operationId.fold("")(_.show.capitalize)}${normalize(response.description).capitalize}"
+    import Printer.avoid._ //TODO Review this
     val newSchema =
       typeFromResponse(response).map(schema(innerType.some).print).getOrElse("Unit")
     tpe match {
@@ -208,15 +209,13 @@ object print {
     }
   }
 
-  private def newCaseClass(name: String, fields: (String, String)*): String =
-    s"final case class $name(${fields.map { case (x, y) => s"$x: $y" }.mkString(", ")})"
-
   def defaultTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
       responseOr: Either[Response[T], Reference]): (String, String, List[String]) = {
-    val tpe                                  = responseOrType.print(responseOr)
-    val newType                              = unexpectedErrorName(operationId)
-    def statusCaseClass(tpe: String): String = newCaseClass(newType, "statusCode" -> "Int", "value" -> tpe)
+    val tpe     = responseOrType.print(responseOr)
+    val newType = unexpectedErrorName(operationId)
+    def statusCaseClass(tpe: String): String =
+      caseClassDef.print(newType -> List("statusCode" -> Tpe[T]("Int"), "value" -> Tpe[T](tpe)))
     responseOr.fold(
       r => {
         val (_, anonymousType, schemas) = typeAndSchemaFor(operationId.some, r, tpe) { tpe -> List.empty }
@@ -236,7 +235,7 @@ object print {
       .map { response =>
         val (newTpe, anonymousType, schemas) = typeAndSchemaFor(operationId.some, response, tpe) {
           val newTpe = defaultResponseErrorName(operationId, response.description.some)
-          newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
+          newTpe -> List(caseClassDef.print(newTpe -> List("value" -> Tpe[T](tpe))))
         }
         (newTpe, anonymousType, schemas)
       }
@@ -341,18 +340,13 @@ object print {
       TraitName,
       TraitName,
       List[OperationWithPath[T]],
-      (ObjectName, List[PackageName], List[OperationWithPath[T]])) = {
+      (String, List[PackageName], List[OperationWithPath[T]])) = {
     val traitName = TraitName(openApi)
 
     val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName -> openApi.paths))) {
       case (a, b) => (a, (traitName, b))
     })
-    (
-      List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply),
-      a,
-      b,
-      c,
-      (ObjectName(d._1.show), List.empty, d._2))
+    (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, (d._1.show, List.empty, d._2))
   }
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =

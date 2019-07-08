@@ -36,25 +36,26 @@ package object circe {
   private val packages =
     List("io.circe._", "io.circe.generic.semiauto._").map(PackageName.apply) ++ http4sPackages
 
-  implicit def circeCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[Codecs[T]] =
+  private def codecsTypes[T](name: String): ((String, Tpe[T]), (String, Tpe[T])) = {
+    val tpe = Tpe[T](name)
+    (name -> tpe) -> (s"Option${name}" -> tpe.copy(required = false))
+  }
+
+  implicit def circeCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[Codecs] =
     (
-      konst("object ") *< tpe[T] >* konst(" {") *< newLine,
-      optional(sepBy(space *< space *< importDef, "\n") >* newLine),
+      sepBy(space *< space *< importDef, "\n") >* newLine,
       optional(space *< space *< circeEncoder[T] >* newLine),
       optional(space *< space *< circeDecoder[T] >* newLine),
-      optional(space *< space *< entityEncoder[T] >* newLine),
-      optional(space *< space *< entityEncoder[T] >* newLine),
-      optional(space *< space *< entityDecoder[T] >* newLine) >* konst("}"))
-      .contramapN { x =>
-        val tpe        = Tpe[T](x.name)
-        val default    = (x.name -> tpe).some
-        val optionType = (s"Option${x.name}" -> tpe.copy(required = false)).some
-        val (imports, circeCodecs, optionCodec, http4sCodecs) = x.tpe match {
-          case _ if (isArray(x.tpe)) => (http4sPackages.some, none, (optionType), default)
-          case _ if (isBasic(x.tpe)) => (none, none, none, none)
-          case _                     => (packages.some, default, (optionType), default)
-        }
-        (tpe, imports, circeCodecs, circeCodecs, http4sCodecs, optionCodec, http4sCodecs)
+      space *< space *< entityEncoder[T] >* newLine,
+      space *< space *< entityEncoder[T] >* newLine,
+      space *< space *< entityDecoder[T] >* newLine)
+      .contramapN {
+        case CaseClassCodecs(name) =>
+          val (default, optionType) = codecsTypes[T](name)
+          (packages, default.some, default.some, default, optionType, default)
+        case ListCodecs(name) =>
+          val (default, optionType) = codecsTypes[T](name)
+          (http4sPackages, none, none, default, optionType, default)
       }
 
   implicit def http4sCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[EntityCodecs[T]] =

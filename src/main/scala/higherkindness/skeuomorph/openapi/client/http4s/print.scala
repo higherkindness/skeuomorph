@@ -53,7 +53,7 @@ object print {
         sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
         http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
-        ObjectName(ImplName(x).show),
+        ImplName(x).show,
         List.empty,
         (
           TraitName(x),
