@@ -292,15 +292,19 @@ object print {
         }
         .asRight
 
-  private def multipleResponsesSchema: Printer[(List[String], String, List[String])] =
+  private def responseErrorsDef: Printer[List[String]] =
+    (sepBy(string, " :+: "), (konst(" :+: CNil") >|< unit)).contramapN(errorTypes =>
+      (errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight))
+
+  private def multipleResponsesSchema: Printer[(List[String], String, List[String])] = {
+    import Printer.avoid._
     (
       sepBy((space >* space) *< string, "\n") >* newLine,
-      konst("  type ") *< string >* konst(" = "),
-      sepBy(string, " :+: "),
-      (konst(" :+: CNil") >|< unit)
+      space *< space *< typeAliasDef(responseErrorsDef)
     ).contramapN {
-      case (schemas, tpe, errorTypes) => (schemas, tpe, errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight)
+      case (schemas, tpe, errorTypes) => (schemas, (tpe, errorTypes, none))
     }
+  }
 
   private def responsesSchema[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs]): Printer[(OperationId, Map[String, Either[Response[T], Reference]])] =

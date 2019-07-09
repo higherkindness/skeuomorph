@@ -15,65 +15,65 @@
  */
 
 package higherkindness.skeuomorph.openapi
-import cats.implicits._
 import higherkindness.skeuomorph.Printer.avoid._
 
 class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
   import JsonSchemaF.Fixed
-  import print._
+  import print.schemaWithName
 
   "basic types should able to print" >> {
     "when integer is provided" >> {
-      schema().print(Fixed.integer()) must ===("Int")
+      print.schema().print(Fixed.integer()) must ===("Int")
     }
     "when long is provided" >> {
-      schema().print(Fixed.long()) must ===("Long")
+      print.schema().print(Fixed.long()) must ===("Long")
     }
     "when float is provided" >> {
-      schema().print(Fixed.float()) must ===("Float")
+      print.schema().print(Fixed.float()) must ===("Float")
     }
     "when double is provided" >> {
-      schema().print(Fixed.double()) must ===("Double")
+      print.schema().print(Fixed.double()) must ===("Double")
     }
     "when string is provided" >> {
-      schema().print(Fixed.string()) must ===("String")
+      print.schema().print(Fixed.string()) must ===("String")
     }
     "when byte is provided" >> {
-      schema().print(Fixed.byte()) must ===("Array[Byte]")
+      print.schema().print(Fixed.byte()) must ===("Array[Byte]")
     }
     "when binary is provided" >> {
-      schema().print(Fixed.binary()) must ===("List[Boolean]")
+      print.schema().print(Fixed.binary()) must ===("List[Boolean]")
     }
     "when boolean is provided" >> {
-      schema().print(Fixed.boolean()) must ===("Boolean")
+      print.schema().print(Fixed.boolean()) must ===("Boolean")
     }
     "when date is provided" >> {
-      schema().print(Fixed.date()) must ===("java.time.LocalDate")
+      print.schema().print(Fixed.date()) must ===("java.time.LocalDate")
     }
     "when datetime is provided" >> {
-      schema().print(Fixed.dateTime()) must ===("java.time.ZonedDateTime")
+      print.schema().print(Fixed.dateTime()) must ===("java.time.ZonedDateTime")
     }
     "when password is provided" >> {
-      schema().print(Fixed.password()) must ===("String")
+      print.schema().print(Fixed.password()) must ===("String")
     }
   }
 
   "complex types should able to print" >> {
     "when an empty object is provided" >> {
-      schema("Person".some)
-        .print(Fixed.`object`(List.empty, List.empty)) must ===("type Person = io.circe.Json")
+      schemaWithName
+        .print("Person" -> Fixed.`object`(List.empty, List.empty)) must ===("type Person = io.circe.Json")
     }
 
     "when object is provided" >> {
-      schema("Person".some)
+      schemaWithName
         .print(
-          Fixed.`object`(
-            List(
-              "name"    -> Fixed.string(),
-              "surname" -> Fixed.string(),
-              "age"     -> Fixed.integer(),
-              "email"   -> Fixed.string()),
-            List("name", "surname"))) must ===(
+          "Person" ->
+            Fixed.`object`(
+              List(
+                "name"    -> Fixed.string(),
+                "surname" -> Fixed.string(),
+                "age"     -> Fixed.integer(),
+                "email"   -> Fixed.string()),
+              List("name", "surname"))) must ===(
         s"""|final case class Person(name: String, surname: String, age: Option[Int], email: Option[String])
             |object Person {
             |
@@ -82,8 +82,10 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when object is provided without required fields" >> {
-      schema("Person".some)
-        .print(Fixed.`object`(List("age" -> Fixed.integer(), "email" -> Fixed.string()), List("name", "surname"))) must ===(
+      schemaWithName
+        .print(
+          "Person" -> Fixed
+            .`object`(List("age" -> Fixed.integer(), "email" -> Fixed.string()), List("name", "surname"))) must ===(
         s"""|final case class Person(age: Option[Int], email: Option[String])
             |object Person {
             |
@@ -92,14 +94,15 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when object is provided without optional fields" >> {
-      schema("Person".some)
+      schemaWithName
         .print(
-          Fixed.`object`(
-            List(
-              "name"    -> Fixed.string(),
-              "surname" -> Fixed.string()
-            ),
-            List("name", "surname"))) must ===(s"""|final case class Person(name: String, surname: String)
+          "Person" ->
+            Fixed.`object`(
+              List(
+                "name"    -> Fixed.string(),
+                "surname" -> Fixed.string()
+              ),
+              List("name", "surname"))) must ===(s"""|final case class Person(name: String, surname: String)
                                                    |object Person {
                                                    |
                                                    |
@@ -107,8 +110,8 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when enum is provided" >> {
-      schema("Color".some)
-        .print(Fixed.enum(List("blue", "red", "yellow"))) must ===("""
+      schemaWithName
+        .print("Color" -> Fixed.enum(List("blue", "red", "yellow"))) must ===("""
           |sealed trait Color
           |object Color {
           |  final case object Blue extends Color

@@ -32,13 +32,18 @@ object print {
   val componentsRegex = """#/components/schemas/(.+)""".r
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
-    case (x, t) =>
-      schema[T](x.some).print(t)
+    case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((name, t, none))
+    case (name, t)                     => schema[T](name.some).print(t)
   }
 
-  def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(implicit codecs: Printer[Codecs]): Printer[T] = {
+  protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(
+      implicit codecs: Printer[Codecs]): Printer[T] = {
+
+    val listDef: Printer[String] = konst("List[") *< string >* konst("]")
+
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._
+
       (x, name) match {
         case (IntegerF(), _)  => "Int"
         case (LongF(), _)     => "Long"
@@ -67,7 +72,9 @@ object print {
                       else
                         name -> tpe.copy(required = false)
                   }))
-        case (ArrayF(x), _) => s"List[$x]"
+        case (ArrayF(x), Some(name)) =>
+          typeAliasDef(listDef).print((name, x, (List.empty, ListCodecs(name)).some))
+        case (ArrayF(x), _) => listDef.print(x)
         case (EnumF(fields), Some(name)) =>
           val printFields = fields.map(f => s"final case object ${f.capitalize} extends $name").mkString("\n  ")
           s"""
@@ -83,11 +90,13 @@ object print {
     Printer(scheme.cata(algebra))
   }
 
-  def isTypeAlias[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+  def isBasicType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
     val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
       case ObjectF(_, _) => false
       case EnumF(_)      => false
+      case ArrayF(_)     => false
+      case ReferenceF(_) => false
       case _             => true
     }
     scheme.cata(algebra).apply(t)
@@ -102,25 +111,12 @@ object print {
     scheme.cata(algebra).apply(t)
   }
 
-  def typeDef[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
-    (konst("type ") *< string >* konst(" = "), schema(), optional(newLine *< objectDef(codecs))).contramapN {
-      case (name, tpe) if isArray(tpe) => (name, tpe, (name, List.empty, ListCodecs(name)).some)
-      case (name, tpe)                 => (name, tpe, none)
-
-    }
-
-  def schemaDef[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
-    (typeDef >|< string).contramap {
-      case (name, tpe) if (isTypeAlias(tpe)) => (name -> tpe).asLeft
-      case (name, tpe)                       => schema(name.some).print(tpe).asRight
-    }
-
   sealed trait Codecs
   final case class CaseClassCodecs(name: String) extends Codecs
   final case class ListCodecs(name: String)      extends Codecs
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
-    objectDef(sepBy(schemaDef, "\n")).contramap { x =>
+    objectDef(sepBy(schemaWithName, "\n")).contramap { x =>
       ("models", List.empty, x.components.toList.flatMap(_.schemas))
     }
 
@@ -133,6 +129,13 @@ object print {
       implicit codecs: Printer[Codecs]): Printer[(String, List[(String, Tpe[T])])] =
     (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
       ((x._1 -> x._2), (x._1, List.empty[PackageName], CaseClassCodecs(x._1)).some)
+    }
+
+  def typeAliasDef[T](typeSchemaDef: Printer[T])(
+      implicit codecs: Printer[Codecs]): Printer[(String, T, Option[(List[PackageName], Codecs)])] =
+    (konst("type ") *< string >* konst(" = "), typeSchemaDef, optional(newLine *< objectDef(codecs))).contramapN {
+      case (name, tpe, codecInfo) =>
+        (name, tpe, codecInfo.map { case (x, y) => (name, x, y) })
     }
 
   def objectDef[A](body: Printer[A]): Printer[(String, List[PackageName], A)] =
