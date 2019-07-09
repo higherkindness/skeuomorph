@@ -111,13 +111,15 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
 
     "when enum is provided" >> {
       schemaWithName
-        .print("Color" -> Fixed.enum(List("blue", "red", "yellow"))) must ===("""
-          |sealed trait Color
-          |object Color {
-          |  final case object Blue extends Color
-          |  final case object Red extends Color
-          |  final case object Yellow extends Color
-          |}""".stripMargin)
+        .print("Color" -> Fixed.enum(List("Blue", "Red", "Yellow"))) must
+        ===("""|sealed trait Color
+               |object Color {
+               |
+               |  final case object Blue extends Color
+               |  final case object Red extends Color
+               |  final case object Yellow extends Color
+               |
+               |}""".stripMargin)
     }
   }
 

@@ -56,6 +56,9 @@ package object circe {
         case ListCodecs(name) =>
           val (default, optionType) = codecsTypes[T](name)
           (http4sPackages, none, none, default, optionType, default)
+        case EnumCodecs(name, _) =>
+          val (default, optionType) = codecsTypes[T](name)
+          (packages, none, none, default, optionType, default)
       }
 
   implicit def http4sCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[EntityCodecs[T]] =

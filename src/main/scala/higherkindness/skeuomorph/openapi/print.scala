@@ -76,12 +76,7 @@ object print {
           typeAliasDef(listDef).print((name, x, (List.empty, ListCodecs(name)).some))
         case (ArrayF(x), _) => listDef.print(x)
         case (EnumF(fields), Some(name)) =>
-          val printFields = fields.map(f => s"final case object ${f.capitalize} extends $name").mkString("\n  ")
-          s"""
-      |sealed trait $name
-      |object $name {
-      |  $printFields
-      |}""".stripMargin
+          sealedTraitDef.print(name -> fields)
         case (ReferenceF(componentsRegex(ref)), _) => ref
         case (ReferenceF(ref), _)                  => ref
       }
@@ -112,13 +107,28 @@ object print {
   }
 
   sealed trait Codecs
-  final case class CaseClassCodecs(name: String) extends Codecs
-  final case class ListCodecs(name: String)      extends Codecs
+  final case class CaseClassCodecs(name: String)                  extends Codecs
+  final case class ListCodecs(name: String)                       extends Codecs
+  final case class EnumCodecs(name: String, values: List[String]) extends Codecs
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     objectDef(sepBy(schemaWithName, "\n")).contramap { x =>
       ("models", List.empty, x.components.toList.flatMap(_.schemas))
     }
+
+  private def caseObjectDef: Printer[(String, String)] =
+    (konst("final case object ") *< string >* konst(" extends "), string).contramapN(identity)
+
+  private def sealedTraitCompanionObjectDef(
+      implicit codecs: Printer[Codecs]): Printer[(List[(String, String)], Codecs)] =
+    (sepBy(space *< space *< caseObjectDef, "\n") >* newLine, codecs).contramapN(identity)
+
+  private def sealedTraitDef(implicit codecs: Printer[Codecs]): Printer[(String, List[String])] =
+    (konst("sealed trait ") *< string >* newLine, objectDef(sealedTraitCompanionObjectDef))
+      .contramapN {
+        case (name, fields) =>
+          (name, (name, List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
+      }
 
   def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
     (konst("final case class ") *< string, konst("(") *< sepBy(argumentDef[T], ", ") >* konst(")")).contramapN {

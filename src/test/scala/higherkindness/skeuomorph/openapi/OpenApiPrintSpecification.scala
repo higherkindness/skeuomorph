@@ -80,6 +80,32 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}""".stripMargin)
     }
 
+    "when enum is provided" >> {
+      import client.http4s.circe._
+      model.print(petstoreOpenApi.withSchema("Color" -> Fixed.enum(List("Blue", "Red")))) must ===(
+        """|object models {
+           |
+           |sealed trait Color
+           |object Color {
+           |
+           |  final case object Blue extends Color
+           |  final case object Red extends Color
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit def ColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Color] = jsonEncoderOf[F, Color]
+           |  implicit def OptionColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Color]] = jsonEncoderOf[F, Option[Color]]
+           |  implicit def ColorEntityDecoder[F[_]:Sync]: EntityDecoder[F, Color] = jsonOf[F, Color]
+           |
+           |}
+           |}""".stripMargin
+      )
+
+    }
+
     "when multiple types are provided" >> {
       import Printer.avoid._
       model.print(
