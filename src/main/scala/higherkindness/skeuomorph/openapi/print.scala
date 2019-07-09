@@ -31,9 +31,8 @@ object print {
 
   val componentsRegex = """#/components/schemas/(.+)""".r
 
-  def schemaWithName[T: Basis[JsonSchemaF, ?]]: Printer[(String, T)] = Printer {
+  def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
     case (x, t) =>
-      import Printer.avoid._
       schema[T](x.some).print(t)
   }
 
@@ -150,7 +149,6 @@ object print {
   final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
 
-    import Printer.avoid._
     def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
     def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
     def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
@@ -158,10 +156,12 @@ object print {
 
     def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
       identity,
-      x =>
+      x => {
+        import Printer.avoid._
         Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
           .print(x)
           .capitalize
+      }
     )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
       if (tpe.required)

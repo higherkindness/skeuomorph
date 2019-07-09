@@ -319,7 +319,8 @@ object print {
       if name === newType
     } yield (newType -> requestTpe)
 
-  private def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, Option[Either[Request[T], Reference]])] =
+  private def requestSchema[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
   private def clientTypes[T: Basis[JsonSchemaF, ?]](

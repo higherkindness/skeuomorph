@@ -298,6 +298,17 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  final case class UpdateAnotherPayloadRequest(name: String)
            |object UpdateAnotherPayloadRequest {
            |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdateAnotherPayloadRequestEncoder: Encoder[UpdateAnotherPayloadRequest] = deriveEncoder[UpdateAnotherPayloadRequest]
+           |  implicit val UpdateAnotherPayloadRequestDecoder: Decoder[UpdateAnotherPayloadRequest] = deriveDecoder[UpdateAnotherPayloadRequest]
+           |  implicit def UpdateAnotherPayloadRequestEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdateAnotherPayloadRequest] = jsonEncoderOf[F, UpdateAnotherPayloadRequest]
+           |  implicit def OptionUpdateAnotherPayloadRequestEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdateAnotherPayloadRequest]] = jsonEncoderOf[F, Option[UpdateAnotherPayloadRequest]]
+           |  implicit def UpdateAnotherPayloadRequestEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdateAnotherPayloadRequest] = jsonOf[F, UpdateAnotherPayloadRequest]
            |
            |}
            |  final case class UpdatedPayload(name: String)
@@ -319,17 +330,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |}""".stripMargin
       )
-      // |  import io.circe._
-      //   |  import io.circe.generic.semiauto._
-      //   |  import org.http4s.{EntityEncoder, EntityDecoder}
-      //   |  import org.http4s.circe._
-      //   |  import cats.Applicative
-      //   |  import cats.effect.Sync
-      //   |  implicit val UpdateAnotherPayloadRequestEncoder: Encoder[UpdateAnotherPayloadRequest] = deriveEncoder[UpdateAnotherPayloadRequest]
-      //   |  implicit val UpdateAnotherPayloadRequestDecoder: Decoder[UpdateAnotherPayloadRequest] = deriveDecoder[UpdateAnotherPayloadRequest]
-      //   |  implicit def UpdateAnotherPayloadRequestEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdateAnotherPayloadRequest] = jsonEncoderOf[F, UpdatedPayload]
-      //   |  implicit def OptionUpdateAnotherPayloadRequestEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdateAnotherPayloadRequest]] = jsonEncoderOf[F, Option[UpdatedPayload]]
-      //   |  implicit def UpdateAnotherPayloadRequestdEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdateAnotherPayloadRequest] = jsonOf[F, UpdateAnotherPayloadRequest]
 
     }
 
@@ -509,7 +509,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     implicit val none: Http4sSpecifics = new Http4sSpecifics {
       def none[A]                                     = Printer.unit.contramap[A](_ => ())
       def applyMethod: Printer[(TraitName, ImplName)] = none
-      def withBody: Printer[String]                   = none
+      def withBody: Printer[String] = Printer { x =>
+        s".with($x)"
+      }
 
     }
 
@@ -520,7 +522,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |    def deletePayload(id: String): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show))
-           |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
+           |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updatePayload))
            |  }
            |
            |}""".stripMargin)
@@ -546,7 +548,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)))
+           |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)).with(updatePayload))
            |  }
            |
            |}""".stripMargin
@@ -559,7 +561,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |    def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads"))
+           |    def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads").with(updatePayload))
            |  }
            |
            |}""".stripMargin
@@ -602,7 +604,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |
           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
           |    import PetstoreClient._
-          |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
+          |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updateAnotherPayloadRequest))
           |  }
           |
           |}""".stripMargin)
