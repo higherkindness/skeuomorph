@@ -96,6 +96,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  import org.http4s.circe._
            |  import cats.Applicative
            |  import cats.effect.Sync
+           |  implicit val ColorDecoder: Decoder[Color] = Decoder.decodeString.emap {
+           |  case "Blue" => Blue.asRight
+           |  case "Red" => Red.asRight
+           |  case x => s"$x is not valid Color".asLeft
+           |}
            |  implicit def ColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Color] = jsonEncoderOf[F, Color]
            |  implicit def OptionColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Color]] = jsonEncoderOf[F, Option[Color]]
            |  implicit def ColorEntityDecoder[F[_]:Sync]: EntityDecoder[F, Color] = jsonOf[F, Color]

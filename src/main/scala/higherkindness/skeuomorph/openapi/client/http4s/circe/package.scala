@@ -19,6 +19,7 @@ package higherkindness.skeuomorph.openapi.client.http4s
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer._
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
+import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
 import higherkindness.skeuomorph.openapi.print._
 import client.http4s.print._
@@ -44,7 +45,7 @@ package object circe {
   implicit def circeCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[Codecs] =
     (
       sepBy(space *< space *< importDef, "\n") >* newLine,
-      optional(space *< space *< circeEncoder[T] >* newLine),
+      optional(space *< space *< circeEncoder[T] >* newLine) >|< (space *< space *< enumCirceEncoder),
       optional(space *< space *< circeDecoder[T] >* newLine),
       space *< space *< entityEncoder[T] >* newLine,
       space *< space *< entityEncoder[T] >* newLine,
@@ -52,13 +53,13 @@ package object circe {
       .contramapN {
         case CaseClassCodecs(name) =>
           val (default, optionType) = codecsTypes[T](name)
-          (packages, default.some, default.some, default, optionType, default)
+          (packages, default.some.asLeft, default.some, default, optionType, default)
         case ListCodecs(name) =>
           val (default, optionType) = codecsTypes[T](name)
-          (http4sPackages, none, none, default, optionType, default)
-        case EnumCodecs(name, _) =>
+          (http4sPackages, none.asLeft, none, default, optionType, default)
+        case EnumCodecs(name, values) =>
           val (default, optionType) = codecsTypes[T](name)
-          (packages, none, none, default, optionType, default)
+          (packages, (name, values).asRight, none, default, optionType, default)
       }
 
   implicit def http4sCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[EntityCodecs[T]] =
@@ -71,12 +72,24 @@ package object circe {
         (packages, y, y)
       }
 
+  private def decoderDef[T: Basis[JsonSchemaF, ?], B](body: Printer[B]): Printer[(String, Tpe[T], B)] =
+    (konst("implicit val ") *< string >* konst("Decoder: "), konst("Decoder[") *< tpe[T] >* konst("] = "), body)
+      .contramapN(identity)
+
+  def enumCirceEncoder[T: Basis[JsonSchemaF, ?], B]: Printer[(String, List[String])] =
+    decoderDef[T, (String, List[(String)])]((
+      konst("Decoder.decodeString.emap {") *< newLine *<
+        sepBy[(String, String)](
+          (space *< space *< konst("case \"") *< string >* konst("\" => "), string >* konst(".asRight"))
+            .contramapN(identity),
+          "\n"
+        ) >* newLine,
+      konst("""  case x => s"$x is not valid """) *< string >* konst("""".asLeft""") *< newLine *< konst("}") *< newLine
+    ).contramapN(x => flip(second(x)(_.map(x => x -> x))))).contramap { case (x, xs) => (x, Tpe[T](x), x -> xs) }
+
   def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[(String, Tpe[T])] =
-    (
-      konst("implicit val ") *< string >* konst("Decoder: "),
-      konst("Decoder[") *< tpe[T] >* konst("] = "),
-      konst("deriveDecoder[") *< tpe[T] >* konst("]"))
-      .contramapN(x => (x._1, x._2, x._2))
+    decoderDef(konst("deriveDecoder[") *< tpe[T] >* konst("]"))
+      .contramap(x => (x._1, x._2, x._2))
 
   def circeEncoder[T: Basis[JsonSchemaF, ?]]: Printer[(String, Tpe[T])] =
     (
