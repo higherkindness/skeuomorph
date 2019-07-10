@@ -38,12 +38,9 @@ object print {
 
   protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(
       implicit codecs: Printer[Codecs]): Printer[T] = {
-
     val listDef: Printer[String] = konst("List[") *< string >* konst("]")
-
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._
-
       (x, name) match {
         case (IntegerF(), _)  => "Int"
         case (LongF(), _)     => "Long"
@@ -81,7 +78,6 @@ object print {
         case (ReferenceF(ref), _)                  => ref
       }
     }
-
     Printer(scheme.cata(algebra))
   }
 
@@ -110,6 +106,39 @@ object print {
   final case class CaseClassCodecs(name: String)                  extends Codecs
   final case class ListCodecs(name: String)                       extends Codecs
   final case class EnumCodecs(name: String, values: List[String]) extends Codecs
+
+  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
+  object Tpe {
+    import Printer.avoid._
+    def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
+    def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
+    def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
+      Tpe(tpe.asRight, required, description)
+
+    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
+      identity,
+      Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
+        .print(_)
+        .capitalize
+    )
+    def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
+      if (tpe.required)
+        name(tpe).asRight
+      else
+        name(tpe).asLeft
+  }
+
+  final case class PackageName(value: String) extends AnyVal
+  object PackageName {
+    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
+  }
+
+  final case class Var[T](name: String, tpe: Tpe[T])
+  object Var {
+    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
+    def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
+      Var(decapitalize(name), Tpe(tpe.asRight, required, description))
+  }
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     objectDef(sepBy(schemaWithName, "\n")).contramap { x =>
@@ -159,31 +188,6 @@ object print {
   def divBy[A, B](p1: Printer[A], p2: Printer[B])(sep: Printer[Unit]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
 
-  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
-  object Tpe {
-
-    def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
-    def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
-    def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
-      Tpe(tpe.asRight, required, description)
-
-    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
-      identity,
-      x => {
-        import Printer.avoid._
-        Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
-          .print(x)
-          .capitalize
-      }
-    )
-    def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
-      if (tpe.required)
-        name(tpe).asRight
-      else
-        name(tpe).asLeft
-
-  }
-
   def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
     ((konst("Option[") *< string >* konst("]")) >|< string)
       .contramap(Tpe.option[T])
@@ -191,17 +195,6 @@ object print {
   def importDef: Printer[PackageName] =
     (konst("import ") *< show[PackageName]).contramap(identity)
 
-  final case class PackageName(value: String) extends AnyVal
-  object PackageName {
-    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
-  }
-
-  final case class Var[T](name: String, tpe: Tpe[T])
-  object Var {
-    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
-    def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
-      Var(decapitalize(name), Tpe(tpe.asRight, required, description))
-  }
   def argumentDef[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
     (
       string >* konst(": "),

@@ -72,6 +72,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  import org.http4s.circe._
            |  import cats.Applicative
            |  import cats.effect.Sync
+           |  
+           |  
            |  implicit def BarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Bars] = jsonEncoderOf[F, Bars]
            |  implicit def OptionBarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Bars]] = jsonEncoderOf[F, Option[Bars]]
            |  implicit def BarsEntityDecoder[F[_]:Sync]: EntityDecoder[F, Bars] = jsonOf[F, Bars]
@@ -90,17 +92,18 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  final case object Blue extends Color
            |  final case object Red extends Color
-           |  import io.circe._
-           |  import io.circe.generic.semiauto._
            |  import org.http4s.{EntityEncoder, EntityDecoder}
            |  import org.http4s.circe._
            |  import cats.Applicative
            |  import cats.effect.Sync
+           |  import cats.implicits._
+           |  implicit val ColorEncoder: Encoder[Color] = Encoder.encodeString.contramap(_.show)
            |  implicit val ColorDecoder: Decoder[Color] = Decoder.decodeString.emap {
            |  case "Blue" => Blue.asRight
            |  case "Red" => Red.asRight
            |  case x => s"$x is not valid Color".asLeft
            |}
+           |
            |  implicit def ColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Color] = jsonEncoderOf[F, Color]
            |  implicit def OptionColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Color]] = jsonEncoderOf[F, Option[Color]]
            |  implicit def ColorEntityDecoder[F[_]:Sync]: EntityDecoder[F, Color] = jsonOf[F, Color]
