@@ -177,6 +177,10 @@ object print {
         (name, tpe, codecInfo.map { case (x, y) => (name, x, y) })
     }
 
+  def implicitVal[T: Basis[JsonSchemaF, ?], A](body: Printer[A]): Printer[(String, String, Tpe[T], A)] =
+    (κ("implicit val ") *< string, string >* κ(": "), divBy(string, κ("["), tpe[T] >* κ("] = ")), body)
+      .contramapN { case (a, b, c, d) => (a, b, (b, c), d) }
+
   def objectDef[A](body: Printer[A]): Printer[(String, List[PackageName], A)] =
     divBy(
       divBy(

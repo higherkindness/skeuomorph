@@ -84,11 +84,10 @@ package object circe {
       }
 
   private def decoderDef[T: Basis[JsonSchemaF, ?], B](body: Printer[B]): Printer[(String, Tpe[T], B)] =
-    (κ("implicit val ") *< string >* κ("Decoder: "), κ("Decoder[") *< tpe[T] >* κ("] = "), body)
-      .contramapN(identity)
+    implicitVal(body).contramap { case (x, y, z) => (x, "Decoder", y, z) }
+
   private def encoderDef[T: Basis[JsonSchemaF, ?], B](body: Printer[B]): Printer[(String, Tpe[T], B)] =
-    (κ("implicit val ") *< string >* κ("Encoder: "), κ("Encoder[") *< tpe[T] >* κ("] = "), body)
-      .contramapN(identity)
+    implicitVal(body).contramap { case (x, y, z) => (x, "Encoder", y, z) }
 
   def enumCirceEncoder[T: Basis[JsonSchemaF, ?], B]: Printer[String] =
     encoderDef(κ("Encoder.encodeString.contramap(_.show)")).contramap(x => (x, Tpe[T](x), ()))
@@ -127,9 +126,9 @@ package object circe {
       κ("jsonEncoderOf[F, ") *< tpe[T] >* κ("]"))
       .contramapN(x => (x._1, x._2, x._2))
 
-  private def showEnum: Printer[((String, String), List[(String, String)])] =
+  private def showEnum[T: Basis[JsonSchemaF, ?]]: Printer[((String, String), List[(String, String)])] =
     divBy(
-      divBy(κ("implicit val ") *< string >* κ("Show"), κ(": "), κ("Show[") *< string >* κ("] = Show.show {")),
+      implicitVal(κ("Show.show {")).contramap { case (x, y) => (x, "Show", Tpe[T](y), ()) },
       newLine,
       sepBy(divBy(space *< space *< κ("case ") *< string, κ(" => "), κ("\"") *< string >* κ("\"")), "\n") >* newLine >* κ(
         "}")
