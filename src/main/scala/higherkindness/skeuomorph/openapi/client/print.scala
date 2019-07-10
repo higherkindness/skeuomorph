@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.openapi.client
 
 import higherkindness.skeuomorph.Printer
-import higherkindness.skeuomorph.Printer._
+import higherkindness.skeuomorph.Printer.{konst => κ, _}
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
@@ -175,9 +175,9 @@ object print {
 
   def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
-      konst("  def ") *< show[OperationId],
-      konst("(") *< sepBy(argumentDef, ", "),
-      konst("): F[") *< responsesTypes >* konst("]")
+      κ("  def ") *< show[OperationId],
+      κ("(") *< sepBy(argumentDef, ", "),
+      κ("): F[") *< responsesTypes >* κ("]")
     ).contramapN(operationTuple[T])
 
   private def itemObjectTuple[T](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {
@@ -293,7 +293,7 @@ object print {
         .asRight
 
   private def responseErrorsDef: Printer[List[String]] =
-    (sepBy(string, " :+: "), (konst(" :+: CNil") >|< unit)).contramapN(errorTypes =>
+    (sepBy(string, " :+: "), (κ(" :+: CNil") >|< unit)).contramapN(errorTypes =>
       (errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight))
 
   private def multipleResponsesSchema: Printer[(List[String], String, List[String])] = {
@@ -359,9 +359,9 @@ object print {
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     (
       sepBy(importDef, "\n") >* newLine,
-      konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
-      space *< space *< konst("import ") *< show[TraitName] >* konst("._") >* newLine,
-      sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
+      κ("trait ") *< show[TraitName] >* κ("[F[_]] {") >* newLine,
+      space *< space *< κ("import ") *< show[TraitName] >* κ("._") >* newLine,
+      sepBy(method[T], "\n") >* (newLine >* κ("}") >* newLine),
       objectDef(clientTypes[T])
     ).contramapN(operationsTuple[T])
 

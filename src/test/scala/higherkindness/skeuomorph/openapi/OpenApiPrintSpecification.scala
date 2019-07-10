@@ -97,6 +97,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  import cats.Applicative
            |  import cats.effect.Sync
            |  import cats.implicits._
+           |  implicit val ColorShow: Show[Color] = Show.show {
+           |  case Blue => "Blue"
+           |  case Red => "Red"
+           |}
            |  implicit val ColorEncoder: Encoder[Color] = Encoder.encodeString.contramap(_.show)
            |  implicit val ColorDecoder: Decoder[Color] = Decoder.decodeString.emap {
            |  case "Blue" => Blue.asRight

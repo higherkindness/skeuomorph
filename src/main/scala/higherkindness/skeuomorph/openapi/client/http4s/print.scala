@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.openapi.client.http4s
 
 import higherkindness.skeuomorph.Printer
-import higherkindness.skeuomorph.Printer._
+import higherkindness.skeuomorph.Printer.{konst => κ, _}
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
@@ -51,10 +51,10 @@ object print {
       codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     objectDef[ImplDef[T]](
       (
-        konst("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* konst("[F]"),
-        konst(" = new ") *< show[TraitName] >* konst("[F] {") >* newLine,
+        κ("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* κ("[F]"),
+        κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
         twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine,
-        sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< konst("  }") *< newLine,
+        sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< κ("  }") *< newLine,
         http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
         ImplName(x).show,
@@ -68,11 +68,11 @@ object print {
     }
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
-    (konst("case Successful(response) => response.as[") *< responseOrType[T] >* konst("].map(_.asRight)"))
+    (κ("case Successful(response) => response.as[") *< responseOrType[T] >* κ("].map(_.asRight)"))
       .contramap(identity)
 
   def coproduct[A](printer: Printer[A]): Printer[(String, A)] =
-    (konst("Coproduct[") *< string >* konst("]"), konst("(") *< printer >* konst(")")).contramapN(identity)
+    (κ("Coproduct[") *< string >* κ("]"), κ("(") *< printer >* κ(")")).contramapN(identity)
 
   def coproductIf[A](printer: Printer[A]): Printer[(String, A, Int)] =
     (printer >|< coproduct(printer)).contramap {
@@ -83,9 +83,9 @@ object print {
   def statusResponseImpl[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs]): Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
     (
-      konst("case response if response.status.code == ") *< string >* konst(" => "),
-      konst("response.as[") *< string >* konst("]"),
-      konst(".map(x => ") *< coproductIf(string >* konst("(x)") >|< konst("x")) >* konst(".asLeft)")).contramapN {
+      κ("case response if response.status.code == ") *< string >* κ(" => "),
+      κ("response.as[") *< string >* κ("]"),
+      κ(".map(x => ") *< coproductIf(string >* κ("(x)") >|< κ("x")) >* κ(".asLeft)")).contramapN {
       case (operationId, status, (r, n)) =>
         val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
         val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
@@ -102,8 +102,8 @@ object print {
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs]): Printer[(OperationId, (Either[Response[T], Reference], Int))] =
     (
-      konst("case default => default.as[") *< string >* konst("]"),
-      konst(".map(x => ") *< coproductIf(string >* konst("(default.status.code, x)")) >* konst(".asLeft)"))
+      κ("case default => default.as[") *< string >* κ("]"),
+      κ(".map(x => ") *< coproductIf(string >* κ("(default.status.code, x)")) >* κ(".asLeft)"))
       .contramapN {
         case (operationId, (x, n)) =>
           val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
@@ -125,8 +125,8 @@ object print {
 
   def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
     (
-      konst("Request[F](method = Method.") *< show[HttpVerb],
-      konst(", uri = baseUrl ") *< divBy(httpPath[T], sepBy(queryParameter[T], ""))(unit) >* konst(")"),
+      κ("Request[F](method = Method.") *< show[HttpVerb],
+      κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
       optional(withBody))
       .contramapN {
         case x @ (verb, path, operation) =>
@@ -139,10 +139,10 @@ object print {
   def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String])(
       implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
     (
-      konst("fetch[") *< responsesTypes >* konst("]("),
-      requestImpl[T](withBody) >* konst(") {") >* newLine,
+      κ("fetch[") *< responsesTypes >* κ("]("),
+      requestImpl[T](withBody) >* κ(") {") >* newLine,
       sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
-      twoSpaces *< twoSpaces *< konst("}"))
+      twoSpaces *< twoSpaces *< κ("}"))
       .contramapN {
         case x @ (_, _, operation) =>
           val operationId = OperationId(x)
@@ -158,7 +158,7 @@ object print {
       }
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
-    (konst("expect[") *< responsesTypes >* konst("]("), requestImpl[T](withBody) >* konst(")"))
+    (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T](withBody) >* κ(")"))
       .contramapN {
         case x @ (_, _, operation) =>
           val operationId = OperationId(x)
@@ -168,7 +168,7 @@ object print {
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String])(
       implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
     (
-      method[T] >* konst(" = client."),
+      method[T] >* κ(" = client."),
       expectImpl[T](withBody) >|< fetchImpl[T](withBody)
     ).contramapN {
       case x @ (_, _, operation) =>
@@ -176,13 +176,13 @@ object print {
     }
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =
-    (space *< string >* space, konst("(\"") *< divBy(string, string)(konst("\", ")) >* konst(")")).contramapN { q =>
+    (space *< string >* space, κ("(\"") *< divBy(string, κ("\", "), string) >* κ(")")).contramapN { q =>
       def op(x: Parameter.Query[T]): String = if (x.required) "+?" else "+??"
       (op(q), q.name -> q.name)
     }
 
   def httpPath[T]: Printer[HttpPath] =
-    (konst("/ ") *< sepBy(string, " / ")).contramap {
+    (κ("/ ") *< sepBy(string, " / ")).contramap {
       _.show
         .split("/")
         .filter(_.nonEmpty)
@@ -221,29 +221,29 @@ object print {
 
       def applyMethod: Printer[(TraitName, ImplName)] =
         divBy(
-          konst(
-            "  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, ") *< show[
-            TraitName] >* konst("[F]] ="),
-          konst("BlazeClientBuilder(executionContext).resource.map(") *< show[ImplName] >* konst(".build(_, baseUrl))")
-        )(space)
+          κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, ") *< show[
+            TraitName] >* κ("[F]] ="),
+          space,
+          κ("BlazeClientBuilder(executionContext).resource.map(") *< show[ImplName] >* κ(".build(_, baseUrl))")
+        )
 
       def withBody: Printer[String] =
-        konst(".withEntity(") *< string >* konst(")")
+        κ(".withEntity(") *< string >* κ(")")
     }
   }
   object v18 {
     implicit val v18Http4sSpecifics: Http4sSpecifics = new Http4sSpecifics {
       def applyMethod: Printer[(TraitName, ImplName)] =
         divBy(
-          konst("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): F[") *< show[
-            TraitName] >* konst("[F]] ="),
-          konst(
-            "Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(") *< show[
-            ImplName] >* konst(".build(_, baseUrl))")
-        )(space)
+          κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): F[") *< show[
+            TraitName] >* κ("[F]] ="),
+          space,
+          κ("Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(") *< show[
+            ImplName] >* κ(".build(_, baseUrl))")
+        )
 
       def withBody: Printer[String] =
-        konst(".withBody(") *< string >* konst(")")
+        κ(".withBody(") *< string >* κ(")")
     }
   }
 }

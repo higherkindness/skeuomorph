@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.openapi
 
 import higherkindness.skeuomorph.Printer
-import higherkindness.skeuomorph.Printer._
+import higherkindness.skeuomorph.Printer.{konst => κ, _}
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi.JsonSchemaF.{string => _, _}
@@ -38,7 +38,7 @@ object print {
 
   protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(
       implicit codecs: Printer[Codecs]): Printer[T] = {
-    val listDef: Printer[String] = konst("List[") *< string >* konst("]")
+    val listDef: Printer[String] = κ("List[") *< string >* κ("]")
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._
       (x, name) match {
@@ -146,21 +146,21 @@ object print {
     }
 
   private def caseObjectDef: Printer[(String, String)] =
-    (konst("final case object ") *< string >* konst(" extends "), string).contramapN(identity)
+    (κ("final case object ") *< string >* κ(" extends "), string).contramapN(identity)
 
   private def sealedTraitCompanionObjectDef(
       implicit codecs: Printer[Codecs]): Printer[(List[(String, String)], Codecs)] =
-    (sepBy(space *< space *< caseObjectDef, "\n") >* newLine, codecs).contramapN(identity)
+    divBy(sepBy(space *< space *< caseObjectDef, "\n"), newLine, codecs)
 
   private def sealedTraitDef(implicit codecs: Printer[Codecs]): Printer[(String, List[String])] =
-    (konst("sealed trait ") *< string >* newLine, objectDef(sealedTraitCompanionObjectDef))
-      .contramapN {
+    divBy(κ("sealed trait ") *< string, newLine, objectDef(sealedTraitCompanionObjectDef))
+      .contramap {
         case (name, fields) =>
           (name, (name, List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
       }
 
   def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
-    (konst("final case class ") *< string, konst("(") *< sepBy(argumentDef[T], ", ") >* konst(")")).contramapN {
+    (κ("final case class ") *< string, κ("(") *< sepBy(argumentDef[T], ", ") >* κ(")")).contramapN {
       case (x, y) => x -> y.map { case (x, y) => Var[T](x, y) }
     }
 
@@ -172,34 +172,36 @@ object print {
 
   def typeAliasDef[T](typeSchemaDef: Printer[T])(
       implicit codecs: Printer[Codecs]): Printer[(String, T, Option[(List[PackageName], Codecs)])] =
-    (konst("type ") *< string >* konst(" = "), typeSchemaDef, optional(newLine *< objectDef(codecs))).contramapN {
+    (κ("type ") *< string >* κ(" = "), typeSchemaDef, optional(newLine *< objectDef(codecs))).contramapN {
       case (name, tpe, codecInfo) =>
         (name, tpe, codecInfo.map { case (x, y) => (name, x, y) })
     }
 
   def objectDef[A](body: Printer[A]): Printer[(String, List[PackageName], A)] =
-    (
-      konst("object ") *< string >* konst(" {") *< newLine,
-      sepBy(importDef, "\n") >* newLine,
-      body >* newLine *< konst("}")).contramapN(identity)
+    divBy(
+      divBy(
+        κ("object ") *< string >* κ(" {"),
+        newLine,
+        sepBy(importDef, "\n")
+      ),
+      newLine,
+      body >* newLine *< κ("}")
+    ).contramap { case (x, y, z) => (x -> y, z) }
 
   def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
 
-  def divBy[A, B](p1: Printer[A], p2: Printer[B])(sep: Printer[Unit]): Printer[(A, B)] =
+  def divBy[A, B](p1: Printer[A], sep: Printer[Unit], p2: Printer[B]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
 
   def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
-    ((konst("Option[") *< string >* konst("]")) >|< string)
+    ((κ("Option[") *< string >* κ("]")) >|< string)
       .contramap(Tpe.option[T])
 
   def importDef: Printer[PackageName] =
-    (konst("import ") *< show[PackageName]).contramap(identity)
+    (κ("import ") *< show[PackageName]).contramap(identity)
 
   def argumentDef[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
-    (
-      string >* konst(": "),
-      tpe
-    ).contramapN(x => x.name -> x.tpe)
+    divBy(string, κ(": "), tpe).contramap(x => x.name -> x.tpe)
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
   def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)
