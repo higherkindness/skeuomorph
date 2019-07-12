@@ -39,7 +39,7 @@ object ParseProto {
   import ProtobufF._
   import Protocol._
 
-  case class ProtoSource(filename: String, path: String)
+  case class ProtoSource(filename: String, path: String, importRoot: String)
 
   implicit def parseProto[F[_], T](implicit T: Embed[ProtobufF, T]): Parser[F, ProtoSource, Protocol[T]] =
     new Parser[F, ProtoSource, Protocol[T]] {
@@ -56,6 +56,7 @@ object ParseProto {
           "--include_imports",
           s"--descriptor_set_out=${input.filename}.desc",
           s"--proto_path=${input.path}",
+          s"--proto_path=${input.importRoot}",
           input.filename
         )
       )
