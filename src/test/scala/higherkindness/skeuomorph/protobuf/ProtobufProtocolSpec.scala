@@ -29,8 +29,10 @@ import qq.droste.data.Mu._
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
-  val path                                      = currentDirectory + "/src/test/scala/higherkindness/skeuomorph/protobuf"
-  val source                                    = ProtoSource(s"book.proto", path)
+  val root                                      = "/src/test/scala/higherkindness/skeuomorph/protobuf"
+  val path                                      = currentDirectory + s"$root/service"
+  val importRoot                                = currentDirectory + root
+  val source                                    = ProtoSource(s"book.proto", path, importRoot)
   val protobufProtocol: Protocol[Mu[ProtobufF]] = parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
   implicit val arbCompressionType: Arbitrary[CompressionType] = Arbitrary {
