@@ -26,35 +26,126 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "models should able to print" >> {
     "when a basic type is provided" >> {
+      import client.http4s.circe._
       model.print(petstoreOpenApi.withSchema("Foo" -> Fixed.string())) must
         ===("""|object models {
-               |  type Foo = String
+               |
+               |type Foo = String
                |}""".stripMargin)
     }
 
     "when a object type is provided" >> {
-      model.print(petstoreOpenApi.withSchema("Foo" -> obj("bar" -> Fixed.string())())) must ===(
+      import client.http4s.circe._
+      model.print(petstoreOpenApi.withSchema("Bar" -> obj("foo" -> Fixed.string())())) must ===(
         """|object models {
-           |  final case class Foo(bar: Option[String])
+           |
+           |final case class Bar(foo: Option[String])
+           |object Bar {
+           |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val BarEncoder: Encoder[Bar] = deriveEncoder[Bar]
+           |  implicit val BarDecoder: Decoder[Bar] = deriveDecoder[Bar]
+           |  implicit def BarEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Bar] = jsonEncoderOf[F, Bar]
+           |  implicit def OptionBarEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Bar]] = jsonEncoderOf[F, Option[Bar]]
+           |  implicit def BarEntityDecoder[F[_]:Sync]: EntityDecoder[F, Bar] = jsonOf[F, Bar]
+           |
+           |}
+           |}""".stripMargin)
+    }
+    "when an array is provided" >> {
+      import client.http4s.circe._
+      model.print(
+        petstoreOpenApi.withSchema(
+          "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
+        )) must ===(
+        """|object models {
+           |
+           |type Bars = List[Bar]
+           |object Bars {
+           |
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  
+           |  
+           |  implicit def BarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Bars] = jsonEncoderOf[F, Bars]
+           |  implicit def OptionBarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Bars]] = jsonEncoderOf[F, Option[Bars]]
+           |  implicit def BarsEntityDecoder[F[_]:Sync]: EntityDecoder[F, Bars] = jsonOf[F, Bars]
+           |
+           |}
            |}""".stripMargin)
     }
 
+    "when enum is provided" >> {
+      import client.http4s.circe._
+      model.print(petstoreOpenApi.withSchema("Color" -> Fixed.enum(List("Blue", "Red")))) must ===(
+        """|object models {
+           |
+           |sealed trait Color
+           |object Color {
+           |
+           |  final case object Blue extends Color
+           |  final case object Red extends Color
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  import cats.implicits._
+           |  implicit val ColorShow: Show[Color] = Show.show {
+           |  case Blue => "Blue"
+           |  case Red => "Red"
+           |}
+           |  implicit val ColorEncoder: Encoder[Color] = Encoder.encodeString.contramap(_.show)
+           |  implicit val ColorDecoder: Decoder[Color] = Decoder.decodeString.emap {
+           |  case "Blue" => Blue.asRight
+           |  case "Red" => Red.asRight
+           |  case x => s"$x is not valid Color".asLeft
+           |}
+           |
+           |  implicit def ColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Color] = jsonEncoderOf[F, Color]
+           |  implicit def OptionColorEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Color]] = jsonEncoderOf[F, Option[Color]]
+           |  implicit def ColorEntityDecoder[F[_]:Sync]: EntityDecoder[F, Color] = jsonOf[F, Color]
+           |
+           |}
+           |}""".stripMargin
+      )
+
+    }
+
     "when multiple types are provided" >> {
+      import Printer.avoid._
       model.print(
         petstoreOpenApi
           .withSchema("Bar" -> obj("foo" -> Fixed.string())("foo"))
           .withSchema(
             "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
           )) must ===("""|object models {
-                       |  final case class Bar(foo: String)
-                       |  type Bars = List[Bar]
-                       |}""".stripMargin)
+                         |
+                         |final case class Bar(foo: String)
+                         |object Bar {
+                         |
+                         |
+                         |}
+                         |type Bars = List[Bar]
+                         |object Bars {
+                         |
+                         |
+                         |}
+                         |}""".stripMargin)
     }
   }
 
   "Client trait should able to print" >> {
     import client.print._
+
     "when a post operation is provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferencePost)) must ===( //
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -65,10 +156,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
     "when a put and delete are provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -82,10 +176,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
     "when get endpoints are provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -99,10 +196,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
     "when optional body and not optional query parameters is provided" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeOptionBody)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -113,10 +213,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
     "when references in the request and the responses" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(references)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -127,10 +230,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
+           |
            |}""".stripMargin)
     }
 
     "when there are multiple responses with a default one" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -140,12 +246,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class GetPayloadUnexpectedErrorResponse(statusCode: Int, value: Error)
            |  type GetPayloadError = GetPayloadUnexpectedErrorResponse
+           |
            |}""".stripMargin)
     }
 
     "when there are multiple responses with not found response" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(notFoundResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -155,13 +264,16 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class GetPayloadNotFoundError(value: String)
            |  type GetPayloadError = GetPayloadNotFoundError
+           |
            |}""".stripMargin
       )
     }
 
     "when there are multiple responses with anonymous objects" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -171,14 +283,47 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class UpdatedPayload(name: String)
+           |object UpdatedPayload {
+           |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdatedPayloadEncoder: Encoder[UpdatedPayload] = deriveEncoder[UpdatedPayload]
+           |  implicit val UpdatedPayloadDecoder: Decoder[UpdatedPayload] = deriveDecoder[UpdatedPayload]
+           |  implicit def UpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdatedPayload] = jsonEncoderOf[F, UpdatedPayload]
+           |  implicit def OptionUpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdatedPayload]] = jsonEncoderOf[F, Option[UpdatedPayload]]
+           |  implicit def UpdatedPayloadEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatedPayload] = jsonOf[F, UpdatedPayload]
+           |
+           |}
            |  final case class UpdatePayloadNotFound(isDone: Boolean)
+           |object UpdatePayloadNotFound {
+           |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdatePayloadNotFoundEncoder: Encoder[UpdatePayloadNotFound] = deriveEncoder[UpdatePayloadNotFound]
+           |  implicit val UpdatePayloadNotFoundDecoder: Decoder[UpdatePayloadNotFound] = deriveDecoder[UpdatePayloadNotFound]
+           |  implicit def UpdatePayloadNotFoundEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdatePayloadNotFound] = jsonEncoderOf[F, UpdatePayloadNotFound]
+           |  implicit def OptionUpdatePayloadNotFoundEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdatePayloadNotFound]] = jsonEncoderOf[F, Option[UpdatePayloadNotFound]]
+           |  implicit def UpdatePayloadNotFoundEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatePayloadNotFound] = jsonOf[F, UpdatePayloadNotFound]
+           |
+           |}
            |  type UpdatePayloadError = UpdatePayloadNotFound
+           |
            |}""".stripMargin
       )
     }
 
     "when there are simple response and response with anonymous objects" >> {
+      import client.http4s.circe._
       interfaceDefinition.print(anotherPayloadOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -187,13 +332,47 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload]
            |}
            |object AnotherPayloadClient {
+           |
            |  final case class UpdateAnotherPayloadRequest(name: String)
+           |object UpdateAnotherPayloadRequest {
+           |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdateAnotherPayloadRequestEncoder: Encoder[UpdateAnotherPayloadRequest] = deriveEncoder[UpdateAnotherPayloadRequest]
+           |  implicit val UpdateAnotherPayloadRequestDecoder: Decoder[UpdateAnotherPayloadRequest] = deriveDecoder[UpdateAnotherPayloadRequest]
+           |  implicit def UpdateAnotherPayloadRequestEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdateAnotherPayloadRequest] = jsonEncoderOf[F, UpdateAnotherPayloadRequest]
+           |  implicit def OptionUpdateAnotherPayloadRequestEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdateAnotherPayloadRequest]] = jsonEncoderOf[F, Option[UpdateAnotherPayloadRequest]]
+           |  implicit def UpdateAnotherPayloadRequestEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdateAnotherPayloadRequest] = jsonOf[F, UpdateAnotherPayloadRequest]
+           |
+           |}
            |  final case class UpdatedPayload(name: String)
+           |object UpdatedPayload {
+           |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val UpdatedPayloadEncoder: Encoder[UpdatedPayload] = deriveEncoder[UpdatedPayload]
+           |  implicit val UpdatedPayloadDecoder: Decoder[UpdatedPayload] = deriveDecoder[UpdatedPayload]
+           |  implicit def UpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, UpdatedPayload] = jsonEncoderOf[F, UpdatedPayload]
+           |  implicit def OptionUpdatedPayloadEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[UpdatedPayload]] = jsonEncoderOf[F, Option[UpdatedPayload]]
+           |  implicit def UpdatedPayloadEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatedPayload] = jsonOf[F, UpdatedPayload]
+           |
+           |}
+           |
            |}""".stripMargin
       )
+
     }
 
     "when multiple responses with anonymous objects with default response" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -203,15 +382,26 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class UpdatedPayload(name: String)
+           |object UpdatedPayload {
+           |
+           |
+           |}
            |  final case class UpdatePayloadUnexpectedError(isDone: Boolean)
+           |object UpdatePayloadUnexpectedError {
+           |
+           |
+           |}
            |  final case class UpdatePayloadUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadUnexpectedError)
            |  type UpdatePayloadError = UpdatePayloadUnexpectedErrorResponse
+           |
            |}""".stripMargin
       )
     }
 
     "when multiple responses and multiple error scenarios" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleResponses)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -221,14 +411,17 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class CreatePayloadNotFoundError(value: String)
            |  final case class CreatePayloadUnexpectedErrorResponse(statusCode: Int, value: Error)
            |  type CreatePayloadError = CreatePayloadNotFoundError :+: CreatePayloadUnexpectedErrorResponse :+: CNil
+           |
            |}""".stripMargin
       )
     }
 
     "two operations with default response" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(twoOperationsWithDefaultResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -240,17 +433,28 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |object PayloadClient {
            |
            |
+           |
            |  final case class CreatePayloadsUnexpectedError(name: String)
+           |object CreatePayloadsUnexpectedError {
+           |
+           |
+           |}
            |  final case class CreatePayloadsUnexpectedErrorResponse(statusCode: Int, value: CreatePayloadsUnexpectedError)
            |  type CreatePayloadsError = CreatePayloadsUnexpectedErrorResponse
            |  final case class UpdatePayloadsUnexpectedError(isDone: Boolean)
+           |object UpdatePayloadsUnexpectedError {
+           |
+           |
+           |}
            |  final case class UpdatePayloadsUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadsUnexpectedError)
            |  type UpdatePayloadsError = UpdatePayloadsUnexpectedErrorResponse
+           |
            |}""".stripMargin
       )
     }
 
     "when the failure response is empty" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -260,12 +464,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class DeletePayloadsNotFoundError(value: Unit)
            |  type DeletePayloadsError = DeletePayloadsNotFoundError
+           |
            |}""".stripMargin)
     }
 
     "when multiple failure response are empty" >> {
+      import Printer.avoid._
       interfaceDefinition.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
@@ -275,13 +482,16 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |object PayloadClient {
            |
+           |
            |  final case class DeletePayloadsNotFoundError(value: Unit)
            |  final case class DeletePayloadsUnexpectedErrorResponse(statusCode: Int, value: Unit)
            |  type DeletePayloadsError = DeletePayloadsNotFoundError :+: DeletePayloadsUnexpectedErrorResponse :+: CNil
+           |
            |}""".stripMargin)
     }
 
     "when a post operation is provided and operation id is not provided" >> {
+      import Printer.avoid._
       interfaceDefinition.print(
         petstoreOpenApi
           .withPath(
@@ -322,6 +532,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                     |
                     |
                     |
+                    |
+                    |
                     |}""".stripMargin)
     }
 
@@ -331,10 +543,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     import client.print._
     import client.http4s.print.implDefinition
     import client.http4s.print.Http4sSpecifics
+    import Printer.avoid._
     implicit val none: Http4sSpecifics = new Http4sSpecifics {
       def none[A]                                     = Printer.unit.contramap[A](_ => ())
       def applyMethod: Printer[(TraitName, ImplName)] = none
-      def withBody: Printer[String]                   = none
+      def withBody: Printer[String] = Printer { x =>
+        s".with($x)"
+      }
 
     }
 
@@ -344,9 +559,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |
            |    def deletePayload(id: String): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show))
-           |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
+           |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updatePayload))
            |  }
            |
            |}""".stripMargin)
@@ -358,7 +572,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |
            |    def getPayload(limit: Option[Int], name: Option[String]): F[Payloads] = client.expect[Payloads](Request[F](method = Method.GET, uri = baseUrl / "payloads" +?? ("limit", limit) +?? ("name", name)))
            |    def getPayload(id: String): F[Payload] = client.expect[Payload](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show))
            |  }
@@ -368,17 +581,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when optional body and not optional query parameters is provided" >> {
-      implDefinition.print(petstoreOpenApi.withPath(mediaTypeOptionBody).withSchema("UpdatePayload" -> Fixed.string())) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(mediaTypeOptionBody)) must ===(
         """|object PetstoreHttpClient {
-           |  implicit val UpdatePayloadEncoder: Encoder[UpdatePayload] = deriveEncoder[UpdatePayload]
-           |  implicit val OptionUpdatePayloadEncoder: Encoder[Option[UpdatePayload]] = deriveEncoder[Option[UpdatePayload]]
-           |  implicit val UpdatePayloadDecoder: Decoder[UpdatePayload] = deriveDecoder[UpdatePayload]
+           |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |    implicit val UpdatePayloadEntityEncoder: EntityEncoder[F, UpdatePayload] = jsonEncoderOf[F, UpdatePayload]
-           |    implicit val OptionUpdatePayloadEntityEncoder: EntityEncoder[F, Option[UpdatePayload]] = jsonEncoderOf[F, Option[UpdatePayload]]
-           |    implicit val UpdatePayloadEntityDecoder: EntityDecoder[F, UpdatePayload] = jsonOf[F, UpdatePayload]
-           |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)))
+           |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)).with(updatePayload))
            |  }
            |
            |}""".stripMargin
@@ -391,8 +599,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |
-           |    def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads"))
+           |    def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads").with(updatePayload))
            |  }
            |
            |}""".stripMargin
@@ -405,7 +612,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |
            |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(_.asRight)
            |      case default => default.as[Error].map(x => GetPayloadUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -421,7 +627,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |
            |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[String].map(x => GetPayloadNotFoundError(x).asLeft)
@@ -437,8 +642,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |
           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
           |    import PetstoreClient._
-          |
-          |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show))
+          |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updateAnotherPayloadRequest))
           |  }
           |
           |}""".stripMargin)
@@ -450,7 +654,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
-           |
            |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
            |      case default => default.as[UpdatePayloadUnexpectedError].map(x => UpdatePayloadUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -466,7 +669,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
-           |
            |    def createPayload(): F[Either[CreatePayloadError, Unit]] = client.fetch[Either[CreatePayloadError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[CreatePayloadError](CreatePayloadNotFoundError(x)).asLeft)
@@ -484,7 +686,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
-           |
            |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[UpdatePayloadNotFound].map(x => x.asLeft)
@@ -501,7 +702,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
-           |
            |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[Unit].map(x => DeletePayloadsNotFoundError(x).asLeft)
@@ -518,7 +718,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
-           |
            |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsNotFoundError(x)).asLeft)
@@ -532,17 +731,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   }
 
   "http4s 0.20.x should able to print" >> {
-    import client.print._
     import client.http4s.print.impl
     import client.http4s.print.v20._
+    import Printer.avoid._
 
     "when a post operation is provided" >> {
       impl.print(
         PackageName("petstore") -> petstoreOpenApi
           .withPath(mediaTypeReferences)
-          .withSchema("NewPayload" -> Fixed.string())
-          .withSchema("NewPayloads" -> Fixed.array(Fixed.reference("NewPayload")))
-      ) must ===(
+          .withSchema("NewPayloads" -> Fixed.array(Fixed.reference("NewPayload")))) must ===(
         """|import cats.effect._
            |import cats.implicits._
            |import org.http4s._
@@ -550,24 +747,15 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import org.http4s.client.blaze._
            |import org.http4s.circe._
            |import org.http4s.Status.Successful
-           |import io.circe._
-           |import io.circe.generic.semiauto._
            |import shapeless.Coproduct
            |import scala.concurrent.ExecutionContext
            |import petstore.PetstoreClient
            |import petstore.models._
+           |import NewPayloads._
            |object PetstoreHttpClient {
-           |  implicit val NewPayloadEncoder: Encoder[NewPayload] = deriveEncoder[NewPayload]
-           |  implicit val OptionNewPayloadEncoder: Encoder[Option[NewPayload]] = deriveEncoder[Option[NewPayload]]
-           |  implicit val NewPayloadDecoder: Decoder[NewPayload] = deriveDecoder[NewPayload]
+           |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |    implicit val NewPayloadEntityEncoder: EntityEncoder[F, NewPayload] = jsonEncoderOf[F, NewPayload]
-           |    implicit val OptionNewPayloadEntityEncoder: EntityEncoder[F, Option[NewPayload]] = jsonEncoderOf[F, Option[NewPayload]]
-           |    implicit val NewPayloadsEntityEncoder: EntityEncoder[F, NewPayloads] = jsonEncoderOf[F, NewPayloads]
-           |    implicit val OptionNewPayloadsEntityEncoder: EntityEncoder[F, Option[NewPayloads]] = jsonEncoderOf[F, Option[NewPayloads]]
-           |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
-           |    implicit val NewPayloadsEntityDecoder: EntityDecoder[F, NewPayloads] = jsonOf[F, NewPayloads]
            |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -581,16 +769,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   }
 
   "http4s 0.18.x should able to print" >> {
-    import client.print._
     import client.http4s.print.impl
     import client.http4s.print.v18._
+    import Printer.avoid._
 
     "when a post operation is provided" >> {
-      impl.print(
-        PackageName("petstore") -> petstoreOpenApi
-          .withPath(mediaTypeReferences)
-          .withSchema("NewPayload" -> Fixed.string())
-          .withSchema("NewPayloads" -> Fixed.array(Fixed.reference("NewPayload")))) must ===(
+      impl.print(PackageName("petstore") -> petstoreOpenApi.withPath(mediaTypeReferences)) must ===(
         """|import cats.effect._
            |import cats.implicits._
            |import org.http4s._
@@ -598,24 +782,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import org.http4s.client.blaze._
            |import org.http4s.circe._
            |import org.http4s.Status.Successful
-           |import io.circe._
-           |import io.circe.generic.semiauto._
            |import shapeless.Coproduct
            |import scala.concurrent.ExecutionContext
            |import petstore.PetstoreClient
            |import petstore.models._
            |object PetstoreHttpClient {
-           |  implicit val NewPayloadEncoder: Encoder[NewPayload] = deriveEncoder[NewPayload]
-           |  implicit val OptionNewPayloadEncoder: Encoder[Option[NewPayload]] = deriveEncoder[Option[NewPayload]]
-           |  implicit val NewPayloadDecoder: Decoder[NewPayload] = deriveDecoder[NewPayload]
+           |
            |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
-           |    implicit val NewPayloadEntityEncoder: EntityEncoder[F, NewPayload] = jsonEncoderOf[F, NewPayload]
-           |    implicit val OptionNewPayloadEntityEncoder: EntityEncoder[F, Option[NewPayload]] = jsonEncoderOf[F, Option[NewPayload]]
-           |    implicit val NewPayloadsEntityEncoder: EntityEncoder[F, NewPayloads] = jsonEncoderOf[F, NewPayloads]
-           |    implicit val OptionNewPayloadsEntityEncoder: EntityEncoder[F, Option[NewPayloads]] = jsonEncoderOf[F, Option[NewPayloads]]
-           |    implicit val NewPayloadEntityDecoder: EntityDecoder[F, NewPayload] = jsonOf[F, NewPayload]
-           |    implicit val NewPayloadsEntityDecoder: EntityDecoder[F, NewPayloads] = jsonOf[F, NewPayloads]
            |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
