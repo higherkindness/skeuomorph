@@ -17,10 +17,11 @@
 package higherkindness.skeuomorph.openapi.client
 
 import higherkindness.skeuomorph.Printer
-import higherkindness.skeuomorph.Printer._
+import higherkindness.skeuomorph.Printer.{konst => κ, _}
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
+import higherkindness.skeuomorph.openapi.print._
 import cats.implicits._
 import cats.Show
 
@@ -36,39 +37,6 @@ object print {
   def successStatusCode(code: String): Boolean = code match {
     case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
     case _                       => false
-  }
-
-  def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
-
-  def divBy[A, B](p1: Printer[A], p2: Printer[B])(sep: Printer[Unit]): Printer[(A, B)] =
-    (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
-
-  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
-  object Tpe {
-    def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
-    def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
-    def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
-      Tpe(tpe.asRight, required, description)
-
-    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
-      identity,
-      x =>
-        Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
-          .print(x)
-          .capitalize
-    )
-    def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
-      if (tpe.required)
-        name(tpe).asRight
-      else
-        name(tpe).asLeft
-
-  }
-  final case class Var[T](name: String, tpe: Tpe[T])
-  object Var {
-    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
-    def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
-      Var(decapitalize(name), Tpe(tpe.asRight, required, description))
   }
 
   sealed trait HttpVerb
@@ -119,15 +87,6 @@ object print {
     implicit val implNameShow: Show[ImplName]   = Show.show(_.value)
   }
 
-  final case class PackageName(value: String) extends AnyVal
-  object PackageName {
-    implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
-  }
-
-  final case class Encoder[T](value: Var[T]) extends AnyVal
-
-  final case class Decoder[T](value: Var[T]) extends AnyVal
-
   final case class OperationId(value: String) extends AnyVal
 
   object OperationId {
@@ -139,23 +98,6 @@ object print {
 
     implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
   }
-
-  def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
-    ((konst("Option[") *< string >* konst("]")) >|< string)
-      .contramap(Tpe.option[T])
-
-  def imports: Printer[List[PackageName]] =
-    (
-      sepBy(
-        (konst("import ") *< show[PackageName]),
-        "\n")
-    ).contramap(identity)
-
-  private def parameter[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
-    (
-      string >* konst(": "),
-      tpe
-    ).contramapN(x => x.name -> x.tpe)
 
   private def requestTuple[T: Basis[JsonSchemaF, ?]](operationId: OperationId, request: Request[T]): Option[Var[T]] =
     request.content
@@ -233,9 +175,9 @@ object print {
 
   def method[T: Basis[JsonSchemaF, ?]]: Printer[OperationWithPath[T]] =
     (
-      konst("  def ") *< show[OperationId],
-      konst("(") *< sepBy(parameter, ", "),
-      konst("): F[") *< responsesTypes >* konst("]")
+      κ("  def ") *< show[OperationId],
+      κ("(") *< sepBy(argumentDef, ", "),
+      κ("): F[") *< responsesTypes >* κ("]")
     ).contramapN(operationTuple[T])
 
   private def itemObjectTuple[T](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {
@@ -252,7 +194,8 @@ object print {
   def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](
       operationId: Option[OperationId],
       response: Response[T],
-      tpe: String)(success: => (String, List[String])): (String, Option[String], List[String]) = {
+      tpe: String)(success: => (String, List[String]))(
+      implicit codecs: Printer[Codecs]): (String, Option[String], List[String]) = {
     val innerType = s"${operationId.fold("")(_.show.capitalize)}${normalize(response.description).capitalize}"
     val newSchema =
       typeFromResponse(response).map(schema(innerType.some).print).getOrElse("Unit")
@@ -266,15 +209,13 @@ object print {
     }
   }
 
-  private def newCaseClass(name: String, fields: (String, String)*): String =
-    s"final case class $name(${fields.map { case (x, y) => s"$x: $y" }.mkString(", ")})"
-
   def defaultTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      responseOr: Either[Response[T], Reference]): (String, String, List[String]) = {
-    val tpe                                  = responseOrType.print(responseOr)
-    val newType                              = unexpectedErrorName(operationId)
-    def statusCaseClass(tpe: String): String = newCaseClass(newType, "statusCode" -> "Int", "value" -> tpe)
+      responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, String, List[String]) = {
+    val tpe     = responseOrType.print(responseOr)
+    val newType = unexpectedErrorName(operationId)
+    def statusCaseClass(tpe: String): String =
+      caseClassDef.print(newType -> List("statusCode" -> Tpe[T]("Int"), "value" -> Tpe[T](tpe)))
     responseOr.fold(
       r => {
         val (_, anonymousType, schemas) = typeAndSchemaFor(operationId.some, r, tpe) { tpe -> List.empty }
@@ -288,13 +229,14 @@ object print {
 
   def statusTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      responseOr: Either[Response[T], Reference]): (String, Option[String], List[String]) = {
+      responseOr: Either[Response[T], Reference])(
+      implicit codecs: Printer[Codecs]): (String, Option[String], List[String]) = {
     val tpe = responseOrType.print(responseOr)
     responseOr.left.toOption
       .map { response =>
         val (newTpe, anonymousType, schemas) = typeAndSchemaFor(operationId.some, response, tpe) {
           val newTpe = defaultResponseErrorName(operationId, response.description.some)
-          newTpe -> List(newCaseClass(newTpe, "value" -> tpe))
+          newTpe -> List(caseClassDef.print(newTpe -> List("value" -> Tpe[T](tpe))))
         }
         (newTpe, anonymousType, schemas)
       }
@@ -303,8 +245,9 @@ object print {
       )
   }
 
-  def typesAndSchemas[T: Basis[JsonSchemaF, ?]](
-      operationId: OperationId)(status: String, responseOr: Either[Response[T], Reference]): (String, List[String]) = {
+  def typesAndSchemas[T: Basis[JsonSchemaF, ?]](operationId: OperationId)(
+      status: String,
+      responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, List[String]) = {
     val statusCodePattern = """(\d+)""".r
     val tpe               = responseOrType.print(responseOr)
     status match {
@@ -330,9 +273,8 @@ object print {
 
   private def responsesSchemaTuple[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      responses: Map[String, Either[Response[T], Reference]]): Either[
-    (List[String], String, List[String]),
-    List[String]] =
+      responses: Map[String, Either[Response[T], Reference]])(
+      implicit codecs: Printer[Codecs]): Either[(List[String], String, List[String]), List[String]] =
     if (responses.size > 1) {
       val (newTypes, schemas) =
         second(responses.map((typesAndSchemas[T](operationId) _).tupled).toList.unzip)(_.flatten)
@@ -350,18 +292,22 @@ object print {
         }
         .asRight
 
-  private def multipleResponsesSchema: Printer[(List[String], String, List[String])] =
+  private def responseErrorsDef: Printer[List[String]] =
+    (sepBy(string, " :+: "), (κ(" :+: CNil") >|< unit)).contramapN(errorTypes =>
+      (errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight))
+
+  private def multipleResponsesSchema: Printer[(List[String], String, List[String])] = {
+    import Printer.avoid._
     (
       sepBy((space >* space) *< string, "\n") >* newLine,
-      konst("  type ") *< string >* konst(" = "),
-      sepBy(string, " :+: "),
-      (konst(" :+: CNil") >|< unit)
+      space *< space *< typeAliasDef(responseErrorsDef)
     ).contramapN {
-      case (schemas, tpe, errorTypes) => (schemas, tpe, errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight)
+      case (schemas, tpe, errorTypes) => (schemas, (tpe, errorTypes, none))
     }
+  }
 
-  private def responsesSchema[T: Basis[JsonSchemaF, ?]]: Printer[
-    (OperationId, Map[String, Either[Response[T], Reference]])] =
+  private def responsesSchema[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, Map[String, Either[Response[T], Reference]])] =
     (multipleResponsesSchema >|< sepBy((space >* space) *< string, "\n")).contramap((responsesSchemaTuple[T] _).tupled)
 
   private def requestSchemaTuple[T: Basis[JsonSchemaF, ?]](
@@ -377,21 +323,20 @@ object print {
       if name === newType
     } yield (newType -> requestTpe)
 
-  private def requestSchema[T: Basis[JsonSchemaF, ?]]: Printer[(OperationId, Option[Either[Request[T], Reference]])] =
+  private def requestSchema[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[(OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
-  private def clientTypes[T: Basis[JsonSchemaF, ?]]: Printer[(TraitName, List[OperationWithPath[T]])] =
-    (
-      konst("object ") *< show[TraitName] >* konst(" {") >* newLine,
-      sepBy(requestSchema[T], "\n") >* newLine,
-      sepBy(responsesSchema[T], "\n") >* (newLine >* konst("}")))
-      .contramapN { x =>
-        un(second(x)(_.map {
+  private def clientTypes[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs]): Printer[List[OperationWithPath[T]]] =
+    (sepBy(requestSchema[T], "\n") >* newLine, sepBy(responsesSchema[T], "\n") >* newLine)
+      .contramapN {
+        _.map {
           case y @ (_, _, operation) =>
             val operationId = OperationId(y)
             (operationId   -> operation.requestBody) ->
               (operationId -> operation.responses)
-        }.unzip))
+        }.unzip
       }
 
   def toOperationsWithPath[T](x: (TraitName, Map[String, ItemObject[T]])): (TraitName, List[OperationWithPath[T]]) =
@@ -402,28 +347,22 @@ object print {
       TraitName,
       TraitName,
       List[OperationWithPath[T]],
-      (TraitName, List[OperationWithPath[T]])) = {
+      (String, List[PackageName], List[OperationWithPath[T]])) = {
     val traitName = TraitName(openApi)
+
     val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName -> openApi.paths))) {
       case (a, b) => (a, (traitName, b))
     })
-    (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, d)
+    (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, (d._1.show, List.empty, d._2))
   }
 
-  def interfaceDefinition[T: Basis[JsonSchemaF, ?]]: Printer[OpenApi[T]] =
+  def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     (
-      imports >* newLine,
-      konst("trait ") *< show[TraitName] >* konst("[F[_]] {") >* newLine,
-      space *< space *< konst("import ") *< show[TraitName] >* konst("._") >* newLine,
-      sepBy(method[T], "\n") >* (newLine >* konst("}") >* newLine),
-      clientTypes[T]
+      sepBy(importDef, "\n") >* newLine,
+      κ("trait ") *< show[TraitName] >* κ("[F[_]] {") >* newLine,
+      space *< space *< κ("import ") *< show[TraitName] >* κ("._") >* newLine,
+      sepBy(method[T], "\n") >* (newLine >* κ("}") >* newLine),
+      objectDef(clientTypes[T])
     ).contramapN(operationsTuple[T])
-
-  def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
-  def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)
-  def duplicate[A, B](pair: (A, B)): ((A, A), (B, B))      = (pair._1 -> pair._1, pair._2 -> pair._2)
-  def second[A, B, C](pair: (A, B))(f: B => C): (A, C)     = (pair._1, f(pair._2))
-  def flip[A, B](pair: (A, B)): (B, A)                     = (pair._2, pair._1)
-  def decapitalize(s: String)                              = if (s.isEmpty) s else s(0).toLower + s.substring(1)
 
 }
