@@ -114,7 +114,11 @@ object ParseProto {
     dependent.getMessageTypeList.asScala.toList.map(d =>
       DependentImport(dependent.getPackage, formatName(dependent.getName), toMessage(d, files)))
 
-  def formatName(name: String): String = name.replace(".proto", "")
+  def formatName(name: String): String =
+    name
+      .split("/")
+      .last
+      .replace(".proto", "")
 
   def toService[A](s: ServiceDescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): Service[A] =
