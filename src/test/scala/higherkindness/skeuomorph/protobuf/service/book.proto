@@ -2,7 +2,8 @@ syntax = "proto3";
 
 package com.acme;
 
-import "author.proto";
+import "models/author.proto";
+import "rating.proto";
 
 message Book {
     reserved 4, 8;
@@ -11,6 +12,7 @@ message Book {
     string title = 2;
     repeated Author author = 3;
     BindingType binding_type = 9;
+    Rating rating = 10;
 }
 
 message GetBookRequest {

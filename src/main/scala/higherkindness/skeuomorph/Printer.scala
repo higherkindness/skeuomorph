@@ -44,6 +44,10 @@ object Printer {
 
   val unit: Printer[Unit] = Printer(_ => "")
 
+  object avoid {
+    implicit def nonePrinter[T]: Printer[T] = unit.contramap(_ => ())
+  }
+
   def show[F: Show]: Printer[F] = Printer { _.show }
 
   def optional[A](p: Printer[A]): Printer[Option[A]] =
