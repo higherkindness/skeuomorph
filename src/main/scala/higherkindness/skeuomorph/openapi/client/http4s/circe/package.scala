@@ -38,7 +38,7 @@ package object circe {
     List("io.circe._", "io.circe.generic.semiauto._").map(PackageName.apply) ++ http4sPackages
 
   private val enumPackages = http4sPackages ++
-    List("cats.implicits._").map(PackageName.apply)
+    List("cats._", "cats.implicits._", "io.circe._").map(PackageName.apply)
 
   private def codecsTypes[T](name: String): ((String, Tpe[T]), (String, Tpe[T])) = {
     val tpe = Tpe[T](name)

@@ -33,6 +33,7 @@ object print {
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
     case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((name, t, none))
+    case (name, t) if (isArray(t))     => typeAliasDef(schema[T]()).print((name, t, (List.empty, ListCodecs(name)).some))
     case (name, t)                     => schema[T](name.some).print(t)
   }
 
@@ -42,35 +43,32 @@ object print {
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._
       (x, name) match {
-        case (IntegerF(), _)  => "Int"
-        case (LongF(), _)     => "Long"
-        case (FloatF(), _)    => "Float"
-        case (DoubleF(), _)   => "Double"
-        case (StringF(), _)   => "String"
-        case (ByteF(), _)     => "Array[Byte]"
-        case (BinaryF(), _)   => "List[Boolean]"
-        case (BooleanF(), _)  => "Boolean"
-        case (DateF(), _)     => "java.time.LocalDate"
-        case (DateTimeF(), _) => "java.time.ZonedDateTime"
-        case (PasswordF(), _) => "String"
+        case (IntegerF(), _)                                     => "Int"
+        case (LongF(), _)                                        => "Long"
+        case (FloatF(), _)                                       => "Float"
+        case (DoubleF(), _)                                      => "Double"
+        case (StringF(), _)                                      => "String"
+        case (ByteF(), _)                                        => "Array[Byte]"
+        case (BinaryF(), _)                                      => "List[Boolean]"
+        case (BooleanF(), _)                                     => "Boolean"
+        case (DateF(), _)                                        => "java.time.LocalDate"
+        case (DateTimeF(), _)                                    => "java.time.ZonedDateTime"
+        case (PasswordF(), _)                                    => "String"
+        case (ObjectF(properties, _), _) if (properties.isEmpty) => "io.circe.Json"
         case (ObjectF(properties, required), Some(name)) =>
-          if (properties.isEmpty)
-            s"type $name = io.circe.Json"
-          else
-            caseClassWithCodecsDef.print(
-              (
-                name,
-                properties
-                  .map(x => x.name -> Tpe[T](x.tpe))
-                  .map {
-                    case (name, tpe) =>
-                      if (required.contains(name))
-                        name -> tpe
-                      else
-                        name -> tpe.copy(required = false)
-                  }))
-        case (ArrayF(x), Some(name)) =>
-          typeAliasDef(listDef).print((name, x, (List.empty, ListCodecs(name)).some))
+          caseClassWithCodecsDef.print(
+            (
+              name,
+              properties
+                .map(x => x.name -> Tpe[T](x.tpe))
+                .map {
+                  case (name, tpe) =>
+                    if (required.contains(name))
+                      name -> tpe
+                    else
+                      name -> tpe.copy(required = false)
+                }))
+
         case (ArrayF(x), _) => listDef.print(x)
         case (EnumF(fields), Some(name)) =>
           sealedTraitDef.print(name -> fields)
@@ -84,7 +82,7 @@ object print {
   def isBasicType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
     val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
-      case ObjectF(_, _) => false
+      case ObjectF(p, _) => p.isEmpty
       case EnumF(_)      => false
       case ArrayF(_)     => false
       case ReferenceF(_) => false

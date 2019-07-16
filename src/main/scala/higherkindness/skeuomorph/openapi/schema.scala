@@ -32,8 +32,26 @@ object schema {
       externalDocs: Option[ExternalDocs])
 
   object OpenApi {
+    import qq.droste._
+    import Optimize._
+    import cats.implicits._
+
     implicit def openApiEq[T]: Eq[OpenApi[T]] =
       Eq.fromUniversalEquals
+
+    def extractNestedTypes[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): OpenApi[T] = {
+      val ((x, _), y) = openApi.components.toList
+        .flatMap(_.schemas.toList)
+        .traverse {
+          case (name, tpe) =>
+            nestedTypes.apply(tpe).map(t => name -> t)
+        }
+        .run(Map.empty[String, T] -> 0)
+        .value
+      openApi.copy(
+        components = openApi.components.map { _.copy(schemas = x ++ y) }
+      )
+    }
   }
 
   final case class Info(title: String, description: Option[String], version: String)
