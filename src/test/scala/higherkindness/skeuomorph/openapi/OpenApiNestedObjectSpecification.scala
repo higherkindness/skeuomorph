@@ -16,8 +16,6 @@
 
 package higherkindness.skeuomorph.openapi
 
-// import cats.implicits._
-
 class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification {
   import helpers._
   import schema._
@@ -57,5 +55,26 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
           .withSchema("Foo" -> Fixed.enum(List("1", "2"))))
     }
 
+    "when nested objects are defined in request" >> {
+      extractNestedTypes(
+        openApi("name").withPath(
+          "foo" -> emptyItemObject
+            .withGet(
+              operationWithResponses[JsonSchemaF.Fixed](
+                "200" -> response[JsonSchemaF.Fixed](
+                  "Response",
+                  "application/json" -> mediaType(obj("values" -> Fixed.array(obj("value" -> Fixed.integer())()))()))
+              )))) must ===(
+        openApi("name")
+          .withPath(
+            "foo" -> emptyItemObject
+              .withGet(
+                operationWithResponses[JsonSchemaF.Fixed]("200" -> response[JsonSchemaF.Fixed](
+                  "Response",
+                  "application/json" -> mediaType(obj("values" -> Fixed.array(Fixed.reference("AnonymousObject")))())))
+              ))
+          .withSchema("AnonymousObject" -> obj("value" -> Fixed.integer())())
+      )
+    }
   }
 }
