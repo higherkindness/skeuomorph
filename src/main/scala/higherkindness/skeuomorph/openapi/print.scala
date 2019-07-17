@@ -190,7 +190,7 @@ object print {
       body >* newLine *< κ("}")
     ).contramap { case (x, y, z) => (x -> y, z) }
 
-  def normalize(value: String): String = value.split(" ").map(_.filter(_.isLetter).capitalize).mkString
+  def normalize(value: String): String = value.split("[ _-]").map(_.filter(_.isLetterOrDigit).capitalize).mkString
 
   def divBy[A, B](p1: Printer[A], sep: Printer[Unit], p2: Printer[B]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }

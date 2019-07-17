@@ -87,14 +87,14 @@ object print {
     implicit val implNameShow: Show[ImplName]   = Show.show(_.value)
   }
 
-  final case class OperationId(value: String) extends AnyVal
+  final case class OperationId private (value: String) extends AnyVal
 
   object OperationId {
 
     def apply[T](operationWithPath: OperationWithPath[T]): OperationId =
-      OperationId(operationWithPath._3.operationId.getOrElse {
+      OperationId(decapitalize(normalize(operationWithPath._3.operationId.getOrElse {
         s"${HttpVerb.methodFrom(operationWithPath._1)}${operationWithPath._2.method}"
-      })
+      })))
 
     implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
   }
