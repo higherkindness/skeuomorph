@@ -75,6 +75,16 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
         )
       ).show must ===("deleteOwnersPets")
     }
+
+    "when a description is provided with numbers at the beginning" >> {
+      OperationId(
+        (
+          HttpVerb.Put,
+          HttpPath("/foo"),
+          defaultOperation.withOperationId("1111createPayload")
+        )
+      ).show must ===("createPayload1111")
+    }
   }
 }
 object OperationIdSpecification {
