@@ -57,6 +57,20 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |}""".stripMargin)
     }
+
+    "when a object type is provided with not a normalize shape" >> {
+      import Printer.avoid._
+      model.print(petstoreOpenApi.withSchema("212bar_Foo-X1" -> obj("foo" -> Fixed.string())())) must ===(
+        """|object models {
+           |
+           |final case class BarFooX1212(foo: Option[String])
+           |object BarFooX1212 {
+           |
+           |
+           |}
+           |}""".stripMargin)
+    }
+
     "when an array is provided" >> {
       import client.http4s.circe._
       model.print(
@@ -80,6 +94,21 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |}
            |}""".stripMargin)
+    }
+
+    "when a array type is provided with a not normalize shape" >> {
+      import Printer.avoid._
+      model.print(
+        petstoreOpenApi.withSchema(
+          "bar_Foo-X1s" -> Fixed.array(Fixed.reference("#/components/schemas/bar_Foo-X1"))
+        )) must ===("""|object models {
+             |
+             |type BarFooX1s = List[BarFooX1]
+             |object BarFooX1s {
+             |
+             |
+             |}
+             |}""".stripMargin)
     }
 
     "when enum is provided" >> {
@@ -117,7 +146,22 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}
            |}""".stripMargin
       )
+    }
 
+    "when enum is provided with a not normalize shape" >> {
+      import Printer.avoid._
+      model.print(petstoreOpenApi.withSchema("something-For" -> Fixed.enum(List("xxx", "yyy")))) must ===(
+        """|object models {
+             |
+             |sealed trait SomethingFor
+             |object SomethingFor {
+             |
+             |  final case object xxx extends SomethingFor
+             |  final case object yyy extends SomethingFor
+             |
+             |}
+             |}""".stripMargin
+      )
     }
 
     "when multiple types are provided" >> {

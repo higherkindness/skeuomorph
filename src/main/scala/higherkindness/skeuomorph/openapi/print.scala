@@ -32,9 +32,10 @@ object print {
   val componentsRegex = """#/components/schemas/(.+)""".r
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
-    case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((name, t, none))
-    case (name, t) if (isArray(t))     => typeAliasDef(schema[T]()).print((name, t, (List.empty, ListCodecs(name)).some))
-    case (name, t)                     => schema[T](name.some).print(t)
+    case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((normalize(name), t, none))
+    case (name, t) if (isArray(t)) =>
+      typeAliasDef(schema[T]()).print((normalize(name), t, (List.empty, ListCodecs(name)).some))
+    case (name, t) => schema[T](normalize(name).some).print(t)
   }
 
   protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(
@@ -72,8 +73,8 @@ object print {
         case (ArrayF(x), _) => listDef.print(x)
         case (EnumF(fields), Some(name)) =>
           sealedTraitDef.print(name -> fields)
-        case (ReferenceF(componentsRegex(ref)), _) => ref
-        case (ReferenceF(ref), _)                  => ref
+        case (ReferenceF(componentsRegex(ref)), _) => normalize(ref)
+        case (ReferenceF(ref), _)                  => normalize(ref)
       }
     }
     Printer(scheme.cata(algebra))
@@ -117,7 +118,6 @@ object print {
       identity,
       Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
         .print(_)
-        .capitalize
     )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
       if (tpe.required)
