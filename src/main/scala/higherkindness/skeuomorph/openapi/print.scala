@@ -34,7 +34,7 @@ object print {
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
     case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((normalize(name), t, none))
     case (name, t) if (isArray(t)) =>
-      typeAliasDef(schema[T]()).print((normalize(name), t, (List.empty, ListCodecs(name)).some))
+      typeAliasDef(schema[T]()).print((normalize(name), t, none))
     case (name, t) => schema[T](normalize(name).some).print(t)
   }
 
@@ -103,7 +103,6 @@ object print {
 
   sealed trait Codecs
   final case class CaseClassCodecs(name: String, fields: List[String]) extends Codecs
-  final case class ListCodecs(name: String)                            extends Codecs
   final case class EnumCodecs(name: String, values: List[String])      extends Codecs
 
   final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
@@ -144,7 +143,7 @@ object print {
     }
 
   private def caseObjectDef: Printer[(String, String)] =
-    (κ("final case object ") *< string >* κ(" extends "), string).contramapN(identity)
+    (κ("final case object ") *< string >* κ(" extends "), string).contramapN { case (x, y) => (normalize(x), y) }
 
   private def sealedTraitCompanionObjectDef(
       implicit codecs: Printer[Codecs]): Printer[(List[(String, String)], Codecs)] =

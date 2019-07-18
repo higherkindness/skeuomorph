@@ -88,23 +88,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       model.print(
         petstoreOpenApi.withSchema(
           "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
-        )) must ===(
-        """|object models {
+        )) must ===("""|object models {
            |
            |type Bars = List[Bar]
-           |object Bars {
-           |
-           |  import org.http4s.{EntityEncoder, EntityDecoder}
-           |  import org.http4s.circe._
-           |  import cats.Applicative
-           |  import cats.effect.Sync
-           |  
-           |  
-           |  implicit def BarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Bars] = jsonEncoderOf[F, Bars]
-           |  implicit def OptionBarsEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Bars]] = jsonEncoderOf[F, Option[Bars]]
-           |  implicit def BarsEntityDecoder[F[_]:Sync]: EntityDecoder[F, Bars] = jsonOf[F, Bars]
-           |
-           |}
            |}""".stripMargin)
     }
 
@@ -116,10 +102,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         )) must ===("""|object models {
              |
              |type BarFooX1s = List[BarFooX1]
-             |object BarFooX1s {
-             |
-             |
-             |}
              |}""".stripMargin)
     }
 
@@ -161,15 +143,36 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when enum is provided with a not normalize shape" >> {
-      import Printer.avoid._
-      model.print(petstoreOpenApi.withSchema("something-For" -> Fixed.enum(List("xxx", "yyy")))) must ===(
+      import client.http4s.circe._
+      model.print(petstoreOpenApi.withSchema("something-For" -> Fixed.enum(List("xo-m", "yy-y")))) must ===(
         """|object models {
              |
              |sealed trait SomethingFor
              |object SomethingFor {
              |
-             |  final case object xxx extends SomethingFor
-             |  final case object yyy extends SomethingFor
+             |  final case object XoM extends SomethingFor
+             |  final case object YyY extends SomethingFor
+             |  import org.http4s.{EntityEncoder, EntityDecoder}
+             |  import org.http4s.circe._
+             |  import cats.Applicative
+             |  import cats.effect.Sync
+             |  import cats._
+             |  import cats.implicits._
+             |  import io.circe._
+             |  implicit val SomethingForShow: Show[SomethingFor] = Show.show {
+             |  case XoM => "xo-m"
+             |  case YyY => "yy-y"
+             |}
+             |  implicit val SomethingForEncoder: Encoder[SomethingFor] = Encoder.encodeString.contramap(_.show)
+             |  implicit val SomethingForDecoder: Decoder[SomethingFor] = Decoder.decodeString.emap {
+             |  case "xo-m" => XoM.asRight
+             |  case "yy-y" => YyY.asRight
+             |  case x => s"$x is not valid SomethingFor".asLeft
+             |}
+             |
+             |  implicit def SomethingForEntityEncoder[F[_]:Applicative]: EntityEncoder[F, SomethingFor] = jsonEncoderOf[F, SomethingFor]
+             |  implicit def OptionSomethingForEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[SomethingFor]] = jsonEncoderOf[F, Option[SomethingFor]]
+             |  implicit def SomethingForEntityDecoder[F[_]:Sync]: EntityDecoder[F, SomethingFor] = jsonOf[F, SomethingFor]
              |
              |}
              |}""".stripMargin
@@ -191,10 +194,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                          |
                          |}
                          |type Bars = List[Bar]
-                         |object Bars {
-                         |
-                         |
-                         |}
                          |}""".stripMargin)
     }
   }
@@ -613,10 +612,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when a put and delete are provided" >> {
       implDefinition.print(petstoreOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
-        """|object PetstoreHttpClient {
+        s"""|object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def deletePayload(id: String): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show))
            |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updatePayload))
            |  }
@@ -626,10 +626,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when get endpoints are provided" >> {
       implDefinition.print(petstoreOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
-        """|object PetstoreHttpClient {
+        s"""|object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def getPayload(limit: Option[Int], name: Option[String]): F[Payloads] = client.expect[Payloads](Request[F](method = Method.GET, uri = baseUrl / "payloads" +?? ("limit", limit) +?? ("name", name)))
            |    def getPayload(id: String): F[Payload] = client.expect[Payload](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show))
            |  }
@@ -640,10 +641,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when optional body and not optional query parameters is provided" >> {
       implDefinition.print(petstoreOpenApi.withPath(mediaTypeOptionBody)) must ===(
-        """|object PetstoreHttpClient {
+        s"""|object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def deletePayload(id: String, size: Long, updatePayload: Option[UpdatePayload]): F[Unit] = client.expect[Unit](Request[F](method = Method.DELETE, uri = baseUrl / "payloads" / id.show +? ("size", size)).with(updatePayload))
            |  }
            |
@@ -653,10 +655,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when references in the request and the responses" >> {
       implDefinition.print(petstoreOpenApi.withPath(references)) must ===(
-        """|object PetstoreHttpClient {
+        s"""|object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def updatePayload(updatePayload: UpdatePayload): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads").with(updatePayload))
            |  }
            |
@@ -666,10 +669,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are multiple responses with a default one" >> {
       implDefinition.print(petstoreOpenApi.withPath(multipleResponsesWithDefaultOne)) must ===(
-        """|object PetstoreHttpClient {
+        s"""|object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(_.asRight)
            |      case default => default.as[Error].map(x => GetPayloadUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -680,11 +684,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are multiple responses with not found response" >> {
-      implDefinition.print(petstoreOpenApi.withPath(notFoundResponse)) must ===(
-        """|object PetstoreHttpClient {
+      implDefinition.print(petstoreOpenApi.withPath(notFoundResponse)) must ===(s"""|object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[String].map(x => GetPayloadNotFoundError(x).asLeft)
@@ -696,10 +700,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are simple response and response with anonymous objects" >> {
       implDefinition.print(petstoreOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
-        """|object PetstoreHttpClient {
+        s"""|object PetstoreHttpClient {
           |
-          |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+          |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
           |    import PetstoreClient._
+          |$listImplicits
           |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updateAnotherPayloadRequest))
           |  }
           |
@@ -708,10 +713,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when multiple responses with anonymous objects with default response" >> {
       implDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObjectAndDefaultOne)) must ===(
-        """|object PayloadHttpClient {
+        s"""|object PayloadHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
+           |$listImplicits
            |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
            |      case default => default.as[UpdatePayloadUnexpectedError].map(x => UpdatePayloadUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -723,10 +729,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when multiple responses and multiple error scenarios" >> {
       implDefinition.print(payloadOpenApi.withPath(multipleResponses)) must ===(
-        """|object PayloadHttpClient {
+        s"""|object PayloadHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
+           |$listImplicits
            |    def createPayload(): F[Either[CreatePayloadError, Unit]] = client.fetch[Either[CreatePayloadError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[CreatePayloadError](CreatePayloadNotFoundError(x)).asLeft)
@@ -740,10 +747,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are multiple responses with anonymous objects" >> {
       implDefinition.print(payloadOpenApi.withPath(multipleResponsesWithAnonymousObject)) must ===(
-        """|object PayloadHttpClient {
+        s"""|object PayloadHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
+           |$listImplicits
            |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[UpdatePayloadNotFound].map(x => x.asLeft)
@@ -756,10 +764,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when the failure response is empty" >> {
       implDefinition.print(payloadOpenApi.withPath(emptyErrorResponse)) must ===(
-        """|object PayloadHttpClient {
+        s"""|object PayloadHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
+           |$listImplicits
            |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[Unit].map(x => DeletePayloadsNotFoundError(x).asLeft)
@@ -772,10 +781,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when multiple failure response are empty" >> {
       implDefinition.print(payloadOpenApi.withPath(multipleEmptyErrorResponse)) must ===(
-        """|object PayloadHttpClient {
+        s"""|object PayloadHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
+           |$listImplicits
            |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsNotFoundError(x)).asLeft)
@@ -798,8 +808,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         PackageName("petstore") -> petstoreOpenApi
           .withPath(mediaTypeReferences)
           .withSchema("NewPayloads" -> Fixed.array(Fixed.reference("NewPayload")))) must ===(
-        """|import cats.effect._
+        s"""|import cats.effect._
            |import cats.implicits._
+           |import io.circe._
            |import org.http4s._
            |import org.http4s.client.Client
            |import org.http4s.client.blaze._
@@ -809,11 +820,11 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import scala.concurrent.ExecutionContext
            |import petstore.PetstoreClient
            |import petstore.models._
-           |import NewPayloads._
            |object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -833,8 +844,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when a post operation is provided" >> {
       impl.print(PackageName("petstore") -> petstoreOpenApi.withPath(mediaTypeReferences)) must ===(
-        """|import cats.effect._
+        s"""|import cats.effect._
            |import cats.implicits._
+           |import io.circe._
            |import org.http4s._
            |import org.http4s.client.Client
            |import org.http4s.client.blaze._
@@ -846,8 +858,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import petstore.models._
            |object PetstoreHttpClient {
            |
-           |  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
+           |$listImplicits
            |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
@@ -1052,4 +1065,11 @@ object OpenApiPrintSpecification {
       "default" -> response("Unexpected error")
     )
   )
+
+  val listImplicits =
+    """|    implicit def listEntityEncoder[T: Encoder]: EntityEncoder[F, List[T]] = jsonEncoderOf[F, List[T]]
+       |    implicit def listEntityDecoder[T: Decoder]: EntityDecoder[F, List[T]] = jsonOf[F, List[T]]
+       |    implicit def optionListEntityEncoder[T: Encoder]: EntityEncoder[F, Option[List[T]]] = jsonEncoderOf[F, Option[List[T]]]
+       |    implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]""".stripMargin
+
 }

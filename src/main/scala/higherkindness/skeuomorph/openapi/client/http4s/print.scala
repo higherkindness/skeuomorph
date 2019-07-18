@@ -36,24 +36,35 @@ object print {
       codecs: Printer[Codecs]): Printer[(PackageName, OpenApi[T])] =
     (sepBy(importDef, "\n") >* newLine, implDefinition[T]).contramapN {
       case (packageName, openApi) =>
-        val arrays = openApi.components.toList.flatMap(_.schemas.toList).filter { case (_, x) => isArray(x) }.map(_._1)
         (
-          packages ++ (List(
+          packages ++ List(
             s"${packageName.show}.${TraitName(openApi).show}",
             s"${packageName.show}.models._"
-          ) ++ arrays.map(x => s"$x._")).map(PackageName.apply),
+          ).map(PackageName.apply),
           openApi)
     }
 
+  val listEnconderPrinter: Printer[Unit] = κ(
+    "implicit def listEntityEncoder[T: Encoder]: EntityEncoder[F, List[T]] = jsonEncoderOf[F, List[T]]")
+  val listDecoderPrinter: Printer[Unit] = κ(
+    "implicit def listEntityDecoder[T: Decoder]: EntityDecoder[F, List[T]] = jsonOf[F, List[T]]")
+  val optionListEncoderPrinter: Printer[Unit] = κ(
+    "implicit def optionListEntityEncoder[T: Encoder]: EntityEncoder[F, Option[List[T]]] = jsonEncoderOf[F, Option[List[T]]]")
+  val optionListDecoderPrinter: Printer[Unit] = κ(
+    "implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]")
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[OperationWithPath[T]], (TraitName, ImplName))
   def implDefinition[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     objectDef[ImplDef[T]](
       (
-        κ("  def build[F[_]: Effect](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* κ("[F]"),
+        κ("  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* κ("[F]"),
         κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
-        twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine,
+        twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine *<
+          twoSpaces *< twoSpaces *< listEnconderPrinter *< newLine *<
+          twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
+          twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
+          twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine,
         sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< κ("  }") *< newLine,
         http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
@@ -198,6 +209,7 @@ object print {
   private val packages = List(
     "cats.effect._",
     "cats.implicits._",
+    "io.circe._",
     "org.http4s._",
     "org.http4s.client.Client",
     "org.http4s.client.blaze._",

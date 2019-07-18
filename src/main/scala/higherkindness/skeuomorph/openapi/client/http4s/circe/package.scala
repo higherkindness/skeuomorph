@@ -66,14 +66,11 @@ package object circe {
             x -> fields
           })
           (packages, none, withFields.asRight.asLeft, withFields.asRight.asLeft, default, optionType, default)
-        case ListCodecs(name) =>
-          val (default, optionType) = codecsTypes[T](name)
-          (http4sPackages, none, none.asLeft.asLeft, none.asLeft.asLeft, default, optionType, default)
         case EnumCodecs(name, values) =>
           val (default, optionType) = codecsTypes[T](name)
           (
             enumPackages,
-            (name -> name, values.map(x => x -> x)).some,
+            (name -> name, values.map(x => normalize(x) -> x)).some,
             name.asRight,
             (name, values).asRight,
             default,
@@ -110,7 +107,9 @@ package object circe {
             "\n"
           ) >* newLine,
         κ("""  case x => s"$x is not valid """) *< string >* κ("""".asLeft""") *< newLine *< κ("}") *< newLine
-      ).contramapN(x => flip(second(x)(_.map(x => x -> x))))).contramap { case (x, xs) => (x, Tpe[T](x), x -> xs) }
+      ).contramapN(x => flip(second(x)(_.map(x => x -> normalize(x)))))).contramap {
+      case (x, xs) => (x, Tpe[T](x), x -> xs)
+    }
 
   def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[(String, Tpe[T])] =
     decoderDef(κ("deriveDecoder[") *< tpe[T] >* κ("]"))
