@@ -189,7 +189,7 @@ object print {
   def queryParameter[T]: Printer[Parameter.Query[T]] =
     (space *< string >* space, κ("(\"") *< divBy(string, κ("\", "), string) >* κ(")")).contramapN { q =>
       def op(x: Parameter.Query[T]): String = if (x.required) "+?" else "+??"
-      (op(q), q.name -> q.name)
+      (op(q), q.name -> decapitalize(normalize(q.name)))
     }
 
   def httpPath[T]: Printer[HttpPath] =
@@ -199,7 +199,7 @@ object print {
         .filter(_.nonEmpty)
         .map { s =>
           if (s.startsWith("{") && s.endsWith("}"))
-            s"${s.tail.init}.show"
+            s"${decapitalize(normalize(s.tail.init))}.show"
           else
             "\"" + s + "\""
         }
@@ -240,7 +240,7 @@ object print {
         )
 
       def withBody: Printer[String] =
-        κ(".withEntity(") *< string >* κ(")")
+        (κ(".withEntity(") *< string >* κ(")")).contramap(x => decapitalize(normalize(x)))
     }
   }
   object v18 {
@@ -255,7 +255,7 @@ object print {
         )
 
       def withBody: Printer[String] =
-        κ(".withBody(") *< string >* κ(")")
+        (κ(".withBody(") *< string >* κ(")")).contramap(x => decapitalize(normalize(x)))
     }
   }
 }

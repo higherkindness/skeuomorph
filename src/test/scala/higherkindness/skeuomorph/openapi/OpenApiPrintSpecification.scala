@@ -605,7 +605,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       def none[A]                                     = Printer.unit.contramap[A](_ => ())
       def applyMethod: Printer[(TraitName, ImplName)] = none
       def withBody: Printer[String] = Printer { x =>
-        s".with($x)"
+        s".with(${decapitalize(normalize(x))})"
       }
 
     }
@@ -791,6 +791,21 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsNotFoundError(x)).asLeft)
            |      case default => default.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsUnexpectedErrorResponse(default.status.code, x)).asLeft)
            |    }
+           |  }
+           |
+           |}""".stripMargin
+      )
+    }
+
+    "when params are not normalize" >> {
+
+      implDefinition.print(payloadOpenApi.withPath(notNormalizeRequest)) must ===(
+        s"""|object PayloadHttpClient {
+           |
+           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): PayloadClient[F] = new PayloadClient[F] {
+           |    import PayloadClient._
+           |$listImplicits
+           |    def get1id(id1: String, limitFor: Option[Int], listString: List[String]): F[Unit] = client.expect[Unit](Request[F](method = Method.GET, uri = baseUrl / "1id" / id1.show +?? ("limit-for", limitFor)).with(listString))
            |  }
            |
            |}""".stripMargin
@@ -1065,6 +1080,13 @@ object OpenApiPrintSpecification {
       "default" -> response("Unexpected error")
     )
   )
+
+  val notNormalizeRequest = "/1id/{1id}" -> emptyItemObject
+    .withGet(
+      operation[JsonSchemaF.Fixed](request("application/json" -> mediaType(Fixed.array(Fixed.string()))), successNull)
+        .withParameter(path("1id", Fixed.string()))
+        .withParameter(query("limit-for", Fixed.integer())),
+    )
 
   val listImplicits =
     """|    implicit def listEntityEncoder[T: Encoder]: EntityEncoder[F, List[T]] = jsonEncoderOf[F, List[T]]
