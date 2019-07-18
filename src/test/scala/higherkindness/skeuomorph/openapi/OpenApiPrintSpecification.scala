@@ -58,14 +58,26 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |}""".stripMargin)
     }
 
-    "when a object type is provided with not a normalize shape" >> {
-      import Printer.avoid._
-      model.print(petstoreOpenApi.withSchema("212bar_Foo-X1" -> obj("foo" -> Fixed.string())())) must ===(
+    "when a object type is provided with a not normalize shape" >> {
+      import client.http4s.circe._
+      model.print(petstoreOpenApi.withSchema(
+        "212bar_Foo-X1" -> obj("1fo_o" -> Fixed.string(), "ba-r" -> Fixed.integer())())) must ===(
         """|object models {
            |
-           |final case class BarFooX1212(foo: Option[String])
+           |final case class BarFooX1212(foO1: Option[String], baR: Option[Int])
            |object BarFooX1212 {
            |
+           |  import io.circe._
+           |  import io.circe.generic.semiauto._
+           |  import org.http4s.{EntityEncoder, EntityDecoder}
+           |  import org.http4s.circe._
+           |  import cats.Applicative
+           |  import cats.effect.Sync
+           |  implicit val BarFooX1212Encoder: Encoder[BarFooX1212] = Encoder.forProduct2("1fo_o", "ba-r")(t => (t.foO1, t.baR))
+           |  implicit val BarFooX1212Decoder: Decoder[BarFooX1212] = Decoder.forProduct2("1fo_o", "ba-r")(BarFooX1212.apply)
+           |  implicit def BarFooX1212EntityEncoder[F[_]:Applicative]: EntityEncoder[F, BarFooX1212] = jsonEncoderOf[F, BarFooX1212]
+           |  implicit def OptionBarFooX1212EntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[BarFooX1212]] = jsonEncoderOf[F, Option[BarFooX1212]]
+           |  implicit def BarFooX1212EntityDecoder[F[_]:Sync]: EntityDecoder[F, BarFooX1212] = jsonOf[F, BarFooX1212]
            |
            |}
            |}""".stripMargin)

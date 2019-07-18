@@ -102,9 +102,9 @@ object print {
   }
 
   sealed trait Codecs
-  final case class CaseClassCodecs(name: String)                  extends Codecs
-  final case class ListCodecs(name: String)                       extends Codecs
-  final case class EnumCodecs(name: String, values: List[String]) extends Codecs
+  final case class CaseClassCodecs(name: String, fields: List[String]) extends Codecs
+  final case class ListCodecs(name: String)                            extends Codecs
+  final case class EnumCodecs(name: String, values: List[String])      extends Codecs
 
   final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
   object Tpe {
@@ -165,7 +165,7 @@ object print {
   def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](
       implicit codecs: Printer[Codecs]): Printer[(String, List[(String, Tpe[T])])] =
     (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
-      ((x._1 -> x._2), (x._1, List.empty[PackageName], CaseClassCodecs(x._1)).some)
+      ((x._1 -> x._2), (x._1, List.empty[PackageName], CaseClassCodecs(x._1, x._2.map(_._1))).some)
     }
 
   def typeAliasDef[T](typeSchemaDef: Printer[T])(
@@ -205,7 +205,7 @@ object print {
     (κ("import ") *< show[PackageName]).contramap(identity)
 
   def argumentDef[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
-    divBy(string, κ(": "), tpe).contramap(x => x.name -> x.tpe)
+    divBy(string, κ(": "), tpe).contramap(x => decapitalize(normalize(x.name)) -> x.tpe)
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
   def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)
