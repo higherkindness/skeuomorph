@@ -97,9 +97,9 @@ val printAsScala: Mu[MuF] => String =
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
-```
-Mu(TProduct(User,List(Field(name,Mu(TString())), Field(favorite_number,Mu(TCoproduct(NonEmptyList(Mu(TInt()), Mu(TNull()))))), Field(favorite_color,Mu(TCoproduct(NonEmptyList(Mu(TString()), Mu(TNull()))))))))
-@message final case class User(name: String, favorite_number: Cop[Int :: Null:: TNil], favorite_color: Cop[String :: Null:: TNil])
+```tut:evaluated
+(parseAvro >>> println)(avroSchema)
+(printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
 
