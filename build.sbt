@@ -56,7 +56,7 @@ lazy val docs = project
     micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
-      file("readme/README.md") -> ExtraMdFileConfig(
+      file("README.md") -> ExtraMdFileConfig(
         "index.md",
         "home",
         Map("title" -> "Home", "section" -> "home", "position" -> "0")
