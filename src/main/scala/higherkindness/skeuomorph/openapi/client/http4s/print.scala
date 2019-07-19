@@ -134,7 +134,7 @@ object print {
       case Left(x: Parameter.Query[T]) => x
     }
 
-  def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
+  def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[OperationWithPath[T]] =
     (
       κ("Request[F](method = Method.") *< show[HttpVerb],
       κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
@@ -147,7 +147,7 @@ object print {
               _ -> operation.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name)))
       }
 
-  def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String])(
+  def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
       implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
     (
       κ("fetch[") *< responsesTypes >* κ("]("),
@@ -168,7 +168,7 @@ object print {
           )
       }
 
-  def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String]): Printer[OperationWithPath[T]] =
+  def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[OperationWithPath[T]] =
     (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T](withBody) >* κ(")"))
       .contramapN {
         case x @ (_, _, operation) =>
@@ -176,7 +176,7 @@ object print {
           (operationId -> operation.responses, x)
       }
 
-  def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[String])(
+  def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
       implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
     (
       method[T] >* κ(" = client."),
@@ -187,23 +187,24 @@ object print {
     }
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =
-    (space *< string >* space, κ("(\"") *< divBy(string, κ("\", "), string) >* κ(")")).contramapN { q =>
+    (space *< string >* space, κ("(\"") *< divBy(string, κ("\", "), show[Var]) >* κ(")")).contramapN { q =>
       def op(x: Parameter.Query[T]): String = if (x.required) "+?" else "+??"
-      (op(q), q.name -> decapitalize(normalize(q.name)))
+      (op(q), q.name -> Var(q.name))
     }
 
   def httpPath[T]: Printer[HttpPath] =
-    (κ("/ ") *< sepBy(string, " / ")).contramap {
+    (κ("/ ") *< sepBy((string >|< (show[Var] >* κ(".show"))), " / ")).contramap {
       _.show
         .split("/")
         .filter(_.nonEmpty)
         .map { s =>
           if (s.startsWith("{") && s.endsWith("}"))
-            s"${decapitalize(normalize(s.tail.init))}.show"
+            Var(s.tail.init).asRight
           else
-            "\"" + s + "\""
+            ("\"" + s + "\"").asLeft
         }
         .toList
+
     }
 
   private val packages = List(
@@ -223,7 +224,7 @@ object print {
 
   trait Http4sSpecifics {
     def applyMethod: Printer[(TraitName, ImplName)]
-    def withBody: Printer[String]
+    def withBody: Printer[Var]
   }
   object Http4sSpecifics {
     def apply(implicit http4sSpecifics: Http4sSpecifics): Http4sSpecifics = http4sSpecifics
@@ -239,8 +240,8 @@ object print {
           κ("BlazeClientBuilder(executionContext).resource.map(") *< show[ImplName] >* κ(".build(_, baseUrl))")
         )
 
-      def withBody: Printer[String] =
-        (κ(".withEntity(") *< string >* κ(")")).contramap(x => decapitalize(normalize(x)))
+      def withBody: Printer[Var] =
+        (κ(".withEntity(") *< show[Var] >* κ(")"))
     }
   }
   object v18 {
@@ -254,8 +255,8 @@ object print {
             ImplName] >* κ(".build(_, baseUrl))")
         )
 
-      def withBody: Printer[String] =
-        (κ(".withBody(") *< string >* κ(")")).contramap(x => decapitalize(normalize(x)))
+      def withBody: Printer[Var] =
+        (κ(".withBody(") *< show[Var] >* κ(")"))
     }
   }
 }

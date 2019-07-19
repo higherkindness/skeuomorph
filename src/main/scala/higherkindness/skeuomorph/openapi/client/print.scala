@@ -99,31 +99,35 @@ object print {
     implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
   }
 
-  private def requestTuple[T: Basis[JsonSchemaF, ?]](operationId: OperationId, request: Request[T]): Option[Var[T]] =
+  private def requestTuple[T: Basis[JsonSchemaF, ?]](
+      operationId: OperationId,
+      request: Request[T]): Option[VarWithType[T]] =
     request.content
       .get(jsonMediaType)
       .flatMap(x =>
         x.schema.map(x =>
-          Var.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId))))))
+          VarWithType.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId))))))
 
-  private def referenceTuple[T: Basis[JsonSchemaF, ?]](reference: Reference): Option[Var[T]] = reference.ref match {
-    case componentsRegex(name) => Var.tpe(Tpe.apply(name)).some
-    case _                     => none
-  }
+  private def referenceTuple[T: Basis[JsonSchemaF, ?]](reference: Reference): Option[VarWithType[T]] =
+    reference.ref match {
+      case componentsRegex(name) => VarWithType.tpe(Tpe.apply(name)).some
+      case _                     => none
+    }
 
   def requestOrTuple[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
-      requestOr: Either[Request[T], Reference]): Option[Var[T]] =
-    requestOr.fold[Option[Var[T]]](requestTuple(operationId, _), referenceTuple)
+      requestOr: Either[Request[T], Reference]): Option[VarWithType[T]] =
+    requestOr.fold[Option[VarWithType[T]]](requestTuple(operationId, _), referenceTuple)
 
-  private def parameterTuple[T: Basis[JsonSchemaF, ?]](parameter: Either[Parameter[T], Reference]): Option[Var[T]] =
+  private def parameterTuple[T: Basis[JsonSchemaF, ?]](
+      parameter: Either[Parameter[T], Reference]): Option[VarWithType[T]] =
     parameter.fold(
-      x => Var(x.name, x.schema, x.required, x.description.getOrElse(x.name)).some,
+      x => VarWithType(x.name, x.schema, x.required, x.description.getOrElse(x.name)).some,
       referenceTuple[T]
     )
 
   private def operationTuple[T: Basis[JsonSchemaF, ?]](
-      operation: OperationWithPath[T]): (OperationId, (List[Var[T]]), ResponsesWithOperationId[T]) = {
+      operation: OperationWithPath[T]): (OperationId, (List[VarWithType[T]]), ResponsesWithOperationId[T]) = {
     val operationId = OperationId(operation)
     (
       operationId,

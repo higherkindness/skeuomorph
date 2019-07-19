@@ -130,11 +130,15 @@ object print {
     implicit val packageNameShow: Show[PackageName] = Show.show(_.value)
   }
 
-  final case class Var[T](name: String, tpe: Tpe[T])
+  final case class Var(name: String) extends AnyVal
   object Var {
-    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Var[T] = Var(decapitalize(Tpe.name(tpe)), tpe)
-    def apply[T](name: String, tpe: T, required: Boolean, description: String): Var[T] =
-      Var(decapitalize(name), Tpe(tpe.asRight, required, description))
+    implicit val varShow: Show[Var] = Show.show(x => decapitalize(normalize(x.name)))
+  }
+  final case class VarWithType[T](name: Var, tpe: Tpe[T])
+  object VarWithType {
+    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): VarWithType[T] = VarWithType(Var(Tpe.name(tpe)), tpe)
+    def apply[T](name: String, tpe: T, required: Boolean, description: String): VarWithType[T] =
+      VarWithType(Var(name), Tpe(tpe.asRight, required, description))
   }
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
@@ -158,7 +162,7 @@ object print {
 
   def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
     (κ("final case class ") *< string, κ("(") *< sepBy(argumentDef[T], ", ") >* κ(")")).contramapN {
-      case (x, y) => x -> y.map { case (x, y) => Var[T](x, y) }
+      case (x, y) => x -> y.map { case (x, y) => VarWithType(Var(x), y) }
     }
 
   def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](
@@ -203,8 +207,8 @@ object print {
   def importDef: Printer[PackageName] =
     (κ("import ") *< show[PackageName]).contramap(identity)
 
-  def argumentDef[T: Basis[JsonSchemaF, ?]]: Printer[Var[T]] =
-    divBy(string, κ(": "), tpe).contramap(x => decapitalize(normalize(x.name)) -> x.tpe)
+  def argumentDef[T: Basis[JsonSchemaF, ?]]: Printer[VarWithType[T]] =
+    divBy(show[Var], κ(": "), tpe).contramap(x => x.name -> x.tpe)
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)
   def un[A, C, D](pair: (A, (C, D))): (A, C, D)            = (pair._1, pair._2._1, pair._2._2)

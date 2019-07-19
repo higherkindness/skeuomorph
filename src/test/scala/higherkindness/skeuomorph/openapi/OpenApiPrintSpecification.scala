@@ -604,8 +604,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     implicit val none: Http4sSpecifics = new Http4sSpecifics {
       def none[A]                                     = Printer.unit.contramap[A](_ => ())
       def applyMethod: Printer[(TraitName, ImplName)] = none
-      def withBody: Printer[String] = Printer { x =>
-        s".with(${decapitalize(normalize(x))})"
+      def withBody: Printer[Var] = Printer { x =>
+        s".with(${x.show})"
       }
 
     }

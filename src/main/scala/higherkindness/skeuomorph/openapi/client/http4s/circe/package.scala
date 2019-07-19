@@ -124,8 +124,8 @@ package object circe {
       (
         κ("Encoder.forProduct") *< string >* κ("("),
         sepBy(κ("\"") *< string >* κ("\""), ", ") >* κ(")"),
-        κ("(t => (") *< sepBy(κ("t.") *< string, ", ") >* κ("))")
-      ).contramapN(x => (x.length.toString, x, x.map(x => decapitalize(normalize(x))))))
+        κ("(t => (") *< sepBy(κ("t.") *< show[Var], ", ") >* κ("))")
+      ).contramapN(x => (x.length.toString, x, x.map(Var.apply))))
       .contramap(x => (x._1, x._2, x._3))
 
   def forProductCirceDecoder[T: Basis[JsonSchemaF, ?]]: Printer[(String, Tpe[T], List[String])] =
