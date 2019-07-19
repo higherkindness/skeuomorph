@@ -1,3 +1,8 @@
+---
+layout: page
+title: Home
+position: 0
+---
 
 [comment]: # (Start Badges)
 
@@ -15,9 +20,6 @@ This library is primarily intended to be used at [mu][], but
 it's completely independent from it, so anybody can use it.
 
 Skeuomorph depends heavily on [cats][] and [droste][].
-
-## NOTICE
-The following files `api-with-examples.yaml`, `petstore-expanded.yaml`, `callback-example.yaml`, `petstore.yaml`, `link-example.yaml` and `uspto.yaml` inside the folder (`test/resources/openapi/yaml`) were copied from [**OpenAPI Specification**](https://github.com/OAI/OpenAPI-Specification/) project under the terms of the licence [*Apache License Version 2.0, January 2004*](https://github.com/OAI/OpenAPI-Specification/blob/master/LICENSE).
 
 ## Schemas
 
@@ -97,9 +99,11 @@ val printAsScala: Mu[MuF] => String =
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
-```tut:evaluated
+```tut:passthrough
+println("```scala")
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
+println("```")
 ```
 
 
@@ -133,6 +137,7 @@ We can parse and convert them into Scala code as:
   import qq.droste.data.Mu
   import Mu._
 
+
   val source = ParseProto.ProtoSource("user.proto", getClass.getResource("/protobuf").getPath)
 
   val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -150,8 +155,11 @@ We can parse and convert them into Scala code as:
 
 It would generate:
 
-```tut:evaluated
+
+```tut:passthrough
+println("```scala")
 (parseProtocol andThen printProtocol andThen println)(protobufProtocol)
+println("```")
 ```
 
 ## Skeuomorph in the wild 
