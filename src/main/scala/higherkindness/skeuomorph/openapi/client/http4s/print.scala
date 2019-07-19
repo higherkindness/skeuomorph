@@ -52,21 +52,23 @@ object print {
     "implicit def optionListEntityEncoder[T: Encoder]: EntityEncoder[F, Option[List[T]]] = jsonEncoderOf[F, Option[List[T]]]")
   val optionListDecoderPrinter: Printer[Unit] = κ(
     "implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]")
+  val timeQueryParamEncoder: Printer[Unit] =
+    κ("localDateTimeQueryEncoder: QueryParamEncoder[java.time.LocalDateTime], localDateQueryEncoder: QueryParamEncoder[java.time.LocalDate]")
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[OperationWithPath[T]], (TraitName, ImplName))
   def implDefinition[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]): Printer[OpenApi[T]] =
-    objectDef[ImplDef[T]](
-      (
-        κ("  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri): ") *< show[TraitName] >* κ("[F]"),
-        κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
-        twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine *<
-          twoSpaces *< twoSpaces *< listEnconderPrinter *< newLine *<
-          twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
-          twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
-          twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine,
-        sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< κ("  }") *< newLine,
-        http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
+    objectDef[ImplDef[T]]((
+      κ("  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)") *< κ("(implicit ") *< timeQueryParamEncoder *< κ(
+        ")") *< κ(": ") *< show[TraitName] >* κ("[F]"),
+      κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
+      twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine *<
+        twoSpaces *< twoSpaces *< listEnconderPrinter *< newLine *<
+        twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
+        twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
+        twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine,
+      sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< κ("  }") *< newLine,
+      http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
         ImplName(x).show,
         List.empty,
@@ -234,8 +236,8 @@ object print {
 
       def applyMethod: Printer[(TraitName, ImplName)] =
         divBy(
-          κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): Resource[F, ") *< show[
-            TraitName] >* κ("[F]] ="),
+          κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext, ") *< timeQueryParamEncoder *< κ(
+            "): Resource[F, ") *< show[TraitName] >* κ("[F]] ="),
           space,
           κ("BlazeClientBuilder(executionContext).resource.map(") *< show[ImplName] >* κ(".build(_, baseUrl))")
         )
@@ -248,8 +250,8 @@ object print {
     implicit val v18Http4sSpecifics: Http4sSpecifics = new Http4sSpecifics {
       def applyMethod: Printer[(TraitName, ImplName)] =
         divBy(
-          κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext): F[") *< show[
-            TraitName] >* κ("[F]] ="),
+          κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext, ") *< timeQueryParamEncoder *< κ(
+            "): F[") *< show[TraitName] >* κ("[F]] ="),
           space,
           κ("Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(") *< show[
             ImplName] >* κ(".build(_, baseUrl))")
