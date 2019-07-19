@@ -1085,7 +1085,7 @@ object OpenApiPrintSpecification {
     .withGet(
       operation[JsonSchemaF.Fixed](request("application/json" -> mediaType(Fixed.array(Fixed.string()))), successNull)
         .withParameter(path("1id", Fixed.string()))
-        .withParameter(query("limit-for", Fixed.integer())),
+        .withParameter(query("limit-for", Fixed.integer()))
     )
 
   val listImplicits =
