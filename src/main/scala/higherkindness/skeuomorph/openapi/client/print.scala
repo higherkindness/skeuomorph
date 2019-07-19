@@ -33,7 +33,12 @@ object print {
   import higherkindness.skeuomorph.openapi.schema.Path._
 
   private val jsonMediaType = "application/json"
-  val statusCodePattern     = """(\d+)""".r
+  private val allContent    = "*/*"
+
+  def jsonFrom[T](content: Map[String, MediaType[T]]): Option[MediaType[T]] =
+    content.get(jsonMediaType) orElse content.get(allContent)
+
+  val statusCodePattern = """(\d+)""".r
   def successStatusCode(code: String): Boolean = code match {
     case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
     case _                       => false
@@ -102,8 +107,7 @@ object print {
   private def requestTuple[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
       request: Request[T]): Option[VarWithType[T]] =
-    request.content
-      .get(jsonMediaType)
+    jsonFrom(request.content)
       .flatMap(x =>
         x.schema.map(x =>
           VarWithType.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId))))))
@@ -147,7 +151,7 @@ object print {
     s"${operationId.show}UnexpectedErrorResponse".capitalize
 
   private def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
-    response.content.get(jsonMediaType).flatMap(_.schema)
+    jsonFrom(response.content).flatMap(_.schema)
 
   private def responseType[T: Basis[JsonSchemaF, ?]]: Printer[Response[T]] =
     tpe.contramap { response =>

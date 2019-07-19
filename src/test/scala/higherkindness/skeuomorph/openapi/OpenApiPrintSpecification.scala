@@ -1018,7 +1018,7 @@ object OpenApiPrintSpecification {
     .withPut(
       operation[JsonSchemaF.Fixed](
         request(
-          "application/json" -> mediaType(obj("name" -> Fixed.string())("name"))
+          "*/*" -> mediaType(obj("name" -> Fixed.string())("name"))
         ),
         responses = "200" -> response(
           "Updated payload",
@@ -1061,7 +1061,7 @@ object OpenApiPrintSpecification {
         responses = successNull,
         "default" -> response(
           "Unexpected error",
-          "application/json" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
+          "*/*" -> mediaType(obj("isDone" -> Fixed.boolean())("isDone"))
         )
       )
     )
