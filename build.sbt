@@ -110,7 +110,7 @@ lazy val commonSettings = Seq(
     )
   ),
   orgProjectName := "Skeuomorph",
-  orgUpdateDocFilesSetting += baseDirectory.value / "readme",
+  orgUpdateDocFilesSetting += baseDirectory.value / "docs",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
@@ -155,8 +155,7 @@ lazy val commonSettings = Seq(
     (clean in Global).asRunnableItemFull,
     (compile in Compile).asRunnableItemFull,
     (test in Test).asRunnableItemFull,
-    "docs/tut".asRunnableItem,
-    "readme/tut".asRunnableItem
+    "docs/tut".asRunnableItem
   ),
   releaseIgnoreUntrackedFiles := true,
   coverageFailOnMinimum := false
