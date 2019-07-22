@@ -76,7 +76,7 @@ object print {
           TraitName(x),
           TraitName(x),
           List(PackageName(s"${TraitName(x).show}._")),
-          toOperationsWithPath(TraitName(x) -> x.paths)._2,
+          toOperationsWithPath(TraitName(x), x.paths, componentsFrom(x))._2,
           TraitName(x) -> ImplName(x)))
     }
 
@@ -132,9 +132,9 @@ object print {
       case x                                                               => x.asRight
     }
 
-  private def queryParametersFrom[T]: Path.Operation[T] => List[Parameter.Query[T]] =
+  private def queryParametersFrom[T]: OperationWithPath[T] => List[Parameter.Query[T]] =
     _.parameters.collect {
-      case Left(x: Parameter.Query[T]) => x
+      case x: Parameter.Query[T] => x
     }
 
   def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[OperationWithPath[T]] =
@@ -142,12 +142,10 @@ object print {
       κ("Request[F](method = Method.") *< show[HttpVerb],
       κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
       optional(withBody))
-      .contramapN {
-        case x @ (verb, path, operation) =>
-          val operationId = OperationId(x)
-          un(
-            second(second(verb -> path)(_ -> queryParametersFrom(operation)))(
-              _ -> operation.requestBody.flatMap { requestOrTuple[T](operationId, _) }.map(_.name)))
+      .contramapN { x =>
+        un(
+          second(second(x.verb -> x.path)(_ -> queryParametersFrom(x)))(
+            _ -> x.requestBody.flatMap { requestOrTuple[T](x.operationId, _) }.map(_.name)))
       }
 
   def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
@@ -157,26 +155,22 @@ object print {
       requestImpl[T](withBody) >* κ(") {") >* newLine,
       sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
       twoSpaces *< twoSpaces *< κ("}"))
-      .contramapN {
-        case x @ (_, _, operation) =>
-          val operationId = OperationId(x)
-          (
-            (operationId -> operation.responses),
-            x,
-            operation.responses.toList.map { x =>
-              un(operationId -> second(x)(y =>
-                y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size))
-            },
-            ()
-          )
+      .contramapN { operation =>
+        (
+          (operation.operationId -> operation.responses),
+          operation,
+          operation.responses.toList.map { x =>
+            un(operation.operationId -> second(x)(y =>
+              y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size))
+          },
+          ()
+        )
       }
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[OperationWithPath[T]] =
     (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T](withBody) >* κ(")"))
-      .contramapN {
-        case x @ (_, _, operation) =>
-          val operationId = OperationId(x)
-          (operationId -> operation.responses, x)
+      .contramapN { x =>
+        (x.operationId -> x.responses, x)
       }
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
@@ -184,9 +178,8 @@ object print {
     (
       method[T] >* κ(" = client."),
       expectImpl[T](withBody) >|< fetchImpl[T](withBody)
-    ).contramapN {
-      case x @ (_, _, operation) =>
-        (x, if (operation.responses.size > 1) x.asRight else x.asLeft)
+    ).contramapN { x =>
+      (x, if (x.responses.size > 1) x.asRight else x.asLeft)
     }
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =

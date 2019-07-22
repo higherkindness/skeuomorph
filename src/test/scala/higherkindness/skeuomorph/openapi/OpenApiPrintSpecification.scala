@@ -16,6 +16,7 @@
 
 package higherkindness.skeuomorph.openapi
 import higherkindness.skeuomorph.Printer
+import higherkindness.skeuomorph.openapi.schema.Reference
 
 class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   import JsonSchemaF.Fixed
@@ -643,6 +644,26 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       )
     }
 
+    "when parameters are provided as references" >> {
+      implDefinition.print(
+        petstoreOpenApi
+          .withPath(parametersReferenceGet)
+          .withParameter("idParam", path("id", JsonSchemaF.Fixed.string()))
+          .withParameter("initParam", query("init", JsonSchemaF.Fixed.long(), required = true))
+          .withParameter("limitParam", query("limit", JsonSchemaF.Fixed.integer()))
+      ) must ===(
+        s"""|object PetstoreHttpClient {
+          |
+          |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
+          |    import PetstoreClient._
+          |$listCodecsImplicits
+          |    def getPayload(id: String, init: Long, limit: Option[Int]): F[Payloads] = client.expect[Payloads](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show +? ("init", init) +?? ("limit", limit)))
+          |  }
+          |
+          |}""".stripMargin
+      )
+    }
+
     "when optional body and not optional query parameters is provided" >> {
       implDefinition.print(petstoreOpenApi.withPath(mediaTypeOptionBody)) must ===(
         s"""|object PetstoreHttpClient {
@@ -966,6 +987,17 @@ object OpenApiPrintSpecification {
     ).withOperationId("getPayload")
       .withParameter(query("limit", Fixed.integer()))
       .withParameter(query("name", Fixed.string()))
+  )
+
+  val parametersReferenceGet = payloadPathId -> emptyItemObject.withGet(
+    operationWithResponses[JsonSchemaF.Fixed](
+      responses = "200" -> response(
+        "",
+        "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
+    ).withOperationId("getPayload")
+      .withParameter(Reference("#/components/parameters/idParam"))
+      .withParameter(Reference("#/components/parameters/initParam"))
+      .withParameter(Reference("#/components/parameters/limitParam"))
   )
   val mediaTypeReferenceGetId = payloadPathId -> emptyItemObject
     .withGet(

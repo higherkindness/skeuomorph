@@ -28,7 +28,7 @@ import cats.Show
 import qq.droste._
 
 object print {
-  import higherkindness.skeuomorph.openapi.print.{componentsRegex, schema, schemaWithName}
+  import higherkindness.skeuomorph.openapi.print.{componentsRegex, parametersRegex, schema, schemaWithName}
   import higherkindness.skeuomorph.openapi.schema._
   import higherkindness.skeuomorph.openapi.schema.Path._
 
@@ -43,6 +43,9 @@ object print {
     case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
     case _                       => false
   }
+
+  def componentsFrom[T](openApi: OpenApi[T]): Components[T] =
+    openApi.components.getOrElse(Components(Map.empty, Map.empty, Map.empty, Map.empty))
 
   sealed trait HttpVerb
 
@@ -79,7 +82,16 @@ object print {
   object HttpPath {
     implicit val httpPathShow: Show[HttpPath] = Show.show(_.value)
   }
-  type OperationWithPath[T]        = (HttpVerb, HttpPath, Operation[T])
+
+  case class OperationWithPath[T](
+      verb: HttpVerb,
+      path: HttpPath,
+      description: Option[String],
+      operationId: OperationId,
+      parameters: List[Parameter[T]],
+      requestBody: Option[Either[Request[T], Reference]],
+      responses: Map[String, Either[Response[T], Reference]]
+  )
   type ResponsesWithOperationId[T] = (OperationId, Map[String, Either[Response[T], Reference]])
   final case class TraitName(value: String) extends AnyVal
   object TraitName {
@@ -96,7 +108,7 @@ object print {
 
   object OperationId {
 
-    def apply[T](operationWithPath: OperationWithPath[T]): OperationId =
+    def apply[T](operationWithPath: (HttpVerb, HttpPath, Path.Operation[T])): OperationId =
       OperationId(decapitalize(normalize(operationWithPath._3.operationId.getOrElse {
         s"${HttpVerb.methodFrom(operationWithPath._1)}${operationWithPath._2.method}"
       })))
@@ -123,23 +135,17 @@ object print {
       requestOr: Either[Request[T], Reference]): Option[VarWithType[T]] =
     requestOr.fold[Option[VarWithType[T]]](requestTuple(operationId, _), referenceTuple)
 
-  private def parameterTuple[T: Basis[JsonSchemaF, ?]](
-      parameter: Either[Parameter[T], Reference]): Option[VarWithType[T]] =
-    parameter.fold(
-      x => VarWithType(x.name, x.schema, x.required, x.description.getOrElse(x.name)).some,
-      referenceTuple[T]
-    )
+  private def parameterTuple[T: Basis[JsonSchemaF, ?]](x: Parameter[T]): VarWithType[T] =
+    VarWithType(x.name, x.schema, x.required, x.description.getOrElse(x.name))
 
   private def operationTuple[T: Basis[JsonSchemaF, ?]](
-      operation: OperationWithPath[T]): (OperationId, (List[VarWithType[T]]), ResponsesWithOperationId[T]) = {
-    val operationId = OperationId(operation)
+      operation: OperationWithPath[T]): (OperationId, (List[VarWithType[T]]), ResponsesWithOperationId[T]) =
     (
-      operationId,
-      operation._3.parameters.flatMap(parameterTuple[T]) ++
-        operation._3.requestBody
-          .flatMap(requestOrTuple[T](operationId, _)),
-      operationId -> operation._3.responses)
-  }
+      operation.operationId,
+      operation.parameters.map(parameterTuple[T]) ++
+        operation.requestBody
+          .flatMap(requestOrTuple[T](operation.operationId, _)),
+      operation.operationId -> operation.responses)
 
   private def defaultRequestName(operationId: OperationId): String =
     s"${operationId.show}Request".capitalize
@@ -187,16 +193,38 @@ object print {
       κ("  def ") *< show[OperationId],
       κ("(") *< sepBy(argumentDef, ", "),
       κ("): F[") *< responsesTypes >* κ("]")
-    ).contramapN(operationTuple[T])
+    ).contramapN { operationTuple[T] }
 
-  private def itemObjectTuple[T](xs: (String, ItemObject[T])): List[OperationWithPath[T]] = {
-    val (itemObject, path) = second(flip(xs))(HttpPath.apply)
+  private def itemObjectTuple[T](
+      x: String,
+      itemObject: ItemObject[T],
+      components: Components[T]): List[OperationWithPath[T]] = {
+    val path = HttpPath.apply(x)
+
+    def findParameter(name: String): Option[Parameter[T]] =
+      components.parameters.get(name).flatMap(_.fold(_.some, parameterFrom))
+
+    def parameterFrom(reference: Reference): Option[Parameter[T]] = reference.ref match {
+      case parametersRegex(name) => findParameter(name)
+      case name                  => findParameter(name)
+    }
+
+    def operationWithPath(verb: HttpVerb, operation: Operation[T]): OperationWithPath[T] =
+      OperationWithPath(
+        verb,
+        path,
+        operation.description,
+        OperationId((verb, path, operation)),
+        operation.parameters.flatMap(_.fold(_.some, parameterFrom)),
+        operation.requestBody,
+        operation.responses
+      )
 
     List(
-      itemObject.get.map((HttpVerb.Get, path, _)),
-      itemObject.delete.map((HttpVerb.Delete, path, _)),
-      itemObject.post.map((HttpVerb.Post, path, _)),
-      itemObject.put.map((HttpVerb.Put, path, _))
+      itemObject.get.map(operationWithPath(HttpVerb.Get, _)),
+      itemObject.delete.map(operationWithPath(HttpVerb.Delete, _)),
+      itemObject.post.map(operationWithPath(HttpVerb.Post, _)),
+      itemObject.put.map(operationWithPath(HttpVerb.Put, _))
     ).flatten
   }
 
@@ -344,16 +372,17 @@ object print {
       implicit codecs: Printer[Codecs]): Printer[List[OperationWithPath[T]]] =
     (sepBy(requestSchema[T], "\n") >* newLine, sepBy(responsesSchema[T], "\n") >* newLine)
       .contramapN {
-        _.map {
-          case y @ (_, _, operation) =>
-            val operationId = OperationId(y)
-            (operationId   -> operation.requestBody) ->
-              (operationId -> operation.responses)
+        _.map { operation =>
+          (operation.operationId   -> operation.requestBody) ->
+            (operation.operationId -> operation.responses)
         }.unzip
       }
 
-  def toOperationsWithPath[T](x: (TraitName, Map[String, ItemObject[T]])): (TraitName, List[OperationWithPath[T]]) =
-    second(x)(_.toList.flatMap(itemObjectTuple[T]))
+  def toOperationsWithPath[T](
+      traitName: TraitName,
+      itemObjects: Map[String, ItemObject[T]],
+      components: Components[T]): (TraitName, List[OperationWithPath[T]]) =
+    traitName -> itemObjects.toList.flatMap { case (n, i) => itemObjectTuple[T](n, i, components) }
 
   private def operationsTuple[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): (
       List[PackageName],
@@ -363,7 +392,7 @@ object print {
       (String, List[PackageName], List[OperationWithPath[T]])) = {
     val traitName = TraitName(openApi)
 
-    val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName -> openApi.paths))) {
+    val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName, openApi.paths, componentsFrom(openApi)))) {
       case (a, b) => (a, (traitName, b))
     })
     (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, (d._1.show, List.empty, d._2))

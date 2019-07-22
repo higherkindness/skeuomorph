@@ -30,6 +30,7 @@ object print {
   import higherkindness.skeuomorph.openapi.schema.OpenApi
 
   val componentsRegex = """#/components/schemas/(.+)""".r
+  val parametersRegex = """#/components/parameters/(.+)""".r
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
     case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((normalize(name), t, none))

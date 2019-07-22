@@ -159,6 +159,7 @@ object schema {
         patch: Option[Operation[A]],
         trace: Option[Operation[A]],
         servers: List[Server])
+    // TODO parameters: List[Either[Parameter[A], Reference]])
 
     final case class Operation[A](
         tags: List[String],

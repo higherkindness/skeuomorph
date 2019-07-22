@@ -130,9 +130,9 @@ object helpers {
     Components(schemas = models.toMap, responses = Map.empty, requestBodies = Map.empty, parameters = Map.empty)
 
   implicit class ComponentsOps[T](components: Components[T]) {
-    def addParameter(name: String, parameter: Parameter[T]): Components[T] =
+    def withParameter(name: String, parameter: Parameter[T]): Components[T] =
       components.copy(parameters = components.parameters + (name -> parameter.asLeft))
-    def addSchema(name: String, t: T): Components[T] =
+    def withSchema(name: String, t: T): Components[T] =
       components.copy(schemas = components.schemas + (name -> t))
 
   }
@@ -152,7 +152,12 @@ object helpers {
       openApi.copy(paths = openApi.paths.+(path))
     def withSchema(name: String, a: A): OpenApi[A] =
       openApi.copy(
-        components = openApi.components.fold(components(name -> a))(_.addSchema(name, a)).some
+        components = openApi.components.fold(components(name -> a))(_.withSchema(name, a)).some
+      )
+    def withParameter(name: String, parameter: Parameter[A]): OpenApi[A] =
+      openApi.copy(
+        components =
+          openApi.components.fold(components().withParameter(name, parameter))(_.withParameter(name, parameter)).some
       )
   }
 
