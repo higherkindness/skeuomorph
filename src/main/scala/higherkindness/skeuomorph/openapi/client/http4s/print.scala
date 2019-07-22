@@ -98,19 +98,20 @@ object print {
     (
       κ("case response if response.status.code == ") *< string >* κ(" => "),
       κ("response.as[") *< string >* κ("]"),
-      κ(".map(x => ") *< coproductIf(string >* κ("(x)") >|< κ("x")) >* κ(".asLeft)")).contramapN {
-      case (operationId, status, (r, n)) =>
-        val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
-        val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
-        (
-          status,
-          responseTpe,
+      κ(".map(x => ") *< coproductIf(string >* κ("(x)") >|< κ("x")) >* κ(".asLeft)"))
+      .contramapN {
+        case (operationId, status, (r, n)) =>
+          val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
+          val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
           (
-            defaultResponseErrorName(operationId, none),
-            anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
-              ().asRight),
-            n))
-    }
+            status,
+            responseTpe,
+            (
+              TypeAliasErrorResponse(operationId).show,
+              anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
+                ().asRight),
+              n))
+      }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs]): Printer[(OperationId, (Either[Response[T], Reference], Int))] =
@@ -120,7 +121,7 @@ object print {
       .contramapN {
         case (operationId, (x, n)) =>
           val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
-          (innerTpe, (defaultResponseErrorName(operationId, none), tpe, n))
+          (innerTpe, (TypeAliasErrorResponse(operationId).show, tpe, n))
       }
 
   def responseImpl[T: Basis[JsonSchemaF, ?]](

@@ -141,14 +141,15 @@ object print {
       operationId -> operation._3.responses)
   }
 
-  private def defaultRequestName[T](operationId: OperationId): String =
+  private def defaultRequestName(operationId: OperationId): String =
     s"${operationId.show}Request".capitalize
 
-  def defaultResponseErrorName[T](operationId: OperationId, name: Option[String] = None): String =
-    s"${operationId.show}${normalize(name.getOrElse("")).capitalize}Error".capitalize
+  case class TypeAliasErrorResponse(operationId: OperationId)
 
-  def unexpectedErrorName[T](operationId: OperationId): String =
-    s"${operationId.show}UnexpectedErrorResponse".capitalize
+  object TypeAliasErrorResponse {
+    implicit val typeAliasErrorResponse: Show[TypeAliasErrorResponse] =
+      Show.show(x => s"${x.operationId.show}ErrorResponse".capitalize)
+  }
 
   private def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
     jsonFrom(response.content).flatMap(_.schema)
@@ -171,13 +172,13 @@ object print {
 
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[ResponsesWithOperationId[T]] = Printer {
     case (x, y) =>
-      val defaultName = defaultResponseErrorName(x)
+      val defaultName = TypeAliasErrorResponse(x)
       y.size match {
         case 0 => "Unit"
         case 1 => responseOrType.print(y.head._2)
         case _ =>
           val success = successType(y).fold("Unit")(responseOrType.print)
-          s"Either[$defaultName, $success]"
+          s"Either[${defaultName.show}, $success]"
       }
   }
 
@@ -220,6 +221,8 @@ object print {
   def defaultTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
       responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, String, List[String]) = {
+    def unexpectedErrorName(operationId: OperationId): String =
+      s"${operationId.show}UnexpectedErrorResponse".capitalize
     val tpe     = responseOrType.print(responseOr)
     val newType = unexpectedErrorName(operationId)
     def statusCaseClass(tpe: String): String =
@@ -242,8 +245,10 @@ object print {
     val tpe = responseOrType.print(responseOr)
     responseOr.left.toOption
       .map { response =>
+        def defaultResponseErrorName(operationId: OperationId, name: String): String =
+          s"${operationId.show}${normalize(name).capitalize}Error".capitalize
         val (newTpe, anonymousType, schemas) = typeAndSchemaFor(operationId.some, response, tpe) {
-          val newTpe = defaultResponseErrorName(operationId, response.description.some)
+          val newTpe = defaultResponseErrorName(operationId, response.description)
           newTpe -> List(caseClassDef.print(newTpe -> List("value" -> Tpe[T](tpe))))
         }
         (newTpe, anonymousType, schemas)
@@ -282,13 +287,13 @@ object print {
   private def responsesSchemaTuple[T: Basis[JsonSchemaF, ?]](
       operationId: OperationId,
       responses: Map[String, Either[Response[T], Reference]])(
-      implicit codecs: Printer[Codecs]): Either[(List[String], String, List[String]), List[String]] =
+      implicit codecs: Printer[Codecs]): Either[(List[String], TypeAliasErrorResponse, List[String]), List[String]] =
     if (responses.size > 1) {
       val (newTypes, schemas) =
         second(responses.map((typesAndSchemas[T](operationId) _).tupled).toList.unzip)(_.flatten)
       (
         schemas.toList.filter(_.nonEmpty),
-        defaultResponseErrorName(operationId),
+        TypeAliasErrorResponse(operationId),
         newTypes.toList.filterNot(_.some === successType(responses).map(responseOrType[T].print))).asLeft
     } else
       responses.toList
@@ -304,13 +309,13 @@ object print {
     (sepBy(string, " :+: "), (κ(" :+: CNil") >|< unit)).contramapN(errorTypes =>
       (errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight))
 
-  private def multipleResponsesSchema: Printer[(List[String], String, List[String])] = {
+  private def multipleResponsesSchema: Printer[(List[String], TypeAliasErrorResponse, List[String])] = {
     import Printer.avoid._
     (
       sepBy((space >* space) *< string, "\n") >* newLine,
       space *< space *< typeAliasDef(responseErrorsDef)
     ).contramapN {
-      case (schemas, tpe, errorTypes) => (schemas, (tpe, errorTypes, none))
+      case (schemas, tpe, errorTypes) => (schemas, (tpe.show, errorTypes, none))
     }
   }
 

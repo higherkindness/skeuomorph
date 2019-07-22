@@ -299,13 +299,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def getPayload(id: String): F[Either[GetPayloadError, Payload]]
+           |  def getPayload(id: String): F[Either[GetPayloadErrorResponse, Payload]]
            |}
            |object PayloadClient {
            |
            |
            |  final case class GetPayloadUnexpectedErrorResponse(statusCode: Int, value: Error)
-           |  type GetPayloadError = GetPayloadUnexpectedErrorResponse
+           |  type GetPayloadErrorResponse = GetPayloadUnexpectedErrorResponse
            |
            |}""".stripMargin)
     }
@@ -317,13 +317,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def getPayload(id: String): F[Either[GetPayloadError, Payload]]
+           |  def getPayload(id: String): F[Either[GetPayloadErrorResponse, Payload]]
            |}
            |object PayloadClient {
            |
            |
            |  final case class GetPayloadNotFoundError(value: String)
-           |  type GetPayloadError = GetPayloadNotFoundError
+           |  type GetPayloadErrorResponse = GetPayloadNotFoundError
            |
            |}""".stripMargin
       )
@@ -336,7 +336,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]]
+           |  def updatePayload(id: String): F[Either[UpdatePayloadErrorResponse, UpdatedPayload]]
            |}
            |object PayloadClient {
            |
@@ -373,7 +373,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  implicit def UpdatePayloadNotFoundEntityDecoder[F[_]:Sync]: EntityDecoder[F, UpdatePayloadNotFound] = jsonOf[F, UpdatePayloadNotFound]
            |
            |}
-           |  type UpdatePayloadError = UpdatePayloadNotFound
+           |  type UpdatePayloadErrorResponse = UpdatePayloadNotFound
            |
            |}""".stripMargin
       )
@@ -435,7 +435,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]]
+           |  def updatePayload(id: String): F[Either[UpdatePayloadErrorResponse, UpdatedPayload]]
            |}
            |object PayloadClient {
            |
@@ -451,7 +451,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |}
            |  final case class UpdatePayloadUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadUnexpectedError)
-           |  type UpdatePayloadError = UpdatePayloadUnexpectedErrorResponse
+           |  type UpdatePayloadErrorResponse = UpdatePayloadUnexpectedErrorResponse
            |
            |}""".stripMargin
       )
@@ -464,14 +464,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def createPayload(): F[Either[CreatePayloadError, Unit]]
+           |  def createPayload(): F[Either[CreatePayloadErrorResponse, Unit]]
            |}
            |object PayloadClient {
            |
            |
            |  final case class CreatePayloadNotFoundError(value: String)
            |  final case class CreatePayloadUnexpectedErrorResponse(statusCode: Int, value: Error)
-           |  type CreatePayloadError = CreatePayloadNotFoundError :+: CreatePayloadUnexpectedErrorResponse :+: CNil
+           |  type CreatePayloadErrorResponse = CreatePayloadNotFoundError :+: CreatePayloadUnexpectedErrorResponse :+: CNil
            |
            |}""".stripMargin
       )
@@ -484,8 +484,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def createPayloads(): F[Either[CreatePayloadsError, Unit]]
-           |  def updatePayloads(): F[Either[UpdatePayloadsError, Unit]]
+           |  def createPayloads(): F[Either[CreatePayloadsErrorResponse, Unit]]
+           |  def updatePayloads(): F[Either[UpdatePayloadsErrorResponse, Unit]]
            |}
            |object PayloadClient {
            |
@@ -497,14 +497,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |}
            |  final case class CreatePayloadsUnexpectedErrorResponse(statusCode: Int, value: CreatePayloadsUnexpectedError)
-           |  type CreatePayloadsError = CreatePayloadsUnexpectedErrorResponse
+           |  type CreatePayloadsErrorResponse = CreatePayloadsUnexpectedErrorResponse
            |  final case class UpdatePayloadsUnexpectedError(isDone: Boolean)
            |object UpdatePayloadsUnexpectedError {
            |
            |
            |}
            |  final case class UpdatePayloadsUnexpectedErrorResponse(statusCode: Int, value: UpdatePayloadsUnexpectedError)
-           |  type UpdatePayloadsError = UpdatePayloadsUnexpectedErrorResponse
+           |  type UpdatePayloadsErrorResponse = UpdatePayloadsUnexpectedErrorResponse
            |
            |}""".stripMargin
       )
@@ -517,13 +517,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def deletePayloads(): F[Either[DeletePayloadsError, Unit]]
+           |  def deletePayloads(): F[Either[DeletePayloadsErrorResponse, Unit]]
            |}
            |object PayloadClient {
            |
            |
            |  final case class DeletePayloadsNotFoundError(value: Unit)
-           |  type DeletePayloadsError = DeletePayloadsNotFoundError
+           |  type DeletePayloadsErrorResponse = DeletePayloadsNotFoundError
            |
            |}""".stripMargin)
     }
@@ -535,14 +535,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def deletePayloads(): F[Either[DeletePayloadsError, Unit]]
+           |  def deletePayloads(): F[Either[DeletePayloadsErrorResponse, Unit]]
            |}
            |object PayloadClient {
            |
            |
            |  final case class DeletePayloadsNotFoundError(value: Unit)
            |  final case class DeletePayloadsUnexpectedErrorResponse(statusCode: Int, value: Unit)
-           |  type DeletePayloadsError = DeletePayloadsNotFoundError :+: DeletePayloadsUnexpectedErrorResponse :+: CNil
+           |  type DeletePayloadsErrorResponse = DeletePayloadsNotFoundError :+: DeletePayloadsUnexpectedErrorResponse :+: CNil
            |
            |}""".stripMargin)
     }
@@ -674,7 +674,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |$listCodecsImplicits
-           |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
+           |    def getPayload(id: String): F[Either[GetPayloadErrorResponse, Payload]] = client.fetch[Either[GetPayloadErrorResponse, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(_.asRight)
            |      case default => default.as[Error].map(x => GetPayloadUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
@@ -689,7 +689,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |$listCodecsImplicits
-           |    def getPayload(id: String): F[Either[GetPayloadError, Payload]] = client.fetch[Either[GetPayloadError, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
+           |    def getPayload(id: String): F[Either[GetPayloadErrorResponse, Payload]] = client.fetch[Either[GetPayloadErrorResponse, Payload]](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[Payload].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[String].map(x => GetPayloadNotFoundError(x).asLeft)
            |    }
@@ -718,7 +718,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
            |$listCodecsImplicits
-           |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
+           |    def updatePayload(id: String): F[Either[UpdatePayloadErrorResponse, UpdatedPayload]] = client.fetch[Either[UpdatePayloadErrorResponse, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
            |      case default => default.as[UpdatePayloadUnexpectedError].map(x => UpdatePayloadUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
@@ -734,10 +734,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
            |$listCodecsImplicits
-           |    def createPayload(): F[Either[CreatePayloadError, Unit]] = client.fetch[Either[CreatePayloadError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads")) {
+           |    def createPayload(): F[Either[CreatePayloadErrorResponse, Unit]] = client.fetch[Either[CreatePayloadErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
-           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[CreatePayloadError](CreatePayloadNotFoundError(x)).asLeft)
-           |      case default => default.as[Error].map(x => Coproduct[CreatePayloadError](CreatePayloadUnexpectedErrorResponse(default.status.code, x)).asLeft)
+           |      case response if response.status.code == 404 => response.as[String].map(x => Coproduct[CreatePayloadErrorResponse](CreatePayloadNotFoundError(x)).asLeft)
+           |      case default => default.as[Error].map(x => Coproduct[CreatePayloadErrorResponse](CreatePayloadUnexpectedErrorResponse(default.status.code, x)).asLeft)
            |    }
            |  }
            |
@@ -752,7 +752,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
            |$listCodecsImplicits
-           |    def updatePayload(id: String): F[Either[UpdatePayloadError, UpdatedPayload]] = client.fetch[Either[UpdatePayloadError, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
+           |    def updatePayload(id: String): F[Either[UpdatePayloadErrorResponse, UpdatedPayload]] = client.fetch[Either[UpdatePayloadErrorResponse, UpdatedPayload]](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show)) {
            |      case Successful(response) => response.as[UpdatedPayload].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[UpdatePayloadNotFound].map(x => x.asLeft)
            |    }
@@ -769,7 +769,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
            |$listCodecsImplicits
-           |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
+           |    def deletePayloads(): F[Either[DeletePayloadsErrorResponse, Unit]] = client.fetch[Either[DeletePayloadsErrorResponse, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case response if response.status.code == 404 => response.as[Unit].map(x => DeletePayloadsNotFoundError(x).asLeft)
            |    }
@@ -786,10 +786,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
            |$listCodecsImplicits
-           |    def deletePayloads(): F[Either[DeletePayloadsError, Unit]] = client.fetch[Either[DeletePayloadsError, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
+           |    def deletePayloads(): F[Either[DeletePayloadsErrorResponse, Unit]] = client.fetch[Either[DeletePayloadsErrorResponse, Unit]](Request[F](method = Method.DELETE, uri = baseUrl / "payloads")) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
-           |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsNotFoundError(x)).asLeft)
-           |      case default => default.as[Unit].map(x => Coproduct[DeletePayloadsError](DeletePayloadsUnexpectedErrorResponse(default.status.code, x)).asLeft)
+           |      case response if response.status.code == 404 => response.as[Unit].map(x => Coproduct[DeletePayloadsErrorResponse](DeletePayloadsNotFoundError(x)).asLeft)
+           |      case default => default.as[Unit].map(x => Coproduct[DeletePayloadsErrorResponse](DeletePayloadsUnexpectedErrorResponse(default.status.code, x)).asLeft)
            |    }
            |  }
            |
@@ -840,7 +840,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |$listCodecsImplicits
-           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
+           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsErrorResponse, Unit]] = client.fetch[Either[CreatePayloadsErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
@@ -876,7 +876,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |$listCodecsImplicits
-           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsError, Unit]] = client.fetch[Either[CreatePayloadsError, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
+           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsErrorResponse, Unit]] = client.fetch[Either[CreatePayloadsErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
