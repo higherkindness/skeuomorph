@@ -280,16 +280,22 @@ object JsonDecoders {
               servers.getOrElse(List.empty))))
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
-    Decoder.forProduct3(
+    Decoder.forProduct4(
       "schemas",
       "responses",
-      "requestBodies"
+      "requestBodies",
+      "parameters"
     )(
       (
           schemas: Option[Map[String, A]],
           responses: Option[Map[String, Either[Response[A], Reference]]],
-          requestBodies: Option[Map[String, Either[Request[A], Reference]]]) =>
-        Components(schemas.getOrElse(Map.empty), responses.getOrElse(Map.empty), requestBodies.getOrElse(Map.empty)))
+          requestBodies: Option[Map[String, Either[Request[A], Reference]]],
+          parameters: Option[Map[String, Either[Parameter[A], Reference]]]) =>
+        Components(
+          schemas.getOrElse(Map.empty),
+          responses.getOrElse(Map.empty),
+          requestBodies.getOrElse(Map.empty),
+          parameters.getOrElse(Map.empty)))
 
   implicit def openApiDecoder[A: Decoder]: Decoder[OpenApi[A]] =
     Decoder.forProduct7(

@@ -250,7 +250,11 @@ object instances {
         serversGen).mapN(Path.ItemObject.apply)
 
     val componentsGen: Gen[Components[T]] =
-      (mapStringToGen(T.arbitrary), responsesGen, mapStringToGen(eitherGen(requestGen, referenceGen)))
+      (
+        mapStringToGen(T.arbitrary),
+        responsesGen,
+        mapStringToGen(eitherGen(requestGen, referenceGen)),
+        mapStringToGen(eitherGen(parameterGen, referenceGen)))
         .mapN(Components.apply)
 
     Arbitrary(

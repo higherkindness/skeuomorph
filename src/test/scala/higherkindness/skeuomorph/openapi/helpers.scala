@@ -127,7 +127,15 @@ object helpers {
   }
 
   def components[T](models: (String, T)*): Components[T] =
-    Components(schemas = models.toMap, responses = Map.empty, requestBodies = Map.empty)
+    Components(schemas = models.toMap, responses = Map.empty, requestBodies = Map.empty, parameters = Map.empty)
+
+  implicit class ComponentsOps[T](components: Components[T]) {
+    def addParameter(name: String, parameter: Parameter[T]): Components[T] =
+      components.copy(parameters = components.parameters + (name -> parameter.asLeft))
+    def addSchema(name: String, t: T): Components[T] =
+      components.copy(schemas = components.schemas + (name -> t))
+
+  }
 
   def openApi[A](name: String, version: String = "0.0.0"): OpenApi[A] = OpenApi(
     openapi = "",
@@ -142,9 +150,9 @@ object helpers {
   implicit class OpenApiOps[A](openApi: OpenApi[A]) {
     def withPath(path: (String, Path.ItemObject[A])): OpenApi[A] =
       openApi.copy(paths = openApi.paths.+(path))
-    def withSchema(model: (String, A)): OpenApi[A] =
+    def withSchema(name: String, a: A): OpenApi[A] =
       openApi.copy(
-        components = openApi.components.fold(components(model))(x => x.copy(x.schemas + model)).some
+        components = openApi.components.fold(components(name -> a))(_.addSchema(name, a)).some
       )
   }
 

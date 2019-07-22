@@ -27,7 +27,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   "models should able to print" >> {
     "when a basic type is provided" >> {
       import client.http4s.circe._
-      model.print(petstoreOpenApi.withSchema("Foo" -> Fixed.string())) must
+      model.print(petstoreOpenApi.withSchema("Foo", Fixed.string())) must
         ===("""|object models {
                |
                |type Foo = String
@@ -36,7 +36,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when a object type is provided" >> {
       import client.http4s.circe._
-      model.print(petstoreOpenApi.withSchema("Bar" -> obj("foo" -> Fixed.string())())) must ===(
+      model.print(petstoreOpenApi.withSchema("Bar", obj("foo" -> Fixed.string())())) must ===(
         """|object models {
            |
            |final case class Bar(foo: Option[String])
@@ -60,8 +60,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when a object type is provided with a not normalize shape" >> {
       import client.http4s.circe._
-      model.print(petstoreOpenApi.withSchema(
-        "212bar_Foo-X1" -> obj("1fo_o" -> Fixed.string(), "ba-r" -> Fixed.integer())())) must ===(
+      model.print(
+        petstoreOpenApi
+          .withSchema("212bar_Foo-X1", obj("1fo_o" -> Fixed.string(), "ba-r" -> Fixed.integer())())) must ===(
         """|object models {
            |
            |final case class BarFooX1212(foO1: Option[String], baR: Option[Int])
@@ -87,7 +88,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       import client.http4s.circe._
       model.print(
         petstoreOpenApi.withSchema(
-          "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
+          "Bars",
+          Fixed.array(Fixed.reference("#/components/schemas/Bar"))
         )) must ===("""|object models {
            |
            |type Bars = List[Bar]
@@ -98,7 +100,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       import Printer.avoid._
       model.print(
         petstoreOpenApi.withSchema(
-          "bar_Foo-X1s" -> Fixed.array(Fixed.reference("#/components/schemas/bar_Foo-X1"))
+          "bar_Foo-X1s",
+          Fixed.array(Fixed.reference("#/components/schemas/bar_Foo-X1"))
         )) must ===("""|object models {
              |
              |type BarFooX1s = List[BarFooX1]
@@ -107,7 +110,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when enum is provided" >> {
       import client.http4s.circe._
-      model.print(petstoreOpenApi.withSchema("Color" -> Fixed.enum(List("Blue", "Red")))) must ===(
+      model.print(petstoreOpenApi.withSchema("Color", Fixed.enum(List("Blue", "Red")))) must ===(
         """|object models {
            |
            |sealed trait Color
@@ -144,7 +147,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when enum is provided with a not normalize shape" >> {
       import client.http4s.circe._
-      model.print(petstoreOpenApi.withSchema("something-For" -> Fixed.enum(List("xo-m", "yy-y")))) must ===(
+      model.print(petstoreOpenApi.withSchema("something-For", Fixed.enum(List("xo-m", "yy-y")))) must ===(
         """|object models {
              |
              |sealed trait SomethingFor
@@ -183,9 +186,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       import Printer.avoid._
       model.print(
         petstoreOpenApi
-          .withSchema("Bar" -> obj("foo" -> Fixed.string())("foo"))
+          .withSchema("Bar", obj("foo" -> Fixed.string())("foo"))
           .withSchema(
-            "Bars" -> Fixed.array(Fixed.reference("#/components/schemas/Bar"))
+            "Bars",
+            Fixed.array(Fixed.reference("#/components/schemas/Bar"))
           )) must ===("""|object models {
                          |
                          |final case class Bar(foo: String)
@@ -822,7 +826,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       impl.print(
         PackageName("petstore") -> petstoreOpenApi
           .withPath(mediaTypeReferences)
-          .withSchema("NewPayloads" -> Fixed.array(Fixed.reference("NewPayload")))) must ===(
+          .withSchema("NewPayloads", Fixed.array(Fixed.reference("NewPayload")))) must ===(
         s"""|import cats.effect._
            |import cats.implicits._
            |import io.circe._

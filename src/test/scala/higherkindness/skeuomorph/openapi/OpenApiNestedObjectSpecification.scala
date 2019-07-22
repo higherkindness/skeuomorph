@@ -26,13 +26,13 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
     "when nested objects are defined in schemas" >> {
       extractNestedTypes(
         openApi("name")
-          .withSchema("Foo" -> obj("bar" -> obj("x" -> Fixed.string())())())
-          .withSchema("Foos" -> Fixed.array(obj("y" -> Fixed.integer())()))) must ===(
+          .withSchema("Foo", obj("bar" -> obj("x" -> Fixed.string())())())
+          .withSchema("Foos", Fixed.array(obj("y" -> Fixed.integer())()))) must ===(
         openApi("name")
-          .withSchema("Bar" -> obj("x" -> Fixed.string)())
-          .withSchema("Foo" -> obj("bar" -> Fixed.reference("Bar"))())
-          .withSchema("AnonymousObject" -> obj("y" -> Fixed.integer())())
-          .withSchema("Foos" -> Fixed.array(Fixed.reference("AnonymousObject")))
+          .withSchema("Bar", obj("x" -> Fixed.string)())
+          .withSchema("Foo", obj("bar" -> Fixed.reference("Bar"))())
+          .withSchema("AnonymousObject", obj("y" -> Fixed.integer())())
+          .withSchema("Foos", Fixed.array(Fixed.reference("AnonymousObject")))
       )
     }
 
@@ -52,7 +52,7 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
                 request("application/json" -> mediaType(obj("foo" -> Fixed.reference("Foo"))())),
                 "200" -> response[JsonSchemaF.Fixed]("Null response")
               )))
-          .withSchema("Foo" -> Fixed.enum(List("1", "2"))))
+          .withSchema("Foo", Fixed.enum(List("1", "2"))))
     }
 
     "when nested objects are defined in request" >> {
@@ -73,7 +73,7 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
                   "Response",
                   "application/json" -> mediaType(obj("values" -> Fixed.array(Fixed.reference("AnonymousObject")))())))
               ))
-          .withSchema("AnonymousObject" -> obj("value" -> Fixed.integer())())
+          .withSchema("AnonymousObject", obj("value" -> Fixed.integer())())
       )
     }
   }

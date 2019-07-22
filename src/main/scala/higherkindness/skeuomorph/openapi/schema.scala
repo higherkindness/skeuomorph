@@ -43,11 +43,16 @@ object schema {
 
     private def withSchemas[T](openApi: OpenApi[T])(models: Map[String, T]): OpenApi[T] = {
       openApi.copy(
-        components = openApi.components
-          .fold(
-            if (models.nonEmpty)
-              Components[T](schemas = models, responses = Map.empty, requestBodies = Map.empty).some
-            else none)(x => x.copy(x.schemas ++ models).some)
+        components =
+          openApi.components
+            .fold(
+              if (models.nonEmpty)
+                Components[T](
+                  schemas = models,
+                  responses = Map.empty,
+                  requestBodies = Map.empty,
+                  parameters = Map.empty).some
+              else none)(x => x.copy(x.schemas ++ models).some)
       )
     }
 
@@ -171,7 +176,8 @@ object schema {
   final case class Components[A](
       schemas: Map[String, A],
       responses: Map[String, Either[Response[A], Reference]],
-      requestBodies: Map[String, Either[Request[A], Reference]]
+      requestBodies: Map[String, Either[Request[A], Reference]],
+      parameters: Map[String, Either[Parameter[A], Reference]]
   )
 
   final case class Request[A](description: Option[String], content: Map[String, MediaType[A]], required: Boolean)

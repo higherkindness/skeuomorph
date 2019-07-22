@@ -153,6 +153,50 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         components[JsonSchemaF.Fixed]()
       )
     }
+    "when parameters are provided" >> {
+      val json = unsafeParse(""" 
+      {
+        "parameters": {
+          "skipParam": {
+            "name": "skip",
+            "in": "query",
+            "description": "number of items to skip",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "limitParam": {
+            "name": "limit",
+            "in": "query",
+            "description": "max records to return",
+            "required": true,
+            "schema" : {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      }
+      """)
+      Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        components[JsonSchemaF.Fixed]().copy(parameters = Map(
+          "skipParam" -> query(
+            "skip",
+            JsonSchemaF.Fixed.integer(),
+            required = true,
+            description = "number of items to skip".some).asLeft,
+          "limitParam" -> query(
+            "limit",
+            JsonSchemaF.Fixed.integer(),
+            required = true,
+            description = "max records to return".some
+          ).asLeft
+        ))
+      )
+
+    }
     "when an schemas are provided" >> {
       val json = unsafeParse(""" 
       {
