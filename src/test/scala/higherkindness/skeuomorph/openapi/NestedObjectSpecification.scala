@@ -100,6 +100,20 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
         )(obj("foo1" -> Fixed.reference("Foo1"))()))
     }
 
+    "when there are multiple level of nested objects when than alpha characters are the same" >> {
+      nestedTypesFrom(
+        obj(
+          "foo" ->
+            obj("foo1" ->
+              obj("foo" ->
+                obj("foo" -> Fixed.string())())())())()) must ===(
+        expectedTypes(
+          "Foo"  -> obj("foo"  -> Fixed.string())(),
+          "Foo1" -> obj("foo"  -> Fixed.reference("Foo"))(),
+          "Foo2" -> obj("foo1" -> Fixed.reference("Foo1"))()
+        )(obj("foo" -> Fixed.reference("Foo2"))()))
+    }
+
     "when there are multiple level of nested object of different types" >> {
       nestedTypesFrom(
         obj(

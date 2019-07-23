@@ -16,8 +16,10 @@
 
 package higherkindness.skeuomorph.openapi
 import qq.droste._
+
 import cats.data.State
 import cats.implicits._
+import scala.annotation.tailrec
 
 object Optimize {
   def namedTypesTrans[T](name: String): Trans[JsonSchemaF, JsonSchemaF, T] = Trans {
@@ -52,34 +54,36 @@ object Optimize {
   def nestedTypes[T: Basis[JsonSchemaF, ?]]: T => NestedTypesState[T, T] =
     scheme.anaM(nestedTypesTrans.coalgebra)
 
-  private def isNestedType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+  private def isNestedType[T: Project[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
-    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
+    import qq.droste.syntax.project._
+    t.project match {
       case ObjectF(properties, _) if properties.nonEmpty => true
       case EnumF(_)                                      => true
       case _                                             => false
     }
-    scheme.cata(algebra).apply(t)
   }
 
   private def extractNestedTypes[T: Basis[JsonSchemaF, ?]](name: String, tpe: T): NestedTypesState[T, (String, T)] = {
-    def inc: NestedTypesState[T, Unit] = State.modify { case (x, y) => (x -> (y + 1)) }
     def addType(items: (String, T)): NestedTypesState[T, Unit] = State.modify {
       case (x, y) => (x + items) -> y
     }
-    def nameWith(i: Long): String = s"${name}$i"
-    def currentName: NestedTypesState[T, String] = State.inspect {
-      case (_, 0) => name
-      case (_, i) => nameWith(i)
+
+    def generateName(originalName: String, previousOccurrences: Long): String =
+      originalName.capitalize + (if (previousOccurrences > 0) previousOccurrences.toString else "")
+
+    @tailrec
+    def findNameAndIndex(ix: Long, x: Map[String, _]): (String, Long) = {
+      val n = generateName(name, ix)
+      if (x.contains(n)) findNameAndIndex(ix + 1, x) else n -> ix
     }
-    def isFreeName: NestedTypesState[T, Boolean] = State.inspect {
-      case (x, 0) => x.get(name).isEmpty
-      case (x, i) => x.get(nameWith(i)).isEmpty
+
+    def findName: NestedTypesState[T, String] = State {
+      case (x, i) =>
+        val (name, nextI) = findNameAndIndex(i, x)
+        (x, nextI) -> name
     }
-    def findName: NestedTypesState[T, String] = isFreeName.flatMap {
-      case true  => currentName
-      case false => inc.flatMap(_ => findName)
-    }
+
     for {
       newType <- nestedTypes.apply(tpe)
       newName <- findName
