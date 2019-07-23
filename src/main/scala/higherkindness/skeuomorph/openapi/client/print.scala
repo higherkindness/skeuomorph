@@ -215,7 +215,9 @@ object print {
         path,
         operation.description,
         OperationId((verb, path, operation)),
-        (itemObject.parameters ++ operation.parameters).flatMap(_.fold(_.some, parameterFrom)),
+        (itemObject.parameters ++ operation.parameters)
+          .flatMap(_.fold(_.some, parameterFrom))
+          .distinct,
         operation.requestBody,
         operation.responses
       )

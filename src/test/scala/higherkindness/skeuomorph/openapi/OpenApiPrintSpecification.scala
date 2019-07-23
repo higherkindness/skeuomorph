@@ -996,6 +996,7 @@ object OpenApiPrintSpecification {
           "",
           "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
       ).withOperationId("getPayload")
+        .withParameter(path("id", JsonSchemaF.Fixed.string()))
         .withParameter(Reference("#/components/parameters/initParam"))
         .withParameter(Reference("#/components/parameters/limitParam"))
     )
