@@ -196,10 +196,10 @@ object print {
     ).contramapN { operationTuple[T] }
 
   private def itemObjectTuple[T](
-      x: String,
+      thePath: String,
       itemObject: ItemObject[T],
       components: Components[T]): List[OperationWithPath[T]] = {
-    val path = HttpPath.apply(x)
+    val path = HttpPath.apply(thePath)
 
     def findParameter(name: String): Option[Parameter[T]] =
       components.parameters.get(name).flatMap(_.fold(_.some, parameterFrom))
@@ -215,7 +215,7 @@ object print {
         path,
         operation.description,
         OperationId((verb, path, operation)),
-        operation.parameters.flatMap(_.fold(_.some, parameterFrom)),
+        (itemObject.parameters ++ operation.parameters).flatMap(_.fold(_.some, parameterFrom)),
         operation.requestBody,
         operation.responses
       )

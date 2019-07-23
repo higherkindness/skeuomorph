@@ -131,12 +131,13 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       }
       """)
 
-      val itemObject = emptyItemObject[JsonSchemaF.Fixed].withPost(
-        operation(
-          request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))).optional
-            .withDescription("Callback payload"),
-          responses = "200" -> response("webhook successfully processed and no retries will be performed")
-        ))
+      val itemObject = emptyItemObject[JsonSchemaF.Fixed]
+        .withPost(
+          operation(
+            request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))).optional
+              .withDescription("Callback payload"),
+            responses = "200" -> response("webhook successfully processed and no retries will be performed")
+          ))
 
       Decoder[Callback[JsonSchemaF.Fixed]].decodeJson(json) should beRight(
         Callback(
@@ -432,7 +433,9 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         ]
       }""")
 
-      Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(emptyItemObject[JsonSchemaF.Fixed])
+      Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        emptyItemObject[JsonSchemaF.Fixed].withParameter(
+          path("id", JsonSchemaF.Fixed.array(JsonSchemaF.Fixed.string()), description = "ID of pet to use".some)))
     }
 
     "when get operation is defined" >> {

@@ -238,7 +238,7 @@ object JsonDecoders {
         ))
 
   implicit def itemObjectDecoder[A: Decoder]: Decoder[Path.ItemObject[A]] =
-    Decoder.forProduct12(
+    Decoder.forProduct13(
       "ref",
       "summary",
       "description",
@@ -250,7 +250,8 @@ object JsonDecoders {
       "head",
       "patch",
       "trace",
-      "servers")(
+      "servers",
+      "parameters")(
       (
           (
               ref: Option[String], // $ref
@@ -264,7 +265,9 @@ object JsonDecoders {
               head: Option[Path.Operation[A]],
               patch: Option[Path.Operation[A]],
               trace: Option[Path.Operation[A]],
-              servers: Option[List[Server]]) =>
+              servers: Option[List[Server]],
+              parameters: Option[List[Either[Parameter[A], Reference]]]
+          ) =>
             Path.ItemObject(
               ref,
               summary,
@@ -277,7 +280,8 @@ object JsonDecoders {
               head,
               patch,
               trace,
-              servers.getOrElse(List.empty))))
+              servers.getOrElse(List.empty),
+              parameters.getOrElse(List.empty))))
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
     Decoder.forProduct4(

@@ -163,7 +163,7 @@ object JsonEncoders {
     }
 
   implicit def itemObjectEncoder[A: Encoder]: Encoder[Path.ItemObject[A]] =
-    Encoder.forProduct12(
+    Encoder.forProduct13(
       "ref",
       "summary",
       "description",
@@ -175,9 +175,23 @@ object JsonEncoders {
       "head",
       "patch",
       "trace",
-      "servers"
+      "servers",
+      "parameters"
     ) { i =>
-      (i.ref, i.summary, i.description, i.get, i.put, i.post, i.delete, i.options, i.head, i.patch, i.trace, i.servers)
+      (
+        i.ref,
+        i.summary,
+        i.description,
+        i.get,
+        i.put,
+        i.post,
+        i.delete,
+        i.options,
+        i.head,
+        i.patch,
+        i.trace,
+        i.servers,
+        i.parameters)
     }
 
   implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =

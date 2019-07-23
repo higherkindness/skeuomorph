@@ -220,6 +220,9 @@ object instances {
         Gen.option(booleanGen),
         Gen.option(booleanGen),
         T.arbitrary).mapN(Parameter.apply)
+
+    val parameters: Gen[List[Either[Parameter[T], Reference]]] = Gen.listOfN(2, eitherGen(parameterGen, referenceGen))
+
     val operationGen: Gen[Path.Operation[T]] =
       (
         Gen.listOfN(2, nonEmptyString),
@@ -227,7 +230,7 @@ object instances {
         Gen.option(nonEmptyString),
         Gen.option(externalDocsGen),
         Gen.option(nonEmptyString),
-        Gen.listOfN(2, eitherGen(parameterGen, referenceGen)),
+        parameters,
         Gen.option(eitherGen(requestGen, referenceGen)),
         responsesGen,
         Map.empty[String, Either[Callback[T], Reference]].pure[Gen],
@@ -247,7 +250,9 @@ object instances {
         Gen.option(operationGen),
         Gen.option(operationGen),
         Gen.option(operationGen),
-        serversGen).mapN(Path.ItemObject.apply)
+        serversGen,
+        parameters
+      ).mapN(Path.ItemObject.apply)
 
     val componentsGen: Gen[Components[T]] =
       (

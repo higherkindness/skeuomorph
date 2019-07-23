@@ -648,7 +648,6 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       implDefinition.print(
         petstoreOpenApi
           .withPath(parametersReferenceGet)
-          .withParameter("idParam", path("id", JsonSchemaF.Fixed.string()))
           .withParameter("initParam", query("init", JsonSchemaF.Fixed.long(), required = true))
           .withParameter("limitParam", query("limit", JsonSchemaF.Fixed.integer()))
       ) must ===(
@@ -989,16 +988,17 @@ object OpenApiPrintSpecification {
       .withParameter(query("name", Fixed.string()))
   )
 
-  val parametersReferenceGet = payloadPathId -> emptyItemObject.withGet(
-    operationWithResponses[JsonSchemaF.Fixed](
-      responses = "200" -> response(
-        "",
-        "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
-    ).withOperationId("getPayload")
-      .withParameter(Reference("#/components/parameters/idParam"))
-      .withParameter(Reference("#/components/parameters/initParam"))
-      .withParameter(Reference("#/components/parameters/limitParam"))
-  )
+  val parametersReferenceGet = payloadPathId -> emptyItemObject
+    .withParameter(path("id", JsonSchemaF.Fixed.string()))
+    .withGet(
+      operationWithResponses[JsonSchemaF.Fixed](
+        responses = "200" -> response(
+          "",
+          "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
+      ).withOperationId("getPayload")
+        .withParameter(Reference("#/components/parameters/initParam"))
+        .withParameter(Reference("#/components/parameters/limitParam"))
+    )
   val mediaTypeReferenceGetId = payloadPathId -> emptyItemObject
     .withGet(
       operationWithResponses[JsonSchemaF.Fixed](successPayload)

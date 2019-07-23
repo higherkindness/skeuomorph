@@ -158,8 +158,8 @@ object schema {
         head: Option[Operation[A]],
         patch: Option[Operation[A]],
         trace: Option[Operation[A]],
-        servers: List[Server])
-    // TODO parameters: List[Either[Parameter[A], Reference]])
+        servers: List[Server],
+        parameters: List[Either[Parameter[A], Reference]])
 
     final case class Operation[A](
         tags: List[String],

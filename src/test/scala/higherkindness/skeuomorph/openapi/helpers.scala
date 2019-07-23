@@ -110,7 +110,8 @@ object helpers {
     head = None,
     patch = None,
     trace = None,
-    servers = List.empty
+    servers = List.empty,
+    parameters = List.empty
   )
 
   def obj(properties: (String, JsonSchemaF.Fixed)*)(required: String*): JsonSchemaF.Fixed =
@@ -124,6 +125,8 @@ object helpers {
       item.copy(post = operation.some)
     def withGet(operation: Path.Operation[A]): Path.ItemObject[A] =
       item.copy(get = operation.some)
+    def withParameter(parameter: Parameter[A]): Path.ItemObject[A] =
+      item.copy(parameters = item.parameters :+ parameter.asLeft)
   }
 
   def components[T](models: (String, T)*): Components[T] =
