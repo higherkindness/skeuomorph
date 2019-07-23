@@ -29,61 +29,57 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
 
     "when a description is provided" >> {
       OperationId(
-        (
-          Verb.Put,
-          Path("/foo"),
-          defaultOperation.withOperationId("createPayload")
-        )
+        Verb.Put,
+        Path("/foo"),
+        defaultOperation.withOperationId("createPayload")
       ).show must ===("createPayload")
     }
 
     "when a description is not provided" >> {
       OperationId(
-        (
-          Verb.Put,
-          Path("/foo"),
-          defaultOperation
-        )
+        Verb.Put,
+        Path("/foo"),
+        defaultOperation
       ).show must ===("updateFoo")
     }
 
     "when the description contains special characters" >> {
       OperationId(
-        (
-          Verb.Put,
-          Path("/foo"),
-          defaultOperation.withOperationId("create-Payload_V1")
-        )
+        Verb.Put,
+        Path("/foo"),
+        defaultOperation.withOperationId("create-Payload_V1")
       ).show must ===("createPayloadV1")
     }
 
     "when the description is not provided and contains special characters" >> {
       OperationId(
-        (
-          Verb.Get,
-          Path("/v1/pet-details_eager"),
-          defaultOperation
-        )
+        Verb.Get,
+        Path("/v1/pet-details_eager"),
+        defaultOperation
       ).show must ===("getPetDetailsEagerV1")
+    }
+
+    "when the path contains path variables" >> {
+      OperationId(
+        Verb.Delete,
+        Path("/pets/{petId}/owners"),
+        defaultOperation
+      ).show must ===("deleteOwnersPetsByPetId")
     }
 
     "when the path contains query params" >> {
       OperationId(
-        (
-          Verb.Delete,
-          Path("/pets/{petId}/owners"),
-          defaultOperation
-        )
-      ).show must ===("deleteOwnersPets")
+        Verb.Delete,
+        Path("/pets/{petId}/owners?userId={userId}&name={name}"),
+        defaultOperation
+      ).show must ===("deleteOwnersPetsByPetIdUserIdName")
     }
 
     "when a description is provided with numbers at the beginning" >> {
       OperationId(
-        (
-          Verb.Put,
-          Path("/foo"),
-          defaultOperation.withOperationId("1111createPayload")
-        )
+        Verb.Put,
+        Path("/foo"),
+        defaultOperation.withOperationId("1111createPayload")
       ).show must ===("createPayload1111")
     }
   }

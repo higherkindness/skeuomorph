@@ -72,17 +72,26 @@ object print {
       }
     }
 
-    final case class Path(value: String) extends AnyVal {
-      def method: String =
-        value
-          .split("/")
-          .filterNot(_.contains("{"))
-          .filter(_.nonEmpty)
-          .reverse
-          .map(_.capitalize)
-          .mkString
-    }
+    final case class Path(value: String) extends AnyVal
     object Path {
+
+      private def splitPath(value: String): (List[String], List[String]) = {
+        val (x, y) = value.split("/").partition(_.contains("{"))
+        y.filter(_.nonEmpty)
+          .reverse
+          .map(normalize)
+          .toList -> x.filter(_.nonEmpty).map(_.replaceAll("[{|}]", "")).reverse.map(normalize).toList
+      }
+
+      private def queryParams(value: String): List[String] =
+        value.split("&").flatMap(_.split("=").headOption).toList.map(normalize)
+
+      def splitParts(path: Path): (List[String], List[String], List[String]) =
+        path.value.split("\\?").toList match {
+          case Nil      => (Nil, Nil, Nil)
+          case x :: Nil => un(second(splitPath(x))(_ -> List.empty[String]))
+          case x :: xs  => un(second(splitPath(x))(_ -> queryParams(xs.mkString)))
+        }
       implicit val httpPathShow: Show[Path] = Show.show(_.value)
     }
 
@@ -90,10 +99,14 @@ object print {
 
     object OperationId {
 
-      def apply[T](operationWithPath: (Verb, Path, openapi.schema.Path.Operation[T])): OperationId =
-        OperationId(decapitalize(normalize(operationWithPath._3.operationId.getOrElse {
-          s"${Http.Verb.methodFrom(operationWithPath._1)}${operationWithPath._2.method}"
+      def apply[T](verb: Verb, path: Path, operation: openapi.schema.Path.Operation[T]): OperationId = {
+        val (paths, varPaths, queries) = Path.splitParts(path)
+        val params                     = varPaths ++ queries
+        OperationId(decapitalize(normalize(operation.operationId.getOrElse {
+          s"${Http.Verb.methodFrom(verb)}${paths.mkString}${if (params.nonEmpty) s"By${params.mkString}"
+          else ""}"
         })))
+      }
 
       implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
     }
@@ -107,6 +120,35 @@ object print {
         requestBody: Option[Either[Request[T], Reference]],
         responses: Map[String, Either[Response[T], Reference]]
     )
+
+    object Operation {
+      def apply[T](
+          verb: Http.Verb,
+          path: Http.Path,
+          operation: openapi.schema.Path.Operation[T],
+          itemObject: ItemObject[T],
+          components: Components[T]): Http.Operation[T] = {
+
+        def findParameter(name: String): Option[Parameter[T]] =
+          components.parameters.get(name).flatMap(_.fold(_.some, parameterFrom))
+
+        def parameterFrom(reference: Reference): Option[Parameter[T]] = reference.ref match {
+          case parametersRegex(name) => findParameter(name)
+          case name                  => findParameter(name)
+        }
+        val parameters = (itemObject.parameters ++ operation.parameters).flatMap(_.fold(_.some, parameterFrom)).distinct
+
+        Http.Operation(
+          verb,
+          path,
+          operation.description,
+          Http.OperationId(verb, path, operation),
+          parameters,
+          operation.requestBody,
+          operation.responses
+        )
+      }
+    }
     type Responses[T] = (OperationId, Map[String, Either[Response[T], Reference]])
   }
   final case class TraitName(value: String) extends AnyVal
@@ -205,26 +247,8 @@ object print {
       components: Components[T]): List[Http.Operation[T]] = {
     val path = Http.Path.apply(thePath)
 
-    def findParameter(name: String): Option[Parameter[T]] =
-      components.parameters.get(name).flatMap(_.fold(_.some, parameterFrom))
-
-    def parameterFrom(reference: Reference): Option[Parameter[T]] = reference.ref match {
-      case parametersRegex(name) => findParameter(name)
-      case name                  => findParameter(name)
-    }
-
-    def operation(verb: Http.Verb, operation: Operation[T]): Http.Operation[T] =
-      Http.Operation(
-        verb,
-        path,
-        operation.description,
-        Http.OperationId((verb, path, operation)),
-        (itemObject.parameters ++ operation.parameters)
-          .flatMap(_.fold(_.some, parameterFrom))
-          .distinct,
-        operation.requestBody,
-        operation.responses
-      )
+    def operation(verb: Http.Verb, operation: openapi.schema.Path.Operation[T]): Http.Operation[T] =
+      Http.Operation(verb, path, operation, itemObject, components)
 
     List(
       itemObject.get.map(operation(Http.Verb.Get, _)),

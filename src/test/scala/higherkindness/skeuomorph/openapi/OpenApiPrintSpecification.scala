@@ -584,8 +584,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                     |trait PetstoreClient[F[_]] {
                     |  import PetstoreClient._
                     |  def createPets(newPet: NewPet): F[Unit]
-                    |  def updatePets(id: String, updatePet: UpdatePet): F[Unit]
-                    |  def getOwnersPets(id: String): F[Owners]
+                    |  def updatePetsById(id: String, updatePet: UpdatePet): F[Unit]
+                    |  def getOwnersPetsById(id: String): F[Owners]
                     |}
                     |object PetstoreClient {
                     |
@@ -829,7 +829,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PayloadClient[F] = new PayloadClient[F] {
            |    import PayloadClient._
            |$listCodecsImplicits
-           |    def get1id(id1: String, limitFor: Option[Int], listString: List[String]): F[Unit] = client.expect[Unit](Request[F](method = Method.GET, uri = baseUrl / "1id" / id1.show +?? ("limit-for", limitFor)).with(listString))
+           |    def getId1ById1(id1: String, limitFor: Option[Int], listString: List[String]): F[Unit] = client.expect[Unit](Request[F](method = Method.GET, uri = baseUrl / "1id" / id1.show +?? ("limit-for", limitFor)).with(listString))
            |  }
            |
            |}""".stripMargin

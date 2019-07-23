@@ -83,23 +83,23 @@ object print {
 
   def isBasicType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
-    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
+    import qq.droste.syntax.project._
+    t.project match {
       case ObjectF(p, _) => p.isEmpty
       case EnumF(_)      => false
       case ArrayF(_)     => false
       case ReferenceF(_) => false
       case _             => true
     }
-    scheme.cata(algebra).apply(t)
   }
 
   def isArray[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
-    val algebra: Algebra[JsonSchemaF, Boolean] = Algebra {
+    import qq.droste.syntax.project._
+    t.project match {
       case ArrayF(_) => true
       case _         => false
     }
-    scheme.cata(algebra).apply(t)
   }
 
   sealed trait Codecs
