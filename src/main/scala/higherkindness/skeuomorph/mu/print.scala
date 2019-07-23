@@ -24,6 +24,7 @@ import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.mu.CompressionType.{Gzip, Identity}
 import higherkindness.skeuomorph.mu.MuF.{string => _, _}
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
+import higherkindness.skeuomorph.mu.Optimize.nestedOptionInCoproduct
 import higherkindness.skeuomorph.mu.SerializationType._
 import qq.droste._
 
@@ -198,7 +199,7 @@ object print {
       sepBy(option, lineFeed),
       sepBy(depImport, lineFeed) >* newLine >* newLine,
       konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
-      sepBy(schema, lineFeed) >* newLine,
+      sepBy(Printer(nestedOptionInCoproduct[T] >>> schema.print), lineFeed) >* newLine,
       sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
     ).contramapN(protoTuple)
   }
