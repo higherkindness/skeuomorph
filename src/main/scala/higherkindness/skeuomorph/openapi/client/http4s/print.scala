@@ -54,7 +54,7 @@ object print {
     "implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]")
   val timeQueryParamEncoder: Printer[Unit] =
     κ("localDateTimeQueryEncoder: QueryParamEncoder[java.time.LocalDateTime], localDateQueryEncoder: QueryParamEncoder[java.time.LocalDate]")
-  type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[OperationWithPath[T]], (TraitName, ImplName))
+  type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[Http.Operation[T]], (TraitName, ImplName))
   def implDefinition[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]): Printer[OpenApi[T]] =
@@ -94,7 +94,7 @@ object print {
     }
 
   def statusResponseImpl[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
+      implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (
       κ("case response if response.status.code == ") *< string >* κ(" => "),
       κ("response.as[") *< string >* κ("]"),
@@ -114,7 +114,7 @@ object print {
       }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[(OperationId, (Either[Response[T], Reference], Int))] =
+      implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, (Either[Response[T], Reference], Int))] =
     (
       κ("case default => default.as[") *< string >* κ("]"),
       κ(".map(x => ") *< coproductIf(string >* κ("(default.status.code, x)")) >* κ(".asLeft)"))
@@ -125,21 +125,21 @@ object print {
       }
 
   def responseImpl[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[(OperationId, String, (Either[Response[T], Reference], Int))] =
+      implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (successResponseImpl[T] >|< defaultResponseImpl[T] >|< statusResponseImpl[T]).contramap {
       case (_, statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
       case (operationId, "default", x)                                     => (operationId -> x).asRight.asLeft
       case x                                                               => x.asRight
     }
 
-  private def queryParametersFrom[T]: OperationWithPath[T] => List[Parameter.Query[T]] =
+  private def queryParametersFrom[T]: Http.Operation[T] => List[Parameter.Query[T]] =
     _.parameters.collect {
       case x: Parameter.Query[T] => x
     }
 
-  def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[OperationWithPath[T]] =
+  def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[Http.Operation[T]] =
     (
-      κ("Request[F](method = Method.") *< show[HttpVerb],
+      κ("Request[F](method = Method.") *< show[Http.Verb],
       κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
       optional(withBody))
       .contramapN { x =>
@@ -149,7 +149,7 @@ object print {
       }
 
   def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
-      implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
+      implicit codecs: Printer[Codecs]): Printer[Http.Operation[T]] =
     (
       κ("fetch[") *< responsesTypes >* κ("]("),
       requestImpl[T](withBody) >* κ(") {") >* newLine,
@@ -167,14 +167,14 @@ object print {
         )
       }
 
-  def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[OperationWithPath[T]] =
+  def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[Http.Operation[T]] =
     (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T](withBody) >* κ(")"))
       .contramapN { x =>
         (x.operationId -> x.responses, x)
       }
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
-      implicit codecs: Printer[Codecs]): Printer[OperationWithPath[T]] =
+      implicit codecs: Printer[Codecs]): Printer[Http.Operation[T]] =
     (
       method[T] >* κ(" = client."),
       expectImpl[T](withBody) >|< fetchImpl[T](withBody)
@@ -188,7 +188,7 @@ object print {
       (op(q), q.name -> Var(q.name))
     }
 
-  def httpPath[T]: Printer[HttpPath] =
+  def httpPath[T]: Printer[Http.Path] =
     (κ("/ ") *< sepBy((string >|< (show[Var] >* κ(".show"))), " / ")).contramap {
       _.show
         .split("/")

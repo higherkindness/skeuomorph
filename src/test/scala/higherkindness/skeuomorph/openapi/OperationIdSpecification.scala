@@ -23,14 +23,15 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
 
   import cats.implicits._
   import OperationIdSpecification._
+  import Http._
 
   "operation id should able normalize" >> {
 
     "when a description is provided" >> {
       OperationId(
         (
-          HttpVerb.Put,
-          HttpPath("/foo"),
+          Verb.Put,
+          Path("/foo"),
           defaultOperation.withOperationId("createPayload")
         )
       ).show must ===("createPayload")
@@ -39,8 +40,8 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
     "when a description is not provided" >> {
       OperationId(
         (
-          HttpVerb.Put,
-          HttpPath("/foo"),
+          Verb.Put,
+          Path("/foo"),
           defaultOperation
         )
       ).show must ===("updateFoo")
@@ -49,8 +50,8 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
     "when the description contains special characters" >> {
       OperationId(
         (
-          HttpVerb.Put,
-          HttpPath("/foo"),
+          Verb.Put,
+          Path("/foo"),
           defaultOperation.withOperationId("create-Payload_V1")
         )
       ).show must ===("createPayloadV1")
@@ -59,8 +60,8 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
     "when the description is not provided and contains special characters" >> {
       OperationId(
         (
-          HttpVerb.Get,
-          HttpPath("/v1/pet-details_eager"),
+          Verb.Get,
+          Path("/v1/pet-details_eager"),
           defaultOperation
         )
       ).show must ===("getPetDetailsEagerV1")
@@ -69,8 +70,8 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
     "when the path contains query params" >> {
       OperationId(
         (
-          HttpVerb.Delete,
-          HttpPath("/pets/{petId}/owners"),
+          Verb.Delete,
+          Path("/pets/{petId}/owners"),
           defaultOperation
         )
       ).show must ===("deleteOwnersPets")
@@ -79,8 +80,8 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
     "when a description is provided with numbers at the beginning" >> {
       OperationId(
         (
-          HttpVerb.Put,
-          HttpPath("/foo"),
+          Verb.Put,
+          Path("/foo"),
           defaultOperation.withOperationId("1111createPayload")
         )
       ).show must ===("createPayload1111")
