@@ -96,7 +96,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  import org.http4s.circe._
            |  import cats.Applicative
            |  import cats.effect.Sync
+           |  import cats._
            |  import cats.implicits._
+           |  import io.circe._
            |  implicit val ColorShow: Show[Color] = Show.show {
            |  case Blue => "Blue"
            |  case Red => "Red"

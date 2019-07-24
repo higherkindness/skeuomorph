@@ -73,7 +73,7 @@ object JsonDecoders {
       def isObject: Decoder.Result[Unit] =
         validateType(c, "object") orElse
           propertyExists("properties") orElse
-          propertyExists("allOf")
+          propertyExists("allOf") orElse propertyExists("oneOf")
       for {
         _        <- isObject
         required <- c.downField("required").as[Option[List[String]]]
