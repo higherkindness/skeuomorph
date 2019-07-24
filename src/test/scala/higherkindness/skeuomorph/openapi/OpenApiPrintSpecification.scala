@@ -386,7 +386,25 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when there are simple response and response with anonymous objects" >> {
       import client.http4s.circe._
-      interfaceDefinition.print(anotherPayloadOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
+      interfaceDefinition.print(anotherPayloadOpenApi.withPath(objectRequestResponseAnonymousObjects)) must ===(
+        """|import models._
+           |import shapeless.{:+:, CNil}
+           |trait AnotherPayloadClient[F[_]] {
+           |  import AnotherPayloadClient._
+           |  def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload]
+           |}
+           |object AnotherPayloadClient {
+           |
+           |  type UpdateAnotherPayloadRequest = io.circe.Json
+           |  type UpdatedPayload = io.circe.Json
+           |
+           |}""".stripMargin
+      )
+    }
+
+    "when there are simple response and response with anonymous objects" >> {
+      import client.http4s.circe._
+      interfaceDefinition.print(anotherPayloadOpenApi.withPath(simpleRequestResponseAnonymousObjects)) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait AnotherPayloadClient[F[_]] {
@@ -723,7 +741,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     }
 
     "when there are simple response and response with anonymous objects" >> {
-      implDefinition.print(petstoreOpenApi.withPath(simpleResponseResponseAnonymousObjects)) must ===(
+      implDefinition.print(petstoreOpenApi.withPath(simpleRequestResponseAnonymousObjects)) must ===(
         s"""|object PetstoreHttpClient {
           |
           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
@@ -1051,7 +1069,20 @@ object OpenApiPrintSpecification {
       ).withOperationId("updatePayload").withParameter(path("id", Fixed.string()))
     )
 
-  val simpleResponseResponseAnonymousObjects = "/payloads/{id}" -> emptyItemObject
+  val objectRequestResponseAnonymousObjects = "/payloads/{id}" -> emptyItemObject
+    .withPut(
+      operation[JsonSchemaF.Fixed](
+        request(
+          "*/*" -> mediaType(obj()())
+        ),
+        responses = "200" -> response(
+          "Updated payload",
+          "application/json" -> mediaType(obj()())
+        )
+      ).withOperationId("updateAnotherPayload").withParameter(path("id", Fixed.string()))
+    )
+
+  val simpleRequestResponseAnonymousObjects = "/payloads/{id}" -> emptyItemObject
     .withPut(
       operation[JsonSchemaF.Fixed](
         request(

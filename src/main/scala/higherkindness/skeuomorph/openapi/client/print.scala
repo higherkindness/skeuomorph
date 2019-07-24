@@ -318,7 +318,8 @@ object print {
 
   def typesAndSchemas[T: Basis[JsonSchemaF, ?]](operationId: Http.OperationId)(
       status: String,
-      responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, List[String]) = {
+      responseOr: Either[Response[T], Reference]
+  )(implicit codecs: Printer[Codecs]): (String, List[String]) = {
     val statusCodePattern = """(\d+)""".r
     val tpe               = responseOrType.print(responseOr)
     status match {
@@ -346,22 +347,26 @@ object print {
       operationId: Http.OperationId,
       responses: Map[String, Either[Response[T], Reference]])(
       implicit codecs: Printer[Codecs]): Either[(List[String], TypeAliasErrorResponse, List[String]), List[String]] =
-    if (responses.size > 1) {
-      val (newTypes, schemas) =
-        second(responses.map((typesAndSchemas[T](operationId) _).tupled).toList.unzip)(_.flatten)
-      (
-        schemas.toList.filter(_.nonEmpty),
-        TypeAliasErrorResponse(operationId),
-        newTypes.toList.filterNot(_.some === successType(responses).map(responseOrType[T].print))).asLeft
-    } else
-      responses.toList
-        .map(_._2)
-        .flatMap(r => r.left.toOption.map(_ -> responseOrType.print(r)))
-        .flatMap {
-          case (response, tpe) =>
-            typeAndSchemaFor(none, response, tpe) { tpe -> Nil }._3
-        }
-        .asRight
+    responses.toList match {
+      case (_, response) :: Nil =>
+        response.left.toOption
+          .map(_ -> responseOrType.print(response))
+          .toList
+          .flatMap {
+            case (response, tpe) =>
+              val x = typeAndSchemaFor(none, response, tpe) { tpe -> Nil }
+              println(s"$x")
+              x._3
+          }
+          .asRight
+      case _ =>
+        val (newTypes, schemas) =
+          second(responses.map((typesAndSchemas[T](operationId) _).tupled).toList.unzip)(_.flatten)
+        (
+          schemas.toList.filter(_.nonEmpty),
+          TypeAliasErrorResponse(operationId),
+          newTypes.toList.filterNot(_.some === successType(responses).map(responseOrType[T].print))).asLeft
+    }
 
   private def responseErrorsDef: Printer[List[String]] =
     (sepBy(string, " :+: "), (κ(" :+: CNil") >|< unit)).contramapN(errorTypes =>
