@@ -294,11 +294,13 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {
            |  import PayloadClient._
-           |  def getPayload(status: Status): F[Unit]
+           |  def getPayload(status: parameters.Status): F[Unit]
            |}
            |object PayloadClient {
            |
            |
+           |
+           |object parameters {
            |
            |sealed trait Status
            |object Status {
@@ -327,6 +329,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  implicit def OptionStatusEntityEncoder[F[_]:Applicative]: EntityEncoder[F, Option[Status]] = jsonEncoderOf[F, Option[Status]]
            |  implicit def StatusEntityDecoder[F[_]:Sync]: EntityDecoder[F, Status] = jsonOf[F, Status]
            |
+           |}
            |}
            |
            |}""".stripMargin
@@ -741,7 +744,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
           |    import PetstoreClient._
           |$defaultImplicits
-          |    def getPayload(id: String, init: Long, limit: Option[Int]): F[Payloads] = client.expect[Payloads](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show +? ("init", init) +?? ("limit", limit)))
+          |    def getPayload(id: String, init: Long, limit: Option[Int], color: Color): F[Payloads] = client.expect[Payloads](Request[F](method = Method.GET, uri = baseUrl / "payloads" / id.show +? ("init", init) +?? ("limit", limit)))
           |  }
           |
           |}""".stripMargin
@@ -1088,6 +1091,7 @@ object OpenApiPrintSpecification {
         .withParameter(path("id", JsonSchemaF.Fixed.string()))
         .withParameter(Reference("#/components/parameters/initParam"))
         .withParameter(Reference("#/components/parameters/limitParam"))
+        .withParameter(path("color", JsonSchemaF.Fixed.reference("#/components/schemas/Color")))
     )
 
   val enumParameterGet = payloadPathId -> emptyItemObject

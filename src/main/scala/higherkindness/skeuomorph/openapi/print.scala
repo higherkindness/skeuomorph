@@ -25,11 +25,12 @@ import cats.implicits._
 import cats.Show
 
 import qq.droste._
+import scala.util.matching.Regex
 
 object print {
   import higherkindness.skeuomorph.openapi.schema.OpenApi
 
-  val componentsRegex = """#/components/schemas/(.+)""".r
+  val schemasRegex    = """#/components/schemas/(.+)""".r
   val parametersRegex = """#/components/parameters/(.+)""".r
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
@@ -75,7 +76,8 @@ object print {
         case (ArrayF(x), _)                                      => listDef.print(x)
         case (EnumF(fields), Some(name)) =>
           sealedTraitDef.print(name -> fields)
-        case (ReferenceF(componentsRegex(ref)), _) => normalize(ref)
+        case (ReferenceF(schemasRegex(ref)), _)    => normalize(ref)
+        case (ReferenceF(parametersRegex(ref)), _) => normalize(ref)
         case (ReferenceF(ref), _)                  => normalize(ref)
       }
     }
@@ -94,6 +96,16 @@ object print {
     }
   }
 
+  def isReference[T: Basis[JsonSchemaF, ?]](t: T)(regex: Regex): Boolean = {
+    import JsonSchemaF._
+    import qq.droste.syntax.project._
+    t.project match {
+      case ReferenceF(regex(_)) => true
+      case _                    => false
+    }
+
+  }
+
   def isArray[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
     import qq.droste.syntax.project._
@@ -107,18 +119,20 @@ object print {
   final case class CaseClassCodecs(name: String, fields: List[String]) extends Codecs
   final case class EnumCodecs(name: String, values: List[String])      extends Codecs
 
-  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String)
+  final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String, nestedTypes: List[String])
   object Tpe {
     import Printer.avoid._
-    def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit")
-    def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name)
-    def apply[T](tpe: T, required: Boolean, description: String): Tpe[T] =
-      Tpe(tpe.asRight, required, description)
+    def unit[T]: Tpe[T]                = Tpe("Unit".asLeft, true, "Unit", Nil)
+    def apply[T](name: String): Tpe[T] = Tpe(name.asLeft, true, name, Nil)
+    def apply[T](tpe: T, required: Boolean, description: String, nestedTypes: List[String]): Tpe[T] =
+      Tpe(tpe.asRight, required, description, nestedTypes)
 
     def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
       identity,
-      Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
-        .print(_)
+      x =>
+        tpe.nestedTypes.headOption.map(_ => s"${tpe.nestedTypes.mkString(".")}.").getOrElse("") +
+          Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
+            .print(x)
     )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
       if (tpe.required)
@@ -139,8 +153,8 @@ object print {
   final case class VarWithType[T](name: Var, tpe: Tpe[T])
   object VarWithType {
     def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): VarWithType[T] = VarWithType(Var(Tpe.name(tpe)), tpe)
-    def apply[T](name: String, tpe: T, required: Boolean, description: String): VarWithType[T] =
-      VarWithType(Var(name), Tpe(tpe.asRight, required, description))
+    def apply[T](name: String, tpe: T, required: Boolean, description: String, nestedTypes: List[String]): VarWithType[T] =
+      VarWithType(Var(name), Tpe(tpe.asRight, required, description, nestedTypes))
   }
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
@@ -196,8 +210,11 @@ object print {
     ).contramap { case (x, y, z) => (x -> y, z) }
 
   def normalize(value: String): String =
-    value.dropWhile(_.isDigit).split("[ _-]").map(_.filter(_.isLetterOrDigit).capitalize).mkString ++ value.takeWhile(
-      _.isDigit)
+    value
+      .dropWhile(_.isDigit)
+      .split("[ _-]")
+      .map(_.filter(x => x.isLetterOrDigit).capitalize)
+      .mkString ++ value.takeWhile(_.isDigit)
 
   def divBy[A, B](p1: Printer[A], sep: Printer[Unit], p2: Printer[B]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }

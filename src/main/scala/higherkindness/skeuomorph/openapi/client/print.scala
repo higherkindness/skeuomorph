@@ -21,7 +21,7 @@ import higherkindness.skeuomorph.Printer.{konst => κ, _}
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi
-import higherkindness.skeuomorph.openapi._
+import higherkindness.skeuomorph.openapi.{schema => _, _}
 import higherkindness.skeuomorph.openapi.print._
 import cats.implicits._
 import cats.Show
@@ -29,12 +29,13 @@ import cats.Show
 import qq.droste._
 
 object print {
-  import higherkindness.skeuomorph.openapi.print.{componentsRegex, parametersRegex, schema, schemaWithName}
   import higherkindness.skeuomorph.openapi.schema._
   import higherkindness.skeuomorph.openapi.schema.Path._
 
   private val jsonMediaType = "application/json"
   private val allContent    = "*/*"
+
+  private val parametersPackage = "parameters"
 
   def jsonFrom[T](content: Map[String, MediaType[T]]): Option[MediaType[T]] =
     content.get(jsonMediaType) orElse content.get(allContent)
@@ -166,14 +167,16 @@ object print {
       operationId: Http.OperationId,
       request: Request[T]): Option[VarWithType[T]] =
     jsonFrom(request.content)
-      .flatMap(x =>
-        x.schema.map(x =>
-          VarWithType.tpe[T](Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId))))))
+      .flatMap(
+        x =>
+          x.schema.map(x =>
+            VarWithType.tpe[T](
+              Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId)), Nil))))
 
   private def referenceTuple[T: Basis[JsonSchemaF, ?]](reference: Reference): Option[VarWithType[T]] =
     reference.ref match {
-      case componentsRegex(name) => VarWithType.tpe(Tpe.apply(name)).some
-      case _                     => none
+      case schemasRegex(name) => VarWithType.tpe(Tpe.apply(name)).some
+      case _                  => none
     }
 
   def requestOrTuple[T: Basis[JsonSchemaF, ?]](
@@ -182,7 +185,12 @@ object print {
     requestOr.fold[Option[VarWithType[T]]](requestTuple(operationId, _), referenceTuple)
 
   private def parameterTuple[T: Basis[JsonSchemaF, ?]](x: Parameter[T]): VarWithType[T] =
-    VarWithType(x.name, x.schema, x.required, x.description.getOrElse(x.name))
+    VarWithType(
+      x.name,
+      x.schema,
+      x.required,
+      x.name,
+      if (isBasicType(x.schema) || isReference(x.schema)(schemasRegex)) Nil else List(parametersPackage))
 
   private def operationTuple[T: Basis[JsonSchemaF, ?]](
       operation: Http.Operation[T]): (Http.OperationId, (List[VarWithType[T]]), Http.Responses[T]) =
@@ -209,7 +217,7 @@ object print {
   private def responseType[T: Basis[JsonSchemaF, ?]]: Printer[Response[T]] =
     tpe.contramap { response =>
       typeFromResponse(response)
-        .map(Tpe(_, true, normalize(response.description)))
+        .map(Tpe(_, true, normalize(response.description), Nil))
         .getOrElse(Tpe.unit)
     }
 
@@ -403,7 +411,7 @@ object print {
 
   private def parameterSchema[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
     schemaWithName[T].contramap { x =>
-      x.description.getOrElse(x.name) -> x.schema
+      x.name -> x.schema
     }
 
   private def clientTypes[T: Basis[JsonSchemaF, ?]](
@@ -411,13 +419,14 @@ object print {
     (
       sepBy(requestSchema[T], "\n") >* newLine,
       sepBy(responsesSchema[T], "\n") >* newLine,
-      optional(sepBy(parameterSchema[T], "\n")))
+      optional(objectDef(sepBy(parameterSchema[T], "\n"))))
       .contramapN {
         case (ops, params) =>
-          un(second(ops.map { operation =>
-            (operation.operationId   -> operation.requestBody) ->
-              (operation.operationId -> operation.responses)
-          }.unzip)(_ -> params.headOption.map(_ => params)))
+          (
+            ops.map(operation => operation.operationId -> operation.requestBody),
+            ops.map(operation => operation.operationId -> operation.responses),
+            params.headOption.map(_ => (parametersPackage, List.empty, params))
+          )
       }
 
   def toOperationsWithPath[T](
@@ -436,12 +445,15 @@ object print {
     val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName, openApi.paths, componentsFrom(openApi)))) {
       case (a, b) => (a, (traitName, b))
     })
+    val parameters = d._2.flatMap(_.parameters).distinct.filterNot { x =>
+      isBasicType(x.schema) || isReference(x.schema)(schemasRegex)
+    }
     (
       List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply),
       a,
       b,
       c,
-      (d._1.show, List.empty, (d._2, d._2.flatMap(_.parameters).distinct.filterNot(x => isBasicType(x.schema)))))
+      (d._1.show, List.empty, (d._2, parameters)))
   }
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
