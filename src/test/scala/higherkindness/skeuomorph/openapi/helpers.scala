@@ -79,6 +79,13 @@ object helpers {
     def optional: Request[A]                             = request.copy(required = false)
   }
 
+  def header[A](
+      name: String,
+      schema: A,
+      description: Option[String] = None,
+      required: Boolean = true): Parameter.Header[A] =
+    Parameter.Header(name, description, schema = schema, required = required)
+
   def path[A](name: String, schema: A, description: Option[String] = None): Parameter[A] =
     Parameter.Path(name = name, description = description, schema = schema)
   def query[A](

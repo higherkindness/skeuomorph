@@ -16,7 +16,7 @@
 
 package higherkindness.skeuomorph.openapi
 import higherkindness.skeuomorph.Printer
-import higherkindness.skeuomorph.openapi.schema.Reference
+import higherkindness.skeuomorph.openapi.schema.{Parameter, Reference}
 import cats.implicits._
 
 class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
@@ -696,6 +696,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       def withBody: Printer[Var] = Printer { x =>
         s".with(${x.show})"
       }
+      def withHeaders[T]: Printer[List[Parameter.Header[T]]] = none
 
     }
 
@@ -949,7 +950,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |$defaultImplicits
-           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsErrorResponse, Unit]] = client.fetch[Either[CreatePayloadsErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads)) {
+           |    def createPayloads(xAuth: String, token: String, newPayloads: NewPayloads): F[Either[CreatePayloadsErrorResponse, Unit]] = client.fetch[Either[CreatePayloadsErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withEntity(newPayloads).withHeaders(Headers.of(Header("X-Auth", xAuth.show), Header("token", token.show)))) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
@@ -986,7 +987,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)($timeQueryParamEncodersImplicit): PetstoreClient[F] = new PetstoreClient[F] {
            |    import PetstoreClient._
            |$defaultImplicits
-           |    def createPayloads(newPayloads: NewPayloads): F[Either[CreatePayloadsErrorResponse, Unit]] = client.fetch[Either[CreatePayloadsErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads)) {
+           |    def createPayloads(xAuth: String, token: String, newPayloads: NewPayloads): F[Either[CreatePayloadsErrorResponse, Unit]] = client.fetch[Either[CreatePayloadsErrorResponse, Unit]](Request[F](method = Method.POST, uri = baseUrl / "payloads").withBody(newPayloads).withHeaders(Headers(Header("X-Auth", xAuth.show), Header("token", token.show)))) {
            |      case Successful(response) => response.as[Unit].map(_.asRight)
            |      case default => default.as[Error].map(x => CreatePayloadsUnexpectedErrorResponse(default.status.code, x).asLeft)
            |    }
@@ -1042,6 +1043,8 @@ object OpenApiPrintSpecification {
         responses = "201"          -> response(""),
         defaultError
       ).withOperationId("createPayloads")
+        .withParameter(header("X-Auth", Fixed.string()))
+        .withParameter(header("token", Fixed.string()))
     )
     .withPut(
       operation[JsonSchemaF.Fixed](

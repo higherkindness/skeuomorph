@@ -70,7 +70,7 @@ object print {
         twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< showQueryParamEncoder *< newLine,
-      sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< κ("  }") *< newLine,
+      sepBy(twoSpaces *< methodImpl, "\n") >* newLine *< κ("  }") *< newLine,
       http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
         ImplName(x).show,
@@ -139,23 +139,32 @@ object print {
     _.parameters.collect {
       case x: Parameter.Query[T] => x
     }
+  private def headerParametersFrom[T]: Http.Operation[T] => List[Parameter.Header[T]] =
+    _.parameters.collect {
+      case x: Parameter.Header[T] => x
+    }
 
-  def requestImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[Http.Operation[T]] =
+  def requestImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (
       κ("Request[F](method = Method.") *< show[Http.Verb],
       κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
-      optional(withBody))
+      optional(http4sSpecifics.withBody),
+      optional(http4sSpecifics.withHeaders[T]))
       .contramapN { x =>
-        un(
-          second(second(x.verb -> x.path)(_ -> queryParametersFrom(x)))(
-            _ -> x.requestBody.flatMap { requestOrTuple[T](x.operationId, _) }.map(_.name)))
+        val headers = headerParametersFrom(x)
+        (
+          x.verb,
+          x.path -> queryParametersFrom(x),
+          x.requestBody.flatMap { requestOrTuple[T](x.operationId, _) }.map(_.name),
+          headers.headOption.map(_ => headers))
       }
 
-  def fetchImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
-      implicit codecs: Printer[Codecs]): Printer[Http.Operation[T]] =
+  def fetchImpl[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs],
+      http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (
       κ("fetch[") *< responsesTypes >* κ("]("),
-      requestImpl[T](withBody) >* κ(") {") >* newLine,
+      requestImpl[T] >* κ(") {") >* newLine,
       sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
       twoSpaces *< twoSpaces *< κ("}"))
       .contramapN { operation =>
@@ -170,17 +179,18 @@ object print {
         )
       }
 
-  def expectImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var]): Printer[Http.Operation[T]] =
-    (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T](withBody) >* κ(")"))
+  def expectImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
+    (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T] >* κ(")"))
       .contramapN { x =>
         (x.operationId -> x.responses, x)
       }
 
-  def methodImpl[T: Basis[JsonSchemaF, ?]](withBody: Printer[Var])(
-      implicit codecs: Printer[Codecs]): Printer[Http.Operation[T]] =
+  def methodImpl[T: Basis[JsonSchemaF, ?]](
+      implicit codecs: Printer[Codecs],
+      http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (
       method[T] >* κ(" = client."),
-      expectImpl[T](withBody) >|< fetchImpl[T](withBody)
+      expectImpl[T] >|< fetchImpl[T]
     ).contramapN { x =>
       (x, if (x.responses.size > 1) x.asRight else x.asLeft)
     }
@@ -225,9 +235,13 @@ object print {
   trait Http4sSpecifics {
     def applyMethod: Printer[(TraitName, ImplName)]
     def withBody: Printer[Var]
+    def withHeaders[T]: Printer[List[Parameter.Header[T]]]
   }
   object Http4sSpecifics {
     def apply(implicit http4sSpecifics: Http4sSpecifics): Http4sSpecifics = http4sSpecifics
+
+    def header[T]: Printer[Parameter.Header[T]] =
+      divBy(κ("Header(\"") *< string, κ("\", "), show[Var] >* κ(".show)")).contramap(x => x.name -> Var(x.name))
   }
   object v20 {
     implicit val v20Http4sSpecifics: Http4sSpecifics = new Http4sSpecifics {
@@ -242,6 +256,9 @@ object print {
 
       def withBody: Printer[Var] =
         (κ(".withEntity(") *< show[Var] >* κ(")"))
+
+      def withHeaders[T]: Printer[List[Parameter.Header[T]]] =
+        (κ(".withHeaders(Headers.of(") *< sepBy(Http4sSpecifics.header[T], ", ") >* κ("))"))
     }
   }
   object v18 {
@@ -257,6 +274,9 @@ object print {
 
       def withBody: Printer[Var] =
         (κ(".withBody(") *< show[Var] >* κ(")"))
+
+      def withHeaders[T]: Printer[List[Parameter.Header[T]]] =
+        (κ(".withHeaders(Headers(") *< sepBy(Http4sSpecifics.header[T], ", ") >* κ("))"))
     }
   }
 }
