@@ -56,11 +56,6 @@ lazy val docs = project
     micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
-      file("readme/README.md") -> ExtraMdFileConfig(
-        "index.md",
-        "home",
-        Map("title" -> "Home", "section" -> "home", "position" -> "0")
-      ),
       file("CHANGELOG.md") -> ExtraMdFileConfig(
         "changelog.md",
         "home",
@@ -69,19 +64,6 @@ lazy val docs = project
     )
   )
   .enablePlugins(MicrositesPlugin)
-
-lazy val readme = (project in file("readme"))
-  .settings(moduleName := "skeuomorph-readme")
-  .dependsOn(skeuomorph)
-  .settings(commonSettings)
-  .settings(noPublishSettings)
-  .settings(tutSettings)
-  .settings(
-    tutSourceDirectory := baseDirectory.value,
-    tutTargetDirectory := baseDirectory.value.getParentFile,
-    tutNameFilter := """README.md""".r
-  )
-  .enablePlugins(TutPlugin)
 
 // check for library updates whenever the project is [re]load
 onLoad in Global := { s =>
@@ -128,7 +110,7 @@ lazy val commonSettings = Seq(
     )
   ),
   orgProjectName := "Skeuomorph",
-  orgUpdateDocFilesSetting += baseDirectory.value / "readme",
+  orgUpdateDocFilesSetting += baseDirectory.value / "docs",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
@@ -173,8 +155,7 @@ lazy val commonSettings = Seq(
     (clean in Global).asRunnableItemFull,
     (compile in Compile).asRunnableItemFull,
     (test in Test).asRunnableItemFull,
-    "docs/tut".asRunnableItem,
-    "readme/tut".asRunnableItem
+    "docs/tut".asRunnableItem
   ),
   releaseIgnoreUntrackedFiles := true,
   coverageFailOnMinimum := false
