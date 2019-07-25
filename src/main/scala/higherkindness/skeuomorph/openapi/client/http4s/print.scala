@@ -54,6 +54,8 @@ object print {
     "implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]")
   val timeQueryParamEncoder: Printer[Unit] =
     κ("localDateTimeQueryEncoder: QueryParamEncoder[java.time.LocalDateTime], localDateQueryEncoder: QueryParamEncoder[java.time.LocalDate]")
+  val showQueryParamEncoder: Printer[Unit] =
+    κ("implicit def showQueryParameter[T: Show]: QueryParamEncoder[T] = QueryParamEncoder.stringQueryParamEncoder.contramap(_.show)")
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[Http.Operation[T]], (TraitName, ImplName))
   def implDefinition[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
@@ -66,7 +68,8 @@ object print {
         twoSpaces *< twoSpaces *< listEnconderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
-        twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine,
+        twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine *<
+        twoSpaces *< twoSpaces *< showQueryParamEncoder *< newLine,
       sepBy(twoSpaces *< methodImpl(http4sSpecifics.withBody), "\n") >* newLine *< κ("  }") *< newLine,
       http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
@@ -204,6 +207,7 @@ object print {
     }
 
   private val packages = List(
+    "cats._",
     "cats.effect._",
     "cats.implicits._",
     "io.circe._",

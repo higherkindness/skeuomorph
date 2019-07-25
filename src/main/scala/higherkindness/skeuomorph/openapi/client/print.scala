@@ -354,9 +354,7 @@ object print {
           .toList
           .flatMap {
             case (response, tpe) =>
-              val x = typeAndSchemaFor(none, response, tpe) { tpe -> Nil }
-              println(s"$x")
-              x._3
+              typeAndSchemaFor(none, response, tpe) { tpe -> Nil }._3
           }
           .asRight
       case _ =>
@@ -403,14 +401,23 @@ object print {
       implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
+  private def parameterSchema[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
+    schemaWithName[T].contramap { x =>
+      x.description.getOrElse(x.name) -> x.schema
+    }
+
   private def clientTypes[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[List[Http.Operation[T]]] =
-    (sepBy(requestSchema[T], "\n") >* newLine, sepBy(responsesSchema[T], "\n") >* newLine)
+      implicit codecs: Printer[Codecs]): Printer[(List[Http.Operation[T]], List[Parameter[T]])] =
+    (
+      sepBy(requestSchema[T], "\n") >* newLine,
+      sepBy(responsesSchema[T], "\n") >* newLine,
+      optional(sepBy(parameterSchema[T], "\n")))
       .contramapN {
-        _.map { operation =>
-          (operation.operationId   -> operation.requestBody) ->
-            (operation.operationId -> operation.responses)
-        }.unzip
+        case (ops, params) =>
+          un(second(ops.map { operation =>
+            (operation.operationId   -> operation.requestBody) ->
+              (operation.operationId -> operation.responses)
+          }.unzip)(_ -> params.headOption.map(_ => params)))
       }
 
   def toOperationsWithPath[T](
@@ -424,13 +431,17 @@ object print {
       TraitName,
       TraitName,
       List[Http.Operation[T]],
-      (String, List[PackageName], List[Http.Operation[T]])) = {
+      (String, List[PackageName], (List[Http.Operation[T]], List[Parameter[T]]))) = {
     val traitName = TraitName(openApi)
-
     val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName, openApi.paths, componentsFrom(openApi)))) {
       case (a, b) => (a, (traitName, b))
     })
-    (List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply), a, b, c, (d._1.show, List.empty, d._2))
+    (
+      List("models._", "shapeless.{:+:, CNil}").map(PackageName.apply),
+      a,
+      b,
+      c,
+      (d._1.show, List.empty, (d._2, d._2.flatMap(_.parameters).distinct.filterNot(x => isBasicType(x.schema)))))
   }
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
@@ -439,7 +450,7 @@ object print {
       κ("trait ") *< show[TraitName] >* κ("[F[_]] {") >* newLine,
       space *< space *< κ("import ") *< show[TraitName] >* κ("._") >* newLine,
       sepBy(method[T], "\n") >* (newLine >* κ("}") >* newLine),
-      objectDef(clientTypes[T])
+      objectDef(clientTypes[T] >* newLine)
     ).contramapN(operationsTuple[T])
 
 }
