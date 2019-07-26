@@ -63,6 +63,6 @@ object Printer {
       Printer(cab(_).fold(fa.print, fb.print))
   }
 
-  implicit def showPrinter[T: Show]: Printer[T] = Printer(x => x.show)
+  def show[T: Show]: Printer[T] = Printer(_.show)
 
 }
