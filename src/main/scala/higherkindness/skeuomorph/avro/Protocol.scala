@@ -106,7 +106,7 @@ object Protocol {
 
   def fromFreesFProtocol[T, U](
       protocol: mu.Protocol[T])(implicit T: Basis[mu.Type, T], U: Basis[Type, U]): Option[Protocol[U]] = {
-    def fromMu: T => Option[U] = scheme.cataM(fromMuSchema.algebra)
+    val fromMu: T => Option[U] = scheme.cataM(fromMuSchema.algebra)
     val services: Option[List[Message[U]]] =
       protocol.services
         .filter(_.serializationType == SerializationType.Avro)
