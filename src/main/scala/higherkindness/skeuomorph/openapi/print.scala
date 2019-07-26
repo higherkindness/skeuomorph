@@ -74,11 +74,11 @@ object print {
 
         case (ObjectF(properties, _), _) if (properties.isEmpty) => "io.circe.Json"
         case (ArrayF(x), _)                                      => listDef.print(x)
-        case (EnumF(fields), Some(name)) =>
-          sealedTraitDef.print(name -> fields)
-        case (ReferenceF(schemasRegex(ref)), _)    => normalize(ref)
-        case (ReferenceF(parametersRegex(ref)), _) => normalize(ref)
-        case (ReferenceF(ref), _)                  => normalize(ref)
+        case (EnumF(fields), Some(name))                         => sealedTraitDef.print(name -> fields)
+        case (SumF(cases), Some(name))                           => s"type $name = " + cases.mkString(" :+: ") + " :+: CNil"
+        case (ReferenceF(schemasRegex(ref)), _)                  => normalize(ref)
+        case (ReferenceF(parametersRegex(ref)), _)               => normalize(ref)
+        case (ReferenceF(ref), _)                                => normalize(ref)
       }
     }
     Printer(scheme.cata(algebra))
@@ -92,6 +92,7 @@ object print {
       case EnumF(_)      => false
       case ArrayF(_)     => false
       case ReferenceF(_) => false
+      case SumF(_)       => false
       case _             => true
     }
   }
@@ -153,7 +154,12 @@ object print {
   final case class VarWithType[T](name: Var, tpe: Tpe[T])
   object VarWithType {
     def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): VarWithType[T] = VarWithType(Var(Tpe.name(tpe)), tpe)
-    def apply[T](name: String, tpe: T, required: Boolean, description: String, nestedTypes: List[String]): VarWithType[T] =
+    def apply[T](
+        name: String,
+        tpe: T,
+        required: Boolean,
+        description: String,
+        nestedTypes: List[String]): VarWithType[T] =
       VarWithType(Var(name), Tpe(tpe.asRight, required, description, nestedTypes))
   }
 

@@ -121,6 +121,14 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
                |
                |}""".stripMargin)
     }
-  }
 
+    "when sum is provided" >> {
+      schemaWithName
+        .print(
+          "Animal" -> Fixed.sum(
+            List(Fixed.reference("#/components/schemas/Dog"), Fixed.reference("#/components/schemas/Cat")))) must
+        ===("""|type Animal = Dog :+: Cat :+: CNil""".stripMargin)
+
+    }
+  }
 }

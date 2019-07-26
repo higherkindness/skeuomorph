@@ -63,6 +63,12 @@ object JsonDecoders {
         _      <- validateType(c, "string")
       } yield JsonSchemaF.enum[A](values).embed)
 
+  private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+    Decoder.instance(c =>
+      for {
+        values <- c.downField("oneOf").as[List[A]]
+      } yield JsonSchemaF.sum[A](values).embed)
+
   private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder.instance { c =>
       def propertyExists(name: String): Decoder.Result[Unit] =
@@ -73,7 +79,7 @@ object JsonDecoders {
       def isObject: Decoder.Result[Unit] =
         validateType(c, "object") orElse
           propertyExists("properties") orElse
-          propertyExists("allOf") orElse propertyExists("oneOf")
+          propertyExists("allOf")
       for {
         _        <- isObject
         required <- c.downField("required").as[Option[List[String]]]
@@ -99,6 +105,7 @@ object JsonDecoders {
 
   implicit def jsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     referenceJsonSchemaDecoder orElse
+      sumJsonSchemaDecoder orElse
       objectJsonSchemaDecoder orElse
       arrayJsonSchemaDecoder orElse
       enumJsonSchemaDecoder orElse
