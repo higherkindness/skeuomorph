@@ -75,7 +75,7 @@ object print {
         case (ObjectF(properties, _), _) if (properties.isEmpty) => "io.circe.Json"
         case (ArrayF(x), _)                                      => listDef.print(x)
         case (EnumF(fields), Some(name))                         => sealedTraitDef.print(name -> fields)
-        case (SumF(cases), Some(name))                           => s"type $name = " + cases.mkString(" :+: ") + " :+: CNil"
+        case (SumF(cases), Some(name))                           => sumDef.print(name -> cases)
         case (ReferenceF(schemasRegex(ref)), _)                  => normalize(ref)
         case (ReferenceF(parametersRegex(ref)), _)               => normalize(ref)
         case (ReferenceF(ref), _)                                => normalize(ref)
@@ -115,10 +115,25 @@ object print {
       case _         => false
     }
   }
+  def sumTypes[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[String] = {
+    def isSum(t: T): Boolean = {
+      import JsonSchemaF._
+      import qq.droste.syntax.project._
+      t.project match {
+        case SumF(_) => true
+        case _       => false
+      }
+    }
+    openApi.components.toList
+      .flatMap(_.schemas.toList)
+      .filter { case (_, t) => isSum(t) }
+      .map { case (x, _) => normalize(x) }
+  }
 
   sealed trait Codecs
   final case class CaseClassCodecs(name: String, fields: List[String]) extends Codecs
   final case class EnumCodecs(name: String, values: List[String])      extends Codecs
+  final case class SumCodecs(name: String, values: List[String])       extends Codecs
 
   final case class Tpe[T](tpe: Either[String, T], required: Boolean, description: String, nestedTypes: List[String])
   object Tpe {
@@ -165,8 +180,18 @@ object print {
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     objectDef(sepBy(schemaWithName, "\n")).contramap { x =>
-      ("models", List.empty, x.components.toList.flatMap(_.schemas))
+      (
+        ("models", none),
+        (List("shapeless.{:+:, CNil}", "shapeless.Coproduct") ++ sumTypes(x).map(x => s"$x._")).map(PackageName.apply),
+        x.components.toList.flatMap(_.schemas))
     }
+
+  private def sumDef(implicit codecs: Printer[Codecs]): Printer[(String, List[String])] =
+    divBy(
+      divBy(κ("type ") *< string, κ(" = "), sepBy(string, " :+: ") >* κ(" :+: CNil")),
+      newLine,
+      objectDef(codecs)
+    ).contramap(x => (x, ((x._1, none), List.empty, SumCodecs.apply _ tupled (x))))
 
   private def caseObjectDef: Printer[(String, String)] =
     (κ("final case object ") *< string >* κ(" extends "), string).contramapN { case (x, y) => (normalize(x), y) }
@@ -179,7 +204,7 @@ object print {
     divBy(κ("sealed trait ") *< string, newLine, objectDef(sealedTraitCompanionObjectDef))
       .contramap {
         case (name, fields) =>
-          (name, (name, List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
+          (name, ((name, none), List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
       }
 
   def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
@@ -190,24 +215,24 @@ object print {
   def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](
       implicit codecs: Printer[Codecs]): Printer[(String, List[(String, Tpe[T])])] =
     (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
-      ((x._1 -> x._2), (x._1, List.empty[PackageName], CaseClassCodecs(x._1, x._2.map(_._1))).some)
+      ((x._1 -> x._2), ((x._1, none), List.empty[PackageName], CaseClassCodecs(x._1, x._2.map(_._1))).some)
     }
 
   def typeAliasDef[T](typeSchemaDef: Printer[T])(
       implicit codecs: Printer[Codecs]): Printer[(String, T, Option[(List[PackageName], Codecs)])] =
     (κ("type ") *< string >* κ(" = "), typeSchemaDef, optional(newLine *< objectDef(codecs))).contramapN {
       case (name, tpe, codecInfo) =>
-        (name, tpe, codecInfo.map { case (x, y) => (name, x, y) })
+        (name, tpe, codecInfo.map { case (x, y) => ((name, none), x, y) })
     }
 
   def implicitVal[T: Basis[JsonSchemaF, ?], A](body: Printer[A]): Printer[(String, String, Tpe[T], A)] =
     (κ("implicit val ") *< string, string >* κ(": "), divBy(string, κ("["), tpe[T] >* κ("] = ")), body)
       .contramapN { case (a, b, c, d) => (a, b, (b, c), d) }
 
-  def objectDef[A](body: Printer[A]): Printer[(String, List[PackageName], A)] =
+  def objectDef[A](body: Printer[A]): Printer[((String, Option[String]), List[PackageName], A)] =
     divBy(
       divBy(
-        κ("object ") *< string >* κ(" {"),
+        divBy(κ("object ") *< string, κ(" "), optional(κ("extends ") *< string >* κ(" ")) >* κ("{")),
         newLine,
         sepBy(importDef, "\n")
       ),

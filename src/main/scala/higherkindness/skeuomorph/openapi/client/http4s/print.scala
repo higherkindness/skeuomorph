@@ -37,10 +37,10 @@ object print {
     (sepBy(importDef, "\n") >* newLine, implDefinition[T]).contramapN {
       case (packageName, openApi) =>
         (
-          packages ++ List(
+          packages ++ (List(
             s"${packageName.show}.${TraitName(openApi).show}",
             s"${packageName.show}.models._"
-          ).map(PackageName.apply),
+          ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply),
           openApi)
     }
 
@@ -73,7 +73,7 @@ object print {
       sepBy(twoSpaces *< methodImpl, "\n") >* newLine *< κ("  }") *< newLine,
       http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
       (
-        ImplName(x).show,
+        (ImplName(x).show, none),
         List.empty,
         (
           TraitName(x),

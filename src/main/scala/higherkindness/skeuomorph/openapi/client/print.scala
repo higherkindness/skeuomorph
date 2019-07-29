@@ -425,7 +425,7 @@ object print {
           (
             ops.map(operation => operation.operationId -> operation.requestBody),
             ops.map(operation => operation.operationId -> operation.responses),
-            params.headOption.map(_ => (parametersPackage, List.empty, params))
+            params.headOption.map(_ => ((parametersPackage, none), List.empty, params))
           )
       }
 
@@ -440,7 +440,7 @@ object print {
       TraitName,
       TraitName,
       List[Http.Operation[T]],
-      (String, List[PackageName], (List[Http.Operation[T]], List[Parameter[T]]))) = {
+      ((String, Option[String]), List[PackageName], (List[Http.Operation[T]], List[Parameter[T]]))) = {
     val traitName = TraitName(openApi)
     val (a, b, c, d) = un(second(duplicate(toOperationsWithPath(traitName, openApi.paths, componentsFrom(openApi)))) {
       case (a, b) => (a, (traitName, b))
@@ -453,7 +453,7 @@ object print {
       a,
       b,
       c,
-      (d._1.show, List.empty, (d._2, parameters)))
+      ((d._1.show, none), List.empty, (d._2, parameters)))
   }
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =

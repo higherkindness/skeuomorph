@@ -49,8 +49,8 @@ package object circe {
     (
       sepBy(space *< space *< importDef, "\n") >* newLine,
       optional(space *< space *< showEnum >* newLine),
-      space *< space *< (optional(circeEncoder[T]) >|< forProductCirceEncoder[T] >|< enumCirceEncoder) >* newLine,
-      space *< space *< (optional(circeDecoder[T]) >|< forProductCirceDecoder[T] >|< enumCirceDecoder) >* newLine,
+      space *< space *< (optional(circeEncoder[T]) >|< forProductCirceEncoder[T] >|< enumCirceEncoder >|< sumCirceEncoder) >* newLine,
+      space *< space *< (optional(circeDecoder[T]) >|< forProductCirceDecoder[T] >|< enumCirceDecoder >|< sumCirceDecoder) >* newLine,
       space *< space *< entityEncoder[T] >* newLine,
       space *< space *< entityEncoder[T] >* newLine,
       space *< space *< entityDecoder[T] >* newLine)
@@ -59,23 +59,41 @@ package object circe {
             if fields.forall(field =>
               (field.headOption.exists(x => x.isLetter && x.isLower) && field.forall(_.isLetterOrDigit))) =>
           val (default, optionType) = codecsTypes[T](name)
-          (packages, none, default.some.asLeft.asLeft, default.some.asLeft.asLeft, default, optionType, default)
+          (
+            packages,
+            none,
+            default.some.asLeft.asLeft.asLeft,
+            default.some.asLeft.asLeft.asLeft,
+            default,
+            optionType,
+            default)
         case CaseClassCodecs(name, fields) =>
           val (default, optionType) = codecsTypes[T](name)
           val withFields = un(second(default) { x =>
             x -> fields
           })
-          (packages, none, withFields.asRight.asLeft, withFields.asRight.asLeft, default, optionType, default)
+          (
+            packages,
+            none,
+            withFields.asRight.asLeft.asLeft,
+            withFields.asRight.asLeft.asLeft,
+            default,
+            optionType,
+            default)
         case EnumCodecs(name, values) =>
           val (default, optionType) = codecsTypes[T](name)
           (
             enumPackages,
             (name -> name, values.map(x => normalize(x) -> x)).some,
-            name.asRight,
-            (name, values).asRight,
+            name.asRight.asLeft,
+            (name, values).asRight.asLeft,
             default,
             optionType,
             default)
+        case SumCodecs(name, values) =>
+          val (default, optionType) = codecsTypes[T](name)
+          (enumPackages, none, (name, values).asRight, (name, values).asRight, default, optionType, default)
+
       }
 
   implicit def http4sCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[EntityCodecs[T]] =
@@ -110,6 +128,30 @@ package object circe {
       ).contramapN(x => flip(second(x)(_.map(x => x -> normalize(x)))))).contramap {
       case (x, xs) => (x, Tpe[T](x), x -> xs)
     }
+
+  def sumCirceEncoder[T: Basis[JsonSchemaF, ?], B]: Printer[(String, List[String])] = {
+    val polyObject: Printer[((String, Option[String]), List[PackageName], List[(String, String, String)])] = objectDef(
+      sepBy(
+        (
+          κ("implicit def ") *< string >* κ(" = "),
+          κ("at[") *< string >* κ("]"),
+          κ("(x => Encoder[") *< string >* κ("].apply(x))")).contramapN(identity),
+        "\n"
+      )
+    )
+    encoderDef[T, ((String, Option[String]), List[PackageName], List[(String, String, String)])](
+      κ("Encoder.instance { x =>") *< newLine *< κ("import shapeless.Poly1") *< newLine *< polyObject >* newLine >* κ(
+        "x.fold(json)") >* newLine >* κ("}")
+    ).contramap {
+      case (x, xs) => (x, Tpe[T](x), (("json", "Poly1".some), List.empty, xs.map(x => (x.toLowerCase(), x, x))))
+    }
+  }
+
+  def sumCirceDecoder[T: Basis[JsonSchemaF, ?], B]: Printer[(String, List[String])] =
+    decoderDef[T, (List[(String, String)])](
+      sepBy(
+        divBy(κ("Decoder[") *< string >* κ("]"), κ(".map(x => "), κ("Coproduct[") *< string >* κ("](x))")),
+        " orElse ")).contramap { case (x, xs) => (x, Tpe[T](x), xs.map(_ -> x)) }
 
   def circeDecoder[T: Basis[JsonSchemaF, ?]]: Printer[(String, Tpe[T])] =
     decoderDef(κ("deriveDecoder[") *< tpe[T] >* κ("]"))
