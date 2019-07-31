@@ -64,10 +64,7 @@ object JsonDecoders {
       } yield JsonSchemaF.enum[A](values).embed)
 
   private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
-    Decoder.instance(c =>
-      for {
-        values <- c.downField("oneOf").as[List[A]]
-      } yield JsonSchemaF.sum[A](values).embed)
+    Decoder.instance(_.downField("oneOf").as[List[A]].map(JsonSchemaF.sum[A](_).embed))
 
   private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder.instance { c =>

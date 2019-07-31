@@ -177,22 +177,7 @@ object JsonEncoders {
       "trace",
       "servers",
       "parameters"
-    ) { i =>
-      (
-        i.ref,
-        i.summary,
-        i.description,
-        i.get,
-        i.put,
-        i.post,
-        i.delete,
-        i.options,
-        i.head,
-        i.patch,
-        i.trace,
-        i.servers,
-        i.parameters)
-    }
+    ) { Path.ItemObject.unapply(_).get }
 
   implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
     Encoder.forProduct4(
