@@ -168,10 +168,9 @@ object print {
       request: Request[T]): Option[VarWithType[T]] =
     jsonFrom(request.content)
       .flatMap(
-        x =>
-          x.schema.map(x =>
-            VarWithType.tpe[T](
-              Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId)), Nil))))
+        _.schema.map(x =>
+          VarWithType.tpe[T](
+            Tpe(x, request.required, request.description.getOrElse(defaultRequestName(operationId)), Nil))))
 
   private def referenceTuple[T: Basis[JsonSchemaF, ?]](reference: Reference): Option[VarWithType[T]] =
     reference.ref match {
