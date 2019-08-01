@@ -119,7 +119,7 @@ lazy val commonSettings = Seq(
     "io.circe"            %% "circe-testing" % V.circe % Test,
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
-    %%("circe-parser", V.circe)       % Test,
+    %%("circe-parser", V.circe)       ,
     %%("scalacheck", V.scalacheck)    % Test,
     %%("specs2-core", V.specs2)       % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
