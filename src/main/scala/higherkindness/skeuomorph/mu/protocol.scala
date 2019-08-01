@@ -32,6 +32,14 @@ object SerializationType {
   case object AvroWithSchema extends SerializationType
 }
 
+sealed trait CompressionType extends Product with Serializable
+object CompressionType {
+  case object Gzip     extends CompressionType
+  case object Identity extends CompressionType
+}
+
+final case class IdiomaticEndpoints(pkg: Option[String], value: Boolean)
+
 final case class Protocol[T](
     name: String,
     pkg: Option[String],
@@ -45,7 +53,7 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Service]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](
+  def fromAvroProtocol[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
       proto: avro.Protocol[T])(implicit T: Basis[avro.Type, T], U: Basis[mu.Type, U]): Option[Protocol[U]] = {
     val toFreestyle: T => Option[U] = scheme.cataM(Transform.transformAvro[U].algebra)
     val toOperation: avro.Protocol.Message[T] => Option[Service.Operation[U]] =
@@ -59,11 +67,25 @@ object Protocol {
         }
       }
 
-    (proto.messages.traverse(toOperation), proto.types.traverse(toFreestyle)).mapN((ops, types) =>
-      Protocol(proto.name, proto.namespace, Nil, types, List(Service(proto.name, SerializationType.Avro, ops)), Nil))
+    (proto.messages.traverse(toOperation), proto.types.traverse(toFreestyle)).mapN(
+      (ops, types) =>
+        Protocol(
+          proto.name,
+          proto.namespace,
+          Nil,
+          types,
+          List(
+            Service(
+              proto.name,
+              SerializationType.Avro,
+              compressionType,
+              IdiomaticEndpoints(proto.namespace, useIdiomaticEndpoints),
+              ops)),
+          Nil
+      ))
   }
 
-  def fromProtobufProto[T, U](
+  def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
       protocol: protobuf.Protocol[T])(implicit T: Basis[protobuf.Type, T], U: Basis[mu.Type, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
@@ -83,14 +105,26 @@ object Protocol {
       options = protocol.options,
       declarations = protocol.declarations.map(toMu),
       services = protocol.services
-        .map(s => new Service[U](s.name, SerializationType.Protobuf, s.operations.map(toOperation))),
+        .map(
+          s =>
+            new Service[U](
+              s.name,
+              SerializationType.Protobuf,
+              compressionType,
+              IdiomaticEndpoints(Option(protocol.pkg), useIdiomaticEndpoints),
+              s.operations.map(toOperation))),
       imports = protocol.imports.map(toImports)
     )
 
   }
 }
 
-final case class Service[T](name: String, serializationType: SerializationType, operations: List[Service.Operation[T]])
+final case class Service[T](
+    name: String,
+    serializationType: SerializationType,
+    compressionType: CompressionType,
+    idiomaticEndpoints: IdiomaticEndpoints,
+    operations: List[Service.Operation[T]])
 object Service {
   final case class OperationType[T](tpe: T, stream: Boolean)
   final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])
