@@ -81,11 +81,7 @@ package object avro {
       doc: Option[String],
       fields: List[FieldF[A]]
   ): Type[A] =
-    InjAvroRecord[A](
-      Ann(
-        TRecord(name, fields),
-        AvroMetadata.AMList(
-          List(AvroMetadata.NameSpace(namespace), AvroMetadata.Aliases(aliases), AvroMetadata.Doc(doc)))))
+    InjAvroRecord[A](Ann(TRecord(name, fields), AvroMetadata.fromParts(namespace, aliases, doc, None)))
 
   object Type {
 

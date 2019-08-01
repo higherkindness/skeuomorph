@@ -264,10 +264,7 @@ object types {
         doc: Option[String],
         order: Option[Order],
         tpe: A): FieldF[A] =
-      InjAvroField.inj(
-        Ann(
-          Field[A](name, tpe),
-          AvroMetadata.AMList(List(AvroMetadata.Aliases(aliases), AvroMetadata.Doc(doc), AvroMetadata.AMOrder(order)))))
+      InjAvroField.inj(Ann(Field[A](name, tpe), AvroMetadata.fromParts(None, aliases, doc, order)))
 
     def SimpleField[A](name: String, tpe: A): FieldF[A] = InjSimpleField.inj(Field(name, tpe))
 

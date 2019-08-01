@@ -37,6 +37,7 @@ import higherkindness.skeuomorph.protobuf._
 import scala.collection.JavaConverters._
 
 import iota.{CopK, TListK}
+import _root_.cats.data.NonEmptyList
 
 object instances {
 
@@ -49,10 +50,10 @@ object instances {
 
   implicit val arbAvroMetadata: Arbitrary[AvroMetadata] = {
     val genOrder  = Gen.oneOf(Order.Ascending, Order.Descending, Order.Ignore)
-    val aliases   = Gen.listOf(nonEmptyString).map(AvroMetadata.Aliases)
-    val namespace = Gen.option(nonEmptyString).map(AvroMetadata.NameSpace)
-    val doc       = Gen.option(nonEmptyString).map(AvroMetadata.Doc)
-    val order     = Gen.option(genOrder).map(AvroMetadata.AMOrder)
+    val aliases   = Gen.nonEmptyListOf(nonEmptyString).map(l => AvroMetadata.Aliases(NonEmptyList.fromListUnsafe(l)))
+    val namespace = nonEmptyString.map(AvroMetadata.NameSpace)
+    val doc       = nonEmptyString.map(AvroMetadata.Doc)
+    val order     = genOrder.map(AvroMetadata.AMOrder)
     val list      = Gen.listOf(Gen.oneOf(aliases, namespace, doc, order)).map(AvroMetadata.AMList)
 
     Arbitrary(

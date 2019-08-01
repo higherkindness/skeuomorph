@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-package higherkindness.skeuomorph
+package higherkindness
+package skeuomorph
 package avro
 
-import cats.Eq
+import cats.{Eq, Foldable}
+import cats.instances.list._
+import cats.data.NonEmptyList
+import droste.macros.deriveFixedPoint
+import cats.Monoid
 
 object types {
 
@@ -35,14 +40,37 @@ object types {
     }
   }
 
-  sealed trait AvroMetadata
+  @deriveFixedPoint sealed trait AvroMetadata
   object AvroMetadata {
-    case class Aliases(aliases: List[String])       extends AvroMetadata
-    case class NameSpace(namespace: Option[String]) extends AvroMetadata
-    case class Doc(doc: Option[String])             extends AvroMetadata
-    case class AMOrder(order: Option[Order])        extends AvroMetadata
-    case class AMList(list: List[AvroMetadata])     extends AvroMetadata
+    case class Aliases(aliases: NonEmptyList[String]) extends AvroMetadata
+    case class NameSpace(namespace: String)           extends AvroMetadata
+    case class Doc(doc: String)                       extends AvroMetadata
+    case class AMOrder(order: Order)                  extends AvroMetadata
+    case class AMList(list: List[AvroMetadata])       extends AvroMetadata
+
+    def fromParts(
+      namespace: Option[String],
+      aliases: List[String],
+      doc: Option[String],
+      order: Option[Order],      
+    ): AvroMetadata =
+      Foldable[List].fold(
+        namespace.map(NameSpace).toList ++
+          NonEmptyList.fromList(aliases).map(Aliases).toList ++
+          doc.map(Doc).toList ++
+          order.map(AMOrder).toList)
+
+
 
     implicit val eq: Eq[AvroMetadata] = Eq.fromUniversalEquals
+    implicit val monoid: Monoid[AvroMetadata] = new Monoid[AvroMetadata] {
+      def empty = AMList(Nil)
+      def combine(x: AvroMetadata, y: AvroMetadata): AvroMetadata = (x, y) match {
+        case (AMList(x), AMList(y)) => AMList(x ++ y)
+        case (AMList(x), y)         => AMList(y :: x)
+        case (x, AMList(y))         => AMList(x :: y)
+        case (x, y)                 => AMList(List(x, y))
+      }
+    }
   }
 }
