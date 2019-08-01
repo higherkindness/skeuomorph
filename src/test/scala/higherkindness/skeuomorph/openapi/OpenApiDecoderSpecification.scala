@@ -306,6 +306,29 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         "info" : {
           "title": "Swagger Petstore",
           "version": "1.0.0"
+        }
+      }
+      """)
+
+      Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        OpenApi[JsonSchemaF.Fixed](
+          "3.0.0",
+          Info("Swagger Petstore", None, "1.0.0"),
+          List.empty,
+          Map.empty,
+          None,
+          List.empty,
+          None
+        ))
+    }
+
+    "when paths are provided" >> {
+      val json = unsafeParse("""
+      {
+        "openapi" : "3.0.0",
+        "info" : {
+          "title": "Swagger Petstore",
+          "version": "1.0.0"
         },
         "paths": {
           "/pets": {

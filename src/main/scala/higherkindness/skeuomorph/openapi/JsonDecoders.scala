@@ -319,7 +319,7 @@ object JsonDecoders {
           openapi: String,
           info: Info,
           servers: Option[List[Server]],
-          paths: Map[String, Path.ItemObject[A]],
+          paths: Option[Map[String, Path.ItemObject[A]]],
           components: Option[Components[A]],
           tags: Option[List[Tag]],
           externalDocs: Option[ExternalDocs]) =>
@@ -327,7 +327,7 @@ object JsonDecoders {
           openapi,
           info,
           servers.getOrElse(List.empty),
-          paths,
+          paths.getOrElse(Map.empty),
           components,
           tags.getOrElse(List.empty),
           externalDocs))
