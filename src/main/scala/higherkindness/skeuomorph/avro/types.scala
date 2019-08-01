@@ -52,7 +52,7 @@ object types {
       namespace: Option[String],
       aliases: List[String],
       doc: Option[String],
-      order: Option[Order],      
+      order: Option[Order]
     ): AvroMetadata =
       Foldable[List].fold(
         namespace.map(NameSpace).toList ++
