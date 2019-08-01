@@ -103,10 +103,14 @@ object print {
       def apply[T](verb: Verb, path: Path, operation: openapi.schema.Path.Operation[T]): OperationId = {
         val (paths, varPaths, queries) = Path.splitParts(path)
         val params                     = varPaths ++ queries
-        OperationId(decapitalize(normalize(operation.operationId.getOrElse {
-          s"${Http.Verb.methodFrom(verb)}${paths.mkString}${if (params.nonEmpty) s"By${params.mkString}"
-          else ""}"
-        })))
+        OperationId(
+          decapitalize(
+            normalize(operation.operationId
+              .getOrElse {
+                val printVerb             = Http.Verb.methodFrom(verb)
+                val printParamsIfRequired = if (params.nonEmpty) s"By${params.mkString}" else ""
+                s"${printVerb}${paths.mkString}${printParamsIfRequired}"
+              })))
       }
 
       implicit val operationIdShow: Show[OperationId] = Show.show(_.value)
@@ -201,13 +205,13 @@ object print {
       operation.operationId -> operation.responses)
 
   private def defaultRequestName(operationId: Http.OperationId): String =
-    s"${operationId.show}Request".capitalize
+    show"${operationId}Request".capitalize
 
   case class TypeAliasErrorResponse(operationId: Http.OperationId)
 
   object TypeAliasErrorResponse {
     implicit val typeAliasErrorResponse: Show[TypeAliasErrorResponse] =
-      Show.show(x => s"${x.operationId.show}ErrorResponse".capitalize)
+      Show.show(x => show"${x.operationId}ErrorResponse".capitalize)
   }
 
   private def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
@@ -237,7 +241,7 @@ object print {
         case 1 => responseOrType.print(y.head._2)
         case _ =>
           val success = successType(y).fold("Unit")(responseOrType.print)
-          s"Either[${defaultName.show}, $success]"
+          show"Either[$defaultName, $success]"
       }
   }
 
@@ -287,7 +291,7 @@ object print {
       operationId: Http.OperationId,
       responseOr: Either[Response[T], Reference])(implicit codecs: Printer[Codecs]): (String, String, List[String]) = {
     def unexpectedErrorName(operationId: Http.OperationId): String =
-      s"${operationId.show}UnexpectedErrorResponse".capitalize
+      show"${operationId}UnexpectedErrorResponse".capitalize
     val tpe     = responseOrType.print(responseOr)
     val newType = unexpectedErrorName(operationId)
     def statusCaseClass(tpe: String): String =
@@ -311,7 +315,7 @@ object print {
     responseOr.left.toOption
       .map { response =>
         def defaultResponseErrorName(operationId: Http.OperationId, name: String): String =
-          s"${operationId.show}${normalize(name).capitalize}Error".capitalize
+          show"${operationId}${normalize(name).capitalize}Error".capitalize
         val (newTpe, anonymousType, schemas) = typeAndSchemaFor(operationId.some, response, tpe) {
           val newTpe = defaultResponseErrorName(operationId, response.description)
           newTpe -> List(caseClassDef.print(newTpe -> List("value" -> Tpe[T](tpe))))

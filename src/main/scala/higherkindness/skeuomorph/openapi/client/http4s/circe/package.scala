@@ -44,6 +44,8 @@ package object circe {
     val tpe = Tpe[T](name)
     (name -> tpe) -> (s"Option${name}" -> tpe.copy(required = false))
   }
+  protected def isIdentifier: String => Boolean =
+    field => field.headOption.exists(x => x.isLetter && x.isLower) && field.forall(_.isLetterOrDigit)
 
   implicit def circeCodecsPrinter[T: Basis[JsonSchemaF, ?]]: Printer[Codecs] =
     (
@@ -55,9 +57,7 @@ package object circe {
       space *< space *< entityEncoder[T] >* newLine,
       space *< space *< entityDecoder[T] >* newLine)
       .contramapN {
-        case CaseClassCodecs(name, fields)
-            if fields.forall(field =>
-              (field.headOption.exists(x => x.isLetter && x.isLower) && field.forall(_.isLetterOrDigit))) =>
+        case CaseClassCodecs(name, fields) if fields.forall(isIdentifier) =>
           val (default, optionType) = codecsTypes[T](name)
           (
             packages,
