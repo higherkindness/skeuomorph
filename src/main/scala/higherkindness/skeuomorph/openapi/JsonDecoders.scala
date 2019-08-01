@@ -63,6 +63,9 @@ object JsonDecoders {
         _      <- validateType(c, "string")
       } yield JsonSchemaF.enum[A](values).embed)
 
+  private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+    Decoder.instance(_.downField("oneOf").as[List[A]].map(JsonSchemaF.sum[A](_).embed))
+
   private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder.instance { c =>
       def propertyExists(name: String): Decoder.Result[Unit] =
@@ -73,7 +76,7 @@ object JsonDecoders {
       def isObject: Decoder.Result[Unit] =
         validateType(c, "object") orElse
           propertyExists("properties") orElse
-          propertyExists("allOf") orElse propertyExists("oneOf")
+          propertyExists("allOf")
       for {
         _        <- isObject
         required <- c.downField("required").as[Option[List[String]]]
@@ -99,6 +102,7 @@ object JsonDecoders {
 
   implicit def jsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     referenceJsonSchemaDecoder orElse
+      sumJsonSchemaDecoder orElse
       objectJsonSchemaDecoder orElse
       arrayJsonSchemaDecoder orElse
       enumJsonSchemaDecoder orElse
@@ -238,7 +242,7 @@ object JsonDecoders {
         ))
 
   implicit def itemObjectDecoder[A: Decoder]: Decoder[Path.ItemObject[A]] =
-    Decoder.forProduct12(
+    Decoder.forProduct13(
       "ref",
       "summary",
       "description",
@@ -250,7 +254,8 @@ object JsonDecoders {
       "head",
       "patch",
       "trace",
-      "servers")(
+      "servers",
+      "parameters")(
       (
           (
               ref: Option[String], // $ref
@@ -264,7 +269,9 @@ object JsonDecoders {
               head: Option[Path.Operation[A]],
               patch: Option[Path.Operation[A]],
               trace: Option[Path.Operation[A]],
-              servers: Option[List[Server]]) =>
+              servers: Option[List[Server]],
+              parameters: Option[List[Either[Parameter[A], Reference]]]
+          ) =>
             Path.ItemObject(
               ref,
               summary,
@@ -277,19 +284,26 @@ object JsonDecoders {
               head,
               patch,
               trace,
-              servers.getOrElse(List.empty))))
+              servers.getOrElse(List.empty),
+              parameters.getOrElse(List.empty))))
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
-    Decoder.forProduct3(
+    Decoder.forProduct4(
       "schemas",
       "responses",
-      "requestBodies"
+      "requestBodies",
+      "parameters"
     )(
       (
           schemas: Option[Map[String, A]],
           responses: Option[Map[String, Either[Response[A], Reference]]],
-          requestBodies: Option[Map[String, Either[Request[A], Reference]]]) =>
-        Components(schemas.getOrElse(Map.empty), responses.getOrElse(Map.empty), requestBodies.getOrElse(Map.empty)))
+          requestBodies: Option[Map[String, Either[Request[A], Reference]]],
+          parameters: Option[Map[String, Either[Parameter[A], Reference]]]) =>
+        Components(
+          schemas.getOrElse(Map.empty),
+          responses.getOrElse(Map.empty),
+          requestBodies.getOrElse(Map.empty),
+          parameters.getOrElse(Map.empty)))
 
   implicit def openApiDecoder[A: Decoder]: Decoder[OpenApi[A]] =
     Decoder.forProduct7(

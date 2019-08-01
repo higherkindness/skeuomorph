@@ -89,6 +89,16 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         ))
       decoder.decodeJson(enumType) must beRight(Fixed.enum(List("green", "blue")))
     }
+    "when sum object is provided" >> {
+      val sumType = Json.obj(
+        "oneOf" -> Json.arr(
+          Json.obj(s"$$ref" -> Json.fromString("#/components/schemas/Cat")),
+          Json.obj(s"$$ref" -> Json.fromString("#/components/schemas/Dog"))
+        )
+      )
+      decoder.decodeJson(sumType) must beRight(
+        Fixed.sum(List(Fixed.reference("#/components/schemas/Cat"), Fixed.reference("#/components/schemas/Dog"))))
+    }
     "when array object is provided" >> {
       val arrayType = Json.obj(
         "type" -> Json.fromString("array"),
