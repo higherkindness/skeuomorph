@@ -34,14 +34,15 @@ object print {
   def impl[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]): Printer[(PackageName, OpenApi[T])] =
-    (sepBy(importDef, "\n") >* newLine, implDefinition[T]).contramapN {
+    optional(divBy(sepBy(importDef, "\n"), newLine, implDefinition[T])).contramap {
       case (packageName, openApi) =>
-        (
-          packages ++ (List(
-            s"${packageName.show}.${TraitName(openApi).show}",
-            s"${packageName.show}.models._"
-          ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply),
-          openApi)
+        openApi.paths.toList.headOption.map(
+          _ =>
+            packages ++ (List(
+              s"${packageName.show}.${TraitName(openApi).show}",
+              s"${packageName.show}.models._"
+            ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply) ->
+            openApi)
     }
 
   val listEnconderPrinter: Printer[Unit] = κ(
@@ -60,7 +61,7 @@ object print {
   def implDefinition[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]): Printer[OpenApi[T]] =
-    objectDef[ImplDef[T]]((
+    optional(objectDef[ImplDef[T]]((
       κ("  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)") *< κ("(implicit ") *< timeQueryParamEncoder *< κ(
         ")") *< κ(": ") *< show[TraitName] >* κ("[F]"),
       κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
@@ -71,16 +72,18 @@ object print {
         twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< showQueryParamEncoder *< newLine,
       sepBy(twoSpaces *< methodImpl, "\n") >* newLine *< κ("  }") *< newLine,
-      http4sSpecifics.applyMethod).contramapN(identity)).contramap { x =>
-      (
-        (ImplName(x).show, none),
-        List.empty,
-        (
-          TraitName(x),
-          TraitName(x),
-          List(PackageName(s"${TraitName(x).show}._")),
-          toOperationsWithPath(TraitName(x), x.paths, componentsFrom(x))._2,
-          TraitName(x) -> ImplName(x)))
+      http4sSpecifics.applyMethod).contramapN(identity))).contramap { x =>
+      x.paths.toList.headOption.map(
+        _ =>
+          (
+            (ImplName(x).show, none),
+            List.empty,
+            (
+              TraitName(x),
+              TraitName(x),
+              List(PackageName(s"${TraitName(x).show}._")),
+              toOperationsWithPath(TraitName(x), x.paths, componentsFrom(x))._2,
+              TraitName(x) -> ImplName(x))))
     }
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =

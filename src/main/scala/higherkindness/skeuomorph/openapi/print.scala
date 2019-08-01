@@ -179,11 +179,15 @@ object print {
   }
 
   def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
-    objectDef(sepBy(schemaWithName, "\n")).contramap { x =>
-      (
-        ("models", none),
-        (List("shapeless.{:+:, CNil}", "shapeless.Coproduct") ++ sumTypes(x).map(x => s"$x._")).map(PackageName.apply),
-        x.components.toList.flatMap(_.schemas))
+    optional(objectDef(sepBy(schemaWithName, "\n"))).contramap { x =>
+      val models = x.components.toList.flatMap(_.schemas)
+      models.headOption.map(
+        _ =>
+          (
+            ("models", none),
+            (List("shapeless.{:+:, CNil}", "shapeless.Coproduct") ++ sumTypes(x).map(x => s"$x._"))
+              .map(PackageName.apply),
+            x.components.toList.flatMap(_.schemas)))
     }
 
   private def sumDef(implicit codecs: Printer[Codecs]): Printer[(String, List[String])] =

@@ -460,12 +460,13 @@ object print {
   }
 
   def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
-    (
-      sepBy(importDef, "\n") >* newLine,
-      κ("trait ") *< show[TraitName] >* κ("[F[_]] {") >* newLine,
-      space *< space *< κ("import ") *< show[TraitName] >* κ("._") >* newLine,
-      sepBy(method[T], "\n") >* (newLine >* κ("}") >* newLine),
-      objectDef(clientTypes[T] >* newLine)
-    ).contramapN(operationsTuple[T])
+    optional(
+      (
+        sepBy(importDef, "\n") >* newLine,
+        κ("trait ") *< show[TraitName] >* κ("[F[_]] {") >* newLine,
+        space *< space *< κ("import ") *< show[TraitName] >* κ("._") >* newLine,
+        sepBy(method[T], "\n") >* (newLine >* κ("}") >* newLine),
+        objectDef(clientTypes[T] >* newLine)
+      ).contramapN(operationsTuple[T])).contramap(x => x.paths.toList.headOption.map(_ => x))
 
 }

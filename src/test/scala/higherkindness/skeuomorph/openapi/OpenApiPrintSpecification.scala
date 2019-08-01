@@ -26,6 +26,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
   import OpenApiPrintSpecification._
 
   "models should able to print" >> {
+    "when not types are provided" >> {
+      import client.http4s.circe._
+      model.print(petstoreOpenApi) must ===("")
+    }
     "when a basic type is provided" >> {
       import client.http4s.circe._
       model.print(petstoreOpenApi.withSchema("Foo", Fixed.string())) must
@@ -242,6 +246,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
   "Client trait should able to print" >> {
     import client.print._
+    "when there are no paths" >> {
+      import client.http4s.circe._
+      interfaceDefinition.print(payloadOpenApi) must ===("")
+    }
 
     "when a post operation is provided" >> {
       import client.http4s.circe._
@@ -740,6 +748,10 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     }
 
+    "when there are no paths" >> {
+      implDefinition.print(petstoreOpenApi) must ===("")
+    }
+
     "when a put and delete are provided" >> {
       implDefinition.print(petstoreOpenApi.withPath(mediaTypeReferencePutDelete)) must ===(
         s"""|object PetstoreHttpClient {
@@ -1040,6 +1052,14 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         |}""".stripMargin
       )
     }
+
+    "when there are no paths" >> {
+      import client.http4s.print.impl
+      import client.http4s.print.v18._
+      import Printer.avoid._
+      impl.print(PackageName("petstore") -> petstoreOpenApi) must ===("")
+    }
+
   }
 }
 
