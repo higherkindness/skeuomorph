@@ -1,7 +1,8 @@
+dist: xenial
 language: scala
 
 jdk:
-- oraclejdk8
+- openjdk8
 
 scala:
 - 2.12.8
@@ -45,7 +46,7 @@ jobs:
       scala: 2.12.8
       if: branch = master AND type != pull_request
       script:
-        - bash <(curl -s https://codecov.io/bash) -t 2a67f0e7-2605-4f25-abab-516ee953a08c
+        - bash <(curl -s https://codecov.io/bash)
         - if grep -q "SNAPSHOT" version.sbt; then
             sbt +publish;
           else
