@@ -1,5 +1,19 @@
 # Changelog
 
+## 09/11/2019 - Version 0.0.12
+
+Release changes:
+
+* Print encoders ([#109](https://github.com/higherkindness/skeuomorph/pull/109))
+* Handle imports from nested folders ([#112](https://github.com/higherkindness/skeuomorph/pull/112))
+* Removes the optionality in Coproducts ([#119](https://github.com/higherkindness/skeuomorph/pull/119))
+* Nested object ([#116](https://github.com/higherkindness/skeuomorph/pull/116))
+* Fix readme/microsite ([#118](https://github.com/higherkindness/skeuomorph/pull/118))
+* Normalize and more support for open api spec ([#121](https://github.com/higherkindness/skeuomorph/pull/121))
+* Open api parser ([#123](https://github.com/higherkindness/skeuomorph/pull/123))
+* Release 0.0.12 ([#124](https://github.com/higherkindness/skeuomorph/pull/124))
+
+
 ## 07/05/2019 - Version 0.0.11
 
 Release changes:
