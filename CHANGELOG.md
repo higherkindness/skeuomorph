@@ -1,5 +1,12 @@
 # Changelog
 
+## 09/16/2019 - Version 0.0.13
+
+Release changes:
+
+* Release 0.0.13 ([#125](https://github.com/higherkindness/skeuomorph/pull/125))
+
+
 ## 09/11/2019 - Version 0.0.12
 
 Release changes:
