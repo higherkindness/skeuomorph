@@ -7,10 +7,10 @@ import sbtorgpolicies.templates.badges._
 
 val V = new {
   val avro             = "1.8.2"
-  val betterMonadicFor = "0.2.4"
+  val betterMonadicFor = "0.3.1"
   val cats             = "1.6.0"
   val catsEffect       = "1.2.0"
-  val catsScalacheck   = "0.1.0"
+  val catsScalacheck   = "0.1.1"
   val circe            = "0.11.1"
   val droste           = "0.6.0"
   val kindProjector    = "0.9.9"
@@ -18,7 +18,7 @@ val V = new {
   val scalacheck       = "1.13.5"
   val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
   val protoc           = "3.6.0.1"
-  val protobuf         = "3.6.1"
+  val protobuf         = "3.10.0"
 }
 
 lazy val skeuomorph = project
@@ -26,7 +26,7 @@ lazy val skeuomorph = project
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
   .settings( libraryDependencies ++= Seq(
-    ("com.lihaoyi" % "ammonite" % "1.5.0" % "test").cross(CrossVersion.full)
+    ("com.lihaoyi" % "ammonite" % "1.6.7" % "test").cross(CrossVersion.full)
   ))
   .settings(
     sourceGenerators in Test += Def.task {
