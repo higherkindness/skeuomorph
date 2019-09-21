@@ -18,7 +18,7 @@ val V = new {
   val scalacheck       = "1.13.5"
   val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
   val protoc           = "3.6.0.1"
-  val protobuf         = "3.6.1"
+  val protobuf         = "3.10.0"
 }
 
 lazy val skeuomorph = project
