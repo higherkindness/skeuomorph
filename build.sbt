@@ -26,7 +26,7 @@ lazy val skeuomorph = project
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
   .settings( libraryDependencies ++= Seq(
-    ("com.lihaoyi" % "ammonite" % "1.5.0" % "test").cross(CrossVersion.full)
+    ("com.lihaoyi" % "ammonite" % "1.6.7" % "test").cross(CrossVersion.full)
   ))
   .settings(
     sourceGenerators in Test += Def.task {
