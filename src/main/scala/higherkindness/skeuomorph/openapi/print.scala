@@ -81,7 +81,7 @@ object print {
         case (ReferenceF(ref), _)                                => normalize(ref)
       }
     }
-    Printer(scheme.cata(algebra))
+    Printer.print(scheme.cata(algebra))
   }
 
   def isBasicType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
@@ -147,7 +147,8 @@ object print {
       identity,
       x =>
         tpe.nestedTypes.headOption.map(_ => s"${tpe.nestedTypes.mkString(".")}.").getOrElse("") +
-          Printer(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
+          Printer
+            .print(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
             .print(x)
     )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
