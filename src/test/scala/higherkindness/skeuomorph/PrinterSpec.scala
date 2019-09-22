@@ -19,12 +19,10 @@ package higherkindness.skeuomorph
 import org.typelevel.discipline.specs2.Discipline
 import cats.kernel.laws.discipline.{MonoidTests, SemigroupTests}
 import cats.laws.discipline.ContravariantMonoidalTests
-import cats.laws.discipline.eq._
 
 import cats.ContravariantSemigroupal
 import cats.ContravariantMonoidal
 import cats.kernel.Eq
-import cats.instances.string._
 
 import org.specs2._
 import org.scalacheck._
@@ -33,6 +31,8 @@ class PrinterSpec extends Specification with ScalaCheck with Discipline {
 
   implicit def printerArbitrary[T: Cogen]: Arbitrary[Printer[T]] =
     Arbitrary(implicitly[Arbitrary[T => String]].arbitrary.map(Printer.apply))
+
+  implicit def eqStringT[T]: Eq[T => String] = Eq.fromUniversalEquals[T => String]
 
   implicit def printerEq[T: Arbitrary]: Eq[Printer[T]] =
     Eq.by[Printer[T], T => String](_.print)
