@@ -24,20 +24,19 @@ install:
 - gem install sass
 - gem install jekyll -v 3.8.3
 
-script:
-- curl -s https://codecov.io/bash > .codecov
-- sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
-- chmod +x .codecov
-- if [ $TRAVIS_SCALA_VERSION = "2.12.10" ]; then sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/tut; fi
-- if [ $TRAVIS_SCALA_VERSION = "2.12.10" ]; then ./.codecov -X gcov; fi
-- if [ $TRAVIS_SCALA_VERSION = "2.11.12" ]; then sbt ++$TRAVIS_SCALA_VERSION clean test; fi
-
 stages:
-- test
+- tests
 - deploy
 
 jobs:
   include:
+    - stage: tests
+      scala: 2.12.10
+      - curl -s https://codecov.io/bash > .codecov
+      - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
+      - chmod +x .codecov
+      - sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/tut
+      - ./.codecov -X gcov
     - stage: deploy
       scala: 2.12.10
       if: branch = master AND type != pull_request
