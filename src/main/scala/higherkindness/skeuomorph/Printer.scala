@@ -19,6 +19,7 @@ package higherkindness.skeuomorph
 import catz.contrib.Decidable
 import cats.{Contravariant, Show}
 import cats.implicits._
+import cats.kernel.Eq
 
 trait Printer[T] extends Printer.ContravariantPrinter[T]
 
@@ -94,4 +95,7 @@ object Printer {
     def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] =
       print[B]((fa.print _).compose(f))
   }
+
+  implicit def catsLawsEqForPrinter[A](implicit ev: Eq[A => String]): Eq[Printer[A]] =
+    Eq.by[Printer[A], A => String](printA => a => printA.print(a))
 }

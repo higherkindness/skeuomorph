@@ -13,6 +13,7 @@ val V = new {
   val catsEffect       = "2.0.0"
   val catsScalacheck   = "0.2.0"
   val circe            = "0.12.1"
+  val circeYaml        = "0.11.0-M1"
   val disciplineSpecs2 = "1.0.0"
   val droste           = "0.6.0"
   val kindProjector    = "0.10.3"
@@ -101,7 +102,7 @@ lazy val commonSettings = Seq(
     "org.apache.avro"     % "avro"           % V.avro,
     "com.github.os72"     % "protoc-jar"     % V.protoc,
     "com.google.protobuf" % "protobuf-java"  % V.protobuf,
-    "io.circe"            %% "circe-yaml"    % "0.10.0",
+    "io.circe"            %% "circe-yaml"    % V.circeYaml,
     "io.circe"            %% "circe-testing" % V.circe % Test,
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),

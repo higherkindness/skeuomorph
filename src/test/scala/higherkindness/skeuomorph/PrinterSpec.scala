@@ -34,9 +34,6 @@ class PrinterSpec extends Specification with ScalaCheck with Discipline {
   implicit def catsLawsEqForFn1Exhaustive[A, B](implicit A: ExhaustiveCheck[A], B: Eq[B]): Eq[A => B] =
     Eq.instance((f, g) => A.allValues.forall(a => B.eqv(f(a), g(a))))
 
-  implicit def catsLawsEqForPrinter[A](implicit ev: Eq[A => String]): Eq[Printer[A]] =
-    Eq.by[Printer[A], A => String](printA => a => printA.print(a))
-
   implicit val printerMonoid    = ContravariantMonoidal.monoid[Printer, MiniInt]
   implicit val printerSemigroup = ContravariantSemigroupal.semigroup[Printer, MiniInt]
 
