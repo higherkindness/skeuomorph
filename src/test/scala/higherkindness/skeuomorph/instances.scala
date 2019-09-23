@@ -16,6 +16,8 @@
 
 package higherkindness.skeuomorph
 
+import java.util.UUID
+
 import cats.data.NonEmptyList
 import cats.implicits._
 import org.apache.avro.Schema
@@ -182,11 +184,11 @@ object instances {
   def eitherGen[A, B](left: Gen[A], right: Gen[B]): Gen[Either[A, B]] =
     Gen.oneOf(left.map(_.asLeft[B]), right.map(_.asRight[A]))
 
-  def booleanGen: Gen[Boolean] = Gen.oneOf(true, false)
-
   implicit def openApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[OpenApi[T]] = {
     import openapi.schema._
-    def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = Gen.mapOfN(2, Gen.zip(nonEmptyString.map(_.take(4)), gen))
+    // TODO: after Scalacheck 1.14.1 upgrade this generator doesn't work anymore
+    //def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = Gen.mapOfN(2, Gen.zip(nonEmptyString.map(_.take(4)), gen))
+    def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = gen.map(a => Map(UUID.randomUUID.toString.take(4) -> a))
     val optionStringGen                                     = Gen.option(nonEmptyString)
     val infoGen: Gen[Info]                                  = (nonEmptyString, optionStringGen, nonEmptyString).mapN(Info)
     val serverVariableGen: Gen[Server.Variable] =
@@ -201,7 +203,7 @@ object instances {
     val mediaTypeGen: Gen[MediaType[T]] =
       (Gen.option(T.arbitrary), Map.empty[String, Encoding[T]].pure[Gen]).mapN(MediaType.apply)
     val headerGen: Gen[Header[T]]   = (nonEmptyString, T.arbitrary).mapN(Header.apply)
-    val requestGen: Gen[Request[T]] = (optionStringGen, mapStringToGen(mediaTypeGen), booleanGen).mapN(Request.apply)
+    val requestGen: Gen[Request[T]] = (optionStringGen, mapStringToGen(mediaTypeGen), sampleBool).mapN(Request.apply)
     val responseGen: Gen[Response[T]] =
       (nonEmptyString, mapStringToGen(eitherGen(headerGen, referenceGen)), mapStringToGen(mediaTypeGen))
         .mapN(Response.apply)
@@ -213,12 +215,12 @@ object instances {
         nonEmptyString,
         locationGen,
         Gen.option(nonEmptyString),
-        Gen.option(booleanGen),
-        Gen.option(booleanGen),
+        Gen.option(sampleBool),
+        Gen.option(sampleBool),
         Gen.option(nonEmptyString),
-        Gen.option(booleanGen),
-        Gen.option(booleanGen),
-        Gen.option(booleanGen),
+        Gen.option(sampleBool),
+        Gen.option(sampleBool),
+        Gen.option(sampleBool),
         T.arbitrary).mapN(Parameter.apply)
 
     val parameters: Gen[List[Either[Parameter[T], Reference]]] = Gen.listOfN(2, eitherGen(parameterGen, referenceGen))
@@ -234,7 +236,7 @@ object instances {
         Gen.option(eitherGen(requestGen, referenceGen)),
         responsesGen,
         Map.empty[String, Either[Callback[T], Reference]].pure[Gen],
-        booleanGen,
+        sampleBool,
         serversGen).mapN(Path.Operation.apply)
 
     val itemObjectsGen: Gen[Path.ItemObject[T]] =

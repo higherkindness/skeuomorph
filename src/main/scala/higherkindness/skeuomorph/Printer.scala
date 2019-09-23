@@ -17,20 +17,36 @@
 package higherkindness.skeuomorph
 
 import catz.contrib.Decidable
-import cats.syntax.compose._
-import cats.instances.function._
-import cats.Show
-import cats.syntax.show._
+import cats.{Contravariant, Show}
+import cats.implicits._
+import cats.kernel.Eq
 
-trait Printer[A] {
-  def print(a: A): String
-  def contramap[B](f: B => A): Printer[B] = Printer(f >>> print)
-}
+trait Printer[T] extends Printer.ContravariantPrinter[T]
 
 object Printer {
 
-  def apply[A](f: A => String): Printer[A] = new Printer[A] {
+  def apply[A](implicit instance: Printer[A]): Printer[A] = instance
+
+  /** creates an instance of [[Printer]] using the provided function */
+  def print[A](f: A => String): Printer[A] = new Printer[A] {
     def print(a: A): String = f(a)
+  }
+
+  trait ContravariantPrinter[-T] extends Serializable {
+    def print(t: T): String
+  }
+
+  trait Ops[A] {
+    def typeClassInstance: Printer[A]
+    def self: A
+    def print: String = typeClassInstance.print(self)
+  }
+
+  trait ToPrinterOps {
+    implicit def toPrinter[A](target: A)(implicit tc: Printer[A]): Ops[A] = new Ops[A] {
+      val self              = target
+      val typeClassInstance = tc
+    }
   }
 
   def konst(str: String): Printer[Unit] =
@@ -40,12 +56,17 @@ object Printer {
 
   val newLine: Printer[Unit] = konst("\n")
 
-  val string: Printer[String] = Printer(identity)
+  val string: Printer[String] = print(identity)
 
-  val unit: Printer[Unit] = Printer(_ => "")
+  val unit: Printer[Unit] = print(_ => "")
 
   object avoid {
-    implicit def nonePrinter[T]: Printer[T] = unit.contramap(_ => ())
+    implicit def nonePrinter[T]: Printer[T] = Contravariant[Printer].contramap(unit)(_ => ())
+  }
+
+  /** creates an instance of [[Printer]] using object toString */
+  def fromToString[A]: Printer[A] = new Printer[A] {
+    def print(a: A): String = a.toString
   }
 
   def show[F: Show]: Printer[F] = Printer { _.show }
@@ -54,7 +75,7 @@ object Printer {
     Printer(_.fold("")(p.print))
 
   def sepBy[A](p: Printer[A], sep: String): Printer[List[A]] =
-    Printer {
+    print {
       case Nil => ""
       case xs  => xs.map(p.print).mkString(sep)
     }
@@ -64,9 +85,17 @@ object Printer {
     def product[A, B](fa: Printer[A], fb: Printer[B]): Printer[(A, B)] = new Printer[(A, B)] {
       def print(ab: (A, B)): String = fa.print(ab._1) + fb.print(ab._2)
     }
-    def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] = Printer(f >>> fa.print)
+    def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] =
+      print[B]((fa.print _).compose(f))
     def choose[A, B, C](fa: Printer[A], fb: Printer[B])(cab: C => Either[A, B]): Printer[C] =
       Printer(cab(_).fold(fa.print, fb.print))
   }
 
+  implicit val catsContravariantForPrinter: Contravariant[Printer] = new Contravariant[Printer] {
+    def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] =
+      print[B]((fa.print _).compose(f))
+  }
+
+  implicit def catsLawsEqForPrinter[A](implicit ev: Eq[A => String]): Eq[Printer[A]] =
+    Eq.by[Printer[A], A => String](printA => a => printA.print(a))
 }

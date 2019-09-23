@@ -64,7 +64,7 @@ object print {
         s"@message final case class $name($printFields)"
     }
 
-    Printer(scheme.cata(algebra))
+    Printer.print(scheme.cata(algebra))
   }
 
   /**
@@ -121,15 +121,15 @@ object print {
       case AvroWithSchema => Right(AvroWithSchema)
     }
 
-  def protobuf: Printer[Protobuf.type]             = Printer(_.toString)
-  def avro: Printer[Avro.type]                     = Printer(_.toString)
-  def avroWithSchema: Printer[AvroWithSchema.type] = Printer(_.toString)
+  def protobuf: Printer[Protobuf.type]             = Printer.print(_.toString)
+  def avro: Printer[Avro.type]                     = Printer.print(_.toString)
+  def avroWithSchema: Printer[AvroWithSchema.type] = Printer.print(_.toString)
 
   def serializationType: Printer[SerializationType] =
     (protobuf >|< avro >|< avroWithSchema).contramap(serTypeEither)
 
-  def gzip: Printer[Gzip.type]         = Printer(_.toString)
-  def identity: Printer[Identity.type] = Printer(_.toString)
+  def gzip: Printer[Gzip.type]         = Printer.print(_.toString)
+  def identity: Printer[Identity.type] = Printer.print(_.toString)
 
   def compressionType: Printer[CompressionType] =
     (gzip >|< identity).contramap({
@@ -157,13 +157,13 @@ object print {
       .contramap(t => opTpeEither(t, isRequest))
 
   def opTypeRequestNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
-    Printer(namedTypes[T] >>> schema.print)
+    Printer.print(namedTypes[T] >>> schema.print)
 
   def opTypeResponseNoStream[T](implicit T: Basis[MuF, T]): Printer[T] =
-    konst("F[") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+    konst("F[") *< Printer.print(namedTypes[T] >>> schema.print) >* konst("]")
 
   def opTypeStream[T](implicit T: Basis[MuF, T]): Printer[T] =
-    konst("Stream[F, ") *< Printer(namedTypes[T] >>> schema.print) >* konst("]")
+    konst("Stream[F, ") *< Printer.print(namedTypes[T] >>> schema.print) >* konst("]")
 
   def operation[T](implicit T: Basis[MuF, T]): Printer[Service.Operation[T]] =
     (
@@ -185,7 +185,7 @@ object print {
     (
       konst("import ") *< string,
       konst(".") *< string,
-      konst(".") *< Printer(namedTypes[T] >>> schema.print)
+      konst(".") *< Printer.print(namedTypes[T] >>> schema.print)
     ).contramapN(importTuple)
 
   def option: Printer[(String, String)] =
@@ -199,7 +199,7 @@ object print {
       sepBy(option, lineFeed),
       sepBy(depImport, lineFeed) >* newLine >* newLine,
       konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
-      sepBy(Printer(nestedOptionInCoproduct[T] >>> schema.print), lineFeed) >* newLine,
+      sepBy(Printer.print(nestedOptionInCoproduct[T] >>> schema.print), lineFeed) >* newLine,
       sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
     ).contramapN(protoTuple)
   }
