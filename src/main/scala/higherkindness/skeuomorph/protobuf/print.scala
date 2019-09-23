@@ -102,6 +102,6 @@ object print {
       """.stripMargin
     }
 
-    Printer(scheme.cata(algebra))
+    Printer.print(scheme.cata(algebra))
   }
 }

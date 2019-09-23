@@ -16,28 +16,26 @@
 
 package higherkindness.skeuomorph
 
-import org.typelevel.discipline.specs2.Discipline
-import cats.kernel.laws.discipline.{MonoidTests, SemigroupTests}
-import cats.laws.discipline.ContravariantMonoidalTests
-import cats.laws.discipline.eq._
-
-import cats.ContravariantSemigroupal
-import cats.ContravariantMonoidal
-import cats.kernel.Eq
+import cats.{ContravariantMonoidal, ContravariantSemigroupal}
 import cats.instances.string._
-
-import org.specs2._
-import org.scalacheck._
+import cats.kernel.Eq
+import cats.kernel.laws.discipline.{MonoidTests, SemigroupTests}
+import cats.laws.discipline.arbitrary._
+import cats.laws.discipline.{ContravariantMonoidalTests, ExhaustiveCheck, MiniInt}
+import org.scalacheck.{Arbitrary, Cogen}
+import org.specs2.{ScalaCheck, Specification}
+import org.typelevel.discipline.specs2.Discipline
 
 class PrinterSpec extends Specification with ScalaCheck with Discipline {
 
   implicit def printerArbitrary[T: Cogen]: Arbitrary[Printer[T]] =
-    Arbitrary(implicitly[Arbitrary[T => String]].arbitrary.map(Printer.apply))
+    Arbitrary(implicitly[Arbitrary[T => String]].arbitrary.map(Printer.print))
 
-  implicit def printerEq[T: Arbitrary]: Eq[Printer[T]] =
-    Eq.by[Printer[T], T => String](_.print)
-  implicit val printerMonoid    = ContravariantMonoidal.monoid[Printer, Int]
-  implicit val printerSemigroup = ContravariantSemigroupal.semigroup[Printer, Int]
+  implicit def catsLawsEqForFn1Exhaustive[A, B](implicit A: ExhaustiveCheck[A], B: Eq[B]): Eq[A => B] =
+    Eq.instance((f, g) => A.allValues.forall(a => B.eqv(f(a), g(a))))
+
+  implicit val printerMonoid    = ContravariantMonoidal.monoid[Printer, MiniInt]
+  implicit val printerSemigroup = ContravariantSemigroupal.semigroup[Printer, MiniInt]
 
   def is = s2"""
   $contravariantMonoidalPrinter
@@ -51,9 +49,10 @@ class PrinterSpec extends Specification with ScalaCheck with Discipline {
 
   val contravariantMonoidalPrinter = checkAll(
     "ContravariantMonoidal[Printer].contravariantMonoidal",
-    ContravariantMonoidalTests[Printer].contravariantMonoidal[Int, Int, Int])
+    ContravariantMonoidalTests[Printer].contravariantMonoidal[MiniInt, MiniInt, MiniInt])
 
-  val monoidPrinter    = checkAll("ContravariantMonoidal[Printer].monoid", MonoidTests[Printer[Int]].monoid)
-  val semigroupPrinter = checkAll("ContravariantSemigroupal[Printer].semigroup", SemigroupTests[Printer[Int]].semigroup)
+  val monoidPrinter = checkAll("ContravariantMonoidal[Printer].monoid", MonoidTests[Printer[MiniInt]].monoid)
+  val semigroupPrinter =
+    checkAll("ContravariantSemigroupal[Printer].semigroup", SemigroupTests[Printer[MiniInt]].semigroup)
 
 }
