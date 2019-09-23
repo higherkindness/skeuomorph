@@ -32,11 +32,11 @@ script:
   - chmod +x .codecov
   - if [ $TRAVIS_SCALA_VERSION = "2.12.10" ]; then sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/tut; fi
   - if [ $TRAVIS_SCALA_VERSION = "2.12.10" ]; then ./.codecov -X gcov; fi
+  - if [ $TRAVIS_SCALA_VERSION = "2.11.12" ]; then sbt ++$TRAVIS_SCALA_VERSION clean test; fi
 
 stages:
-  - test
-  - deploy
-  - microsite
+  - name: test
+  - name: deploy
 
 jobs:
   include:
@@ -55,13 +55,5 @@ jobs:
             git pull origin master;
             openssl aes-256-cbc -K $encrypted_ca54c9c78452_key -iv $encrypted_ca54c9c78452_iv -in secring.gpg.enc -out secring.gpg -d;
             sbt release;
-          fi
-    - stage: microsite
-      scala: 2.12.10
-      if: branch = master AND type != pull_request
-      script:
-        - if grep -q "SNAPSHOT" version.sbt; then
-            echo "Skipping microsite publication, snapshot version";
-          else
             sbt docs/publishMicrosite;
           fi
