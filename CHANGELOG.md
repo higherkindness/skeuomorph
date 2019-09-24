@@ -1,5 +1,12 @@
 # Changelog
 
+## 09/24/2019 - Version 0.0.15
+
+Release changes:
+
+* Upgrades to droste 0.7.0 ([#146](https://github.com/higherkindness/skeuomorph/pull/146))
+* Use import root to compile Protobuf files ([#115](https://github.com/higherkindness/skeuomorph/pull/115))
+
 ## 09/23/2019 - Version 0.0.14
 
 Release changes:
