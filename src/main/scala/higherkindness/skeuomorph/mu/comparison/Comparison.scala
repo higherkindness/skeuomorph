@@ -16,9 +16,9 @@
 
 package higherkindness.skeuomorph.mu.comparison
 
-import qq.droste._
-import qq.droste.syntax.project._
-import qq.droste.syntax.embed._
+import higherkindness.droste._
+import higherkindness.droste.syntax.project.toProjectSyntaxOps
+import higherkindness.droste.syntax.embed._
 import higherkindness.skeuomorph.mu.MuF, MuF._
 import cats.Functor
 import cats.instances.list._
@@ -33,7 +33,7 @@ import cats.syntax.apply._
 
 /** An ADT representing the "shape" of the computation of the differences between two schemas.
  *
- * Comparing two schemas involves recusively comparing (various combinations of) their
+ * Comparing two schemas involves recursively comparing (various combinations of) their
  * respective sub-schemas; each member of the `Comparison` ADT represents one of such
  * combination of recursive comparisons.
  *
@@ -102,7 +102,7 @@ object Comparison extends ComparisonInstances {
    * the structure of hylo: when we want to align something with a coproduct, we test all the possible combinations algthough
    * we're only interested in finding the first successful one.
    *
-   * @tparam T the concrete schema type, must be a qq.droste.Basis over [[higherkindness.skeuomorph.mu.MuF]]
+   * @tparam T the concrete schema type, must be a higherkindness.droste.Basis over [[higherkindness.skeuomorph.mu.MuF]]
    * @param writer
    * @param reader
    */

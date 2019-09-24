@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.mu
 
 import cats.data.NonEmptyList
 import higherkindness.skeuomorph.mu.MuF._
-import qq.droste._
+import higherkindness.droste._
 
 /**
  * Optimize object contains transformations in same schema

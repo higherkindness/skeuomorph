@@ -22,8 +22,8 @@ import higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.mu.{MuF, SerializationType}
 import io.circe.Json
 import org.apache.avro.{Schema, Protocol => AvroProtocol}
-import qq.droste._
-import qq.droste.syntax.all._
+import higherkindness.droste._
+import higherkindness.droste.syntax.all._
 
 import scala.collection.JavaConverters._
 

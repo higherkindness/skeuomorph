@@ -24,7 +24,7 @@ import higherkindness.skeuomorph.openapi.JsonSchemaF.{string => _, _}
 import cats.implicits._
 import cats.Show
 
-import qq.droste._
+import higherkindness.droste._
 import scala.util.matching.Regex
 
 object print {
@@ -86,7 +86,7 @@ object print {
 
   def isBasicType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
-    import qq.droste.syntax.project._
+    import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
       case ObjectF(p, _) => p.isEmpty
       case EnumF(_)      => false
@@ -99,7 +99,7 @@ object print {
 
   def isReference[T: Basis[JsonSchemaF, ?]](t: T)(regex: Regex): Boolean = {
     import JsonSchemaF._
-    import qq.droste.syntax.project._
+    import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
       case ReferenceF(regex(_)) => true
       case _                    => false
@@ -109,7 +109,7 @@ object print {
 
   def isArray[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
-    import qq.droste.syntax.project._
+    import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
       case ArrayF(_) => true
       case _         => false
@@ -118,7 +118,7 @@ object print {
   def sumTypes[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[String] = {
     def isSum(t: T): Boolean = {
       import JsonSchemaF._
-      import qq.droste.syntax.project._
+      import higherkindness.droste.syntax.project.toProjectSyntaxOps
       t.project match {
         case SumF(_) => true
         case _       => false

@@ -18,8 +18,8 @@ package higherkindness.skeuomorph.mu
 
 import org.scalacheck.Prop
 import org.specs2.{ScalaCheck, Specification}
-import qq.droste._
-import qq.droste.data._
+import higherkindness.droste._
+import higherkindness.droste.data._
 import higherkindness.skeuomorph.mu.MuF.TCoproduct
 import higherkindness.skeuomorph.mu.Optimize._
 

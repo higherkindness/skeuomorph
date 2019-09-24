@@ -26,7 +26,7 @@ import higherkindness.skeuomorph.mu.MuF.{string => _, _}
 import higherkindness.skeuomorph.mu.Optimize.namedTypes
 import higherkindness.skeuomorph.mu.Optimize.nestedOptionInCoproduct
 import higherkindness.skeuomorph.mu.SerializationType._
-import qq.droste._
+import higherkindness.droste._
 
 object print {
 

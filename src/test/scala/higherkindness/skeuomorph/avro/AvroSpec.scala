@@ -21,7 +21,7 @@ import higherkindness.skeuomorph.instances._
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.specs2._
-import qq.droste._
+import higherkindness.droste._
 
 import scala.collection.JavaConverters._
 

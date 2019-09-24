@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.mu
 
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.protobuf.ProtobufF
-import qq.droste.{Embed, Trans}
+import higherkindness.droste.{Embed, Trans}
 
 object Transform {
 

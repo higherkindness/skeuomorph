@@ -25,7 +25,7 @@ import higherkindness.skeuomorph.openapi._
 import higherkindness.skeuomorph.openapi.print.{schema => _, _}
 import higherkindness.skeuomorph.openapi.client.print._
 import cats.implicits._
-import qq.droste._
+import higherkindness.droste._
 
 object print {
   import schema._

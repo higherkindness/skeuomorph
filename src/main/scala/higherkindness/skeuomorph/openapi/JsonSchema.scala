@@ -17,12 +17,12 @@
 package higherkindness.skeuomorph.openapi
 
 import io.circe.Json
-import qq.droste._
+import higherkindness.droste._
 import cats.implicits._
 import cats._
 
-import qq.droste.data.Fix
-import qq.droste.macros.deriveTraverse
+import higherkindness.droste.data.Fix
+import higherkindness.droste.macros.deriveTraverse
 
 @deriveTraverse sealed trait JsonSchemaF[A]
 object JsonSchemaF {

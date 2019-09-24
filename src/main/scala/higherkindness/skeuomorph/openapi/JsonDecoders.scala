@@ -19,8 +19,8 @@ package higherkindness.skeuomorph.openapi
 import schema._
 import io.circe._
 import cats.implicits._
-import qq.droste._
-import qq.droste.syntax.embed._
+import higherkindness.droste._
+import higherkindness.droste.syntax.embed._
 import scala.language.postfixOps
 
 object JsonDecoders {

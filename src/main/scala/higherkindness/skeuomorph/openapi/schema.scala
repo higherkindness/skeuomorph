@@ -33,7 +33,7 @@ object schema {
       externalDocs: Option[ExternalDocs])
 
   object OpenApi {
-    import qq.droste._
+    import higherkindness.droste._
     import Optimize._
     import cats.implicits._
     import cats.data.State
