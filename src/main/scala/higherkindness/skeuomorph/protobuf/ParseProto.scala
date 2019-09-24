@@ -39,7 +39,7 @@ object ParseProto {
   import ProtobufF._
   import Protocol._
 
-  case class ProtoSource(filename: String, path: String, importRoot: String)
+  final case class ProtoSource(filename: String, path: String, importRoot: Option[String] = None)
 
   implicit def parseProto[F[_], T](implicit T: Embed[ProtobufF, T]): Parser[F, ProtoSource, Protocol[T]] =
     new Parser[F, ProtoSource, Protocol[T]] {
@@ -49,14 +49,16 @@ object ParseProto {
 
   private def runProtoc[F[_]: Sync, T](input: ProtoSource)(implicit T: Embed[ProtobufF, T]): F[Protocol[T]] = {
     val descriptorFileName = s"${input.filename}.desc"
+
+    val protoPaths = input.importRoot
+      .foldLeft(Array(s"--proto_path=${input.path}"))((arr, i) => arr :+ s"--proto_path=$i")
+
     val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
-        Array(
+        protoPaths ++ Array(
           "--plugin=protoc-gen-proto2_to_proto3",
           "--include_imports",
           s"--descriptor_set_out=${input.filename}.desc",
-          s"--proto_path=${input.path}",
-          s"--proto_path=${input.importRoot}",
           input.filename
         )
       )
