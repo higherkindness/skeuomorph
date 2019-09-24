@@ -23,8 +23,8 @@ import higherkindness.skeuomorph.protobuf.ParseProto._
 import higherkindness.skeuomorph.mu.CompressionType
 import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.{ScalaCheck, Specification}
-import qq.droste.data.Mu
-import qq.droste.data.Mu._
+import higherkindness.droste.data.Mu
+import higherkindness.droste.data.Mu._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 

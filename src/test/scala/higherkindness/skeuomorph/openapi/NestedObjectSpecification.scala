@@ -20,7 +20,7 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
   import JsonSchemaF.Fixed
   import Optimize._
   import cats.implicits._
-  import qq.droste._
+  import higherkindness.droste._
   import helpers._
 
   def nestedTypesFrom[T: Basis[JsonSchemaF, ?]](t: T, map: Map[String, T] = Map.empty[String, T]) = {

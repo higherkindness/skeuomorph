@@ -16,9 +16,9 @@
 
 package higherkindness.skeuomorph.mu
 
-import qq.droste.macros.deriveTraverse
-import qq.droste.{Algebra, Project}
-import qq.droste.scheme.cata
+import higherkindness.droste.macros.deriveTraverse
+import higherkindness.droste.{Algebra, Project}
+import higherkindness.droste.scheme.cata
 import cats.Eq
 import cats.Show
 import cats.data.NonEmptyList

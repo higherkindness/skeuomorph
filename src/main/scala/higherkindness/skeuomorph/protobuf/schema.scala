@@ -20,7 +20,7 @@ import cats.{Applicative, Eq}
 import cats.data.NonEmptyList
 import cats.implicits._
 import higherkindness.skeuomorph.protobuf.ProtobufF.OptionValue
-import qq.droste.util.DefaultTraverse
+import higherkindness.droste.util.DefaultTraverse
 
 sealed trait FieldF[A] {
   val name: String

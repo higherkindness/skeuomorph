@@ -28,7 +28,7 @@ import avro.AvroF
 import protobuf._
 import openapi._
 import openapi.schema.OpenApi
-import qq.droste._
+import higherkindness.droste._
 
 import scala.collection.JavaConverters._
 

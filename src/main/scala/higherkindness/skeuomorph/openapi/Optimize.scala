@@ -15,7 +15,7 @@
  */
 
 package higherkindness.skeuomorph.openapi
-import qq.droste._
+import higherkindness.droste._
 
 import cats.data.State
 import cats.implicits._
@@ -56,7 +56,7 @@ object Optimize {
 
   private def isNestedType[T: Project[JsonSchemaF, ?]](t: T): Boolean = {
     import JsonSchemaF._
-    import qq.droste.syntax.project._
+    import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
       case ObjectF(properties, _) if properties.nonEmpty => true
       case EnumF(_)                                      => true

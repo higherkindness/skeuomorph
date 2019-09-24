@@ -20,9 +20,9 @@ mechanisms to apply that function to the AST correctly.  Let's see
 ## NamedTypes
 
 ```tut:invisible
-import qq.droste._
-import qq.droste.data._
-import qq.droste.implicits._
+import higherkindness.droste._
+import higherkindness.droste.data._
+import higherkindness.droste.implicits._
 
 import higherkindness.skeuomorph.mu._
 import higherkindness.skeuomorph.mu.MuF._

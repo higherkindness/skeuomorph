@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.openapi
 
 import java.io.File
 
-import qq.droste._
+import higherkindness.droste._
 import higherkindness.skeuomorph.Parser
 import schema.OpenApi
 import cats.effect.Sync

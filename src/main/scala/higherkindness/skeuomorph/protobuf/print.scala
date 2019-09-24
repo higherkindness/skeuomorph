@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.Printer
-import qq.droste._
+import higherkindness.droste._
 
 object print {
 
