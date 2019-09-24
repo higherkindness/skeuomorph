@@ -131,12 +131,13 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       }
       """)
 
-      val itemObject = emptyItemObject[JsonSchemaF.Fixed].withPost(
-        operation(
-          request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))).optional
-            .withDescription("Callback payload"),
-          responses = "200" -> response("webhook successfully processed and no retries will be performed")
-        ))
+      val itemObject = emptyItemObject[JsonSchemaF.Fixed]
+        .withPost(
+          operation(
+            request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))).optional
+              .withDescription("Callback payload"),
+            responses = "200" -> response("webhook successfully processed and no retries will be performed")
+          ))
 
       Decoder[Callback[JsonSchemaF.Fixed]].decodeJson(json) should beRight(
         Callback(
@@ -152,6 +153,50 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         components[JsonSchemaF.Fixed]()
       )
+    }
+    "when parameters are provided" >> {
+      val json = unsafeParse(""" 
+      {
+        "parameters": {
+          "skipParam": {
+            "name": "skip",
+            "in": "query",
+            "description": "number of items to skip",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "limitParam": {
+            "name": "limit",
+            "in": "query",
+            "description": "max records to return",
+            "required": true,
+            "schema" : {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      }
+      """)
+      Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        components[JsonSchemaF.Fixed]().copy(parameters = Map(
+          "skipParam" -> query(
+            "skip",
+            JsonSchemaF.Fixed.integer(),
+            required = true,
+            description = "number of items to skip".some).asLeft,
+          "limitParam" -> query(
+            "limit",
+            JsonSchemaF.Fixed.integer(),
+            required = true,
+            description = "max records to return".some
+          ).asLeft
+        ))
+      )
+
     }
     "when an schemas are provided" >> {
       val json = unsafeParse(""" 
@@ -255,6 +300,29 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
   }
   "Open api object should be able to decode" >> {
     "when required fields are provided" >> {
+      val json = unsafeParse("""
+      {
+        "openapi" : "3.0.0",
+        "info" : {
+          "title": "Swagger Petstore",
+          "version": "1.0.0"
+        }
+      }
+      """)
+
+      Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        OpenApi[JsonSchemaF.Fixed](
+          "3.0.0",
+          Info("Swagger Petstore", None, "1.0.0"),
+          List.empty,
+          Map.empty,
+          None,
+          List.empty,
+          None
+        ))
+    }
+
+    "when paths are provided" >> {
       val json = unsafeParse("""
       {
         "openapi" : "3.0.0",
@@ -388,7 +456,9 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
         ]
       }""")
 
-      Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(emptyItemObject[JsonSchemaF.Fixed])
+      Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
+        emptyItemObject[JsonSchemaF.Fixed].withParameter(
+          path("id", JsonSchemaF.Fixed.array(JsonSchemaF.Fixed.string()), description = "ID of pet to use".some)))
     }
 
     "when get operation is defined" >> {

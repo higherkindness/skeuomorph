@@ -23,7 +23,7 @@ import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.mu.Service.OperationType
 import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.Transform.transformProto
-import qq.droste._
+import higherkindness.droste._
 
 sealed trait SerializationType extends Product with Serializable
 object SerializationType {

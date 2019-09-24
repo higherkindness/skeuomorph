@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.mu
 
 import cats.data.NonEmptyList
 import higherkindness.skeuomorph.mu.MuF._
-import qq.droste._
+import higherkindness.droste._
 
 /**
  * Optimize object contains transformations in same schema
@@ -52,14 +52,26 @@ object Optimize {
     case other => other
   }
 
+  def nestedOptionInCoproductsTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
+    case TCoproduct(nel) => TCoproduct(nel.map(toRequiredTypes))
+    case other           => other
+  }
+
+  def toRequiredTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
+    case TOption(value) => TRequired(value)
+    case other          => other
+  }
+
   def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
     case TProduct(name, _) => TNamedType[T](name)
     case TSum(name, _)     => TNamedType[T](name)
     case other             => other
   }
 
-  def namedTypes[T: Basis[MuF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-  def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+  def namedTypes[T: Basis[MuF, ?]]: T => T              = scheme.cata(namedTypesTrans.algebra)
+  def nestedNamedTypes[T: Basis[MuF, ?]]: T => T        = scheme.cata(nestedNamedTypesTrans.algebra)
+  def toRequiredTypes[T: Basis[MuF, ?]]: T => T         = scheme.cata(toRequiredTypesTrans.algebra)
+  def nestedOptionInCoproduct[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedOptionInCoproductsTrans.algebra)
 
   /**
    * micro-optimization to convert known coproducts to named types

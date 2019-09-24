@@ -23,11 +23,11 @@ import cats.instances.option._
 import cats.instances.string._
 import cats.instances.int._
 import cats.syntax.eq._
-import qq.droste.macros.deriveTraverse
+import higherkindness.droste.macros.deriveTraverse
 import io.circe.Json
 import org.apache.avro.Schema
 import org.apache.avro.Schema.Type
-import qq.droste.{Algebra, Coalgebra}
+import higherkindness.droste.{Algebra, Coalgebra}
 
 import scala.collection.JavaConverters._
 

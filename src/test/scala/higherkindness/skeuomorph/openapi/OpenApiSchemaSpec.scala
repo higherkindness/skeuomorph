@@ -19,15 +19,19 @@ package higherkindness.skeuomorph.openapi
 import higherkindness.skeuomorph.instances._
 import org.typelevel.discipline.specs2.Discipline
 import cats.laws.discipline._
-import cats.implicits._
-import org.specs2._
+import _root_.cats.implicits._
+import org.specs2.{ScalaCheck, Specification}
 import schema._
 import org.scalacheck._
 import _root_.io.circe._
 import _root_.io.circe.testing._
+import _root_.cats.kernel.CommutativeMonoid
+import _root_.cats.laws.discipline.arbitrary._
 import Spec._
 
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
+
+  implicit val miniIntMultiplication: CommutativeMonoid[MiniInt] = MiniInt.miniIntMultiplication
 
   def is = s2"""
       $shouldAbleCodecRoundTrip
@@ -37,9 +41,11 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
       $traverse
     """
   val traverse =
-    checkAll("Traverse[JsonSchemaF]", TraverseTests[JsonSchemaF].traverse[Int, Int, Int, Set[Int], Option, Option])
-  val functor  = checkAll("Functor[JsonSchemaF]", FunctorTests[JsonSchemaF].functor[Int, Int, String])
-  val foldable = checkAll("Foldable[JsonSchemaF]", FoldableTests[JsonSchemaF].foldable[Int, Int])
+    checkAll(
+      "Traverse[JsonSchemaF]",
+      TraverseTests[JsonSchemaF].traverse[MiniInt, MiniInt, MiniInt, Set[MiniInt], Option, Option])
+  val functor  = checkAll("Functor[JsonSchemaF]", FunctorTests[JsonSchemaF].functor[MiniInt, MiniInt, String])
+  val foldable = checkAll("Foldable[JsonSchemaF]", FoldableTests[JsonSchemaF].foldable[MiniInt, MiniInt])
 
   def shouldAbleCodecRoundTrip = Prop.forAll { (openApi: OpenApi[JsonSchemaF.Fixed]) =>
     import JsonEncoders._

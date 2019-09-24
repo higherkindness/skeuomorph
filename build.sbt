@@ -6,28 +6,33 @@ import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
 
 val V = new {
+  val ammonite         = "1.7.1"
   val avro             = "1.8.2"
-  val betterMonadicFor = "0.2.4"
-  val cats             = "1.6.0"
-  val catsEffect       = "1.2.0"
-  val catsScalacheck   = "0.1.0"
-  val circe            = "0.11.1"
-  val droste           = "0.6.0"
-  val kindProjector    = "0.9.9"
+  val betterMonadicFor = "0.3.1"
+  val cats             = "2.0.0"
+  val catsEffect       = "2.0.0"
+  val catsScalacheck   = "0.2.0"
+  val circe            = "0.12.1"
+  val circeYaml        = "0.11.0-M1"
+  val disciplineSpecs2 = "1.0.0"
+  val droste           = "0.7.0"
+  val kindProjector    = "0.10.3"
   val macroParadise    = "2.1.1"
-  val scalacheck       = "1.13.5"
-  val specs2           = "4.1.0" // DO NOT BUMP. We need all dependent libraries to bump version of scalacheck to 1.14, otherwise we face a bincompat issue between scalacheck 1.14 & scalacheck 1.13.5
-  val protoc           = "3.6.0.1"
-  val protobuf         = "3.6.1"
+  val scala212         = "2.12.10"
+  val scalacheck       = "1.14.1"
+  val specs2           = "4.7.1"
+  val protoc           = "3.8.0"
+  val protobuf         = "3.10.0"
 }
 
 lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
-  .settings( libraryDependencies ++= Seq(
-    ("com.lihaoyi" % "ammonite" % "1.5.0" % "test").cross(CrossVersion.full)
-  ))
+  .settings(
+    libraryDependencies ++= Seq(
+      ("com.lihaoyi" % "ammonite" % V.ammonite % Test).cross(CrossVersion.full)
+    ))
   .settings(
     sourceGenerators in Test += Def.task {
       val file = (sourceManaged in Test).value / "amm.scala"
@@ -56,11 +61,6 @@ lazy val docs = project
     micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
     micrositePushSiteWith := GitHub4s,
     micrositeExtraMdFiles := Map(
-      file("readme/README.md") -> ExtraMdFileConfig(
-        "index.md",
-        "home",
-        Map("title" -> "Home", "section" -> "home", "position" -> "0")
-      ),
       file("CHANGELOG.md") -> ExtraMdFileConfig(
         "changelog.md",
         "home",
@@ -69,19 +69,6 @@ lazy val docs = project
     )
   )
   .enablePlugins(MicrositesPlugin)
-
-lazy val readme = (project in file("readme"))
-  .settings(moduleName := "skeuomorph-readme")
-  .dependsOn(skeuomorph)
-  .settings(commonSettings)
-  .settings(noPublishSettings)
-  .settings(tutSettings)
-  .settings(
-    tutSourceDirectory := baseDirectory.value,
-    tutTargetDirectory := baseDirectory.value.getParentFile,
-    tutNameFilter := """README.md""".r
-  )
-  .enablePlugins(TutPlugin)
 
 // check for library updates whenever the project is [re]load
 onLoad in Global := { s =>
@@ -103,9 +90,9 @@ lazy val commonSettings = Seq(
     organizationHomePage = url("http://47deg.com"),
     organizationEmail = "hello@47deg.com"
   ),
-  scalaVersion := "2.12.8",
+  scalaVersion := V.scala212,
   startYear := Some(2018),
-  crossScalaVersions := Seq(scalaVersion.value, "2.11.12"),
+  crossScalaVersions := Seq(V.scala212),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
     %%("cats-laws", V.cats) % Test,
@@ -115,20 +102,21 @@ lazy val commonSettings = Seq(
     "org.apache.avro"     % "avro"           % V.avro,
     "com.github.os72"     % "protoc-jar"     % V.protoc,
     "com.google.protobuf" % "protobuf-java"  % V.protobuf,
-    "io.circe"            %% "circe-yaml"    % "0.10.0",
+    "io.circe"            %% "circe-yaml"    % V.circeYaml,
     "io.circe"            %% "circe-testing" % V.circe % Test,
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
-    %%("circe-parser", V.circe)       % Test,
+    %%("circe-parser", V.circe),
     %%("scalacheck", V.scalacheck)    % Test,
     %%("specs2-core", V.specs2)       % Test,
+    "org.typelevel"                   %% "discipline-specs2" % V.disciplineSpecs2 % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
     "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll (
       ExclusionRule(organization = "org.scalacheck")
     )
   ),
   orgProjectName := "Skeuomorph",
-  orgUpdateDocFilesSetting += baseDirectory.value / "readme",
+  orgUpdateDocFilesSetting += baseDirectory.value / "docs",
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
@@ -173,8 +161,7 @@ lazy val commonSettings = Seq(
     (clean in Global).asRunnableItemFull,
     (compile in Compile).asRunnableItemFull,
     (test in Test).asRunnableItemFull,
-    "docs/tut".asRunnableItem,
-    "readme/tut".asRunnableItem
+    "docs/tut".asRunnableItem
   ),
   releaseIgnoreUntrackedFiles := true,
   coverageFailOnMinimum := false
@@ -188,7 +175,7 @@ lazy val tutSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.spire-math"  % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
+    compilerPlugin("org.typelevel"   % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
     compilerPlugin("com.olegpy"      %% "better-monadic-for" % V.betterMonadicFor),
     compilerPlugin("org.scalamacros" % "paradise"            % V.macroParadise cross CrossVersion.patch)
   )

@@ -16,8 +16,8 @@
 
 package higherkindness.skeuomorph.mu.comparison
 
-import qq.droste.data.Mu
-import qq.droste.syntax.embed._
+import higherkindness.droste.data.Mu
+import higherkindness.droste.syntax.embed._
 import org.specs2.Specification
 import cats.data.NonEmptyList
 

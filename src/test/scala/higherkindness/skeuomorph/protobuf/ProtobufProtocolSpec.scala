@@ -23,8 +23,8 @@ import higherkindness.skeuomorph.protobuf.ParseProto._
 import higherkindness.skeuomorph.mu.CompressionType
 import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.{ScalaCheck, Specification}
-import qq.droste.data.Mu
-import qq.droste.data.Mu._
+import higherkindness.droste.data.Mu
+import higherkindness.droste.data.Mu._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
@@ -76,7 +76,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |@message final case class Book(isbn: Long, title: String, author: List[Option[Author]], binding_type: Option[BindingType], rating: Option[Rating])
       |@message final case class GetBookRequest(isbn: Long)
       |@message final case class GetBookViaAuthor(author: Option[Author])
-      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Option[Genre]], payment_method: Cop[Long :: Int :: String :: Option[Book]:: TNil])
+      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Option[Genre]], payment_method: Cop[Long :: Int :: String :: Book :: TNil])
       |
       |sealed trait Genre
       |object Genre {

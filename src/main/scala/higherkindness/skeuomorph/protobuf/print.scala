@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import higherkindness.skeuomorph.Printer
-import qq.droste._
+import higherkindness.droste._
 
 object print {
 
@@ -102,6 +102,6 @@ object print {
       """.stripMargin
     }
 
-    Printer(scheme.cata(algebra))
+    Printer.print(scheme.cata(algebra))
   }
 }

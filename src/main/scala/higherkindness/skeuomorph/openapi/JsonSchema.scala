@@ -17,12 +17,12 @@
 package higherkindness.skeuomorph.openapi
 
 import io.circe.Json
-import qq.droste._
+import higherkindness.droste._
 import cats.implicits._
 import cats._
 
-import qq.droste.data.Fix
-import qq.droste.macros.deriveTraverse
+import higherkindness.droste.data.Fix
+import higherkindness.droste.macros.deriveTraverse
 
 @deriveTraverse sealed trait JsonSchemaF[A]
 object JsonSchemaF {
@@ -42,6 +42,7 @@ object JsonSchemaF {
   final case class ObjectF[A](properties: List[Property[A]], required: List[String]) extends JsonSchemaF[A]
   final case class ArrayF[A](values: A)                                              extends JsonSchemaF[A]
   final case class EnumF[A](cases: List[String])                                     extends JsonSchemaF[A]
+  final case class SumF[A](cases: List[A])                                           extends JsonSchemaF[A]
   final case class ReferenceF[A](ref: String)                                        extends JsonSchemaF[A]
 
   def integer[T](): JsonSchemaF[T]  = IntegerF()
@@ -59,6 +60,7 @@ object JsonSchemaF {
     ObjectF(properties, required)
   def array[T](values: T): JsonSchemaF[T]          = ArrayF(values)
   def enum[T](cases: List[String]): JsonSchemaF[T] = EnumF(cases)
+  def sum[T](cases: List[T]): JsonSchemaF[T]       = SumF(cases)
   def reference[T](ref: String): JsonSchemaF[T]    = ReferenceF[T](ref)
 
   type Fixed = Fix[JsonSchemaF]
@@ -77,9 +79,10 @@ object JsonSchemaF {
     def password[A](): JsonSchemaF.Fixed = Fix(JsonSchemaF.password())
     def `object`(properties: List[(String, JsonSchemaF.Fixed)], required: List[String]): JsonSchemaF.Fixed =
       Fix(JsonSchemaF.`object`(properties.map(JsonSchemaF.Property.apply[JsonSchemaF.Fixed] _ tupled), required))
-    def array(value: JsonSchemaF.Fixed): JsonSchemaF.Fixed = Fix(JsonSchemaF.array(value))
-    def enum(value: List[String]): JsonSchemaF.Fixed       = Fix(JsonSchemaF.enum(value))
-    def reference(value: String): JsonSchemaF.Fixed        = Fix(JsonSchemaF.reference(value))
+    def array(value: JsonSchemaF.Fixed): JsonSchemaF.Fixed        = Fix(JsonSchemaF.array(value))
+    def enum(value: List[String]): JsonSchemaF.Fixed              = Fix(JsonSchemaF.enum(value))
+    def sum[A](value: List[JsonSchemaF.Fixed]): JsonSchemaF.Fixed = Fix(JsonSchemaF.sum(value))
+    def reference(value: String): JsonSchemaF.Fixed               = Fix(JsonSchemaF.reference(value))
   }
 
   private def jsonType(value: String, attr: (String, Json)*): Json =
@@ -113,6 +116,8 @@ object JsonSchemaF {
       )
     case EnumF(cases) =>
       jsonType("string", "enum" -> Json.fromValues(cases.map(Json.fromString)))
+    case SumF(cases) =>
+      Json.obj("oneOf" -> Json.arr(cases: _*))
     case ReferenceF(value) =>
       Json.obj(
         s"$$ref" -> Json.fromString(value)
@@ -139,6 +144,7 @@ object JsonSchemaF {
     case (ObjectF(p1, r1), ObjectF(p2, r2)) => p1 === p2 && r1 === r2
     case (ArrayF(v1), ArrayF(v2))           => v1 === v2
     case (EnumF(c1), EnumF(c2))             => c1 === c2
+    case (SumF(c1), SumF(c2))               => c1 === c2
     case (ReferenceF(r1), ReferenceF(r2))   => r1 === r2
     case _                                  => false
   }

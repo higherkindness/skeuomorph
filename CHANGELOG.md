@@ -1,5 +1,41 @@
 # Changelog
 
+## 09/23/2019 - Version 0.0.14
+
+Release changes:
+
+* Update sbt to 1.3.2 ([#139](https://github.com/higherkindness/skeuomorph/pull/139))
+* Update partial-unification to 1.1.2 ([#138](https://github.com/higherkindness/skeuomorph/pull/138))
+* Update cats-scalacheck to 0.1.1 ([#134](https://github.com/higherkindness/skeuomorph/pull/134))
+* Update sbt-updates to 0.4.2 ([#132](https://github.com/higherkindness/skeuomorph/pull/132))
+* Update better-monadic-for to 0.3.1 ([#131](https://github.com/higherkindness/skeuomorph/pull/131))
+* Update ammonite to 1.6.7 ([#130](https://github.com/higherkindness/skeuomorph/pull/130))
+* Update protobuf-java to 3.10.0 ([#129](https://github.com/higherkindness/skeuomorph/pull/129))
+* Upgrades skeuomorph Build ([#145](https://github.com/higherkindness/skeuomorph/pull/145))
+* Update sbt-tpolecat to 0.1.8 ([#135](https://github.com/higherkindness/skeuomorph/pull/135))
+
+
+## 09/16/2019 - Version 0.0.13
+
+Release changes:
+
+* Release 0.0.13 ([#125](https://github.com/higherkindness/skeuomorph/pull/125))
+
+
+## 09/11/2019 - Version 0.0.12
+
+Release changes:
+
+* Print encoders ([#109](https://github.com/higherkindness/skeuomorph/pull/109))
+* Handle imports from nested folders ([#112](https://github.com/higherkindness/skeuomorph/pull/112))
+* Removes the optionality in Coproducts ([#119](https://github.com/higherkindness/skeuomorph/pull/119))
+* Nested object ([#116](https://github.com/higherkindness/skeuomorph/pull/116))
+* Fix readme/microsite ([#118](https://github.com/higherkindness/skeuomorph/pull/118))
+* Normalize and more support for open api spec ([#121](https://github.com/higherkindness/skeuomorph/pull/121))
+* Open api parser ([#123](https://github.com/higherkindness/skeuomorph/pull/123))
+* Release 0.0.12 ([#124](https://github.com/higherkindness/skeuomorph/pull/124))
+
+
 ## 07/05/2019 - Version 0.0.11
 
 Release changes:

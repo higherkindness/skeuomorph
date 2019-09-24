@@ -79,6 +79,13 @@ object helpers {
     def optional: Request[A]                             = request.copy(required = false)
   }
 
+  def header[A](
+      name: String,
+      schema: A,
+      description: Option[String] = None,
+      required: Boolean = true): Parameter.Header[A] =
+    Parameter.Header(name, description, schema = schema, required = required)
+
   def path[A](name: String, schema: A, description: Option[String] = None): Parameter[A] =
     Parameter.Path(name = name, description = description, schema = schema)
   def query[A](
@@ -110,7 +117,8 @@ object helpers {
     head = None,
     patch = None,
     trace = None,
-    servers = List.empty
+    servers = List.empty,
+    parameters = List.empty
   )
 
   def obj(properties: (String, JsonSchemaF.Fixed)*)(required: String*): JsonSchemaF.Fixed =
@@ -124,10 +132,20 @@ object helpers {
       item.copy(post = operation.some)
     def withGet(operation: Path.Operation[A]): Path.ItemObject[A] =
       item.copy(get = operation.some)
+    def withParameter(parameter: Parameter[A]): Path.ItemObject[A] =
+      item.copy(parameters = item.parameters :+ parameter.asLeft)
   }
 
   def components[T](models: (String, T)*): Components[T] =
-    Components(schemas = models.toMap, responses = Map.empty, requestBodies = Map.empty)
+    Components(schemas = models.toMap, responses = Map.empty, requestBodies = Map.empty, parameters = Map.empty)
+
+  implicit class ComponentsOps[T](components: Components[T]) {
+    def withParameter(name: String, parameter: Parameter[T]): Components[T] =
+      components.copy(parameters = components.parameters + (name -> parameter.asLeft))
+    def withSchema(name: String, t: T): Components[T] =
+      components.copy(schemas = components.schemas + (name -> t))
+
+  }
 
   def openApi[A](name: String, version: String = "0.0.0"): OpenApi[A] = OpenApi(
     openapi = "",
@@ -142,9 +160,14 @@ object helpers {
   implicit class OpenApiOps[A](openApi: OpenApi[A]) {
     def withPath(path: (String, Path.ItemObject[A])): OpenApi[A] =
       openApi.copy(paths = openApi.paths.+(path))
-    def withSchema(model: (String, A)): OpenApi[A] =
+    def withSchema(name: String, a: A): OpenApi[A] =
       openApi.copy(
-        components = openApi.components.fold(components(model))(x => x.copy(x.schemas + model)).some
+        components = openApi.components.fold(components(name -> a))(_.withSchema(name, a)).some
+      )
+    def withParameter(name: String, parameter: Parameter[A]): OpenApi[A] =
+      openApi.copy(
+        components =
+          openApi.components.fold(components().withParameter(name, parameter))(_.withParameter(name, parameter)).some
       )
   }
 
