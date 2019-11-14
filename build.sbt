@@ -20,7 +20,7 @@ val V = new {
   val macroParadise    = "2.1.1"
   val scala212         = "2.12.10"
   val scalacheck       = "1.14.2"
-  val specs2           = "4.8.0"
+  val specs2           = "4.8.1"
   val protoc           = "3.8.0"
   val protobuf         = "3.10.0"
 }
