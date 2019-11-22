@@ -3,6 +3,6 @@ syntax = "proto3";
 package com.acme;
 
 message Rating {
-    int32 stars = 1;
-    uint32 reviews = 2;
+  int32 stars = 1;
+  uint32 reviews = 2;
 }

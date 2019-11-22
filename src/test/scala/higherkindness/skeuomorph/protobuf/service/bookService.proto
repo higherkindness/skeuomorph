@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package com.acme;
+
+import "models/author.proto";
+import "book.proto";
+import "rating.proto";
+
+service BookService {
+  rpc GetBook (GetBookRequest) returns (Book);
+  rpc GetBooksViaAuthor (GetBookViaAuthor) returns (stream Book);
+  rpc GetGreatestBook (stream GetBookRequest) returns (Book);
+  rpc GetBooks (stream GetBookRequest) returns (stream Book);
+}
+

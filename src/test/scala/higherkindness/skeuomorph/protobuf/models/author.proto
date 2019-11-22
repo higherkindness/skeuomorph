@@ -3,6 +3,13 @@ syntax = "proto3";
 package com.acme;
 
 message Author {
-    string name = 1;
-    string nick = 2;
+  message Address {
+    string street = 1;
+    int32 number = 2;
+    string city = 4;
+    string country = 5;
+  }
+  string name = 1;
+  string nick = 2;
+  Address address = 3;
 }
