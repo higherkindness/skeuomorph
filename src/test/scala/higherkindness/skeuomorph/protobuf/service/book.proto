@@ -5,36 +5,6 @@ package com.acme;
 import "models/author.proto";
 import "rating.proto";
 
-message Book {
-  reserved 4, 8;
-  reserved 12 to 15;
-  int64 isbn = 1;
-  string title = 2;
-  repeated Author author = 3;
-  BindingType binding_type = 9;
-  Rating rating = 10;
-}
-
-message GetBookRequest {
-  int64 isbn = 1;
-}
-
-message GetBookViaAuthor {
-  Author author = 1;
-}
-message BookStore {
-  string name = 1;
-  map<int64, string> books = 2;
-  repeated Genre genres = 3;
-
-  oneof payment_method {
-    int64 credit_card_number = 4;
-    int32 cash = 5;
-    string iou_note = 6;
-    Book barter = 7;
-  }
-}
-
 enum Genre {
   option allow_alias = true;
   UNKNOWN = 0;
@@ -47,4 +17,50 @@ enum Genre {
 enum BindingType {
   HARDCOVER = 0;
   PAPERBACK = 1;
+}
+
+message Book {
+  reserved 4, 8;
+  reserved 12 to 15;
+  int64 isbn = 1;
+  string title = 2;
+  repeated Author author = 3;
+  BindingType binding_type = 9;
+  Rating rating = 10;
+}
+
+message Series {
+  message BookSeries {
+    string isbn = 1;
+  }
+  int64 code = 1;
+  string name = 2;
+  int32 numberOfBooks = 3;
+  string date = 4;
+  repeated BookSeries books = 5;
+}
+
+message GetBookRequest {
+  int64 isbn = 1;
+}
+
+message GetBookViaAuthor {
+  Author author = 1;
+}
+
+message GetBookSeries {
+  int64 isbn = 1;
+}
+
+message BookStore {
+  string name = 1;
+  map<int64, string> books = 2;
+  repeated Genre genres = 3;
+
+  oneof payment_method {
+    int64 credit_card_number = 4;
+    int32 cash = 5;
+    string iou_note = 6;
+    Book barter = 7;
+  }
 }
