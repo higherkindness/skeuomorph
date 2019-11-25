@@ -62,6 +62,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   def printModelProtobufProtocol(fileName: String) = prop { (ct: CompressionType, useIdiom: Boolean) =>
     val result = parseProtobufProtocol(fileName)(ct, useIdiom)
+    //TODO show unused import failure
     println(s"\n${result}\n")
 
     result.clean must beEqualTo(modelsExpectation.clean)
@@ -94,7 +95,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |    case object PAPERBACK extends BindingType
       |  }
       |
-      |  @message final case class Book(isbn: Long, title: String, author: List[Author], binding_type: BindingType, rating: Rating)
+      |  @message final case class Book(isbn: Long, title: String, book_genres: List[Genre], author: List[Author], `class`: BindingType, rating: Rating)
       |
       |  @message final case class BookSeries(isbn: Long)
       |

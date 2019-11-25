@@ -20,12 +20,13 @@ enum BindingType {
 }
 
 message Book {
-  reserved 4, 8;
+  reserved 5, 8;
   reserved 12 to 15;
   int64 isbn = 1;
   string title = 2;
-  repeated Author author = 3;
-  BindingType binding_type = 9;
+  repeated Genre book_genres = 3;
+  repeated Author author = 4;
+  BindingType class = 9;
   Rating rating = 10;
 }
 
