@@ -1,7 +1,7 @@
 ---
-layout: page
+layout: docs
 title: Schemas
-position: 1
+permalink: docs/schemas/
 ---
 
 # Schemas

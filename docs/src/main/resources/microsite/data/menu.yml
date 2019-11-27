@@ -1,0 +1,12 @@
+options:
+  - title: Intro
+    url: docs/
+
+  - title: Optimizations
+    url: docs/optimizations/
+
+  - title: Schemas
+    url: docs/schemas/
+
+  - title: Changelog
+    url: docs/changelog/

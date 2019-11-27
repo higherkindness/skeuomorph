@@ -1,7 +1,7 @@
 ---
-layout: page
-title: Home
-position: 0
+layout: docs
+title: Intro
+permalink: docs/
 ---
 
 [comment]: # (Start Badges)
@@ -39,9 +39,9 @@ You can install skeuomorph as follows:
 
 [comment]: # (Start Replace)
 
-```scala
+<!-- ```scala mdoc
 libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.9.1"
-```
+``` -->
 
 [comment]: # (End Replace)
 
@@ -49,7 +49,7 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.9.1"
 
 ### parsing an avro schema and then converting it to scala:
 
-```tut:silent
+<!-- ```scala mdoc:silent
 import org.apache.avro._
 import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.MuF
@@ -93,18 +93,18 @@ val avroSchema: Schema = new Schema.Parser().parse(definition)
 
 val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
-val printAsScala: Mu[MuF] => String = 
+val printAsScala: Mu[MuF] => String =
   print.schema.print _
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
-```
+``` -->
 
-```tut:passthrough
+<!-- ```scala mdoc:passthrough
 println("```scala")
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 println("```")
-```
+``` -->
 
 
 ## Protobuf
@@ -129,7 +129,7 @@ message User {
 
 We can parse and convert them into Scala code as:
 
-```tut:silent
+<!-- ```scala mdoc:silent
   import cats.effect.IO
   import higherkindness.skeuomorph.mu
   import mu.{CompressionType, MuF}
@@ -151,18 +151,18 @@ We can parse and convert them into Scala code as:
   }
 
  (parseProtocol andThen printProtocol)(protobufProtocol)
-```
+``` -->
 
 It would generate:
 
 
-```tut:passthrough
+<!-- ```scala mdoc:passthrough
 println("```scala")
 (parseProtocol andThen printProtocol andThen println)(protobufProtocol)
 println("```")
-```
+``` -->
 
-## Skeuomorph in the wild 
+## Skeuomorph in the wild
 
 If you wish to add your library here please consider a PR to include
 it in the list below.

@@ -1,0 +1,24 @@
+// Variables
+// -----------------------------------------------
+// -----------------------------------------------
+
+// Google Fonts
+// -----------------------------------------------
+@import url('https://fonts.googleapis.com/css?family=Montserrat:300,400,600,700&display=swap');
+// Colors
+// -----------------------------------------------
+$text-color: #4A00D8;
+$white-color: #FFF;
+$sidebar-color: #FC00CD;
+$sidebar-active-color: rgba($text-color, 0.05);
+$sidebar-head-active-color: rgba($text-color, 0.08);
+// Sizes
+// -----------------------------------------------
+$base-point-grid: 8px;
+// Typography
+$font-family: 'Montserrat', sans-serif;
+// Breakpoint
+$bp-small: 480px;
+$bp-medium: 768px;
+$bp-large: 992px;
+$bp-xlarge: 1130px;

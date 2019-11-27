@@ -1,0 +1,41 @@
+// Main
+// -----------------------------------------------
+// -----------------------------------------------
+
+#site-main {
+  background: url("../img/wave_1.svg") no-repeat, url("../img/wave_2.svg") no-repeat;
+  background-position: left top, right top;
+  background-color: unset;
+  font-family: $font-family;
+  padding-top: 40px;
+
+  .features {
+    .feature-item {
+      color: $text-color;
+    }
+  }
+
+  .learn-more-button {
+    color: $text-color;
+    border: 2px solid $text-color;
+    width: 82px;
+    &:hover {
+      background-color: $text-color;
+      color: $white-color;
+    }
+  }
+
+  .features-image {
+    width: 100%;
+  }
+}
+
+// Responsive
+// -----------------------------------------------
+
+@include bp(large) {
+  #site-main {
+    background: none;
+    padding-bottom: $base-point-grid * 5;
+  }
+}

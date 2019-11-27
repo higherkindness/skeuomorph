@@ -31,3 +31,6 @@ project/target
 .metals
 .bloop
 .vscode
+
+# Jekyll
+docs/_site

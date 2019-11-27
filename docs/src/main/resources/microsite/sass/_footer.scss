@@ -1,0 +1,22 @@
+// Footer
+// -----------------------------------------------
+// -----------------------------------------------
+
+#site-footer {
+  font-family: $font-family;
+  background: $text-color;
+  color: $white-color;
+
+  .row {
+    font-weight: 300;
+    a {
+      color: $white-color;
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
