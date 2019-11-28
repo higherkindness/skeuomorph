@@ -176,9 +176,8 @@ lazy val commonSettings = Seq(
 ) ++ compilerPlugins
 
 lazy val mdocSettings = Seq(
-  scalacOptions in Tut ~= filterConsoleScalacOptions,
-  scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains),
-  scalacOptions in Tut += "-language:postfixOps"
+  scalacOptions ~= filterConsoleScalacOptions,
+  scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains)
 )
 
 lazy val compilerPlugins = Seq(
