@@ -50,10 +50,10 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.9.1"
 ### parsing an avro schema and then converting it to scala:
 
 ```scala mdoc:silent
-import org.apache.avro._
+import org.apache.avro.{Protocol => AvroProtocol, _}
 import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.mu.print
+import higherkindness.skeuomorph.mu.{print => muprint}
 import higherkindness.skeuomorph.avro.AvroF.fromAvro
 import higherkindness.droste._
 import higherkindness.droste.data._
@@ -94,7 +94,7 @@ val avroSchema: Schema = new Schema.Parser().parse(definition)
 val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 val printAsScala: Mu[MuF] => String =
-  print.schema.print _
+  muprint.schema.print _
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
@@ -137,8 +137,7 @@ We can parse and convert them into Scala code as:
   import higherkindness.droste.data.Mu
   import Mu._
 
-
-  val source = ParseProto.ProtoSource("user.proto", getClass.getResource("/protobuf").getPath)
+  val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/docs/protobuf")
 
   val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
