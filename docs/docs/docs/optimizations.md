@@ -1,7 +1,7 @@
 ---
-layout: page
+layout: docs
 title: Optimizations
-position: 2
+permalink: docs/optimizations/
 ---
 
 # Optimizations
@@ -19,7 +19,7 @@ mechanisms to apply that function to the AST correctly.  Let's see
 
 ## NamedTypes
 
-```tut:invisible
+```scala mdoc:invisible
 import higherkindness.droste._
 import higherkindness.droste.data._
 import higherkindness.droste.implicits._
@@ -45,7 +45,7 @@ We solve this by substituting nested product types by its name when
 they're inside a product themselves.  And we do this with the
 `namedTypes` combinator (in `skeuomorph.mu.Optimize`):
 
-```scala
+```scala mdoc
 def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
   case TProduct(name, fields) =>
     def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
@@ -55,7 +55,7 @@ def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Tr
     )
   case other => other
 }
-  
+
 def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
   case TProduct(name, _) => TNamedType[T](name)
   case TSum(name, _)     => TNamedType[T](name)
@@ -69,11 +69,11 @@ def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTra
 
 and then apply the `namedTypes` combinator to the AST:
 
-```tut:invisible
+```scala mdoc:invisible
 def ast = Mu(TNull[Mu[MuF]]())
 ```
 
-```tut
+```scala mdoc
 val optimization = Optimize.namedTypes[Mu[MuF]]
 
 optimization(ast)

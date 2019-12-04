@@ -1,0 +1,79 @@
+// // Sidebar
+// // -----------------------------------------------
+// // -----------------------------------------------
+
+.docs {
+  background: $white-color;
+  font-family: $font-family;
+  #sidebar-wrapper {
+    background: $white-color;
+    border-right: 1px solid rgba(0,0,0,0.1);
+    #sidebar-brand {
+      background: none;
+
+      a {
+        color: $text-color;
+
+        .brand-wrapper {
+          width: $base-point-grid * 7;
+          height: $base-point-grid * 8;
+          margin-right: $base-point-grid;
+        }
+
+        span {
+          position: inherit;
+          font-weight: 700;
+          font-size: 1.7rem;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .sidebar-nav {
+      .sidebar-nav-item {
+        .sub-section {
+          background: $sidebar-active-color;
+          max-height: 0;
+          transition: max-height 0.3s ease-in-out;
+          overflow: hidden;
+
+          a {
+            &.active {
+              color: $text-color;
+              box-shadow: 3px 0 $sidebar-color inset;
+            }
+          }
+        }
+
+        a, button {
+          @include links($text-color, $text-color, rgba($text-color, 0.8), $text-color);
+
+          &:hover {
+            text-decoration: none;
+          }
+        }
+
+        .fa {
+          color: $text-color;
+        }
+
+        &.active {
+          > a, button {
+            background: $sidebar-active-color;
+            box-shadow: 3px 0 $sidebar-color inset;
+          }
+        }
+
+        &.open {
+          > a, button {
+            background: $sidebar-head-active-color;
+          }
+        }
+      }
+    }
+  }
+}
+
+.close::after, .close::before {
+  background-color: $text-color;
+}

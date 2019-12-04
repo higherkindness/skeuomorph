@@ -1,0 +1,30 @@
+// Masthead
+// -----------------------------------------------
+// -----------------------------------------------
+
+#masthead {
+  font-family: $font-family;
+  color: $text-color;
+  background: none;
+
+  .masthead-button {
+    display: none;
+  }
+  .masthead-title {
+    font-size: 2.8rem;
+    padding-bottom: 10px;
+  }
+}
+.features-header-description {
+  width: 40%;
+}
+
+// Responsive
+// -----------------------------------------------
+
+@include bp(medium) {
+  #masthead {
+    padding-top: $base-point-grid;
+    padding-bottom: 0;
+  }
+}

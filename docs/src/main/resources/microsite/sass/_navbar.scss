@@ -1,0 +1,41 @@
+// Navbar
+// -----------------------------------------------
+// -----------------------------------------------
+
+#navigation {
+  font-family: $font-family;
+
+  a {
+    color: $text-color;
+    font-weight: 600;
+  }
+
+  .navbar-wrapper {
+    .navigation-brand {
+      .brand {
+        .icon-wrapper {
+          width: $base-point-grid * 7;
+          height: $base-point-grid * 8;
+          margin-right: $base-point-grid;
+        }
+        .brand-title {
+          position: initial;
+          color: $text-color;
+          font-size: 1.7rem;
+          font-weight: 700;
+          left: auto;
+        }
+      }
+    }
+  }
+}
+
+// Responsive
+// -----------------------------------------------
+@include bp(medium) {
+  .navigation-menu {
+    ul {
+      padding-left: 0;
+    }
+  }
+}

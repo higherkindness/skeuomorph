@@ -1,7 +1,7 @@
 ---
-layout: page
-title: Home
-position: 0
+layout: docs
+title: Intro
+permalink: docs/
 ---
 
 [comment]: # (Start Badges)
@@ -49,11 +49,11 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.9.1"
 
 ### parsing an avro schema and then converting it to scala:
 
-```tut:silent
-import org.apache.avro._
+```scala mdoc:silent
+import org.apache.avro.{Protocol => AvroProtocol, _}
 import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.mu.print
+import higherkindness.skeuomorph.mu.{print => muprint}
 import higherkindness.skeuomorph.avro.AvroF.fromAvro
 import higherkindness.droste._
 import higherkindness.droste.data._
@@ -93,13 +93,13 @@ val avroSchema: Schema = new Schema.Parser().parse(definition)
 
 val parseAvro: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
-val printAsScala: Mu[MuF] => String = 
-  print.schema.print _
+val printAsScala: Mu[MuF] => String =
+  muprint.schema.print _
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
 ```
 
-```tut:passthrough
+```scala mdoc:passthrough
 println("```scala")
 (parseAvro >>> println)(avroSchema)
 (printAsScala >>> println)(parseAvro(avroSchema))
@@ -129,7 +129,7 @@ message User {
 
 We can parse and convert them into Scala code as:
 
-```tut:silent
+```scala mdoc:silent
   import cats.effect.IO
   import higherkindness.skeuomorph.mu
   import mu.{CompressionType, MuF}
@@ -137,8 +137,7 @@ We can parse and convert them into Scala code as:
   import higherkindness.droste.data.Mu
   import Mu._
 
-
-  val source = ParseProto.ProtoSource("user.proto", getClass.getResource("/protobuf").getPath)
+  val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/docs/protobuf")
 
   val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
@@ -156,13 +155,13 @@ We can parse and convert them into Scala code as:
 It would generate:
 
 
-```tut:passthrough
+```scala mdoc:passthrough
 println("```scala")
 (parseProtocol andThen printProtocol andThen println)(protobufProtocol)
 println("```")
 ```
 
-## Skeuomorph in the wild 
+## Skeuomorph in the wild
 
 If you wish to add your library here please consider a PR to include
 it in the list below.

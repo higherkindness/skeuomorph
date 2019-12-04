@@ -36,8 +36,8 @@ lazy val skeuomorph = project
   .settings(
     sourceGenerators in Test += Def.task {
       val file = (sourceManaged in Test).value / "amm.scala"
-      IO.write(file, """object amm extends App { 
-        ammonite.Main.main(args) 
+      IO.write(file, """object amm extends App {
+        ammonite.Main.main(args)
       }""")
       Seq(file)
     }.taskValue
@@ -49,22 +49,30 @@ lazy val docs = project
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
   .settings(noPublishSettings)
-  .settings(tutSettings)
+  .settings(mdocSettings)
   .settings(
     micrositeName := "Skeuomorph",
-    micrositeDescription := "Schema transformations",
+    micrositeDescription := "Skeuomorph is a library for transforming different schemas in Scala",
     micrositeBaseUrl := "/skeuomorph",
     micrositeGithubOwner := "higherkindness",
     micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
-    includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md",
+    micrositeCompilingDocsTool := WithMdoc,
+    micrositeDocumentationUrl := "docs",
+    includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
     micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
     micrositePushSiteWith := GitHub4s,
+    micrositeFavicons := Seq(MicrositeFavicon("favicon.png", "32x32")),
+    micrositePalette := Map(
+      "brand-primary"     -> "#4A00D8",
+      "brand-secondary"   -> "#FC00CD",
+      "white-color"       -> "#FFF"
+    ),
     micrositeExtraMdFiles := Map(
       file("CHANGELOG.md") -> ExtraMdFileConfig(
         "changelog.md",
-        "home",
-        Map("title" -> "changelog", "section" -> "changelog", "position" -> "99")
+        "docs",
+        Map("title" -> "changelog", "permalink" -> "docs/changelog/")
       )
     )
   )
@@ -167,10 +175,9 @@ lazy val commonSettings = Seq(
   coverageFailOnMinimum := false
 ) ++ compilerPlugins
 
-lazy val tutSettings = Seq(
-  scalacOptions in Tut ~= filterConsoleScalacOptions,
-  scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains),
-  scalacOptions in Tut += "-language:postfixOps"
+lazy val mdocSettings = Seq(
+  scalacOptions ~= filterConsoleScalacOptions,
+  scalacOptions ~= (_ filterNot Set("-Xfatal-warnings", "-Ywarn-unused-import", "-Xlint").contains)
 )
 
 lazy val compilerPlugins = Seq(
