@@ -1,5 +1,38 @@
 # Changelog
 
+## 12/04/2019 - Version 0.0.16
+
+Release changes:
+
+* Upgrades to droste 0.7.0 ([#146](https://github.com/higherkindness/skeuomorph/pull/146))
+* Use import root to compile Protobuf files ([#115](https://github.com/higherkindness/skeuomorph/pull/115))
+* Update scalacheck to 1.14.2 ([#148](https://github.com/higherkindness/skeuomorph/pull/148))
+* Update sbt-microsites to 0.9.6 ([#147](https://github.com/higherkindness/skeuomorph/pull/147))
+* Update ammonite to 1.7.4 ([#149](https://github.com/higherkindness/skeuomorph/pull/149))
+* Update sbt-microsites to 0.9.7 ([#150](https://github.com/higherkindness/skeuomorph/pull/150))
+* Update sbt-updates to 0.4.3 ([#151](https://github.com/higherkindness/skeuomorph/pull/151))
+* Update circe-core, circe-parser, ... to 0.12.2 ([#152](https://github.com/higherkindness/skeuomorph/pull/152))
+* Update sbt to 1.3.3 ([#153](https://github.com/higherkindness/skeuomorph/pull/153))
+* Update sbt-updates to 0.5.0 ([#154](https://github.com/higherkindness/skeuomorph/pull/154))
+* Update specs2-core, specs2-scalacheck to 4.8.0 ([#155](https://github.com/higherkindness/skeuomorph/pull/155))
+* Update circe-core, circe-parser, ... to 0.12.3 ([#156](https://github.com/higherkindness/skeuomorph/pull/156))
+* Update ammonite to 1.8.0 ([#157](https://github.com/higherkindness/skeuomorph/pull/157))
+* Update ammonite to 1.8.1 ([#158](https://github.com/higherkindness/skeuomorph/pull/158))
+* Update specs2-core, specs2-scalacheck to 4.8.1 ([#160](https://github.com/higherkindness/skeuomorph/pull/160))
+* Update droste-core, droste-macros to 0.8.0 ([#161](https://github.com/higherkindness/skeuomorph/pull/161))
+* Update sbt-scoverage to 1.6.1 ([#163](https://github.com/higherkindness/skeuomorph/pull/163))
+* Update sbt to 1.3.4 ([#164](https://github.com/higherkindness/skeuomorph/pull/164))
+* Update ammonite to 1.8.2 ([#165](https://github.com/higherkindness/skeuomorph/pull/165))
+* Update protobuf-java to 3.11.0 ([#167](https://github.com/higherkindness/skeuomorph/pull/167))
+* Update sbt-tpolecat to 0.1.9 ([#168](https://github.com/higherkindness/skeuomorph/pull/168))
+* Update sbt-tpolecat to 0.1.10 ([#169](https://github.com/higherkindness/skeuomorph/pull/169))
+* Update protoc-jar to 3.10.1 ([#170](https://github.com/higherkindness/skeuomorph/pull/170))
+* Update protobuf-java to 3.11.1 ([#172](https://github.com/higherkindness/skeuomorph/pull/172))
+* Update circe-yaml to 0.12.0 ([#159](https://github.com/higherkindness/skeuomorph/pull/159))
+* Updates microsite using sbt-microsites v1.0.1 ([#174](https://github.com/higherkindness/skeuomorph/pull/174))
+* Releases 0.0.16 ([#175](https://github.com/higherkindness/skeuomorph/pull/175))
+
+
 ## 09/24/2019 - Version 0.0.15
 
 Release changes:
