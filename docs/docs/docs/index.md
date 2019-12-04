@@ -44,18 +44,9 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.9.1"
 
 ### parsing an avro schema and then converting it to scala:
 
+Given an Avro schema:
+
 ```scala mdoc:silent
-import org.apache.avro.{Protocol => AvroProtocol, _}
-import higherkindness.skeuomorph.mu.Transform.transformAvro
-import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.mu.{print => muprint}
-import higherkindness.skeuomorph.avro.AvroF.fromAvro
-import higherkindness.droste._
-import higherkindness.droste.data._
-import higherkindness.droste.data.Mu._
-import cats.implicits._
-
-
 val definition = """
 {
   "namespace": "example.avro",
@@ -82,37 +73,56 @@ val definition = """
     }
   ]
 }
-  """
+"""
+```
+
+We can parse and convert it into Scala code like this:
+
+```scala mdoc:silent
+import org.apache.avro.{Protocol => AvroProtocol, _}
+import higherkindness.skeuomorph.mu.Transform.transformAvro
+import higherkindness.skeuomorph.mu.MuF
+import higherkindness.skeuomorph.mu.{print => muprint}
+import higherkindness.skeuomorph.avro.AvroF.fromAvro
+import higherkindness.droste._
+import higherkindness.droste.data._
+import higherkindness.droste.data.Mu._
+import cats.implicits._
 
 val avroSchema: Schema = new Schema.Parser().parse(definition)
 
-val parseAvro: Schema => Mu[MuF] =
+val toMuSchema: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
-val printAsScala: Mu[MuF] => String =
+
+val printSchemaAsScala: Mu[MuF] => String =
   muprint.schema.print _
-(parseAvro >>> println)(avroSchema)
-(printAsScala >>> println)(parseAvro(avroSchema))
+
+(toMuSchema >>> println)(avroSchema)
+println("=====")
+(toMuSchema >>> printSchemaAsScala >>> println)(avroSchema)
 ```
+
+It would generate the following output:
 
 ```scala mdoc:passthrough
 println("```scala")
-(parseAvro >>> println)(avroSchema)
-(printAsScala >>> println)(parseAvro(avroSchema))
+(toMuSchema >>> println)(avroSchema)
+println("=====")
+(toMuSchema >>> printSchemaAsScala >>> println)(avroSchema)
 println("```")
 ```
-
 
 ## Protobuf
 
 ### Parsing `.proto` file and converting into Scala code
 
-Given these proto file below:
+Given the proto file below:
 
 _user.proto_
 
 ```protobuf
 syntax = "proto3";
-package com.acme;
+package example.proto;
 
 message User {
     string name = 1;
@@ -121,38 +131,41 @@ message User {
 }
 ```
 
-
-We can parse and convert them into Scala code as:
+We can parse and convert it into Scala code as:
 
 ```scala mdoc:silent
-  import cats.effect.IO
-  import higherkindness.skeuomorph.mu
-  import mu.{CompressionType, MuF}
-  import higherkindness.skeuomorph.protobuf._
-  import higherkindness.droste.data.Mu
-  import Mu._
+import cats.effect.IO
+import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.mu.{CompressionType, MuF}
+import higherkindness.skeuomorph.protobuf._
+import higherkindness.droste.data.Mu
+import higherkindness.droste.data.Mu._
+import cats.implicits._
 
-  val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/docs/protobuf")
+val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/docs/protobuf")
 
-  val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
-  val parseProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
-    mu.Protocol.fromProtobufProto(CompressionType.Identity, true)(p)
-  }
+val toMuProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
+  mu.Protocol.fromProtobufProto(CompressionType.Identity, true)(p)
+}
 
-  val printProtocol: mu.Protocol[Mu[MuF]] => String = { p: mu.Protocol[Mu[MuF]] =>
-    higherkindness.skeuomorph.mu.print.proto.print(p)
-  }
+val printProtocolAsScala: mu.Protocol[Mu[MuF]] => String =
+  mu.print.proto.print _
 
- (parseProtocol andThen printProtocol)(protobufProtocol)
+(toMuProtocol >>> println)(protobufProtocol)
+println("=====")
+(toMuProtocol >>> printProtocolAsScala >>> println)(protobufProtocol)
 ```
 
-It would generate:
+It would generate the following output:
 
 
 ```scala mdoc:passthrough
 println("```scala")
-(parseProtocol andThen printProtocol andThen println)(protobufProtocol)
+(toMuProtocol >>> println)(protobufProtocol)
+println("=====")
+(toMuProtocol >>> printProtocolAsScala >>> println)(protobufProtocol)
 println("```")
 ```
 
