@@ -4,11 +4,6 @@ title: Intro
 permalink: docs/
 ---
 
-[comment]: # (Start Badges)
-
-[![Build Status](https://travis-ci.org/higherkindness/skeuomorph.svg?branch=master)](https://travis-ci.org/higherkindness/skeuomorph) [![codecov.io](http://codecov.io/gh/higherkindness/skeuomorph/branch/master/graph/badge.svg)](http://codecov.io/gh/higherkindness/skeuomorph) [![Maven Central](https://img.shields.io/badge/maven%20central-0.0.11-green.svg)](https://oss.sonatype.org/#nexus-search;gav~io.higherkindness~skeuomorph*) [![Latest version](https://img.shields.io/badge/skeuomorph-0.0.11-green.svg)](https://index.scala-lang.org/higherkindness/skeuomorph) [![License](https://img.shields.io/badge/license-Apache%202-blue.svg)](https://raw.githubusercontent.com/higherkindness/skeuomorph/master/LICENSE) [![Join the chat at https://gitter.im/higherkindness/skeuomorph](https://badges.gitter.im/higherkindness/skeuomorph.svg)](https://gitter.im/higherkindness/skeuomorph?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![GitHub Issues](https://img.shields.io/github/issues/higherkindness/skeuomorph.svg)](https://github.com/higherkindness/skeuomorph/issues)
-
-[comment]: # (End Badges)
 
 # Skeuomorph
 
@@ -173,8 +168,8 @@ it in the list below.
 [Avro]: https://avro.apache.org/
 [Protobuf]: https://developers.google.com/protocol-buffers/
 [mu]: https://higherkindness.github.io/mu/
-[cats]: http://typelevel.org/cats
-[droste]: http://github.com/andyscott/droste
+[cats]: https://typelevel.org/cats
+[droste]: https://github.com/andyscott/droste
 
 [comment]: # (Start Copyright)
 # Copyright

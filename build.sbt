@@ -95,7 +95,7 @@ lazy val commonSettings = Seq(
     project = (name in LocalRootProject).value,
     organizationName = "47 Degrees",
     groupId = "io.higherkindness",
-    organizationHomePage = url("http://47deg.com"),
+    organizationHomePage = url("https://www.47deg.com"),
     organizationEmail = "hello@47deg.com"
   ),
   scalaVersion := V.scala212,
