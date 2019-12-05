@@ -81,6 +81,18 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
             |}""".stripMargin)
     }
 
+    "when object is provided whose name is a Scala reserved word" >> {
+      schemaWithName
+        .print(
+          "=>" ->
+            Fixed.`object`(List("name" -> Fixed.string()), List("name"))) must ===(
+        s"""|final case class `=>`(name: String)
+            |object `=>` {
+            |
+            |
+            |}""".stripMargin)
+    }
+
     "when object is provided without required fields" >> {
       schemaWithName
         .print(
@@ -103,6 +115,22 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
                 "surname" -> Fixed.string()
               ),
               List("name", "surname"))) must ===(s"""|final case class Person(name: String, surname: String)
+                                                   |object Person {
+                                                   |
+                                                   |
+                                                   |}""".stripMargin)
+    }
+
+    "when object is provided with a field name which is a Scala reserved word" >> {
+      schemaWithName
+        .print(
+          "Person" ->
+            Fixed.`object`(
+              List(
+                "name" -> Fixed.string(),
+                "type" -> Fixed.string()
+              ),
+              List("name", "type"))) must ===(s"""|final case class Person(name: String, `type`: String)
                                                    |object Person {
                                                    |
                                                    |

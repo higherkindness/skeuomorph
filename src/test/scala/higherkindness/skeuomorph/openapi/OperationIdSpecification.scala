@@ -48,7 +48,7 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
         Verb.Put,
         Path("/foo"),
         defaultOperation.withOperationId("create-Payload_V1")
-      ).show must ===("createPayloadV1")
+      ).show must ===("`create-Payload_V1`")
     }
 
     "when the description is not provided and contains special characters" >> {
@@ -80,7 +80,7 @@ class OperationIdSpecification extends org.specs2.mutable.Specification {
         Verb.Put,
         Path("/foo"),
         defaultOperation.withOperationId("1111createPayload")
-      ).show must ===("createPayload1111")
+      ).show must ===("`1111createPayload`")
     }
   }
 }

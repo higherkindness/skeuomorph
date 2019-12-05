@@ -105,7 +105,7 @@ object print {
         val params                     = varPaths ++ queries
         OperationId(
           decapitalize(
-            normalize(operation.operationId
+            ident(operation.operationId
               .getOrElse {
                 val printVerb             = Http.Verb.methodFrom(verb)
                 val printParamsIfRequired = if (params.nonEmpty) s"By${params.mkString}" else ""

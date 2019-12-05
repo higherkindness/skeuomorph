@@ -80,6 +80,16 @@ object Printer {
       case xs  => xs.map(p.print).mkString(sep)
     }
 
+  /*
+   * The logic to decide whether a given string needs to be wrapped in backticks
+   * to be a valid Scala identifier is really complicated (the spec is at
+   * https://scala-lang.org/files/archive/spec/2.13/01-lexical-syntax.html#identifiers,
+   * but it's quite wrong/misleading). So we let scalameta take care of it for us.
+   */
+  def toValidIdentifier(string: String): String =
+    if (string.isEmpty) string
+    else scala.meta.Term.Name(string).syntax
+
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
     def unit: Printer[Unit] = Printer.unit
     def product[A, B](fa: Printer[A], fb: Printer[B]): Printer[(A, B)] = new Printer[(A, B)] {

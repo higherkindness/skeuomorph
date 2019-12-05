@@ -34,10 +34,10 @@ object print {
   val parametersRegex = """#/components/parameters/(.+)""".r
 
   def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
-    case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((normalize(name), t, none))
+    case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((ident(name), t, none))
     case (name, t) if (isArray(t)) =>
-      typeAliasDef(schema[T]()).print((normalize(name), t, none))
-    case (name, t) => schema[T](normalize(name).some).print(t)
+      typeAliasDef(schema[T]()).print((ident(name), t, none))
+    case (name, t) => schema[T](ident(name).some).print(t)
   }
 
   protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](name: Option[String] = None)(
@@ -76,9 +76,9 @@ object print {
         case (ArrayF(x), _)                                      => listDef.print(x)
         case (EnumF(fields), Some(name))                         => sealedTraitDef.print(name -> fields)
         case (SumF(cases), Some(name))                           => sumDef.print(name -> cases)
-        case (ReferenceF(schemasRegex(ref)), _)                  => normalize(ref)
-        case (ReferenceF(parametersRegex(ref)), _)               => normalize(ref)
-        case (ReferenceF(ref), _)                                => normalize(ref)
+        case (ReferenceF(schemasRegex(ref)), _)                  => ident(ref)
+        case (ReferenceF(parametersRegex(ref)), _)               => ident(ref)
+        case (ReferenceF(ref), _)                                => ident(ref)
       }
     }
     Printer.print(scheme.cata(algebra))
@@ -127,7 +127,7 @@ object print {
     openApi.components.toList
       .flatMap(_.schemas.toList)
       .filter { case (_, t) => isSum(t) }
-      .map { case (x, _) => normalize(x) }
+      .map { case (x, _) => ident(x) }
   }
 
   sealed trait Codecs
@@ -148,7 +148,7 @@ object print {
       x =>
         tpe.nestedTypes.headOption.map(_ => s"${tpe.nestedTypes.mkString(".")}.").getOrElse("") +
           Printer
-            .print(Optimize.namedTypes[T](normalize(tpe.description)) >>> schema(none).print)
+            .print(Optimize.namedTypes[T](ident(tpe.description)) >>> schema(none).print)
             .print(x)
     )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
@@ -165,7 +165,7 @@ object print {
 
   final case class Var(name: String) extends AnyVal
   object Var {
-    implicit val varShow: Show[Var] = Show.show(x => decapitalize(normalize(x.name)))
+    implicit val varShow: Show[Var] = Show.show(x => decapitalize(ident(x.name)))
   }
   final case class VarWithType[T](name: Var, tpe: Tpe[T])
   object VarWithType {
@@ -199,7 +199,7 @@ object print {
     ).contramap(x => (x, ((x._1, none), List.empty, SumCodecs.apply _ tupled (x))))
 
   private def caseObjectDef: Printer[(String, String)] =
-    (κ("final case object ") *< string >* κ(" extends "), string).contramapN { case (x, y) => (normalize(x), y) }
+    (κ("final case object ") *< string >* κ(" extends "), string).contramapN { case (x, y) => (ident(x), y) }
 
   private def sealedTraitCompanionObjectDef(
       implicit codecs: Printer[Codecs]): Printer[(List[(String, String)], Codecs)] =
@@ -245,12 +245,16 @@ object print {
       body >* newLine *< κ("}")
     ).contramap { case (x, y, z) => (x -> y, z) }
 
-  def normalize(value: String): String =
-    value
+  def normalize(value: String): String = {
+    val withoutBackticks = value.stripPrefix("`").stripSuffix("`")
+    withoutBackticks
       .dropWhile(_.isDigit)
       .split("[ _-]")
       .map(_.filter(x => x.isLetterOrDigit).capitalize)
-      .mkString ++ value.takeWhile(_.isDigit)
+      .mkString ++ withoutBackticks.takeWhile(_.isDigit)
+  }
+
+  def ident(value: String): String = Printer.toValidIdentifier(value)
 
   def divBy[A, B](p1: Printer[A], sep: Printer[Unit], p2: Printer[B]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }

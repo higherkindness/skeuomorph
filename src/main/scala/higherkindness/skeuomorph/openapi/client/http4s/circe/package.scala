@@ -42,7 +42,7 @@ package object circe {
 
   private def codecsTypes[T](name: String): ((String, Tpe[T]), (String, Tpe[T])) = {
     val tpe = Tpe[T](name)
-    (name -> tpe) -> (s"Option${name}" -> tpe.copy(required = false))
+    (name -> tpe) -> (s"Option${normalize(name)}" -> tpe.copy(required = false))
   }
   protected def isIdentifier: String => Boolean =
     field => field.headOption.exists(x => x.isLetter && x.isLower) && field.forall(_.isLetterOrDigit)
@@ -84,7 +84,7 @@ package object circe {
           val (default, optionType) = codecsTypes[T](name)
           (
             enumPackages,
-            (name -> name, values.map(x => normalize(x) -> x)).some,
+            (name -> name, values.map(x => ident(x) -> x)).some,
             name.asRight.asLeft,
             (name, values).asRight.asLeft,
             default,
@@ -107,10 +107,10 @@ package object circe {
       }
 
   private def decoderDef[T: Basis[JsonSchemaF, ?], B](body: Printer[B]): Printer[(String, Tpe[T], B)] =
-    implicitVal(body).contramap { case (x, y, z) => (x, "Decoder", y, z) }
+    implicitVal(body).contramap { case (x, y, z) => (normalize(x), "Decoder", y, z) }
 
   private def encoderDef[T: Basis[JsonSchemaF, ?], B](body: Printer[B]): Printer[(String, Tpe[T], B)] =
-    implicitVal(body).contramap { case (x, y, z) => (x, "Encoder", y, z) }
+    implicitVal(body).contramap { case (x, y, z) => (normalize(x), "Encoder", y, z) }
 
   def enumCirceEncoder[T: Basis[JsonSchemaF, ?], B]: Printer[String] =
     encoderDef(κ("Encoder.encodeString.contramap(_.show)")).contramap(x => (x, Tpe[T](x), ()))
@@ -125,7 +125,7 @@ package object circe {
             "\n"
           ) >* newLine,
         κ("""  case x => s"$x is not valid """) *< string >* κ("""".asLeft""") *< newLine *< κ("}") *< newLine
-      ).contramapN(x => flip(second(x)(_.map(x => x -> normalize(x)))))).contramap {
+      ).contramapN(x => flip(second(x)(_.map(x => x -> ident(x)))))).contramap {
       case (x, xs) => (x, Tpe[T](x), x -> xs)
     }
 
@@ -184,18 +184,18 @@ package object circe {
       κ("implicit def ") *< string >* κ("EntityDecoder[F[_]:Sync]: "),
       κ("EntityDecoder[F, ") *< tpe[T] >* κ("] = "),
       κ("jsonOf[F, ") *< tpe[T] >* κ("]"))
-      .contramapN(x => (x._1, x._2, x._2))
+      .contramapN(x => (normalize(x._1), x._2, x._2))
 
   def entityEncoder[T: Basis[JsonSchemaF, ?]]: Printer[(String, Tpe[T])] =
     (
       κ("implicit def ") *< string >* κ("EntityEncoder[F[_]:Applicative]: "),
       κ("EntityEncoder[F, ") *< tpe[T] >* κ("] = "),
       κ("jsonEncoderOf[F, ") *< tpe[T] >* κ("]"))
-      .contramapN(x => (x._1, x._2, x._2))
+      .contramapN(x => (normalize(x._1), x._2, x._2))
 
   private def showEnum[T: Basis[JsonSchemaF, ?]]: Printer[((String, String), List[(String, String)])] =
     divBy(
-      implicitVal(κ("Show.show {")).contramap { case (x, y) => (x, "Show", Tpe[T](y), ()) },
+      implicitVal(κ("Show.show {")).contramap { case (x, y) => (normalize(x), "Show", Tpe[T](y), ()) },
       newLine,
       sepBy(divBy(space *< space *< κ("case ") *< string, κ(" => "), κ("\"") *< string >* κ("\"")), "\n") >* newLine >* κ(
         "}")
