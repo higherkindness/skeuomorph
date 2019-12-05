@@ -1,5 +1,16 @@
 # Changelog
 
+## 12/05/2019 - Version 0.0.17
+
+Release changes:
+
+* Travis microsite stage requisites update ([#176](https://github.com/higherkindness/skeuomorph/pull/176))
+* add descriptions front ([#177](https://github.com/higherkindness/skeuomorph/pull/177))
+* Rewrite the doc examples slightly for consistency ([#173](https://github.com/higherkindness/skeuomorph/pull/173))
+* Avoid generating invalid Scala identifiers when printing schemas and protocols ([#178](https://github.com/higherkindness/skeuomorph/pull/178))
+* Release v0.0.17 ([#179](https://github.com/higherkindness/skeuomorph/pull/179))
+
+
 ## 12/04/2019 - Version 0.0.16
 
 Release changes:
