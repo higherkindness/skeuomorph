@@ -45,7 +45,7 @@ object print {
             openApi)
     }
 
-  val listEnconderPrinter: Printer[Unit] = κ(
+  val listEncoderPrinter: Printer[Unit] = κ(
     "implicit def listEntityEncoder[T: Encoder]: EntityEncoder[F, List[T]] = jsonEncoderOf[F, List[T]]")
   val listDecoderPrinter: Printer[Unit] = κ(
     "implicit def listEntityDecoder[T: Decoder]: EntityDecoder[F, List[T]] = jsonOf[F, List[T]]")
@@ -66,7 +66,7 @@ object print {
         ")") *< κ(": ") *< show[TraitName] >* κ("[F]"),
       κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
       twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine *<
-        twoSpaces *< twoSpaces *< listEnconderPrinter *< newLine *<
+        twoSpaces *< twoSpaces *< listEncoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
         twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine *<

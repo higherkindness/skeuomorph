@@ -40,7 +40,7 @@ object print {
       case TBoolean()                => "Boolean"
       case TString()                 => "String"
       case TByteArray()              => "Array[Byte]"
-      case TNamedType(name)          => name
+      case TNamedType(name)          => toValidIdentifier(name)
       case TOption(value)            => s"Option[$value]"
       case TEither(a, b)             => s"Either[$a, $b]"
       case TMap(Some(key), value)    => s"Map[$key, $value]"
@@ -60,8 +60,8 @@ object print {
       |}
       """.stripMargin
       case TProduct(name, fields) =>
-        val printFields = fields.map(f => s"${f.name}: ${f.tpe}").mkString(", ")
-        s"@message final case class $name($printFields)"
+        val printFields = fields.map(f => s"${toValidIdentifier(f.name)}: ${f.tpe}").mkString(", ")
+        s"@message final case class ${toValidIdentifier(name)}($printFields)"
     }
 
     Printer.print(scheme.cata(algebra))
@@ -184,7 +184,7 @@ object print {
   def depImport[T](implicit T: Basis[MuF, T]): Printer[DependentImport[T]] =
     (
       konst("import ") *< string,
-      konst(".") *< string,
+      konst(".") *< identifier,
       konst(".") *< Printer.print(namedTypes[T] >>> schema.print)
     ).contramapN(importTuple)
 
@@ -198,7 +198,7 @@ object print {
       konst("package ") *< optional(string) >* newLine >* newLine,
       sepBy(option, lineFeed),
       sepBy(depImport, lineFeed) >* newLine >* newLine,
-      konst("object ") *< string >* konst(" { ") >* newLine >* newLine,
+      konst("object ") *< identifier >* konst(" { ") >* newLine >* newLine,
       sepBy(Printer.print(nestedOptionInCoproduct[T] >>> schema.print), lineFeed) >* newLine,
       sepBy(service, doubleLineFeed) >* (newLine >* newLine >* konst("}"))
     ).contramapN(protoTuple)

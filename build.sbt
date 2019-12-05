@@ -18,6 +18,7 @@ val V = new {
   val droste           = "0.8.0"
   val kindProjector    = "0.10.3"
   val macroParadise    = "2.1.1"
+  val meta             = "4.3.0"
   val scala212         = "2.12.10"
   val scalacheck       = "1.14.2"
   val specs2           = "4.8.1"
@@ -103,7 +104,6 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq(V.scala212),
   ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
   libraryDependencies ++= Seq(
-    %%("cats-laws", V.cats) % Test,
     %%("cats-core", V.cats),
     "io.higherkindness"   %% "droste-core"   % V.droste,
     "io.higherkindness"   %% "droste-macros" % V.droste,
@@ -111,10 +111,12 @@ lazy val commonSettings = Seq(
     "com.github.os72"     % "protoc-jar"     % V.protoc,
     "com.google.protobuf" % "protobuf-java"  % V.protobuf,
     "io.circe"            %% "circe-yaml"    % V.circeYaml,
-    "io.circe"            %% "circe-testing" % V.circe % Test,
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
     %%("circe-parser", V.circe),
+    "org.scalameta"       %% "scalameta"     % V.meta,
+    %%("cats-laws", V.cats) % Test,
+    "io.circe"            %% "circe-testing" % V.circe % Test,
     %%("scalacheck", V.scalacheck)    % Test,
     %%("specs2-core", V.specs2)       % Test,
     "org.typelevel"                   %% "discipline-specs2" % V.disciplineSpecs2 % Test,
