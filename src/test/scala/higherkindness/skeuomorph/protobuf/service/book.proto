@@ -3,6 +3,7 @@ syntax = "proto3";
 package com.acme;
 
 import "models/author.proto";
+import "models/hyphenated-name.proto";
 import "rating.proto";
 
 message Book {
@@ -13,6 +14,13 @@ message Book {
     repeated Author author = 3;
     BindingType binding_type = 9;
     Rating rating = 10;
+    bool private = 11; // note: private is a reserved word in Scala
+    type type = 16; // note: using "type" (a reserved word) as both the field type and field name
+}
+
+message type { // note: type is a reserved word in Scala
+    int64 foo = 1;
+    Thing thing = 2;
 }
 
 message GetBookRequest {

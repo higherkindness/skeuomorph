@@ -57,7 +57,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
         higherkindness.skeuomorph.mu.print.proto.print(p)
     }
 
-    (parseProtocol andThen printProtocol)(protobufProtocol).clean must beEqualTo(expectation(ct, useIdiom).clean)
+    val actual   = (parseProtocol andThen printProtocol)(protobufProtocol)
+    val expected = expectation(ct, useIdiom)
+
+    (actual.clean must beEqualTo(expected.clean)) :| s"""
+      |Actual output:
+      |$actual
+      |
+      |
+      |Expected output:
+      |$expected"
+      """.stripMargin
   }
 
   def expectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
@@ -69,11 +79,13 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     s"""package com.acme
       |
       |import com.acme.author.Author
+      |import com.acme.`hyphenated-name`.Thing
       |import com.acme.rating.Rating
       |
       |object book {
       |
-      |@message final case class Book(isbn: Long, title: String, author: List[Option[Author]], binding_type: Option[BindingType], rating: Option[Rating])
+      |@message final case class Book(isbn: Long, title: String, author: List[Option[Author]], binding_type: Option[BindingType], rating: Option[Rating], `private`: Boolean, `type`: Option[`type`])
+      |@message final case class `type`(foo: Long, thing: Option[Thing])
       |@message final case class GetBookRequest(isbn: Long)
       |@message final case class GetBookViaAuthor(author: Option[Author])
       |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Option[Genre]], payment_method: Cop[Long :: Int :: String :: Book :: TNil])

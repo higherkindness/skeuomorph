@@ -58,6 +58,8 @@ object Printer {
 
   val string: Printer[String] = print(identity)
 
+  val identifier: Printer[String] = print(toValidIdentifier)
+
   val unit: Printer[Unit] = print(_ => "")
 
   object avoid {
