@@ -106,7 +106,7 @@ lazy val commonSettings = Seq(
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
     %%("circe-parser", V.circe),
-    "org.scalameta"       %% "scalameta"     % "4.3.0",
+    "org.scalameta"       %% "scalameta"     % V.meta,
     %%("cats-laws", V.cats) % Test,
     "io.circe"            %% "circe-testing" % V.circe % Test,
     %%("scalacheck", V.scalacheck)    % Test,
