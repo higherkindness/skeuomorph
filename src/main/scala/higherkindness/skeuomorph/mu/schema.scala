@@ -42,7 +42,7 @@ object MuF {
   final case class TBoolean[A]()                                     extends MuF[A]
   final case class TString[A]()                                      extends MuF[A]
   final case class TByteArray[A]()                                   extends MuF[A]
-  final case class TNamedType[A](name: String)                       extends MuF[A]
+  final case class TNamedType[A](prefix: List[String], name: String) extends MuF[A]
   final case class TOption[A](value: A)                              extends MuF[A]
   final case class TEither[A](left: A, right: A)                     extends MuF[A]
   final case class TList[A](value: A)                                extends MuF[A]
@@ -68,11 +68,11 @@ object MuF {
     case (TString(), TString())       => true
     case (TByteArray(), TByteArray()) => true
 
-    case (TNamedType(a), TNamedType(b)) => a === b
-    case (TOption(a), TOption(b))       => a === b
-    case (TList(a), TList(b))           => a === b
-    case (TMap(k1, a), TMap(k2, b))     => k1 === k2 && a === b
-    case (TRequired(a), TRequired(b))   => a === b
+    case (TNamedType(p1, a), TNamedType(p2, b)) => p1 === p2 && a === b
+    case (TOption(a), TOption(b))               => a === b
+    case (TList(a), TList(b))                   => a === b
+    case (TMap(k1, a), TMap(k2, b))             => k1 === k2 && a === b
+    case (TRequired(a), TRequired(b))           => a === b
 
     case (TContaining(a), TContaining(b))   => a === b
     case (TEither(l, r), TEither(l2, r2))   => l === l2 && r === r2
@@ -86,25 +86,26 @@ object MuF {
 
   implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] = Show.show {
     cata(Algebra[MuF, String] {
-      case TNull()             => "null"
-      case TDouble()           => "double"
-      case TFloat()            => "float"
-      case TInt()              => "int"
-      case TLong()             => "long"
-      case TBoolean()          => "boolean"
-      case TString()           => "string"
-      case TByteArray()        => "bytes"
-      case TNamedType(n)       => n
-      case TOption(v)          => s"?$v"
-      case TList(e)            => s"[$e]"
-      case TMap(k, v)          => s"$k->$v"
-      case TRequired(v)        => v
-      case TContaining(ts)     => ts.mkString("cont<", ", ", ">")
-      case TEither(l, r)       => s"either<$l, $r>"
-      case TGeneric(g, ps)     => ps.mkString(s"$g<", ", ", ">")
-      case TCoproduct(ts)      => ts.toList.mkString("(", " | ", ")")
-      case TSum(n, vs)         => vs.mkString(s"$n[", ", ", "]")
-      case TProduct(n, fields) => fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
+      case TNull()          => "null"
+      case TDouble()        => "double"
+      case TFloat()         => "float"
+      case TInt()           => "int"
+      case TLong()          => "long"
+      case TBoolean()       => "boolean"
+      case TString()        => "string"
+      case TByteArray()     => "bytes"
+      case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
+      case TOption(v)       => s"?$v"
+      case TList(e)         => s"[$e]"
+      case TMap(k, v)       => s"$k->$v"
+      case TRequired(v)     => v
+      case TContaining(ts)  => ts.mkString("cont<", ", ", ">")
+      case TEither(l, r)    => s"either<$l, $r>"
+      case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
+      case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
+      case TSum(n, vs)      => vs.mkString(s"$n[", ", ", "]")
+      case TProduct(n, fields) =>
+        fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
     })
   }
@@ -118,7 +119,7 @@ object MuF {
   def boolean[A](): MuF[A]                                     = TBoolean()
   def string[A](): MuF[A]                                      = TString()
   def byteArray[A](): MuF[A]                                   = TByteArray()
-  def namedType[A](name: String): MuF[A]                       = TNamedType(name)
+  def namedType[A](prefix: List[String], name: String): MuF[A] = TNamedType(prefix, name)
   def option[A](value: A): MuF[A]                              = TOption(value)
   def either[A](left: A, right: A): MuF[A]                     = TEither(left, right)
   def list[A](value: A): MuF[A]                                = TList(value)

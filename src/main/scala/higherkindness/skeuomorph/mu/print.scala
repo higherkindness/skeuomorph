@@ -31,6 +31,13 @@ import higherkindness.droste._
 object print {
 
   def schema[T: Project[MuF, ?]]: Printer[T] = {
+    def printIdentifier(prefix: List[String], name: String): String = {
+      if (prefix.isEmpty)
+        toValidIdentifier(name)
+      else
+        s"_root_.${prefix.map(toValidIdentifier).mkString(".")}.${toValidIdentifier(name)}"
+    }
+
     val algebra: Algebra[MuF, String] = Algebra {
       case TNull()                   => "Null"
       case TDouble()                 => "Double"
@@ -40,7 +47,7 @@ object print {
       case TBoolean()                => "Boolean"
       case TString()                 => "String"
       case TByteArray()              => "Array[Byte]"
-      case TNamedType(name)          => toValidIdentifier(name)
+      case TNamedType(prefix, name)  => printIdentifier(prefix, name)
       case TOption(value)            => s"Option[$value]"
       case TEither(a, b)             => s"Either[$a, $b]"
       case TMap(Some(key), value)    => s"Map[$key, $value]"

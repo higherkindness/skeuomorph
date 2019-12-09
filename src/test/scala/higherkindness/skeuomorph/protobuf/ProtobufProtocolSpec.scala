@@ -78,37 +78,33 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
     s"""package com.acme
       |
-      |import com.acme.author.Author
-      |import com.acme.`hyphenated-name`.Thing
-      |import com.acme.rating.Rating
-      |
       |object book {
       |
-      |@message final case class Book(isbn: Long, title: String, author: List[Option[Author]], binding_type: Option[BindingType], rating: Option[Rating], `private`: Boolean, `type`: Option[`type`])
-      |@message final case class `type`(foo: Long, thing: Option[Thing])
+      |@message final case class Book(isbn: Long, title: String, author: List[Option[_root_.com.acme.author.Author]], binding_type: Option[_root_.com.acme.book.BindingType], rating: Option[_root_.com.acme.rating.Rating], `private`: Boolean, `type`: Option[_root_.com.acme.book.`type`])
+      |@message final case class `type`(foo: Long, thing: Option[_root_.com.acme.`hyphenated-name`.Thing])
       |@message final case class GetBookRequest(isbn: Long)
-      |@message final case class GetBookViaAuthor(author: Option[Author])
-      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Option[Genre]], payment_method: Cop[Long :: Int :: String :: Book :: TNil])
+      |@message final case class GetBookViaAuthor(author: Option[_root_.com.acme.author.Author])
+      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Option[_root_.com.acme.book.Genre]], payment_method: Cop[Long :: Int :: String :: _root_.com.acme.book.Book :: TNil])
       |
       |sealed trait Genre
       |object Genre {
-      |  case object UNKNOWN extends Genre
-      |  case object SCIENCE_FICTION extends Genre
-      |  case object POETRY extends Genre
+      |  case object UNKNOWN extends _root_.com.acme.book.Genre
+      |  case object SCIENCE_FICTION extends _root_.com.acme.book.Genre
+      |  case object POETRY extends _root_.com.acme.book.Genre
       |}
       |
       |
       |sealed trait BindingType
       |object BindingType {
-      |  case object HARDCOVER extends BindingType
-      |  case object PAPERBACK extends BindingType
+      |  case object HARDCOVER extends _root_.com.acme.book.BindingType
+      |  case object PAPERBACK extends _root_.com.acme.book.BindingType
       |}
       |
       |@service($serviceParams) trait BookService[F[_]] {
-      |  def GetBook(req: GetBookRequest): F[Book]
-      |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
-      |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
-      |  def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
+      |  def GetBook(req: _root_.com.acme.book.GetBookRequest): F[_root_.com.acme.book.Book]
+      |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): Stream[F, _root_.com.acme.book.Book]
+      |  def GetGreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]
+      |  def GetBooks(req: Stream[F, _root_.com.acme.book.GetBookRequest]): Stream[F, _root_.com.acme.book.Book]
       |}
       |
       |}""".stripMargin

@@ -44,7 +44,7 @@ object Transform {
     case ProtobufF.TBool()                       => TBoolean()
     case ProtobufF.TString()                     => TString()
     case ProtobufF.TBytes()                      => TByteArray()
-    case ProtobufF.TNamedType(name)              => TOption(A.algebra(TNamedType(name)))
+    case ProtobufF.TNamedType(prefix, name)      => TOption(A.algebra(TNamedType(prefix, name)))
     case ProtobufF.TRepeated(value)              => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _)    => TSum(name, symbols.map(_._1))
     case ProtobufF.TMessage(name, fields, _)     => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
@@ -62,7 +62,7 @@ object Transform {
     case AvroF.TDouble()        => TDouble()
     case AvroF.TBytes()         => TByteArray()
     case AvroF.TString()        => TString()
-    case AvroF.TNamedType(name) => TNamedType(name)
+    case AvroF.TNamedType(name) => TNamedType(Nil, name)
     case AvroF.TArray(item)     => TList(item)
     case AvroF.TMap(values)     => TMap(None, values)
     case AvroF.TRecord(name, _, _, _, fields) =>

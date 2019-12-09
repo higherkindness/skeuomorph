@@ -75,7 +75,7 @@ object ProtobufF {
   final case class TBool[A]()                                                     extends ProtobufF[A]
   final case class TString[A]()                                                   extends ProtobufF[A]
   final case class TBytes[A]()                                                    extends ProtobufF[A]
-  final case class TNamedType[A](name: String)                                    extends ProtobufF[A]
+  final case class TNamedType[A](prefix: List[String], name: String)              extends ProtobufF[A]
   final case class TRepeated[A](value: A)                                         extends ProtobufF[A]
   final case class TOneOf[A](name: String, fields: NonEmptyList[FieldF.Field[A]]) extends ProtobufF[A]
   final case class TMap[A](keyTpe: A, value: A)                                   extends ProtobufF[A]
@@ -104,7 +104,7 @@ object ProtobufF {
   def bool[A](): ProtobufF[A]                                                     = TBool()
   def string[A](): ProtobufF[A]                                                   = TString()
   def bytes[A](): ProtobufF[A]                                                    = TBytes()
-  def namedType[A](name: String): ProtobufF[A]                                    = TNamedType(name)
+  def namedType[A](prefix: List[String], name: String): ProtobufF[A]              = TNamedType(prefix, name)
   def repeated[A](value: A): ProtobufF[A]                                         = TRepeated(value)
   def oneOf[A](name: String, fields: NonEmptyList[FieldF.Field[A]]): ProtobufF[A] = TOneOf(name, fields)
   def map[A](keyTpe: A, value: A): ProtobufF[A]                                   = TMap(keyTpe, value)
@@ -133,7 +133,7 @@ object ProtobufF {
     case (TBool(), TBool())                         => true
     case (TString(), TString())                     => true
     case (TBytes(), TBytes())                       => true
-    case (TNamedType(n), TNamedType(n2))            => n === n2
+    case (TNamedType(p, n), TNamedType(p2, n2))     => p === p2 && n === n2
     case (TRepeated(v), TRepeated(v2))              => v === v2
     case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2)) => n === n2 && s === s2 && o === o2 && a === a2
     case (TMessage(n, f, r), TMessage(n2, f2, r2))  => n === n2 && f === f2 && r === r2
@@ -157,27 +157,28 @@ object ProtobufF {
         }
 
       fa match {
-        case TNull()                                => `null`[B]().pure[G]
-        case TDouble()                              => double[B]().pure[G]
-        case TFloat()                               => float[B]().pure[G]
-        case TInt32()                               => int32[B]().pure[G]
-        case TInt64()                               => int64[B]().pure[G]
-        case TUint32()                              => uint32[B]().pure[G]
-        case TUint64()                              => uint64[B]().pure[G]
-        case TSint32()                              => sint32[B]().pure[G]
-        case TSint64()                              => sint64[B]().pure[G]
-        case TFixed32()                             => fixed32[B]().pure[G]
-        case TFixed64()                             => fixed64[B]().pure[G]
-        case TSfixed32()                            => sfixed32[B]().pure[G]
-        case TSfixed64()                            => sfixed64[B]().pure[G]
-        case TBool()                                => bool[B]().pure[G]
-        case TString()                              => string[B]().pure[G]
-        case TBytes()                               => bytes[B]().pure[G]
-        case TNamedType(name)                       => namedType[B](name).pure[G]
-        case TRepeated(value)                       => f(value).map(TRepeated[B])
-        case TOneOf(name, fields)                   => fields.traverse(makeFieldB).map(bFields => TOneOf(name, bFields))
-        case TMap(keyTpe, value)                    => (f(keyTpe), f(value)).mapN(TMap[B])
-        case TEnum(name, symbols, options, aliases) => enum[B](name, symbols, options, aliases).pure[G]: G[ProtobufF[B]]
+        case TNull()                  => `null`[B]().pure[G]
+        case TDouble()                => double[B]().pure[G]
+        case TFloat()                 => float[B]().pure[G]
+        case TInt32()                 => int32[B]().pure[G]
+        case TInt64()                 => int64[B]().pure[G]
+        case TUint32()                => uint32[B]().pure[G]
+        case TUint64()                => uint64[B]().pure[G]
+        case TSint32()                => sint32[B]().pure[G]
+        case TSint64()                => sint64[B]().pure[G]
+        case TFixed32()               => fixed32[B]().pure[G]
+        case TFixed64()               => fixed64[B]().pure[G]
+        case TSfixed32()              => sfixed32[B]().pure[G]
+        case TSfixed64()              => sfixed64[B]().pure[G]
+        case TBool()                  => bool[B]().pure[G]
+        case TString()                => string[B]().pure[G]
+        case TBytes()                 => bytes[B]().pure[G]
+        case TNamedType(prefix, name) => namedType[B](prefix, name).pure[G]
+        case TRepeated(value)         => f(value).map(TRepeated[B])
+        case TOneOf(name, fields)     => fields.traverse(makeFieldB).map(bFields => TOneOf(name, bFields))
+        case TMap(keyTpe, value)      => (f(keyTpe), f(value)).mapN(TMap[B])
+        case TEnum(name, symbols, options, aliases) =>
+          enum[B](name, symbols, options, aliases).pure[G]: G[ProtobufF[B]]
         case TMessage(name, fields, reserved) =>
           traverseFieldF(fields).map(bFields => TMessage[B](name, bFields, reserved))
         case TFileDescriptor(values, name, p) =>
