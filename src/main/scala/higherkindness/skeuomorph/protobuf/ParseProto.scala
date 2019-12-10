@@ -28,7 +28,6 @@ import com.google.protobuf.DescriptorProtos._
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 
-import higherkindness.skeuomorph.mu.DependentImport
 import higherkindness.droste._
 import higherkindness.droste.syntax.embed._
 
@@ -107,12 +106,6 @@ object ParseProto {
 
   def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
     files.find(_.getName == name)
-
-  // TODO can delete a bunch of code related to imports
-  def getDependentImports[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): List[DependentImport[A]] =
-    dependent.getMessageTypeList.asScala.toList.map(d =>
-      DependentImport(dependent.getPackage, formatName(dependent.getName), toMessage(d, files)))
 
   def formatName(name: String): String =
     name
