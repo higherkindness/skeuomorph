@@ -39,3 +39,9 @@
     }
   }
 }
+
+@include bp(small) {
+  .brand-title {
+    display: none;
+  }
+}
