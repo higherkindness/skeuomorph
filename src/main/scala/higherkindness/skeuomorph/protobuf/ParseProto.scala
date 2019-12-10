@@ -204,7 +204,7 @@ object ParseProto {
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
-          tpe = repeated[A](fromFieldType(field, files)).embed,
+          tpe = repeated[A](fromFieldType(field, files, makeNamedTypesOptional = true)).embed,
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = true,
           isMapField = false
@@ -222,7 +222,7 @@ object ParseProto {
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
-          tpe = fromFieldType(field, files),
+          tpe = fromFieldType(field, files, makeNamedTypesOptional = true),
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = field.getLabel.isRepeated,
           isMapField = isMap(field, source)
@@ -244,7 +244,10 @@ object ParseProto {
           e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.asScala.toList))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
-    } yield map(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)).embed)
+    } yield
+      map(
+        fromFieldType(maybeKey, files, makeNamedTypesOptional = false),
+        fromFieldType(maybeValue, files, makeNamedTypesOptional = false)).embed)
       .getOrElse(throw ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
@@ -279,7 +282,8 @@ object ParseProto {
 
   def fromFieldTypeCoalgebra(
       field: FieldDescriptorProto,
-      files: List[FileDescriptorProto]
+      files: List[FileDescriptorProto],
+      makeNamedTypesOptional: Boolean
   ): Coalgebra[ProtobufF, Type] = Coalgebra {
     case Type.TYPE_BOOL     => TBool()
     case Type.TYPE_BYTES    => TBytes()
@@ -302,7 +306,10 @@ object ParseProto {
         .fold[ProtobufF[Type]](TNull()) {
           case (enclosingProto, _) =>
             val fullPrefix = prefix ++ List(enclosingProto)
-            TNamedType(fullPrefix, name)
+            if (makeNamedTypesOptional)
+              TOptionalNamedType(fullPrefix, name)
+            else
+              TNamedType(fullPrefix, name)
         }
     case Type.TYPE_MESSAGE =>
       val (prefix, name) = toPrefixAndTypeName(field.getTypeName)
@@ -310,7 +317,10 @@ object ParseProto {
         .fold[ProtobufF[Type]](TNull()) {
           case (enclosingProto, _) =>
             val fullPrefix = prefix ++ List(enclosingProto)
-            TNamedType(fullPrefix, name)
+            if (makeNamedTypesOptional)
+              TOptionalNamedType(fullPrefix, name)
+            else
+              TNamedType(fullPrefix, name)
         }
     case _ => TNull()
   }
@@ -324,9 +334,9 @@ object ParseProto {
     (parts.init, parts.last)
   }
 
-  def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto])(
+  def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto], makeNamedTypesOptional: Boolean)(
       implicit A: Embed[ProtobufF, A]): A =
-    scheme.ana(fromFieldTypeCoalgebra(field, files)).apply(field.getType)
+    scheme.ana(fromFieldTypeCoalgebra(field, files, makeNamedTypesOptional)).apply(field.getType)
 
   def fromFieldOptionsMsg(options: FieldOptions): List[OptionValue] =
     OptionValue("deprecated", options.getDeprecated.toString) ::
