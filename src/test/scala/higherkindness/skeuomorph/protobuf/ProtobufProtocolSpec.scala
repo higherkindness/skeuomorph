@@ -88,16 +88,15 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |
       |sealed trait Genre
       |object Genre {
-      |  case object UNKNOWN extends _root_.com.acme.book.Genre
-      |  case object SCIENCE_FICTION extends _root_.com.acme.book.Genre
-      |  case object POETRY extends _root_.com.acme.book.Genre
+      |  case object UNKNOWN extends Genre
+      |  case object SCIENCE_FICTION extends Genre
+      |  case object POETRY extends Genre
       |}
-      |
       |
       |sealed trait BindingType
       |object BindingType {
-      |  case object HARDCOVER extends _root_.com.acme.book.BindingType
-      |  case object PAPERBACK extends _root_.com.acme.book.BindingType
+      |  case object HARDCOVER extends BindingType
+      |  case object PAPERBACK extends BindingType
       |}
       |
       |@service($serviceParams) trait BookService[F[_]] {
@@ -105,6 +104,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): Stream[F, _root_.com.acme.book.Book]
       |  def GetGreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]
       |  def GetBooks(req: Stream[F, _root_.com.acme.book.GetBookRequest]): Stream[F, _root_.com.acme.book.Book]
+      |  def GetRatingOfAuthor(req: _root_.com.acme.author.Author): F[_root_.com.acme.rating.Rating]
       |}
       |
       |}""".stripMargin

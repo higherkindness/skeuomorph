@@ -108,6 +108,7 @@ object ParseProto {
   def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
     files.find(_.getName == name)
 
+  // TODO can delete a bunch of code related to imports
   def getDependentImports[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): List[DependentImport[A]] =
     dependent.getMessageTypeList.asScala.toList.map(d =>
@@ -128,12 +129,22 @@ object ParseProto {
     Protocol.Operation(
       name = o.getName,
       request = findMessage(o.getInputType, files)
-        .map(msg => toMessage(msg._2, files))
-        .getOrElse(`null`[A]().embed),
+        .fold(`null`[A]()) {
+          case (enclosingProto, _) =>
+            val (prefix, typeName) = toPrefixAndTypeName(o.getInputType)
+            val fullPrefix         = prefix ++ List(enclosingProto)
+            namedType[A](fullPrefix, typeName)
+        }
+        .embed,
       requestStreaming = o.getClientStreaming,
       response = findMessage(o.getOutputType, files)
-        .map(msg => toMessage(msg._2, files))
-        .getOrElse(`null`[A]().embed),
+        .fold(`null`[A]()) {
+          case (enclosingProto, _) =>
+            val (prefix, typeName) = toPrefixAndTypeName(o.getOutputType)
+            val fullPrefix         = prefix ++ List(enclosingProto)
+            namedType[A](fullPrefix, typeName)
+        }
+        .embed,
       responseStreaming = o.getServerStreaming
     )
 
