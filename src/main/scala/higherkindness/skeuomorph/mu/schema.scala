@@ -22,6 +22,7 @@ import higherkindness.droste.scheme.cata
 import cats.Eq
 import cats.Show
 import cats.data.NonEmptyList
+import cats.instances.int._
 import cats.instances.list._
 import cats.instances.string._
 import cats.instances.option._
@@ -33,6 +34,8 @@ import cats.syntax.eq._
 @deriveTraverse sealed trait MuF[A]
 object MuF {
   @deriveTraverse final case class Field[A](name: String, tpe: A)
+
+  final case class SumField(name: String, value: Int)
 
   final case class TNull[A]()                                        extends MuF[A]
   final case class TDouble[A]()                                      extends MuF[A]
@@ -51,11 +54,15 @@ object MuF {
   final case class TContaining[A](values: List[A])                   extends MuF[A]
   final case class TRequired[A](value: A)                            extends MuF[A]
   final case class TCoproduct[A](invariants: NonEmptyList[A])        extends MuF[A]
-  final case class TSum[A](name: String, fields: List[String])       extends MuF[A]
+  final case class TSum[A](name: String, fields: List[SumField])     extends MuF[A]
   final case class TProduct[A](name: String, fields: List[Field[A]]) extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] = Eq.instance {
     case (Field(n, t), Field(n2, t2)) => n === n2 && t === t2
+  }
+
+  implicit val sumFieldEq: Eq[SumField] = Eq.instance {
+    case (SumField(n, v), SumField(n2, v2)) => n === n2 && v === v2
   }
 
   implicit def muEq[T](implicit T: Eq[T]): Eq[MuF[T]] = Eq.instance {
@@ -103,7 +110,7 @@ object MuF {
       case TEither(l, r)    => s"either<$l, $r>"
       case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
       case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
-      case TSum(n, vs)      => vs.mkString(s"$n[", ", ", "]")
+      case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
       case TProduct(n, fields) =>
         fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
@@ -127,6 +134,6 @@ object MuF {
   def generic[A](generic: A, params: List[A]): MuF[A]          = TGeneric(generic, params)
   def required[A](value: A): MuF[A]                            = TRequired(value)
   def coproduct[A](invariants: NonEmptyList[A]): MuF[A]        = TCoproduct(invariants)
-  def sum[A](name: String, fields: List[String]): MuF[A]       = TSum(name, fields)
+  def sum[A](name: String, fields: List[SumField]): MuF[A]     = TSum(name, fields)
   def product[A](name: String, fields: List[Field[A]]): MuF[A] = TProduct(name, fields)
 }

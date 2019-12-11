@@ -86,17 +86,21 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |@message final case class GetBookViaAuthor(author: _root_.scala.Option[_root_.com.acme.author.Author])
       |@message final case class BookStore(name: _root_.java.lang.String, books: _root_.scala.Map[_root_.scala.Long, _root_.java.lang.String], genres: _root_.scala.List[_root_.scala.Option[_root_.com.acme.book.Genre]], payment_method: Cop[_root_.scala.Long :: _root_.scala.Int :: _root_.java.lang.String :: _root_.com.acme.book.Book :: TNil])
       |
-      |sealed trait Genre
-      |object Genre {
-      |  case object UNKNOWN extends Genre
-      |  case object SCIENCE_FICTION extends Genre
-      |  case object POETRY extends Genre
+      |sealed abstract class Genre(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+      |object Genre extends _root_.enumeratum.values.IntEnum[Genre] {
+      |  case object UNKNOWN extends Genre(0)
+      |  case object SCIENCE_FICTION extends Genre(1)
+      |  case object POETRY extends Genre(2)
+      |
+      |  val values = findValues
       |}
       |
-      |sealed trait BindingType
-      |object BindingType {
-      |  case object HARDCOVER extends BindingType
-      |  case object PAPERBACK extends BindingType
+      |sealed abstract class BindingType(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+      |object BindingType extends _root_.enumeratum.values.IntEnum[BindingType] {
+      |  case object HARDCOVER extends BindingType(0)
+      |  case object PAPERBACK extends BindingType(5)
+      |
+      |  val values = findValues
       |}
       |
       |@service($serviceParams) trait BookService[F[_]] {

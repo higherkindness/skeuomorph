@@ -98,7 +98,7 @@ object Protocol {
     case MuF.TContaining(_)         => ??? // TBD
     case MuF.TRequired(t)           => T.coalgebra(t)
     case MuF.TCoproduct(invariants) => AvroF.union(invariants)
-    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields)
+    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
     case MuF.TProduct(name, fields) =>
       TRecord(
         name,

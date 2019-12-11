@@ -59,11 +59,13 @@ object print {
       case TCoproduct(invariants) =>
         invariants.toList.mkString("Cop[", " :: ", " :: TNil]")
       case TSum(name, fields) =>
-        val printFields = fields.map(f => s"case object $f extends $name").mkString("\n  ")
+        val printFields = fields.map(f => s"case object ${f.name} extends ${name}(${f.value})").mkString("\n  ")
         s"""
-      |sealed trait $name
-      |object $name {
+      |sealed abstract class $name(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+      |object $name extends _root_.enumeratum.values.IntEnum[$name] {
       |  $printFields
+      |
+      |  val values = findValues
       |}
       """.stripMargin
       case TProduct(name, fields) =>
