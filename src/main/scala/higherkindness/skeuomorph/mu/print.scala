@@ -31,22 +31,29 @@ import higherkindness.droste._
 object print {
 
   def schema[T: Project[MuF, ?]]: Printer[T] = {
+    def printIdentifier(prefix: List[String], name: String): String = {
+      if (prefix.isEmpty)
+        toValidIdentifier(name)
+      else
+        s"_root_.${prefix.map(toValidIdentifier).mkString(".")}.${toValidIdentifier(name)}"
+    }
+
     val algebra: Algebra[MuF, String] = Algebra {
       case TNull()                   => "Null"
-      case TDouble()                 => "Double"
-      case TFloat()                  => "Float"
-      case TInt()                    => "Int"
-      case TLong()                   => "Long"
-      case TBoolean()                => "Boolean"
-      case TString()                 => "String"
-      case TByteArray()              => "Array[Byte]"
-      case TNamedType(name)          => toValidIdentifier(name)
-      case TOption(value)            => s"Option[$value]"
-      case TEither(a, b)             => s"Either[$a, $b]"
-      case TMap(Some(key), value)    => s"Map[$key, $value]"
-      case TMap(None, value)         => s"Map[String, $value]" // Compatibility for Avro
+      case TDouble()                 => "_root_.scala.Double"
+      case TFloat()                  => "_root_.scala.Float"
+      case TInt()                    => "_root_.scala.Int"
+      case TLong()                   => "_root_.scala.Long"
+      case TBoolean()                => "_root_.scala.Boolean"
+      case TString()                 => "_root_.java.lang.String"
+      case TByteArray()              => "_root_.scala.Array[Byte]"
+      case TNamedType(prefix, name)  => printIdentifier(prefix, name)
+      case TOption(value)            => s"_root_.scala.Option[$value]"
+      case TEither(a, b)             => s"_root_.scala.Either[$a, $b]"
+      case TMap(Some(key), value)    => s"_root_.scala.Map[$key, $value]"
+      case TMap(None, value)         => s"_root_.scala.Map[String, $value]" // Compatibility for Avro
       case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
-      case TList(value)              => s"List[$value]"
+      case TList(value)              => s"_root_.scala.List[$value]"
       case TContaining(values)       => values.mkString("\n")
       case TRequired(value)          => value
       case TCoproduct(invariants) =>

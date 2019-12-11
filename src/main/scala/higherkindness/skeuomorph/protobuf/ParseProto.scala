@@ -28,7 +28,6 @@ import com.google.protobuf.DescriptorProtos._
 import higherkindness.skeuomorph.FileUtils._
 import higherkindness.skeuomorph.{Parser, _}
 
-import higherkindness.skeuomorph.mu.DependentImport
 import higherkindness.droste._
 import higherkindness.droste.syntax.embed._
 
@@ -90,10 +89,6 @@ object ParseProto {
   )(implicit A: Embed[ProtobufF, A]): Protocol[A] =
     findDescriptorProto(descriptorFileName, files)
       .map { file =>
-        val imports: List[DependentImport[A]] = file.getDependencyList.asScala.toList
-          .flatMap(b => findDescriptorProto(b, files))
-          .flatMap(f => getDependentImports(f, files))
-
         val messages: List[A] = file.getMessageTypeList.asScala.toList.map(d => toMessage[A](d, files))
 
         val enums: List[A] = file.getEnumTypeList.asScala.toList.map(toEnum[A])
@@ -104,18 +99,13 @@ object ParseProto {
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
-          imports
+          imports = Nil
         )
       }
       .getOrElse(throw ProtobufNativeException(s"Could not find descriptors for: $descriptorFileName"))
 
   def findDescriptorProto(name: String, files: List[FileDescriptorProto]): Option[FileDescriptorProto] =
     files.find(_.getName == name)
-
-  def getDependentImports[A](dependent: FileDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): List[DependentImport[A]] =
-    dependent.getMessageTypeList.asScala.toList.map(d =>
-      DependentImport(dependent.getPackage, formatName(dependent.getName), toMessage(d, files)))
 
   def formatName(name: String): String =
     name
@@ -132,12 +122,22 @@ object ParseProto {
     Protocol.Operation(
       name = o.getName,
       request = findMessage(o.getInputType, files)
-        .map(msg => toMessage(msg, files))
-        .getOrElse(`null`[A]().embed),
+        .fold(`null`[A]()) {
+          case (enclosingProto, _) =>
+            val (prefix, typeName) = toPrefixAndTypeName(o.getInputType)
+            val fullPrefix         = prefix ++ List(enclosingProto)
+            namedType[A](fullPrefix, typeName)
+        }
+        .embed,
       requestStreaming = o.getClientStreaming,
       response = findMessage(o.getOutputType, files)
-        .map(msg => toMessage(msg, files))
-        .getOrElse(`null`[A]().embed),
+        .fold(`null`[A]()) {
+          case (enclosingProto, _) =>
+            val (prefix, typeName) = toPrefixAndTypeName(o.getOutputType)
+            val fullPrefix         = prefix ++ List(enclosingProto)
+            namedType[A](fullPrefix, typeName)
+        }
+        .embed,
       responseStreaming = o.getServerStreaming
     )
 
@@ -197,7 +197,7 @@ object ParseProto {
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
-          tpe = repeated[A](fromFieldType(field, files)).embed,
+          tpe = repeated[A](fromFieldType(field, files, makeNamedTypesOptional = true)).embed,
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = true,
           isMapField = false
@@ -215,7 +215,7 @@ object ParseProto {
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
-          tpe = fromFieldType(field, files),
+          tpe = fromFieldType(field, files, makeNamedTypesOptional = true),
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = field.getLabel.isRepeated,
           isMapField = isMap(field, source)
@@ -237,7 +237,10 @@ object ParseProto {
           e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.asScala.toList))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
-    } yield map(fromFieldType(maybeKey, files), fromFieldType(maybeValue, files)).embed)
+    } yield
+      map(
+        fromFieldType(maybeKey, files, makeNamedTypesOptional = false),
+        fromFieldType(maybeValue, files, makeNamedTypesOptional = false)).embed)
       .getOrElse(throw ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
@@ -272,7 +275,8 @@ object ParseProto {
 
   def fromFieldTypeCoalgebra(
       field: FieldDescriptorProto,
-      files: List[FileDescriptorProto]
+      files: List[FileDescriptorProto],
+      makeNamedTypesOptional: Boolean
   ): Coalgebra[ProtobufF, Type] = Coalgebra {
     case Type.TYPE_BOOL     => TBool()
     case Type.TYPE_BYTES    => TBytes()
@@ -290,17 +294,42 @@ object ParseProto {
     case Type.TYPE_UINT32   => TInt32()
     case Type.TYPE_UINT64   => TInt64()
     case Type.TYPE_ENUM =>
+      val (prefix, name) = toPrefixAndTypeName(field.getTypeName)
       findEnum(field.getTypeName, files)
-        .fold[ProtobufF[Type]](TNull())(e => TNamedType(e.getName))
+        .fold[ProtobufF[Type]](TNull()) {
+          case (enclosingProto, _) =>
+            val fullPrefix = prefix ++ List(enclosingProto)
+            if (makeNamedTypesOptional)
+              TOptionalNamedType(fullPrefix, name)
+            else
+              TNamedType(fullPrefix, name)
+        }
     case Type.TYPE_MESSAGE =>
+      val (prefix, name) = toPrefixAndTypeName(field.getTypeName)
       findMessage(field.getTypeName, files)
-        .fold[ProtobufF[Type]](TNull())(e => TNamedType(e.getName))
+        .fold[ProtobufF[Type]](TNull()) {
+          case (enclosingProto, _) =>
+            val fullPrefix = prefix ++ List(enclosingProto)
+            if (makeNamedTypesOptional)
+              TOptionalNamedType(fullPrefix, name)
+            else
+              TNamedType(fullPrefix, name)
+        }
     case _ => TNull()
   }
 
-  def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto])(
+  /*
+   * Split a fully-qualified type name (e.g. ".foo.bar.Baz")
+   * into a prefix ["foo", "bar"] and a type name ("Baz")
+   */
+  def toPrefixAndTypeName(qualifiedName: String): (List[String], String) = {
+    val parts = qualifiedName.split('.').toList.filterNot(_.isEmpty)
+    (parts.init, parts.last)
+  }
+
+  def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto], makeNamedTypesOptional: Boolean)(
       implicit A: Embed[ProtobufF, A]): A =
-    scheme.ana(fromFieldTypeCoalgebra(field, files)).apply(field.getType)
+    scheme.ana(fromFieldTypeCoalgebra(field, files, makeNamedTypesOptional)).apply(field.getType)
 
   def fromFieldOptionsMsg(options: FieldOptions): List[OptionValue] =
     OptionValue("deprecated", options.getDeprecated.toString) ::
@@ -318,21 +347,26 @@ object ParseProto {
   def toString(nameParts: Seq[NamePart]): String =
     nameParts.foldLeft("")((l, r) => if (r.getIsExtension) s"$l.($r)" else s"$l.$r")
 
-  def findMessage(name: String, files: List[FileDescriptorProto]): Option[DescriptorProto] = {
-    case class NamedMessage(fullName: String, msg: DescriptorProto)
-    val all: List[NamedMessage] = files.flatMap(f =>
+  def findMessage(name: String, files: List[FileDescriptorProto]): Option[(String, DescriptorProto)] = {
+    case class NamedMessage(fullName: String, enclosingProto: String, msg: DescriptorProto)
+    val all: List[NamedMessage] = files.flatMap { f =>
+      val enclosingProto = formatName(f.getName)
       f.getMessageTypeList.asScala.toList.flatMap(m =>
-        NamedMessage(s".${f.getPackage}.${m.getName}", m) :: m.getNestedTypeList.asScala.toList.map(n =>
-          NamedMessage(s".${f.getPackage}.${m.getName}.${n.getName}", n))))
-    all.find(_.fullName == name).map(_.msg)
+        NamedMessage(s".${f.getPackage}.${m.getName}", enclosingProto, m) :: m.getNestedTypeList.asScala.toList.map(n =>
+          NamedMessage(s".${f.getPackage}.${m.getName}.${n.getName}", enclosingProto, n)))
+    }
+    all.find(_.fullName == name).map(nm => (nm.enclosingProto, nm.msg))
   }
 
-  def findEnum(name: String, files: List[FileDescriptorProto]): Option[EnumDescriptorProto] = {
-    case class NamedEnum(fullName: String, msg: EnumDescriptorProto)
+  def findEnum(name: String, files: List[FileDescriptorProto]): Option[(String, EnumDescriptorProto)] = {
+    case class NamedEnum(fullName: String, enclosingProto: String, enum: EnumDescriptorProto)
     files
-      .flatMap(f => f.getEnumTypeList.asScala.toList.map(m => NamedEnum(s".${f.getPackage}.${m.getName}", m)))
+      .flatMap { f =>
+        val enclosingProto = formatName(f.getName)
+        f.getEnumTypeList.asScala.toList.map(e => NamedEnum(s".${f.getPackage}.${e.getName}", enclosingProto, e))
+      }
       .find(_.fullName == name)
-      .map(_.msg)
+      .map(e => (e.enclosingProto, e.enum))
   }
 
   implicit class LabelOps(self: Label) {

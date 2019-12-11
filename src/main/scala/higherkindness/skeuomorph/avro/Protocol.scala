@@ -89,7 +89,7 @@ object Protocol {
     case MuF.TBoolean()             => AvroF.boolean()
     case MuF.TString()              => AvroF.string()
     case MuF.TByteArray()           => AvroF.bytes()
-    case MuF.TNamedType(name)       => AvroF.namedType(name)
+    case MuF.TNamedType(_, name)    => AvroF.namedType(name)
     case MuF.TOption(value)         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
     case MuF.TEither(left, right)   => AvroF.union(NonEmptyList(left, List(right)))
     case MuF.TList(value)           => AvroF.array(value)

@@ -78,17 +78,13 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
     s"""package com.acme
       |
-      |import com.acme.author.Author
-      |import com.acme.`hyphenated-name`.Thing
-      |import com.acme.rating.Rating
-      |
       |object book {
       |
-      |@message final case class Book(isbn: Long, title: String, author: List[Option[Author]], binding_type: Option[BindingType], rating: Option[Rating], `private`: Boolean, `type`: Option[`type`])
-      |@message final case class `type`(foo: Long, thing: Option[Thing])
-      |@message final case class GetBookRequest(isbn: Long)
-      |@message final case class GetBookViaAuthor(author: Option[Author])
-      |@message final case class BookStore(name: String, books: Map[Long, String], genres: List[Option[Genre]], payment_method: Cop[Long :: Int :: String :: Book :: TNil])
+      |@message final case class Book(isbn: _root_.scala.Long, title: _root_.java.lang.String, author: _root_.scala.List[_root_.scala.Option[_root_.com.acme.author.Author]], binding_type: _root_.scala.Option[_root_.com.acme.book.BindingType], rating: _root_.scala.Option[_root_.com.acme.rating.Rating], `private`: _root_.scala.Boolean, `type`: _root_.scala.Option[_root_.com.acme.book.`type`])
+      |@message final case class `type`(foo: _root_.scala.Long, thing: _root_.scala.Option[_root_.com.acme.`hyphenated-name`.Thing])
+      |@message final case class GetBookRequest(isbn: _root_.scala.Long)
+      |@message final case class GetBookViaAuthor(author: _root_.scala.Option[_root_.com.acme.author.Author])
+      |@message final case class BookStore(name: _root_.java.lang.String, books: _root_.scala.Map[_root_.scala.Long, _root_.java.lang.String], genres: _root_.scala.List[_root_.scala.Option[_root_.com.acme.book.Genre]], payment_method: Cop[_root_.scala.Long :: _root_.scala.Int :: _root_.java.lang.String :: _root_.com.acme.book.Book :: TNil])
       |
       |sealed trait Genre
       |object Genre {
@@ -97,7 +93,6 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  case object POETRY extends Genre
       |}
       |
-      |
       |sealed trait BindingType
       |object BindingType {
       |  case object HARDCOVER extends BindingType
@@ -105,10 +100,11 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |}
       |
       |@service($serviceParams) trait BookService[F[_]] {
-      |  def GetBook(req: GetBookRequest): F[Book]
-      |  def GetBooksViaAuthor(req: GetBookViaAuthor): Stream[F, Book]
-      |  def GetGreatestBook(req: Stream[F, GetBookRequest]): F[Book]
-      |  def GetBooks(req: Stream[F, GetBookRequest]): Stream[F, Book]
+      |  def GetBook(req: _root_.com.acme.book.GetBookRequest): F[_root_.com.acme.book.Book]
+      |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): Stream[F, _root_.com.acme.book.Book]
+      |  def GetGreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]
+      |  def GetBooks(req: Stream[F, _root_.com.acme.book.GetBookRequest]): Stream[F, _root_.com.acme.book.Book]
+      |  def GetRatingOfAuthor(req: _root_.com.acme.author.Author): F[_root_.com.acme.rating.Rating]
       |}
       |
       |}""".stripMargin

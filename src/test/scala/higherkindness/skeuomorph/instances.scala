@@ -158,7 +158,7 @@ object instances {
         MuF.boolean[T]().pure[Gen],
         MuF.string[T]().pure[Gen],
         MuF.byteArray[T]().pure[Gen],
-        nonEmptyString map MuF.namedType[T],
+        (Gen.listOf(nonEmptyString), nonEmptyString) mapN MuF.namedType[T],
         T.arbitrary map MuF.option[T],
         (T.arbitrary, T.arbitrary) mapN { (a, b) =>
           MuF.either(a, b)
@@ -408,7 +408,7 @@ object instances {
         ProtobufF.bool[T]().pure[Gen],
         ProtobufF.string[T]().pure[Gen],
         ProtobufF.bytes[T]().pure[Gen],
-        nonEmptyString map ProtobufF.namedType[T],
+        (Gen.listOf(nonEmptyString), nonEmptyString) mapN ProtobufF.namedType[T],
         T.arbitrary map ProtobufF.repeated[T],
         (
           nonEmptyString,

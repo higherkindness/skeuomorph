@@ -145,17 +145,17 @@ object Comparison extends ComparisonInstances {
       (writer.project, reader.project) match {
 
         // Identities
-        case (TNull(), TNull())                          => same
-        case (TDouble(), TDouble())                      => same
-        case (TFloat(), TFloat())                        => same
-        case (TInt(), TInt())                            => same
-        case (TLong(), TLong())                          => same
-        case (TBoolean(), TBoolean())                    => same
-        case (TString(), TString())                      => same
-        case (TByteArray(), TByteArray())                => same
-        case (TNamedType(a), TNamedType(b)) if (a === b) => same
-        case (TOption(a), TOption(b))                    => Compare((path, a.some, b.some))
-        case (TList(a), TList(b))                        => Compare((path / Items, a.some, b.some))
+        case (TNull(), TNull())                                               => same
+        case (TDouble(), TDouble())                                           => same
+        case (TFloat(), TFloat())                                             => same
+        case (TInt(), TInt())                                                 => same
+        case (TLong(), TLong())                                               => same
+        case (TBoolean(), TBoolean())                                         => same
+        case (TString(), TString())                                           => same
+        case (TByteArray(), TByteArray())                                     => same
+        case (TNamedType(p1, a), TNamedType(p2, b)) if (p1 === p2 && a === b) => same
+        case (TOption(a), TOption(b))                                         => Compare((path, a.some, b.some))
+        case (TList(a), TList(b))                                             => Compare((path / Items, a.some, b.some))
         // According to the spec, Avro ignores the keys' schemas when resolving map schemas
         case (TMap(_, a), TMap(_, b))     => Compare((path / Values, a.some, b.some))
         case (TRequired(a), TRequired(b)) => Compare((path, a.some, b.some))
@@ -176,7 +176,8 @@ object Comparison extends ComparisonInstances {
               .toList
               .toMap)
         case (TSum(n, f), TSum(n2, f2)) if (n === n2 && f.forall(f2.toSet)) => same
-        case (TProduct(n, f), TProduct(n2, f2)) if (n === n2)               => CompareList(zipFields(path / Name(n), f, f2))
+        case (TProduct(n, f), TProduct(n2, f2)) if (n === n2) =>
+          CompareList(zipFields(path / Name(n), f, f2))
 
         // Numeric widdening
         case (TInt(), TLong() | TFloat() | TDouble()) | (TLong(), TFloat() | TDouble()) | (TFloat(), TDouble()) =>
