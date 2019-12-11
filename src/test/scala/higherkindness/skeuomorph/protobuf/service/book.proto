@@ -63,5 +63,5 @@ enum Genre {
 
 enum BindingType {
     HARDCOVER = 0;
-    PAPERBACK = 1;
+    PAPERBACK = 5;
 }

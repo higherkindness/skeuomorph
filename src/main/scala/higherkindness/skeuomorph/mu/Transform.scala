@@ -47,7 +47,7 @@ object Transform {
     case ProtobufF.TNamedType(prefix, name)         => TNamedType(prefix, name)
     case ProtobufF.TOptionalNamedType(prefix, name) => TOption(A.algebra(TNamedType(prefix, name)))
     case ProtobufF.TRepeated(value)                 => TList(value)
-    case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(_._1))
+    case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(SumField.tupled))
     case ProtobufF.TMessage(name, fields, _)        => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
     case ProtobufF.TFileDescriptor(values, _, _)    => TContaining(values)
     case ProtobufF.TOneOf(_, fields)                => TCoproduct(fields.map(_.tpe))
@@ -68,7 +68,7 @@ object Transform {
     case AvroF.TMap(values)     => TMap(None, values)
     case AvroF.TRecord(name, _, _, _, fields) =>
       TProduct(name, fields.map(f => Field(f.name, f.tpe)))
-    case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols)
+    case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols.zipWithIndex.map(SumField.tupled))
     case AvroF.TUnion(options)               => TCoproduct(options)
     case AvroF.TFixed(_, _, _, _) =>
       ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
