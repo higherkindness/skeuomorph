@@ -108,36 +108,44 @@ class ComparisonSpec extends Specification {
   }
 
   def fieldAddition = {
-    val original = product("foo", List(Field("name", string[T].embed))).embed
-    val extended = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
+    val original = product("foo", List(Field("name", string[T].embed, List(1)))).embed
+    val extended =
+      product("foo", List(Field("name", string[T].embed, List(1)), Field("age", int[T].embed, List(2)))).embed
 
     Comparison(original, extended) must_== Match(Path.empty / Name("foo") / FieldName("age"), Addition(int[T].embed))
   }
 
   def fieldRemoval = {
-    val original = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
-    val reduced  = product("foo", List(Field("name", string[T].embed))).embed
+    val original =
+      product("foo", List(Field("name", string[T].embed, List(1)), Field("age", int[T].embed, List(2)))).embed
+    val reduced = product("foo", List(Field("name", string[T].embed, List(1)))).embed
 
     Comparison(original, reduced) must_== Match(Path.empty / Name("foo") / FieldName("age"), Removal(int[T].embed))
   }
 
   def optionalPromotion = {
 
-    val original = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
-    val promoted = product("foo", List(Field("name", string[T].embed), Field("age", option(int[T].embed).embed))).embed
+    val original =
+      product("foo", List(Field("name", string[T].embed, List(1)), Field("age", int[T].embed, List(2)))).embed
+    val promoted = product(
+      "foo",
+      List(Field("name", string[T].embed, List(1)), Field("age", option(int[T].embed).embed, List(2)))).embed
 
     Comparison(original, promoted) must_== Match(Path.empty / Name("foo") / FieldName("age"), PromotionToOption[T]())
   }
 
   def eitherPromotion = {
 
-    val original = product("foo", List(Field("name", string[T].embed), Field("age", int[T].embed))).embed
+    val original =
+      product("foo", List(Field("name", string[T].embed, List(1)), Field("age", int[T].embed, List(2)))).embed
     val promotedL = product(
       "foo",
-      List(Field("name", string[T].embed), Field("age", either(int[T].embed, boolean[T].embed).embed))).embed
+      List(
+        Field("name", string[T].embed, List(1)),
+        Field("age", either(int[T].embed, boolean[T].embed).embed, List(2)))).embed
     val promotedR = product(
       "foo",
-      List(Field("name", either(long[T].embed, string[T].embed).embed), Field("age", int[T].embed))).embed
+      List(Field("name", either(long[T].embed, string[T].embed).embed, List(1)), Field("age", int[T].embed, List(2)))).embed
 
     Comparison(original, promotedL) must_== Match(
       Path.empty / Name("foo") / FieldName("age"),

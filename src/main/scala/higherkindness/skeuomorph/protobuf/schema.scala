@@ -25,6 +25,8 @@ import higherkindness.droste.util.DefaultTraverse
 sealed trait FieldF[A] {
   val name: String
   val tpe: A
+  // this is a list because a oneof field will have one index per branch
+  def indices: List[Int]
 }
 
 object FieldF {
@@ -35,15 +37,17 @@ object FieldF {
       options: List[OptionValue],
       isRepeated: Boolean,
       isMapField: Boolean)
-      extends FieldF[A]
+      extends FieldF[A] {
+    def indices: List[Int] = List(position)
+  }
 
-  final case class OneOfField[A](name: String, tpe: A) extends FieldF[A]
+  final case class OneOfField[A](name: String, tpe: A, indices: List[Int]) extends FieldF[A]
 
   implicit def fieldEq[T: Eq]: Eq[FieldF[T]] = Eq.instance {
     case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
       n === n2 && t === t2 && p === p2 && o === o2 && r === r2 && m === m2
-    case (OneOfField(n, tpe), OneOfField(n2, tpe2)) =>
-      n === n2 && tpe === tpe2
+    case (OneOfField(n, tpe, is), OneOfField(n2, tpe2, is2)) =>
+      n === n2 && tpe === tpe2 && is === is2
     case _ => false
   }
 }
@@ -151,7 +155,7 @@ object ProtobufF {
           FieldF.Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
 
       def makeOneOfB(oneOf: FieldF.OneOfField[A]): G[FieldF[B]] =
-        f(oneOf.tpe).map(b => FieldF.OneOfField[B](oneOf.name, b): FieldF[B])
+        f(oneOf.tpe).map(b => FieldF.OneOfField[B](oneOf.name, b, oneOf.indices): FieldF[B])
 
       def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] =
         fieldFList.traverse {

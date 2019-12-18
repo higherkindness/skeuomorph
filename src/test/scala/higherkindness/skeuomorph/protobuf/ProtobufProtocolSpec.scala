@@ -80,11 +80,31 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |
       |object book {
       |
-      |@message final case class Book(isbn: _root_.scala.Long, title: _root_.java.lang.String, author: _root_.scala.List[_root_.scala.Option[_root_.com.acme.author.Author]], binding_type: _root_.scala.Option[_root_.com.acme.book.BindingType], rating: _root_.scala.Option[_root_.com.acme.rating.Rating], `private`: _root_.scala.Boolean, `type`: _root_.scala.Option[_root_.com.acme.book.`type`])
-      |@message final case class `type`(foo: _root_.scala.Long, thing: _root_.scala.Option[_root_.com.acme.`hyphenated-name`.Thing])
-      |@message final case class GetBookRequest(isbn: _root_.scala.Long)
-      |@message final case class GetBookViaAuthor(author: _root_.scala.Option[_root_.com.acme.author.Author])
-      |@message final case class BookStore(name: _root_.java.lang.String, books: _root_.scala.Map[_root_.scala.Long, _root_.java.lang.String], genres: _root_.scala.List[_root_.scala.Option[_root_.com.acme.book.Genre]], payment_method: Cop[_root_.scala.Long :: _root_.scala.Int :: _root_.java.lang.String :: _root_.com.acme.book.Book :: TNil])
+      |@message final case class Book(
+      |  @_root_.pbdirect.pbIndex(1) isbn: _root_.scala.Long,
+      |  @_root_.pbdirect.pbIndex(2) title: _root_.java.lang.String,
+      |  @_root_.pbdirect.pbIndex(3) author: _root_.scala.List[_root_.scala.Option[_root_.com.acme.author.Author]],
+      |  @_root_.pbdirect.pbIndex(9) binding_type: _root_.scala.Option[_root_.com.acme.book.BindingType],
+      |  @_root_.pbdirect.pbIndex(10) rating: _root_.scala.Option[_root_.com.acme.rating.Rating],
+      |  @_root_.pbdirect.pbIndex(11) `private`: _root_.scala.Boolean,
+      |  @_root_.pbdirect.pbIndex(16) `type`: _root_.scala.Option[_root_.com.acme.book.`type`]
+      |)
+      |@message final case class `type`(
+      |  @_root_.pbdirect.pbIndex(1) foo: _root_.scala.Long,
+      |  @_root_.pbdirect.pbIndex(2) thing: _root_.scala.Option[_root_.com.acme.`hyphenated-name`.Thing]
+      |)
+      |@message final case class GetBookRequest(
+      |  @_root_.pbdirect.pbIndex(1) isbn: _root_.scala.Long
+      |)
+      |@message final case class GetBookViaAuthor(
+      |  @_root_.pbdirect.pbIndex(1) author: _root_.scala.Option[_root_.com.acme.author.Author]
+      |)
+      |@message final case class BookStore(
+      |  @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
+      |  @_root_.pbdirect.pbIndex(2) books: _root_.scala.Map[_root_.scala.Long, _root_.java.lang.String],
+      |  @_root_.pbdirect.pbIndex(3) genres: _root_.scala.List[_root_.scala.Option[_root_.com.acme.book.Genre]],
+      |  @_root_.pbdirect.pbIndex(4,5,6,7) payment_method: Cop[_root_.scala.Long :: _root_.scala.Int :: _root_.java.lang.String :: _root_.com.acme.book.Book :: TNil]
+      |)
       |
       |sealed abstract class Genre(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
       |object Genre extends _root_.enumeratum.values.IntEnum[Genre] {

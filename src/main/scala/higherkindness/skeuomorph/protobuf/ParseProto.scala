@@ -268,8 +268,9 @@ object ParseProto {
             .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b })
         .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-      val fOneOf = oneOf(name = oneof.getName, fields = oneOfFields)
-      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed), oneOfFields.map(_.position).toList)
+      val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
+      val indices = oneOfFields.map(_.position).toList
+      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
     }
   }
 
