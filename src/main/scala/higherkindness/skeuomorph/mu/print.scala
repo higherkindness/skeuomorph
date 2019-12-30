@@ -57,7 +57,7 @@ object print {
       case TContaining(values)       => values.mkString("\n")
       case TRequired(value)          => value
       case TCoproduct(invariants) =>
-        invariants.toList.mkString("Cop[", " :: ", " :: TNil]")
+        invariants.toList.mkString("", " :+: ", " :+: CNil")
       case TSum(name, fields) =>
         val printFields = fields.map(f => s"case object ${f.name} extends ${name}(${f.value})").mkString("\n  ")
         s"""
