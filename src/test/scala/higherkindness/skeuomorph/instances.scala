@@ -145,7 +145,8 @@ object instances {
     def fieldGen: Gen[MuF.Field[T]] =
       (
         nonEmptyString,
-        Gen.lzy(T.arbitrary)
+        Gen.lzy(T.arbitrary),
+        Gen.posNum[Int].map(List(_))
       ).mapN(MuF.Field.apply)
 
     Arbitrary(

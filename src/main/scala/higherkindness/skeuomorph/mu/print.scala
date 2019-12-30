@@ -69,8 +69,12 @@ object print {
       |}
       """.stripMargin
       case TProduct(name, fields) =>
-        val printFields = fields.map(f => s"${toValidIdentifier(f.name)}: ${f.tpe}").mkString(", ")
-        s"@message final case class ${toValidIdentifier(name)}($printFields)"
+        def printField(f: Field[_]) =
+          s"@_root_.pbdirect.pbIndex(${f.indices.mkString(",")}) ${toValidIdentifier(f.name)}: ${f.tpe}"
+        val printFields = fields.map(printField).mkString(",\n  ")
+        s"""|@message final case class ${toValidIdentifier(name)}(
+            |  $printFields
+            |)""".stripMargin
     }
 
     Printer.print(scheme.cata(algebra))

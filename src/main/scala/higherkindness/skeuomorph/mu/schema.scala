@@ -33,7 +33,7 @@ import cats.syntax.eq._
  */
 @deriveTraverse sealed trait MuF[A]
 object MuF {
-  @deriveTraverse final case class Field[A](name: String, tpe: A)
+  @deriveTraverse final case class Field[A](name: String, tpe: A, indices: List[Int])
 
   final case class SumField(name: String, value: Int)
 
@@ -58,7 +58,7 @@ object MuF {
   final case class TProduct[A](name: String, fields: List[Field[A]]) extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] = Eq.instance {
-    case (Field(n, t), Field(n2, t2)) => n === n2 && t === t2
+    case (Field(n, t, is), Field(n2, t2, is2)) => n === n2 && t === t2 && is === is2
   }
 
   implicit val sumFieldEq: Eq[SumField] = Eq.instance {
@@ -112,7 +112,7 @@ object MuF {
       case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
       case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
       case TProduct(n, fields) =>
-        fields.map(f => s"${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
+        fields.map(f => s"@pbIndex(${f.indices.mkString(",")}) ${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
     })
   }

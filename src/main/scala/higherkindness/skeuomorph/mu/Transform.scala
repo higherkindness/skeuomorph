@@ -48,7 +48,7 @@ object Transform {
     case ProtobufF.TOptionalNamedType(prefix, name) => TOption(A.algebra(TNamedType(prefix, name)))
     case ProtobufF.TRepeated(value)                 => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(SumField.tupled))
-    case ProtobufF.TMessage(name, fields, _)        => TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+    case ProtobufF.TMessage(name, fields, _)        => TProduct(name, fields.map(f => Field(f.name, f.tpe, f.indices)))
     case ProtobufF.TFileDescriptor(values, _, _)    => TContaining(values)
     case ProtobufF.TOneOf(_, fields)                => TCoproduct(fields.map(_.tpe))
     case ProtobufF.TMap(key, values)                => TMap(Some(key), values)
@@ -67,7 +67,7 @@ object Transform {
     case AvroF.TArray(item)     => TList(item)
     case AvroF.TMap(values)     => TMap(None, values)
     case AvroF.TRecord(name, _, _, _, fields) =>
-      TProduct(name, fields.map(f => Field(f.name, f.tpe)))
+      TProduct(name, fields.zipWithIndex.map { case (f, i) => Field(f.name, f.tpe, List(i)) })
     case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols.zipWithIndex.map(SumField.tupled))
     case AvroF.TUnion(options)               => TCoproduct(options)
     case AvroF.TFixed(_, _, _, _) =>
