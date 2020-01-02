@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2020 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -197,7 +197,7 @@ object ParseProto {
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
-          tpe = repeated[A](fromFieldType(field, files, makeNamedTypesOptional = true)).embed,
+          tpe = repeated[A](fromFieldType(field, files, makeNamedTypesOptional = false)).embed,
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = true,
           isMapField = false

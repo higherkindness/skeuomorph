@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019 47 Degrees, LLC. <http://www.47deg.com>
+ * Copyright 2018-2020 47 Degrees, LLC. <http://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,7 @@ object Transform {
     case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(SumField.tupled))
     case ProtobufF.TMessage(name, fields, _)        => TProduct(name, fields.map(f => Field(f.name, f.tpe, f.indices)))
     case ProtobufF.TFileDescriptor(values, _, _)    => TContaining(values)
-    case ProtobufF.TOneOf(_, fields)                => TCoproduct(fields.map(_.tpe))
+    case ProtobufF.TOneOf(_, fields)                => TOption(A.algebra(TCoproduct(fields.map(_.tpe))))
     case ProtobufF.TMap(key, values)                => TMap(Some(key), values)
   }
 
