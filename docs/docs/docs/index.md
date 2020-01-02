@@ -35,7 +35,7 @@ You can install skeuomorph as follows:
 [comment]: # (Start Replace)
 
 ```scala
-libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.9.1"
+libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.18"
 ```
 
 [comment]: # (End Replace)
