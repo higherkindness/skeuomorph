@@ -50,8 +50,8 @@ object print {
       case TNamedType(prefix, name)  => printIdentifier(prefix, name)
       case TOption(value)            => s"_root_.scala.Option[$value]"
       case TEither(a, b)             => s"_root_.scala.Either[$a, $b]"
-      case TMap(Some(key), value)    => s"_root_.scala.Map[$key, $value]"
-      case TMap(None, value)         => s"_root_.scala.Map[String, $value]" // Compatibility for Avro
+      case TMap(Some(key), value)    => s"_root_.scala.Predef.Map[$key, $value]"
+      case TMap(None, value)         => s"_root_.scala.Predef.Map[String, $value]" // Compatibility for Avro
       case TGeneric(generic, params) => s"""$generic[${params.mkString(", ")}]"""
       case TList(value)              => s"_root_.scala.List[$value]"
       case TContaining(values)       => values.mkString("\n")
