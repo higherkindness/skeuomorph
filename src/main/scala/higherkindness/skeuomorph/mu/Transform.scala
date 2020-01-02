@@ -50,7 +50,7 @@ object Transform {
     case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(SumField.tupled))
     case ProtobufF.TMessage(name, fields, _)        => TProduct(name, fields.map(f => Field(f.name, f.tpe, f.indices)))
     case ProtobufF.TFileDescriptor(values, _, _)    => TContaining(values)
-    case ProtobufF.TOneOf(_, fields)                => TCoproduct(fields.map(_.tpe))
+    case ProtobufF.TOneOf(_, fields)                => TOption(A.algebra(TCoproduct(fields.map(_.tpe))))
     case ProtobufF.TMap(key, values)                => TMap(Some(key), values)
   }
 
