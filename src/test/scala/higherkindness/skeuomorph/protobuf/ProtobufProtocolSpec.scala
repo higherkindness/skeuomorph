@@ -103,7 +103,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
       |  @_root_.pbdirect.pbIndex(2) books: _root_.scala.Map[_root_.scala.Long, _root_.java.lang.String],
       |  @_root_.pbdirect.pbIndex(3) genres: _root_.scala.List[_root_.scala.Option[_root_.com.acme.book.Genre]],
-      |  @_root_.pbdirect.pbIndex(4,5,6,7) payment_method: _root_.scala.Long _root_.shapeless.:+: _root_.scala.Int _root_.shapeless.:+: _root_.java.lang.String _root_.shapeless.:+: _root_.com.acme.book.Book :+: _root_.shapeless.CNil
+      |  @_root_.pbdirect.pbIndex(4,5,6,7) payment_method: _root_.scala.Option[_root_.scala.Long _root_.shapeless.:+: _root_.scala.Int _root_.shapeless.:+: _root_.java.lang.String _root_.shapeless.:+: _root_.com.acme.book.Book :+: _root_.shapeless.CNil]
       |)
       |
       |sealed abstract class Genre(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
