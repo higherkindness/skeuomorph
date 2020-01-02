@@ -1,5 +1,15 @@
 # Changelog
 
+## 01/02/2020 - Version 0.0.19
+
+Release changes:
+
+* Includes docs subfolders ([#200](https://github.com/higherkindness/skeuomorph/pull/200))
+* Fix broken docs ([#201](https://github.com/higherkindness/skeuomorph/pull/201))
+* Fix a couple of compilation issues in the generated code ([#203](https://github.com/higherkindness/skeuomorph/pull/203))
+* Release 0.0.19 ([#204](https://github.com/higherkindness/skeuomorph/pull/204))
+
+
 ## 01/02/2020 - Version 0.0.18
 
 Release changes:
