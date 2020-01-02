@@ -57,7 +57,7 @@ object print {
       case TContaining(values)       => values.mkString("\n")
       case TRequired(value)          => value
       case TCoproduct(invariants) =>
-        invariants.toList.mkString("", " _root_.shapeless.:+: ", " :+: _root_.shapeless.CNil")
+        invariants.toList.foldRight("_root_.shapeless.CNil") { case (t, acc) => s"_root_.shapeless.:+:[$t, $acc]" }
       case TSum(name, fields) =>
         val printFields = fields.map(f => s"case object ${f.name} extends ${name}(${f.value})").mkString("\n  ")
         s"""
