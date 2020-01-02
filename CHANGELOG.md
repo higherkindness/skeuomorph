@@ -1,5 +1,29 @@
 # Changelog
 
+## 01/02/2020 - Version 0.0.18
+
+Release changes:
+
+* Update sbt-microsites to 1.0.2 ([#180](https://github.com/higherkindness/skeuomorph/pull/180))
+* Update protoc-jar to 3.11.1 ([#181](https://github.com/higherkindness/skeuomorph/pull/181))
+* Adds twitter-card.png and removes nav title in small size view ([#182](https://github.com/higherkindness/skeuomorph/pull/182))
+* Protobuf: make generated Scala code more hygienic ([#183](https://github.com/higherkindness/skeuomorph/pull/183))
+* Use enumeratum IntEnum for generated enums ([#184](https://github.com/higherkindness/skeuomorph/pull/184))
+* Update scalacheck to 1.14.3 ([#186](https://github.com/higherkindness/skeuomorph/pull/186))
+* Update sbt to 1.3.5 ([#185](https://github.com/higherkindness/skeuomorph/pull/185))
+* Update cats-core, cats-laws to 2.1.0 ([#189](https://github.com/higherkindness/skeuomorph/pull/189))
+* Update ammonite to 1.9.1 ([#190](https://github.com/higherkindness/skeuomorph/pull/190))
+* Update ammonite to 1.9.2 ([#191](https://github.com/higherkindness/skeuomorph/pull/191))
+* Update ammonite to 1.9.8 ([#193](https://github.com/higherkindness/skeuomorph/pull/193))
+* Update sbt to 1.3.6 ([#194](https://github.com/higherkindness/skeuomorph/pull/194))
+* Update ammonite to 1.9.9 ([#195](https://github.com/higherkindness/skeuomorph/pull/195))
+* Update ammonite to 2.0.1 ([#196](https://github.com/higherkindness/skeuomorph/pull/196))
+* Add pbIndex annotation to generated Scala code ([#187](https://github.com/higherkindness/skeuomorph/pull/187))
+* Generate a shapeless Coproduct instead of a placeholder type ([#197](https://github.com/higherkindness/skeuomorph/pull/197))
+* Wrap coproducts in Option ([#198](https://github.com/higherkindness/skeuomorph/pull/198))
+* Release v0.0.18 ([#199](https://github.com/higherkindness/skeuomorph/pull/199))
+
+
 ## 12/05/2019 - Version 0.0.17
 
 Release changes:
