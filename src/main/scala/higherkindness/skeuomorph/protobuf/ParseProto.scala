@@ -197,7 +197,7 @@ object ParseProto {
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
-          tpe = repeated[A](fromFieldType(field, files, makeNamedTypesOptional = true)).embed,
+          tpe = repeated[A](fromFieldType(field, files, makeNamedTypesOptional = false)).embed,
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = true,
           isMapField = false
