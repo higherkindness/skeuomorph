@@ -57,8 +57,8 @@ def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Tr
 }
 
 def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
-  case TProduct(name, _) => TNamedType[T](name)
-  case TSum(name, _)     => TNamedType[T](name)
+  case TProduct(name, _) => TNamedType[T](Nil, name)
+  case TSum(name, _)     => TNamedType[T](Nil, name)
   case other             => other
 }
 
