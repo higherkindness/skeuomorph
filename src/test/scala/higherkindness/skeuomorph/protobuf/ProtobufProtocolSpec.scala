@@ -25,6 +25,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.{ScalaCheck, Specification}
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
+import scala.meta._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
@@ -44,6 +45,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   It should be possible to print a protocol from a Proto file. $printProtobufProtocol
 
+  It should be possible to generate Scala code for a protocol from a Proto file. $codegenProtobufProtocol
   """
 
   def printProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
@@ -58,6 +60,37 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     }
 
     val actual   = (parseProtocol andThen printProtocol)(protobufProtocol)
+    val expected = expectation(ct, useIdiom)
+
+    (actual.clean must beEqualTo(expected.clean)) :| s"""
+      |Actual output:
+      |$actual
+      |
+      |
+      |Expected output:
+      |$expected"
+      """.stripMargin
+  }
+
+  def codegenProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
+    val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+      p: Protocol[Mu[ProtobufF]] =>
+        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
+    }
+
+    val streamCtor: (Type, Type) => Type.Apply = {
+      case (f: Type, a: Type) => t"Stream[$f, $a]"
+    }
+
+    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
+      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+        val tree = higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor)
+        //println(tree.structure)
+        tree.syntax
+    }
+
+    val actual = (parseProtocol andThen codegen)(protobufProtocol)
+
     val expected = expectation(ct, useIdiom)
 
     (actual.clean must beEqualTo(expected.clean)) :| s"""
