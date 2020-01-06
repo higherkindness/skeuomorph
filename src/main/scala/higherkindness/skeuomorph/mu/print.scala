@@ -28,6 +28,11 @@ import higherkindness.skeuomorph.mu.Optimize.nestedOptionInCoproduct
 import higherkindness.skeuomorph.mu.SerializationType._
 import higherkindness.droste._
 
+@deprecated(
+  message =
+    "This object will be removed soon. Please use higherkindness.skeuomorph.mu.codegen to generate a scalameta tree instead. You can call `.syntax` on the tree to get the Scala code as a String.",
+  since = "0.0.20"
+)
 object print {
 
   def schema[T: Project[MuF, ?]]: Printer[T] = {
