@@ -55,7 +55,10 @@ object codegen {
     val options: List[Mod.Annot] =
       protocol.options.map(option)
 
-    val imports: Either[String, List[Import]] =
+    val muImport: Either[String, Import] =
+      parseImport("import _root_.higherkindness.mu.rpc.protocol._")
+
+    val depImports: Either[String, List[Import]] =
       protocol.imports.traverse(_import)
 
     def declaration(decl: T): Either[String, List[Stat]] =
@@ -72,18 +75,19 @@ object codegen {
 
     for {
       pkgName <- packageName
-      imps    <- imports
+      muImp   <- muImport
+      depImps <- depImports
       decls   <- declarations
       srvs    <- services
     } yield {
       val objDefn = q"""
       ..$options object ${Term.Name(protocol.name)} {
-        ..$imps
+        ..$depImps
         ..$decls
         ..$srvs
       }
       """
-      Pkg(pkgName, imps ++ List(objDefn))
+      Pkg(pkgName, List(muImp, objDefn))
     }
   }
 
@@ -101,16 +105,17 @@ object codegen {
 
   private def option(opt: (String, String)): Mod.Annot = opt match {
     case (name, value) =>
-      mod"@_root_.higherkindness.mu.rpc.protocol.option(name = $name, value = $value)"
+      mod"@option(name = $name, value = $value)"
   }
 
-  private def _import[T](depImport: DependentImport[T]): Either[String, Import] = {
-    val stmt = s"import ${depImport.pkg}.${depImport.protocol}._"
+  private def _import[T](depImport: DependentImport[T]): Either[String, Import] =
+    parseImport(s"import ${depImport.pkg}.${depImport.protocol}._")
+
+  private def parseImport(stmt: String): Either[String, Import] =
     for {
       stat <- stmt.parse[Stat].toEither.leftMap(e => s"Failed to parse '$stmt' as an import statement: $e")
       imp  <- stat.as[Import]
     } yield imp
-  }
 
   def schema[T](t: T)(implicit T: Basis[MuF, T]): Either[String, Tree] = {
 
@@ -178,7 +183,7 @@ object codegen {
             param"$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
           }
         fields.traverse(arg).map { args =>
-          q"@_root_.higherkindness.mu.rpc.protocol.message final case class ${Type.Name(name)}(..$args)"
+          q"@message final case class ${Type.Name(name)}(..$args)"
         }
     }
 
@@ -192,11 +197,11 @@ object codegen {
 
     val serviceAnnotation = srv.idiomaticEndpoints match {
       case IdiomaticEndpoints(Some(pkg), true) =>
-        mod"@_root_.higherkindness.mu.rpc.protocol.service($serializationType, $compressionType, namespace = Some($pkg), methodNameStyle = Capitalize)"
+        mod"@service($serializationType, $compressionType, namespace = Some($pkg), methodNameStyle = Capitalize)"
       case IdiomaticEndpoints(None, true) =>
-        mod"@_root_.higherkindness.mu.rpc.protocol.service($serializationType, $compressionType, methodNameStyle = Capitalize)"
+        mod"@service($serializationType, $compressionType, methodNameStyle = Capitalize)"
       case _ =>
-        mod"@_root_.higherkindness.mu.rpc.protocol.service($serializationType, $compressionType)"
+        mod"@service($serializationType, $compressionType)"
     }
 
     srv.operations.traverse(op => operation(op, streamCtor)).map { ops =>
