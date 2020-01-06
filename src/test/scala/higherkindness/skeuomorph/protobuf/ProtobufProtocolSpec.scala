@@ -82,17 +82,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       case (f: Type, a: Type) => t"Stream[$f, $a]"
     }
 
-    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
+    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
       p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        val tree = higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
-        tree.syntax
+        higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
     }
 
     val actual = (parseProtocol andThen codegen)(protobufProtocol)
 
-    val expected = expectation(ct, useIdiom)
+    val expected = expectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
 
-    (actual.clean must beEqualTo(expected.clean)) :| s"""
+    import scala.meta.contrib._
+    actual.isEqual(expected) :| s"""
       |Actual output:
       |$actual
       |
