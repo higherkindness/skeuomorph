@@ -54,7 +54,7 @@ object codegen {
 
     def declaration(decl: T): Either[String, List[Stat]] =
       for {
-        tree <- schema(optimize(decl))
+        tree <- schema(decl)
         stat <- tree.as[Stat]
       } yield explodeBlock(stat)
 
@@ -163,7 +163,7 @@ object codegen {
         }
     }
 
-    scheme.cataM(algebra).apply(decl)
+    scheme.cataM(algebra).apply(optimize(decl))
   }
 
   def service[T](srv: Service[T], streamCtor: (Type, Type) => Type.Apply)(
