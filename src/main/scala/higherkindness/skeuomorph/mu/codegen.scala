@@ -52,6 +52,12 @@ object codegen {
       .leftMap(e => s"Failed to parse package name: $e")
       .flatMap(_.as[Term.Ref])
 
+    val options: List[Mod.Annot] =
+      protocol.options.map(option)
+
+    val imports: Either[String, List[Import]] =
+      protocol.imports.traverse(_import)
+
     def declaration(decl: T): Either[String, List[Stat]] =
       for {
         tree <- schema(decl)
@@ -66,18 +72,18 @@ object codegen {
 
     for {
       pkgName <- packageName
+      imps    <- imports
       decls   <- declarations
       srvs    <- services
     } yield {
       val objDefn = q"""
-      // TODO options (Where should these annotations be attached to? And what are they for?)
-      // TODO dependency imports
-      object ${Term.Name(protocol.name)} {
+      ..$options object ${Term.Name(protocol.name)} {
+        ..$imps
         ..$decls
         ..$srvs
       }
       """
-      Pkg(pkgName, List(objDefn))
+      Pkg(pkgName, imps ++ List(objDefn))
     }
   }
 
@@ -93,7 +99,20 @@ object codegen {
     case other        => List(other)
   }
 
-  def schema[T](decl: T)(implicit T: Basis[MuF, T]): Either[String, Tree] = {
+  private def option(opt: (String, String)): Mod.Annot = opt match {
+    case (name, value) =>
+      mod"@_root_.higherkindness.mu.rpc.protocol.option(name = $name, value = $value)"
+  }
+
+  private def _import[T](depImport: DependentImport[T]): Either[String, Import] = {
+    val stmt = s"import ${depImport.pkg}.${depImport.protocol}._"
+    for {
+      stat <- stmt.parse[Stat].toEither.leftMap(e => s"Failed to parse '$stmt' as an import statement: $e")
+      imp  <- stat.as[Import]
+    } yield imp
+  }
+
+  def schema[T](t: T)(implicit T: Basis[MuF, T]): Either[String, Tree] = {
 
     def identifier(prefix: List[String], name: String): Either[String, Type] = {
       if (prefix.isEmpty)
@@ -163,7 +182,7 @@ object codegen {
         }
     }
 
-    scheme.cataM(algebra).apply(optimize(decl))
+    scheme.cataM(algebra).apply(optimize(t))
   }
 
   def service[T](srv: Service[T], streamCtor: (Type, Type) => Type.Apply)(
