@@ -86,7 +86,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |
       |object book {
       |
-      |@message final case class Book(
+      |@_root_.higherkindness.mu.rpc.protocol.message final case class Book(
       |  @_root_.pbdirect.pbIndex(1) isbn: _root_.scala.Long,
       |  @_root_.pbdirect.pbIndex(2) title: _root_.java.lang.String,
       |  @_root_.pbdirect.pbIndex(3) author: _root_.scala.List[_root_.com.acme.author.Author],
@@ -95,17 +95,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(11) `private`: _root_.scala.Boolean,
       |  @_root_.pbdirect.pbIndex(16) `type`: _root_.scala.Option[_root_.com.acme.book.`type`]
       |)
-      |@message final case class `type`(
+      |@_root_.higherkindness.mu.rpc.protocol.message final case class `type`(
       |  @_root_.pbdirect.pbIndex(1) foo: _root_.scala.Long,
       |  @_root_.pbdirect.pbIndex(2) thing: _root_.scala.Option[_root_.com.acme.`hyphenated-name`.Thing]
       |)
-      |@message final case class GetBookRequest(
+      |@_root_.higherkindness.mu.rpc.protocol.message final case class GetBookRequest(
       |  @_root_.pbdirect.pbIndex(1) isbn: _root_.scala.Long
       |)
-      |@message final case class GetBookViaAuthor(
+      |@_root_.higherkindness.mu.rpc.protocol.message final case class GetBookViaAuthor(
       |  @_root_.pbdirect.pbIndex(1) author: _root_.scala.Option[_root_.com.acme.author.Author]
       |)
-      |@message final case class BookStore(
+      |@_root_.higherkindness.mu.rpc.protocol.message final case class BookStore(
       |  @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
       |  @_root_.pbdirect.pbIndex(2) books: _root_.scala.Predef.Map[_root_.scala.Long, _root_.java.lang.String],
       |  @_root_.pbdirect.pbIndex(3) genres: _root_.scala.List[_root_.com.acme.book.Genre],
@@ -130,7 +130,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  val values = findValues
       |}
       |
-      |@service($serviceParams) trait BookService[F[_]] {
+      |@_root_.higherkindness.mu.rpc.protocol.service($serviceParams) trait BookService[F[_]] {
       |  def GetBook(req: _root_.com.acme.book.GetBookRequest): F[_root_.com.acme.book.Book]
       |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): Stream[F, _root_.com.acme.book.Book]
       |  def GetGreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]

@@ -159,7 +159,7 @@ object codegen {
             param"$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
           }
         fields.traverse(arg).map { args =>
-          q"@message final case class ${Type.Name(name)}(..$args)"
+          q"@_root_.higherkindness.mu.rpc.protocol.message final case class ${Type.Name(name)}(..$args)"
         }
     }
 
@@ -173,11 +173,11 @@ object codegen {
 
     val serviceAnnotation = srv.idiomaticEndpoints match {
       case IdiomaticEndpoints(Some(pkg), true) =>
-        mod"@service($serializationType, $compressionType, namespace = Some($pkg), methodNameStyle = Capitalize)"
+        mod"@_root_.higherkindness.mu.rpc.protocol.service($serializationType, $compressionType, namespace = Some($pkg), methodNameStyle = Capitalize)"
       case IdiomaticEndpoints(None, true) =>
-        mod"@service($serializationType, $compressionType, methodNameStyle = Capitalize)"
+        mod"@_root_.higherkindness.mu.rpc.protocol.service($serializationType, $compressionType, methodNameStyle = Capitalize)"
       case _ =>
-        mod"@service($serializationType, $compressionType)"
+        mod"@_root_.higherkindness.mu.rpc.protocol.service($serializationType, $compressionType)"
     }
 
     srv.operations.traverse(op => operation(op, streamCtor)).map { ops =>
