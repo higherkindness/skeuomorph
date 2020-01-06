@@ -84,8 +84,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
     val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
       p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        val tree = higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor)
-        //println(tree.structure)
+        val tree = higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
         tree.syntax
     }
 
