@@ -47,17 +47,19 @@ they're inside a product themselves.  And we do this with the
 
 ```scala mdoc
 def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
-  case TProduct(name, fields) =>
+  case TProduct(name, fields, np, nc) =>
     def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
     TProduct[T](
       name,
-      fields.map(nameTypes)
+      fields.map(nameTypes),
+      np,
+      nc
     )
   case other => other
 }
 
 def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
-  case TProduct(name, _) => TNamedType[T](Nil, name)
+  case TProduct(name, _, _, _) => TNamedType[T](Nil, name)
   case TSum(name, _)     => TNamedType[T](Nil, name)
   case other             => other
 }
