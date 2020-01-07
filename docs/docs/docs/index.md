@@ -42,7 +42,7 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.19"
 
 ## Examples
 
-### parsing an avro schema and then converting it to scala:
+### Parsing an Avro schema and converting it into Scala code
 
 Given an Avro schema:
 
@@ -76,26 +76,27 @@ val definition = """
 """
 ```
 
-We can parse and convert it into Scala code like this:
+We can parse it, transform it into a Mu schema and then convert it into Scala code like this:
 
 ```scala mdoc:silent
 import org.apache.avro.{Protocol => AvroProtocol, _}
 import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.mu.{print => muprint}
+import higherkindness.skeuomorph.mu.codegen
 import higherkindness.skeuomorph.avro.AvroF.fromAvro
 import higherkindness.droste._
 import higherkindness.droste.data._
 import higherkindness.droste.data.Mu._
 import cats.implicits._
+import scala.meta._
 
 val avroSchema: Schema = new Schema.Parser().parse(definition)
 
 val toMuSchema: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 
-val printSchemaAsScala: Mu[MuF] => String =
-  muprint.schema.print _
+val printSchemaAsScala: Mu[MuF] => Either[String, String] =
+  codegen.schema(_).map(_.syntax)
 
 (toMuSchema >>> println)(avroSchema)
 println("=====")
@@ -114,7 +115,7 @@ println("```")
 
 ## Protobuf
 
-### Parsing `.proto` file and converting into Scala code
+### Parsing a `.proto` file and converting into Scala code
 
 Given the proto file below:
 
@@ -131,7 +132,7 @@ message User {
 }
 ```
 
-We can parse and convert it into Scala code as:
+We can parse it, transform it into a Mu protocol and then convert it into Scala code like this:
 
 ```scala mdoc:silent
 import cats.effect.IO
@@ -141,6 +142,7 @@ import higherkindness.skeuomorph.protobuf._
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
 import cats.implicits._
+import scala.meta._
 
 val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/docs/protobuf")
 
@@ -150,8 +152,12 @@ val toMuProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protoco
   mu.Protocol.fromProtobufProto(CompressionType.Identity, true)(p)
 }
 
-val printProtocolAsScala: mu.Protocol[Mu[MuF]] => String =
-  mu.print.proto.print _
+val printProtocolAsScala: mu.Protocol[Mu[MuF]] => Either[String, String] = { p =>
+  val streamCtor: (Type, Type) => Type.Apply = {
+    case (f, a) => t"_root_.fs2.Stream[$f, $a]"
+  }
+  mu.codegen.protocol(p, streamCtor).map(_.syntax)
+}
 
 (toMuProtocol >>> println)(protobufProtocol)
 println("=====")

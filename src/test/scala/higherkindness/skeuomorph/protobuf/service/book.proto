@@ -50,6 +50,11 @@ message BookStore {
         string iou_note = 6;
         Book barter = 7;
     }
+
+    oneof either {
+        int64 first = 8;
+        int32 second = 9;
+    }
 }
 
 enum Genre {

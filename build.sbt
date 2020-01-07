@@ -19,6 +19,7 @@ val V = new {
   val kindProjector    = "0.10.3"
   val macroParadise    = "2.1.1"
   val meta             = "4.3.0"
+  val metaContrib      = "4.1.6"
   val scala212         = "2.12.10"
   val scalacheck       = "1.14.3"
   val specs2           = "4.8.1"
@@ -122,7 +123,8 @@ lazy val commonSettings = Seq(
     "org.typelevel"                   %% "discipline-specs2" % V.disciplineSpecs2 % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
     "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll (
-      ExclusionRule(organization = "org.scalacheck")
+      ExclusionRule(organization = "org.scalacheck"),
+    "org.scalameta"       %% "contrib"     % V.metaContrib % Test
     )
   ),
   orgProjectName := "Skeuomorph",

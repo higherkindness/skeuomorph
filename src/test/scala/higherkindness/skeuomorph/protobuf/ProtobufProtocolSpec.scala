@@ -25,6 +25,7 @@ import org.scalacheck.{Arbitrary, Gen}
 import org.specs2.{ScalaCheck, Specification}
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
+import scala.meta._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
@@ -42,25 +43,30 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   def is = s2"""
   Protobuf Protocol
 
-  It should be possible to print a protocol from a Proto file. $printProtobufProtocol
-
+  It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
   """
 
-  def printProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
+  def codegenProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
     val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
       p: Protocol[Mu[ProtobufF]] =>
         higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
     }
 
-    val printProtocol: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => String = {
-      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        higherkindness.skeuomorph.mu.print.proto.print(p)
+    val streamCtor: (Type, Type) => Type.Apply = {
+      case (f: Type, a: Type) => t"Stream[$f, $a]"
     }
 
-    val actual   = (parseProtocol andThen printProtocol)(protobufProtocol)
-    val expected = expectation(ct, useIdiom)
+    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
+      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+        higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+    }
 
-    (actual.clean must beEqualTo(expected.clean)) :| s"""
+    val actual = (parseProtocol andThen codegen)(protobufProtocol)
+
+    val expected = expectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
+
+    import scala.meta.contrib._
+    actual.isEqual(expected) :| s"""
       |Actual output:
       |$actual
       |
@@ -77,6 +83,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       (if (useIdiomaticEndpoints) ", namespace = Some(\"com.acme\"), methodNameStyle = Capitalize" else "")
 
     s"""package com.acme
+      |
+      |import _root_.higherkindness.mu.rpc.protocol._
       |
       |object book {
       |
@@ -103,7 +111,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
       |  @_root_.pbdirect.pbIndex(2) books: _root_.scala.Predef.Map[_root_.scala.Long, _root_.java.lang.String],
       |  @_root_.pbdirect.pbIndex(3) genres: _root_.scala.List[_root_.com.acme.book.Genre],
-      |  @_root_.pbdirect.pbIndex(4,5,6,7) payment_method: _root_.scala.Option[_root_.shapeless.:+:[_root_.scala.Long, _root_.shapeless.:+:[_root_.scala.Int, _root_.shapeless.:+:[_root_.java.lang.String, _root_.shapeless.:+:[_root_.com.acme.book.Book, _root_.shapeless.CNil]]]]]
+      |  @_root_.pbdirect.pbIndex(4,5,6,7) payment_method: _root_.scala.Option[_root_.shapeless.:+:[_root_.scala.Long, _root_.shapeless.:+:[_root_.scala.Int, _root_.shapeless.:+:[_root_.java.lang.String, _root_.shapeless.:+:[_root_.com.acme.book.Book, _root_.shapeless.CNil]]]]],
+      |  @_root_.pbdirect.pbIndex(8,9) either: _root_.scala.Option[_root_.scala.Either[_root_.scala.Long, _root_.scala.Int]]
       |)
       |
       |sealed abstract class Genre(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
