@@ -186,10 +186,11 @@ object ParseProto {
     // TODO need to include nested messages here
     message[A](
       name = descriptor.getName,
-      // TODO sort fields by index (doesn't really matter but that would be the least surprising behaviour)
-      fields = fields ++ oneOfFields.map(_._1),
+      fields = (fields ++ oneOfFields.map(_._1)).sortBy(_.indices.headOption),
       reserved = descriptor.getReservedRangeList.asScala.toList.map(range =>
-        (range.getStart until range.getEnd).map(_.toString).toList)
+        (range.getStart until range.getEnd).map(_.toString).toList),
+      nestedMessages = Nil,
+      nestedEnums = Nil
     ).embed
   }
 

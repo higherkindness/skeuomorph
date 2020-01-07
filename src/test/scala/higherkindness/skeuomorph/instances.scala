@@ -39,43 +39,6 @@ object instances {
 
   lazy val sampleBool: Gen[Boolean] = Gen.oneOf(true, false)
 
-  def protobufFMessageWithRepeatFields[T](withRepeat: Boolean)(
-      implicit B: Basis[ProtobufF, T]): Gen[ProtobufF.TMessage[T]] = {
-
-    val innerTypes: Gen[ProtobufF[T]] = Gen.oneOf(
-      List(
-        ProtobufF.TDouble[T](),
-        ProtobufF.TFloat[T](),
-        ProtobufF.TInt32[T](),
-        ProtobufF.TInt64[T](),
-        ProtobufF.TUint32[T](),
-        ProtobufF.TUint64[T](),
-        ProtobufF.TSint32[T](),
-        ProtobufF.TSint64[T](),
-        ProtobufF.TFixed32[T](),
-        ProtobufF.TFixed64[T](),
-        ProtobufF.TSfixed32[T](),
-        ProtobufF.TSfixed64[T](),
-        ProtobufF.TBool[T](),
-        ProtobufF.TString[T](),
-        ProtobufF.TBytes[T]()
-      )
-    )
-
-    val sampleField: Gen[FieldF.Field[T]] = {
-      for {
-        name     <- nonEmptyString
-        tpe      <- innerTypes
-        position <- smallNumber
-      } yield FieldF.Field(name, B.algebra(tpe), position, List(), withRepeat, isMapField = false)
-    }
-
-    for {
-      name  <- nonEmptyString
-      field <- sampleField
-    } yield ProtobufF.TMessage(name, List(field), List())
-  }
-
   implicit val avroSchemaArbitrary: Arbitrary[Schema] = Arbitrary {
     val primitives: Gen[Schema] = Gen.oneOf(
       List(
@@ -390,8 +353,36 @@ object instances {
       ))
   }
 
+  def protobufFMessage[T](implicit T: Arbitrary[T]): Gen[ProtobufF.TMessage[T]] = {
+
+    val sampleField: Gen[FieldF.Field[T]] = {
+      for {
+        name     <- nonEmptyString
+        tpe      <- T.arbitrary
+        position <- smallNumber
+      } yield FieldF.Field(name, tpe, position, List(), false, isMapField = false)
+    }
+
+    for {
+      name  <- nonEmptyString
+      field <- sampleField
+      // these return a list of size 0 or 1, so it won't recurse forever
+      nestedMessages <- Gen.listOfN(1, protobufFMessage[T])
+      nestedEnums    <- Gen.listOfN(1, protobufFEnum[T])
+    } yield ProtobufF.TMessage(name, List(field), Nil, nestedMessages, nestedEnums)
+  }
+
+  val genOption: Gen[ProtobufF.OptionValue] = (nonEmptyString, nonEmptyString).mapN(ProtobufF.OptionValue.apply)
+
+  def protobufFEnum[T]: Gen[ProtobufF.TEnum[T]] =
+    (
+      nonEmptyString,
+      Gen.listOf((nonEmptyString, Gen.posNum[Int]).tupled),
+      Gen.listOf(genOption),
+      Gen.listOf((nonEmptyString, Gen.posNum[Int]).tupled)
+    ).mapN(ProtobufF.TEnum[T])
+
   implicit def protoArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[ProtobufF[T]] = {
-    val genOption: Gen[ProtobufF.OptionValue] = (nonEmptyString, nonEmptyString).mapN(ProtobufF.OptionValue.apply)
     Arbitrary(
       Gen.oneOf(
         ProtobufF.double[T]().pure[Gen],
@@ -411,26 +402,8 @@ object instances {
         ProtobufF.bytes[T]().pure[Gen],
         (Gen.listOf(nonEmptyString), nonEmptyString) mapN ProtobufF.namedType[T],
         T.arbitrary map ProtobufF.repeated[T],
-        (
-          nonEmptyString,
-          Gen.listOf((nonEmptyString, Gen.posNum[Int]).tupled),
-          Gen.listOf(genOption),
-          Gen.listOf((nonEmptyString, Gen.posNum[Int]).tupled)
-        ).mapN(ProtobufF.enum[T]),
-        (
-          nonEmptyString,
-          Gen.listOf(
-            (
-              nonEmptyString,
-              T.arbitrary,
-              Gen.posNum[Int],
-              Gen.listOf(genOption),
-              sampleBool,
-              sampleBool
-            ).mapN(FieldF.Field.apply[T])
-          ),
-          Gen.listOf(Gen.listOf(nonEmptyString))
-        ).mapN(ProtobufF.message[T])
+        protobufFEnum[T],
+        protobufFMessage[T]
       )
     )
   }
