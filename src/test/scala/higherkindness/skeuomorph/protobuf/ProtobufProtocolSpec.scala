@@ -95,7 +95,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(9) binding_type: _root_.scala.Option[_root_.com.acme.book.BindingType],
       |  @_root_.pbdirect.pbIndex(10) rating: _root_.scala.Option[_root_.com.acme.rating.Rating],
       |  @_root_.pbdirect.pbIndex(11) `private`: _root_.scala.Boolean,
-      |  @_root_.pbdirect.pbIndex(16) `type`: _root_.scala.Option[_root_.com.acme.book.`type`]
+      |  @_root_.pbdirect.pbIndex(16) `type`: _root_.scala.Option[_root_.com.acme.book.`type`],
+      |  @_root_.pbdirect.pbIndex(17) nearest_copy: _root_.scala.Option[_root_.com.acme.book.BookStore.Location]
       |)
       |@message final case class `type`(
       |  @_root_.pbdirect.pbIndex(1) foo: _root_.scala.Long,
@@ -112,8 +113,29 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(2) books: _root_.scala.Predef.Map[_root_.scala.Long, _root_.java.lang.String],
       |  @_root_.pbdirect.pbIndex(3) genres: _root_.scala.List[_root_.com.acme.book.Genre],
       |  @_root_.pbdirect.pbIndex(4,5,6,7) payment_method: _root_.scala.Option[_root_.shapeless.:+:[_root_.scala.Long, _root_.shapeless.:+:[_root_.scala.Int, _root_.shapeless.:+:[_root_.java.lang.String, _root_.shapeless.:+:[_root_.com.acme.book.Book, _root_.shapeless.CNil]]]]],
-      |  @_root_.pbdirect.pbIndex(8,9) either: _root_.scala.Option[_root_.scala.Either[_root_.scala.Long, _root_.scala.Int]]
+      |  @_root_.pbdirect.pbIndex(8,9) either: _root_.scala.Option[_root_.scala.Either[_root_.scala.Long, _root_.scala.Int]],
+      |  @_root_.pbdirect.pbIndex(10) location: _root_.scala.Option[_root_.com.acme.book.BookStore.Location],
+      |  @_root_.pbdirect.pbIndex(11) coffee_quality: _root_.scala.Option[_root_.com.acme.book.BookStore.CoffeeQuality]
       |)
+      |object BookStore {
+      |  @message final case class Location(
+      |    @_root_.pbdirect.pbIndex(1) town: _root_.java.lang.String,
+      |    @_root_.pbdirect.pbIndex(2) country: _root_.scala.Option[_root_.com.acme.book.BookStore.Location.Country]
+      |  )
+      |  object Location {
+      |    @message final case class Country(
+      |      @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
+      |      @_root_.pbdirect.pbIndex(2) iso_code: _root_.java.lang.String
+      |    )
+      |  }
+      |  sealed abstract class CoffeeQuality(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+      |  object CoffeeQuality extends _root_.enumeratum.values.IntEnum[CoffeeQuality] {
+      |    case object DELICIOUS extends CoffeeQuality(0)
+      |    case object DRINKABLE extends CoffeeQuality(1)
+      |
+      |    val values = findValues
+      |  }
+      |}
       |
       |sealed abstract class Genre(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
       |object Genre extends _root_.enumeratum.values.IntEnum[Genre] {
