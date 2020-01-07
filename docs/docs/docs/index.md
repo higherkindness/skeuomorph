@@ -95,8 +95,8 @@ val avroSchema: Schema = new Schema.Parser().parse(definition)
 val toMuSchema: Schema => Mu[MuF] =
   scheme.hylo(transformAvro[Mu[MuF]].algebra, fromAvro)
 
-val printSchemaAsScala: Mu[MuF] => String =
-  codegen.schema(_).right.get.syntax
+val printSchemaAsScala: Mu[MuF] => Either[String, String] =
+  codegen.schema(_).map(_.syntax)
 
 (toMuSchema >>> println)(avroSchema)
 println("=====")
@@ -152,11 +152,11 @@ val toMuProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protoco
   mu.Protocol.fromProtobufProto(CompressionType.Identity, true)(p)
 }
 
-val printProtocolAsScala: mu.Protocol[Mu[MuF]] => String = { p =>
+val printProtocolAsScala: mu.Protocol[Mu[MuF]] => Either[String, String] = { p =>
   val streamCtor: (Type, Type) => Type.Apply = {
     case (f, a) => t"_root_.fs2.Stream[$f, $a]"
   }
-  mu.codegen.protocol(p, streamCtor).right.get.syntax
+  mu.codegen.protocol(p, streamCtor).map(_.syntax)
 }
 
 (toMuProtocol >>> println)(protobufProtocol)
