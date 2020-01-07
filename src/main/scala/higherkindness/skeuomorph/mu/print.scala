@@ -73,7 +73,7 @@ object print {
       |  val values = findValues
       |}
       """.stripMargin
-      case TProduct(name, fields) =>
+      case TProduct(name, fields, _, _) =>
         def printField(f: Field[_]) =
           s"@_root_.pbdirect.pbIndex(${f.indices.mkString(",")}) ${toValidIdentifier(f.name)}: ${f.tpe}"
         val printFields = fields.map(printField).mkString(",\n  ")

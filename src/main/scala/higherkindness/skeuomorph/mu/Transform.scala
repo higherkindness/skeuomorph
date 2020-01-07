@@ -48,11 +48,11 @@ object Transform {
     case ProtobufF.TOptionalNamedType(prefix, name) => TOption(A.algebra(TNamedType(prefix, name)))
     case ProtobufF.TRepeated(value)                 => TList(value)
     case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(SumField.tupled))
-    // TODO how shall we add the nested stuff to MuF?
-    case ProtobufF.TMessage(name, fields, _, _, _) => TProduct(name, fields.map(f => Field(f.name, f.tpe, f.indices)))
-    case ProtobufF.TFileDescriptor(values, _, _)   => TContaining(values)
-    case ProtobufF.TOneOf(_, fields)               => TOption(A.algebra(TCoproduct(fields.map(_.tpe))))
-    case ProtobufF.TMap(key, values)               => TMap(Some(key), values)
+    case ProtobufF.TMessage(name, fields, _, nestedMessages, nestedEnums) =>
+      TProduct(name, fields.map(f => Field(f.name, f.tpe, f.indices)), nestedMessages, nestedEnums)
+    case ProtobufF.TFileDescriptor(values, _, _) => TContaining(values)
+    case ProtobufF.TOneOf(_, fields)             => TOption(A.algebra(TCoproduct(fields.map(_.tpe))))
+    case ProtobufF.TMap(key, values)             => TMap(Some(key), values)
   }
 
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
@@ -68,7 +68,8 @@ object Transform {
     case AvroF.TArray(item)     => TList(item)
     case AvroF.TMap(values)     => TMap(None, values)
     case AvroF.TRecord(name, _, _, _, fields) =>
-      TProduct(name, fields.zipWithIndex.map { case (f, i) => Field(f.name, f.tpe, List(i)) })
+      val muFields = fields.zipWithIndex.map { case (f, i) => Field(f.name, f.tpe, List(i)) }
+      TProduct(name, muFields, Nil, Nil)
     case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols.zipWithIndex.map(SumField.tupled))
     case AvroF.TUnion(options)               => TCoproduct(options)
     case AvroF.TFixed(_, _, _, _) =>

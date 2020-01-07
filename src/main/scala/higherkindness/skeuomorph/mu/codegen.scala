@@ -176,14 +176,31 @@ object codegen {
           val values = findValues
         }
         """.asRight
-      case TProduct(name, fields) =>
+      case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
         def arg(f: Field[Tree]): Either[String, Term.Param] =
           f.tpe.as[Type].map { tpe =>
             val annotation = mod"@_root_.pbdirect.pbIndex(..${f.indices.map(Lit.Int(_))})"
             param"$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
           }
-        fields.traverse(arg).map { args =>
-          q"@message final case class ${Type.Name(name)}(..$args)"
+        (
+          fields.traverse(arg),
+          nestedProducts.traverse(_.as[Stat]),
+          nestedCoproducts.traverse(_.as[Stat])
+        ).mapN {
+          case (args, prods, coprods) =>
+            val caseClass = q"@message final case class ${Type.Name(name)}(..$args)"
+            if (prods.nonEmpty || coprods.nonEmpty) {
+              q"""
+            $caseClass
+            ;
+            object ${Term.Name(name)} {
+              ..${prods.flatMap(explodeBlock)}
+              ..${coprods.flatMap(explodeBlock)}
+            }
+            """
+            } else {
+              caseClass
+            }
         }
     }
 

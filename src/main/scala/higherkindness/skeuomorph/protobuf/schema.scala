@@ -94,8 +94,8 @@ object ProtobufF {
       name: String,
       fields: List[FieldF[A]],
       reserved: List[List[String]],
-      nestedMessages: List[TMessage[A]],
-      nestedEnums: List[TEnum[A]]
+      nestedMessages: List[A],
+      nestedEnums: List[A]
   ) extends ProtobufF[A]
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
@@ -129,8 +129,8 @@ object ProtobufF {
       name: String,
       fields: List[FieldF[A]],
       reserved: List[List[String]],
-      nestedMessages: List[TMessage[A]],
-      nestedEnums: List[TEnum[A]]
+      nestedMessages: List[A],
+      nestedEnums: List[A]
   ): ProtobufF[A] =
     TMessage(name, fields, reserved, nestedMessages, nestedEnums)
 
@@ -179,20 +179,11 @@ object ProtobufF {
       def makeMessageB(m: TMessage[A]): G[TMessage[B]] =
         (
           traverseFieldF(m.fields),
-          traverseNestedMessages(m.nestedMessages),
-          traverseNestedEnums(m.nestedEnums)
+          m.nestedMessages.traverse(f),
+          m.nestedEnums.traverse(f)
         ).mapN {
           case (bFields, bMsgs, bEnums) => TMessage[B](m.name, bFields, m.reserved, bMsgs, bEnums)
         }
-
-      def traverseNestedMessages(nestedMessages: List[TMessage[A]]): G[List[TMessage[B]]] =
-        nestedMessages.traverse(makeMessageB)
-
-      def makeEnumB(e: TEnum[A]): G[TEnum[B]] =
-        TEnum[B](e.name, e.symbols, e.options, e.aliases).pure[G]
-
-      def traverseNestedEnums(nestedEnums: List[TEnum[A]]): G[List[TEnum[B]]] =
-        nestedEnums.traverse(makeEnumB)
 
       fa match {
         case TNull()                          => `null`[B]().pure[G]
@@ -216,8 +207,9 @@ object ProtobufF {
         case TRepeated(value)                 => f(value).map(TRepeated[B])
         case TOneOf(name, fields)             => fields.traverse(makeFieldB).map(bFields => TOneOf(name, bFields))
         case TMap(keyTpe, value)              => (f(keyTpe), f(value)).mapN(TMap[B])
-        case e: TEnum[A]                      => makeEnumB(e).widen
-        case m: TMessage[A]                   => makeMessageB(m).widen
+        case TEnum(name, symbols, options, aliases) =>
+          enum[B](name, symbols, options, aliases).pure[G]: G[ProtobufF[B]]
+        case m: TMessage[A] => makeMessageB(m).widen
         case TFileDescriptor(values, name, p) =>
           values.traverse(f).map(bValues => TFileDescriptor(bValues, name, p))
       }

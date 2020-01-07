@@ -63,9 +63,9 @@ object print {
           }
           .mkString("\n  ")
 
-      val printNestedMessages = m.nestedMessages.map(messageToString).mkString("\n")
+      val printNestedMessages = m.nestedMessages.mkString("\n")
 
-      val printNestedEnums = m.nestedEnums.map(enumToString).mkString("\n")
+      val printNestedEnums = m.nestedEnums.mkString("\n")
 
       s"""
       |message ${m.name} {

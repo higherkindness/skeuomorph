@@ -182,15 +182,20 @@ object ParseProto {
       protoFields
         .filterNot(f => oneOfNumbers.contains(f.getNumber))
         .map(f => fromFieldDescriptorProto[A](f, descriptor, files))
+    val nestedMessages =
+      descriptor.getNestedTypeList.asScala.toList
+        .filterNot(_.getOptions.getMapEntry) // filter out auto-generated map entry types
+        .map(toMessage[A](_, files))
+    val nestedEnums =
+      descriptor.getEnumTypeList.asScala.toList.map(toEnum[A])
 
-    // TODO need to include nested messages here
     message[A](
       name = descriptor.getName,
       fields = (fields ++ oneOfFields.map(_._1)).sortBy(_.indices.headOption),
       reserved = descriptor.getReservedRangeList.asScala.toList.map(range =>
         (range.getStart until range.getEnd).map(_.toString).toList),
-      nestedMessages = Nil,
-      nestedEnums = Nil
+      nestedMessages = nestedMessages,
+      nestedEnums = nestedEnums
     ).embed
   }
 
@@ -377,7 +382,9 @@ object ParseProto {
           parents,
           m.getName,
           m
-        ) :: m.getNestedTypeList.asScala.toList.flatMap(rec(_, parents :+ m.getName))
+        ) :: m.getNestedTypeList.asScala.toList
+          .filterNot(_.getOptions.getMapEntry) // filter out auto-generated map entry types
+          .flatMap(rec(_, parents :+ m.getName))
 
       f.getMessageTypeList.asScala.toList.flatMap(rec(_, Nil))
     }

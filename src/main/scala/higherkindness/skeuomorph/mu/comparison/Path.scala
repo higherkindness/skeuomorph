@@ -31,6 +31,8 @@ object PathElement {
   final case object RightBranch               extends PathElement
   final case object GenericType               extends PathElement
   final case class GenericParameter(idx: Int) extends PathElement
+  final case class NestedProduct(idx: Int)    extends PathElement
+  final case class NestedCoproduct(idx: Int)  extends PathElement
 
   implicit val pathElementShow: Show[PathElement] = Show.show {
     case Name(v)             => v
@@ -44,6 +46,8 @@ object PathElement {
     case RightBranch         => "$right"
     case GenericType         => "$gtype"
     case GenericParameter(i) => s"$$tparam[$i]"
+    case NestedProduct(i)    => s"nested-product[$i]"
+    case NestedCoproduct(i)  => s"nested-coproduct[$i]"
   }
 }
 

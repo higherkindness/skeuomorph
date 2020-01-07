@@ -139,8 +139,13 @@ object instances {
         Gen.nonEmptyListOf(T.arbitrary) map { l =>
           MuF.coproduct[T](NonEmptyList.fromListUnsafe(l))
         },
-        (nonEmptyString, Gen.nonEmptyListOf(Gen.lzy(fieldGen))).mapN { (n, f) =>
-          MuF.product(n, f)
+        (
+          nonEmptyString,
+          Gen.nonEmptyListOf(Gen.lzy(fieldGen)),
+          Gen.listOfN(1, T.arbitrary),
+          Gen.listOfN(1, T.arbitrary)
+        ).mapN { (n, f, p, c) =>
+          MuF.product(n, f, p, c)
         }
       ))
   }
@@ -364,11 +369,10 @@ object instances {
     }
 
     for {
-      name  <- nonEmptyString
-      field <- sampleField
-      // these return a list of size 0 or 1, so it won't recurse forever
-      nestedMessages <- Gen.listOfN(1, protobufFMessage[T])
-      nestedEnums    <- Gen.listOfN(1, protobufFEnum[T])
+      name           <- nonEmptyString
+      field          <- sampleField
+      nestedMessages <- Gen.listOfN(1, T.arbitrary)
+      nestedEnums    <- Gen.listOfN(1, T.arbitrary)
     } yield ProtobufF.TMessage(name, List(field), Nil, nestedMessages, nestedEnums)
   }
 
