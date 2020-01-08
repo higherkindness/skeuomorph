@@ -22,7 +22,7 @@ val V = new {
   val metaContrib      = "4.1.6"
   val scala212         = "2.12.10"
   val scalacheck       = "1.14.3"
-  val specs2           = "4.8.2"
+  val specs2           = "4.8.3"
   val protoc           = "3.11.1"
   val protobuf         = "3.11.1"
 }
