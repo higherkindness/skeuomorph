@@ -20,6 +20,8 @@ import cats.data.NonEmptyList
 import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
+import cats.syntax.eq._
+import cats.instances.string._
 import com.github.os72.protocjar.Protoc
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.{Label, Type}
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet
@@ -171,6 +173,19 @@ object ParseProto {
       responseStreaming = o.getServerStreaming
     )
 
+  /*
+   * Maps are encoded in protobuf as lists of (key, value) pairs, with each
+   * pair encoded as if it were an embedded message with two fields, `key` and
+   * `value`. A better explanation is available in the protobuf docs:
+   * https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility
+   *
+   * The protoc tool generates types for these 'psuedo-message' pairs, but we
+   * don't care about them (we don't want to generate code for them) so we want
+   * to filter them out when collecting message types.
+   */
+  def isMapEntryType(descriptor: DescriptorProto): Boolean =
+    descriptor.getOptions.getMapEntry
+
   def toMessage[A](descriptor: DescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): A = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.asScala.toList
@@ -184,7 +199,7 @@ object ParseProto {
         .map(f => fromFieldDescriptorProto[A](f, descriptor, files))
     val nestedMessages =
       descriptor.getNestedTypeList.asScala.toList
-        .filterNot(_.getOptions.getMapEntry) // filter out auto-generated map entry types
+        .filterNot(isMapEntryType)
         .map(toMessage[A](_, files))
     val nestedEnums =
       descriptor.getEnumTypeList.asScala.toList.map(toEnum[A])
@@ -230,7 +245,7 @@ object ParseProto {
       field: FieldDescriptorProto,
       source: DescriptorProto,
       files: List[FileDescriptorProto])(implicit A: Embed[ProtobufF, A]): FieldF[A] =
-    (field.getLabel.isRepeated, isMap(field, source)) match {
+    (field.getLabel.isRepeated, isMap(field.getName, source)) match {
       case (true, false) =>
         FieldF.Field(
           name = field.getName,
@@ -249,30 +264,30 @@ object ParseProto {
           isRepeated = false,
           isMapField = true
         )
-      case _ =>
+      case (_, isMapField) =>
         FieldF.Field(
           name = field.getName,
           position = field.getNumber,
           tpe = fromFieldType(field, files, makeNamedTypesOptional = true),
           options = fromFieldOptionsMsg(field.getOptions),
           isRepeated = field.getLabel.isRepeated,
-          isMapField = isMap(field, source)
+          isMapField = isMapField
         )
     }
 
-  def isMap(field: FieldDescriptorProto, source: DescriptorProto): Boolean =
-    source.getNestedTypeList.asScala.toList.exists(
-      e =>
-        e.getOptions.getMapEntry &&
-          matchNameEntry(field.getName, e) &&
-          takeOnlyMapEntries(e.getFieldList.asScala.toList))
+  def isMapEntryTypeForField(desc: DescriptorProto, fieldName: String): Boolean =
+    isMapEntryType(desc) &&
+      matchNameEntry(fieldName, desc) &&
+      containsOnlyMapEntryFields(desc.getFieldList.asScala.toList)
+
+  def isMap(fieldName: String, source: DescriptorProto): Boolean =
+    source.getNestedTypeList.asScala.toList.exists(isMapEntryTypeForField(_, fieldName))
 
   def getTMap[A](name: String, source: DescriptorProto, files: List[FileDescriptorProto])(
       implicit A: Embed[ProtobufF, A]): A =
     (for {
       maybeMsg <- source.getNestedTypeList.asScala.toList
-        .find(e =>
-          e.getOptions.getMapEntry && matchNameEntry(name, e) && takeOnlyMapEntries(e.getFieldList.asScala.toList))
+        .find(isMapEntryTypeForField(_, name))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
     } yield
@@ -284,7 +299,7 @@ object ParseProto {
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
     msg.getFieldList.asScala.toList.find(_.getName == name)
 
-  def takeOnlyMapEntries(fields: List[FieldDescriptorProto]): Boolean =
+  def containsOnlyMapEntryFields(fields: List[FieldDescriptorProto]): Boolean =
     fields.count(f => (f.getNumber == 1 && f.getName == "key") || (f.getNumber == 2 && f.getName == "value")) == 2
 
   def matchNameEntry(name: String, source: DescriptorProto): Boolean =
@@ -383,7 +398,7 @@ object ParseProto {
           m.getName,
           m
         ) :: m.getNestedTypeList.asScala.toList
-          .filterNot(_.getOptions.getMapEntry) // filter out auto-generated map entry types
+          .filterNot(isMapEntryType)
           .flatMap(rec(_, parents :+ m.getName))
 
       f.getMessageTypeList.asScala.toList.flatMap(rec(_, Nil))
@@ -408,7 +423,7 @@ object ParseProto {
     }
 
     (allTopLevel ++ allNestedInsideMessages)
-      .find(_.fullName == name)
+      .find(_.fullName === name)
   }
 
   implicit class LabelOps(self: Label) {
