@@ -26,15 +26,19 @@ import org.specs2.{ScalaCheck, Specification}
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
 import scala.meta._
+import scala.meta.contrib._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
-  val currentDirectory: String                  = new java.io.File(".").getCanonicalPath
-  val root                                      = "/src/test/scala/higherkindness/skeuomorph/protobuf"
-  val path                                      = currentDirectory + s"$root/service"
-  val importRoot                                = Some(currentDirectory + root)
-  val source                                    = ProtoSource(s"book.proto", path, importRoot)
-  val protobufProtocol: Protocol[Mu[ProtobufF]] = parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+  val workingDirectory: String = new java.io.File(".").getCanonicalPath
+  val testDirectory            = "/src/test/scala/higherkindness/skeuomorph/protobuf"
+  val importRoot               = Some(workingDirectory + testDirectory)
+
+  val bookProtocol: Protocol[Mu[ProtobufF]] = {
+    val path   = workingDirectory + s"$testDirectory/service"
+    val source = ProtoSource(s"book.proto", path, importRoot)
+    parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+  }
 
   implicit val arbCompressionType: Arbitrary[CompressionType] = Arbitrary {
     Gen.oneOf(CompressionType.Identity, CompressionType.Gzip)
@@ -44,10 +48,12 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   Protobuf Protocol
 
   It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
+
+  It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
   """
 
   def codegenProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
-    val parseProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+    val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
       p: Protocol[Mu[ProtobufF]] =>
         higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
     }
@@ -61,11 +67,10 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
         higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
     }
 
-    val actual = (parseProtocol andThen codegen)(protobufProtocol)
+    val actual = (toMuProtocol andThen codegen)(bookProtocol)
 
-    val expected = expectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
+    val expected = bookExpectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
 
-    import scala.meta.contrib._
     actual.isEqual(expected) :| s"""
       |Actual output:
       |$actual
@@ -76,7 +81,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       """.stripMargin
   }
 
-  def expectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
+  def bookExpectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
 
     val serviceParams: String = "Protobuf" +
       (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
@@ -165,8 +170,165 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |}""".stripMargin
   }
 
-  implicit class StringOps(self: String) {
-    def clean: String = self.replaceAll("\\s", "")
+  def codegenOpencensus = {
+    val opencensusProtocol: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/models/opencensus"
+      val source = ProtoSource(s"trace.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+      p: Protocol[Mu[ProtobufF]] =>
+        higherkindness.skeuomorph.mu.Protocol
+          .fromProtobufProto(CompressionType.Identity, useIdiomaticEndpoints = true)(p)
+    }
+
+    val streamCtor: (Type, Type) => Type.Apply = {
+      case (f: Type, a: Type) => t"Stream[$f, $a]"
+    }
+
+    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
+      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+        higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+    }
+
+    val actual = (toMuProtocol andThen codegen)(opencensusProtocol)
+
+    val expected = opencensusExpectation.parse[Source].get.children.head.asInstanceOf[Pkg]
+
+    actual.isEqual(expected) :| s"""
+      |Actual output:
+      |$actual
+      |
+      |
+      |Expected output:
+      |$expected"
+      """.stripMargin
   }
 
+  val opencensusExpectation = s"""
+    |package opencensus.proto.trace.v1
+    |
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |
+    |object trace {
+    |  @message final case class Span(
+    |    @_root_.pbdirect.pbIndex(1) trace_id: _root_.scala.Array[Byte],
+    |    @_root_.pbdirect.pbIndex(2) span_id: _root_.scala.Array[Byte],
+    |    @_root_.pbdirect.pbIndex(3) parent_span_id: _root_.scala.Array[Byte],
+    |    @_root_.pbdirect.pbIndex(4) name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
+    |    @_root_.pbdirect.pbIndex(7) attributes: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Attributes],
+    |    @_root_.pbdirect.pbIndex(8) stack_trace: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.StackTrace],
+    |    @_root_.pbdirect.pbIndex(9) time_events: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvents],
+    |    @_root_.pbdirect.pbIndex(10) links: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Links],
+    |    @_root_.pbdirect.pbIndex(11) status: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Status],
+    |    @_root_.pbdirect.pbIndex(14) kind: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.SpanKind],
+    |    @_root_.pbdirect.pbIndex(15) tracestate: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Tracestate],
+    |    @_root_.pbdirect.pbIndex(16) resource: _root_.scala.Option[_root_.opencensus.proto.resource.v1.resource.Resource]
+    |  )
+    |  object Span {
+    |    @message final case class Tracestate(
+    |      @_root_.pbdirect.pbIndex(1) entries: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.Span.Tracestate.Entry]
+    |    )
+    |    object Tracestate {
+    |      @message final case class Entry(
+    |        @_root_.pbdirect.pbIndex(1) key: _root_.java.lang.String,
+    |        @_root_.pbdirect.pbIndex(2) value: _root_.java.lang.String
+    |      )
+    |    }
+    |    @message final case class Attributes(
+    |      @_root_.pbdirect.pbIndex(1) attribute_map: _root_.scala.Predef.Map[_root_.java.lang.String, _root_.opencensus.proto.trace.v1.trace.AttributeValue],
+    |      @_root_.pbdirect.pbIndex(2) dropped_attributes_count: _root_.scala.Int
+    |    )
+    |    @message final case class TimeEvent(
+    |      @_root_.pbdirect.pbIndex(2, 3) value: _root_.scala.Option[_root_.scala.Either[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.Annotation, _root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.MessageEvent]]
+    |    )
+    |    object TimeEvent {
+    |      @message final case class Annotation(
+    |        @_root_.pbdirect.pbIndex(1) description: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
+    |        @_root_.pbdirect.pbIndex(2) attributes: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Attributes]
+    |      )
+    |      @message final case class MessageEvent(
+    |        @_root_.pbdirect.pbIndex(1) `type`: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.MessageEvent.Type],
+    |        @_root_.pbdirect.pbIndex(2) id: _root_.scala.Long,
+    |        @_root_.pbdirect.pbIndex(3) uncompressed_size: _root_.scala.Long,
+    |        @_root_.pbdirect.pbIndex(4) compressed_size: _root_.scala.Long
+    |      )
+    |      object MessageEvent {
+    |        sealed abstract class Type(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+    |        object Type extends _root_.enumeratum.values.IntEnum[Type] {
+    |          case object TYPE_UNSPECIFIED extends Type(0)
+    |          case object SENT extends Type(1)
+    |          case object RECEIVED extends Type(2)
+    |          val values = findValues
+    |        }
+    |      }
+    |    }
+    |    @message final case class TimeEvents(
+    |      @_root_.pbdirect.pbIndex(1) time_event: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent],
+    |      @_root_.pbdirect.pbIndex(2) dropped_annotations_count: _root_.scala.Int,
+    |      @_root_.pbdirect.pbIndex(3) dropped_message_events_count: _root_.scala.Int
+    |    )
+    |    @message final case class Link(
+    |      @_root_.pbdirect.pbIndex(1) trace_id: _root_.scala.Array[Byte],
+    |      @_root_.pbdirect.pbIndex(2) span_id: _root_.scala.Array[Byte],
+    |      @_root_.pbdirect.pbIndex(3) `type`: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Link.Type],
+    |      @_root_.pbdirect.pbIndex(4) attributes: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Attributes]
+    |    )
+    |    object Link {
+    |      sealed abstract class Type(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+    |      object Type extends _root_.enumeratum.values.IntEnum[Type] {
+    |        case object TYPE_UNSPECIFIED extends Type(0)
+    |        case object CHILD_LINKED_SPAN extends Type(1)
+    |        case object PARENT_LINKED_SPAN extends Type(2)
+    |        val values = findValues
+    |      }
+    |    }
+    |    @message final case class Links(
+    |      @_root_.pbdirect.pbIndex(1) link: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.Span.Link],
+    |      @_root_.pbdirect.pbIndex(2) dropped_links_count: _root_.scala.Int
+    |    )
+    |    sealed abstract class SpanKind(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+    |    object SpanKind extends _root_.enumeratum.values.IntEnum[SpanKind] {
+    |      case object SPAN_KIND_UNSPECIFIED extends SpanKind(0)
+    |      case object SERVER extends SpanKind(1)
+    |      case object CLIENT extends SpanKind(2)
+    |      val values = findValues
+    |    }
+    |  }
+    |  @message final case class Status(
+    |    @_root_.pbdirect.pbIndex(1) code: _root_.scala.Int,
+    |    @_root_.pbdirect.pbIndex(2) message: _root_.java.lang.String
+    |  )
+    |  @message final case class AttributeValue(
+    |    @_root_.pbdirect.pbIndex(1, 2, 3, 4) value: _root_.scala.Option[_root_.shapeless.:+:[_root_.opencensus.proto.trace.v1.trace.TruncatableString, _root_.shapeless.:+:[_root_.scala.Long, _root_.shapeless.:+:[_root_.scala.Boolean, _root_.shapeless.:+:[_root_.scala.Double, _root_.shapeless.CNil]]]]]
+    |  )
+    |  @message final case class StackTrace(
+    |    @_root_.pbdirect.pbIndex(1) stack_frames: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.StackTrace.StackFrames],
+    |    @_root_.pbdirect.pbIndex(2) stack_trace_hash_id: _root_.scala.Long
+    |  )
+    |  object StackTrace {
+    |    @message final case class StackFrame(
+    |      @_root_.pbdirect.pbIndex(1) function_name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
+    |      @_root_.pbdirect.pbIndex(2) original_function_name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
+    |      @_root_.pbdirect.pbIndex(3) file_name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
+    |      @_root_.pbdirect.pbIndex(4) line_number: _root_.scala.Long,
+    |      @_root_.pbdirect.pbIndex(5) column_number: _root_.scala.Long,
+    |      @_root_.pbdirect.pbIndex(6) load_module: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Module],
+    |      @_root_.pbdirect.pbIndex(7) source_version: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString]
+    |    )
+    |    @message final case class StackFrames(
+    |      @_root_.pbdirect.pbIndex(1) frame: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.StackTrace.StackFrame],
+    |      @_root_.pbdirect.pbIndex(2) dropped_frames_count: _root_.scala.Int
+    |    )
+    |  }
+    |  @message final case class Module(
+    |    @_root_.pbdirect.pbIndex(1) module: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
+    |    @_root_.pbdirect.pbIndex(2) build_id: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString]
+    |  )
+    |  @message final case class TruncatableString(
+    |    @_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String,
+    |    @_root_.pbdirect.pbIndex(2) truncated_byte_count: _root_.scala.Int
+    |  )
+    |}""".stripMargin
 }

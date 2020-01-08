@@ -1,0 +1,133 @@
+// Copyright 2018, OpenCensus Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// Changes from original:
+// 1. Removed comments and newlines
+// 2. Removed protobuf options
+// 3. Removed all fields that depend on Google protobuf definitions.
+
+syntax = "proto3";
+
+package opencensus.proto.trace.v1;
+
+import "models/opencensus/resource.proto";
+
+message Span {
+  bytes trace_id = 1;
+  bytes span_id = 2;
+  message Tracestate {
+    message Entry {
+      string key = 1;
+      string value = 2;
+    }
+    repeated Entry entries = 1;
+  }
+  Tracestate tracestate = 15;
+  bytes parent_span_id = 3;
+  TruncatableString name = 4;
+  enum SpanKind {
+    SPAN_KIND_UNSPECIFIED = 0;
+    SERVER = 1;
+    CLIENT = 2;
+  }
+  SpanKind kind = 14;
+  message Attributes {
+    map<string, AttributeValue> attribute_map = 1;
+    int32 dropped_attributes_count = 2;
+  }
+  Attributes attributes = 7;
+  StackTrace stack_trace = 8;
+  message TimeEvent {
+    message Annotation {
+      TruncatableString description = 1;
+      Attributes attributes = 2;
+    }
+    message MessageEvent {
+      enum Type {
+        TYPE_UNSPECIFIED = 0;
+        SENT = 1;
+        RECEIVED = 2;
+      }
+      Type type = 1;
+      uint64 id = 2;
+      uint64 uncompressed_size = 3;
+      uint64 compressed_size = 4;
+    }
+    oneof value {
+      Annotation annotation = 2;
+      MessageEvent message_event = 3;
+    }
+  }
+  message TimeEvents {
+    repeated TimeEvent time_event = 1;
+    int32 dropped_annotations_count = 2;
+    int32 dropped_message_events_count = 3;
+  }
+  TimeEvents time_events = 9;
+  message Link {
+    bytes trace_id = 1;
+    bytes span_id = 2;
+    enum Type {
+      TYPE_UNSPECIFIED = 0;
+      CHILD_LINKED_SPAN = 1;
+      PARENT_LINKED_SPAN = 2;
+    }
+    Type type = 3;
+    Attributes attributes = 4;
+  }
+  message Links {
+    repeated Link link = 1;
+    int32 dropped_links_count = 2;
+  }
+  Links links = 10;
+  Status status = 11;
+  opencensus.proto.resource.v1.Resource resource = 16;
+}
+message Status {
+  int32 code = 1;
+  string message = 2;
+}
+message AttributeValue {
+  oneof value {
+    TruncatableString string_value = 1;
+    int64 int_value = 2;
+    bool bool_value = 3;
+    double double_value = 4;
+  }
+}
+message StackTrace {
+  message StackFrame {
+    TruncatableString function_name = 1;
+    TruncatableString original_function_name = 2;
+    TruncatableString file_name = 3;
+    int64 line_number = 4;
+    int64 column_number = 5;
+    Module load_module = 6;
+    TruncatableString source_version = 7;
+  }
+  message StackFrames {
+    repeated StackFrame frame = 1;
+    int32 dropped_frames_count = 2;
+  }
+  StackFrames stack_frames = 1;
+  uint64 stack_trace_hash_id = 2;
+}
+message Module {
+  TruncatableString module = 1;
+  TruncatableString build_id = 2;
+}
+message TruncatableString {
+  string value = 1;
+  int32 truncated_byte_count = 2;
+}

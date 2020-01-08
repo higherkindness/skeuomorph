@@ -303,7 +303,10 @@ object ParseProto {
     fields.count(f => (f.getNumber == 1 && f.getName == "key") || (f.getNumber == 2 && f.getName == "value")) == 2
 
   def matchNameEntry(name: String, source: DescriptorProto): Boolean =
-    source.getName.toLowerCase == s"${name}Entry".toLowerCase
+    normalizeName(source.getName) == normalizeName(s"${name}Entry")
+
+  def normalizeName(name: String): String =
+    name.toLowerCase.replaceAllLiterally("_", "")
 
   def fromOneofDescriptorsProto[A](
       oneOfFields: List[OneofDescriptorProto],
