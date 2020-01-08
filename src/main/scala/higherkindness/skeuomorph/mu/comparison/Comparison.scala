@@ -176,8 +176,11 @@ object Comparison extends ComparisonInstances {
               .toList
               .toMap)
         case (TSum(n, f), TSum(n2, f2)) if (n === n2 && f.forall(f2.toSet)) => same
-        case (TProduct(n, f), TProduct(n2, f2)) if (n === n2) =>
-          CompareList(zipFields(path / Name(n), f, f2))
+        case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) if (n === n2) =>
+          val fields           = zipFields(path / Name(n), f, f2)
+          val nestedProducts   = zipLists(path, np, np2, _ => Name(n))
+          val nestedCoproducts = zipLists(path, nc, nc2, _ => Name(n))
+          CompareList(fields ++ nestedProducts ++ nestedCoproducts)
 
         // Numeric widdening
         case (TInt(), TLong() | TFloat() | TDouble()) | (TLong(), TFloat() | TDouble()) | (TFloat(), TDouble()) =>

@@ -55,7 +55,12 @@ object MuF {
   final case class TRequired[A](value: A)                            extends MuF[A]
   final case class TCoproduct[A](invariants: NonEmptyList[A])        extends MuF[A]
   final case class TSum[A](name: String, fields: List[SumField])     extends MuF[A]
-  final case class TProduct[A](name: String, fields: List[Field[A]]) extends MuF[A]
+  final case class TProduct[A](
+      name: String,
+      fields: List[Field[A]],
+      nestedProducts: List[A],
+      nestedCoproducts: List[A]
+  ) extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] = Eq.instance {
     case (Field(n, t, is), Field(n2, t2, is2)) => n === n2 && t === t2 && is === is2
@@ -81,12 +86,12 @@ object MuF {
     case (TMap(k1, a), TMap(k2, b))             => k1 === k2 && a === b
     case (TRequired(a), TRequired(b))           => a === b
 
-    case (TContaining(a), TContaining(b))   => a === b
-    case (TEither(l, r), TEither(l2, r2))   => l === l2 && r === r2
-    case (TGeneric(g, p), TGeneric(g2, p2)) => g === g2 && p === p2
-    case (TCoproduct(i), TCoproduct(i2))    => i === i2
-    case (TSum(n, f), TSum(n2, f2))         => n === n2 && f === f2
-    case (TProduct(n, f), TProduct(n2, f2)) => n === n2 && f === f2
+    case (TContaining(a), TContaining(b))                     => a === b
+    case (TEither(l, r), TEither(l2, r2))                     => l === l2 && r === r2
+    case (TGeneric(g, p), TGeneric(g2, p2))                   => g === g2 && p === p2
+    case (TCoproduct(i), TCoproduct(i2))                      => i === i2
+    case (TSum(n, f), TSum(n2, f2))                           => n === n2 && f === f2
+    case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) => n === n2 && f === f2 && np === np2 && nc === nc2
 
     case _ => false
   }
@@ -111,7 +116,7 @@ object MuF {
       case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
       case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
       case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
-      case TProduct(n, fields) =>
+      case TProduct(n, fields, _, _) =>
         fields.map(f => s"@pbIndex(${f.indices.mkString(",")}) ${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
     })
@@ -135,5 +140,6 @@ object MuF {
   def required[A](value: A): MuF[A]                            = TRequired(value)
   def coproduct[A](invariants: NonEmptyList[A]): MuF[A]        = TCoproduct(invariants)
   def sum[A](name: String, fields: List[SumField]): MuF[A]     = TSum(name, fields)
-  def product[A](name: String, fields: List[Field[A]]): MuF[A] = TProduct(name, fields)
+  def product[A](name: String, fields: List[Field[A]], nestedProducts: List[A], nestedCoproducts: List[A]): MuF[A] =
+    TProduct(name, fields, nestedProducts, nestedCoproducts)
 }

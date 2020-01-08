@@ -16,6 +16,7 @@ message Book {
     Rating rating = 10;
     bool private = 11; // note: private is a reserved word in Scala
     type type = 16; // note: using "type" (a reserved word) as both the field type and field name
+    BookStore.Location nearest_copy = 17;
 }
 
 message type { // note: type is a reserved word in Scala
@@ -40,6 +41,15 @@ service BookService {
 }
 
 message BookStore {
+    message Location {
+        message Country {
+            string name = 1;
+            string iso_code = 2;
+        }
+        string town = 1;
+        Country country = 2;
+    }
+
     string name = 1;
     map<int64, string> books = 2;
     repeated Genre genres = 3;
@@ -55,6 +65,16 @@ message BookStore {
         int64 first = 8;
         int32 second = 9;
     }
+
+    Location location = 10;
+
+    enum CoffeeQuality {
+      DELICIOUS = 0;
+      DRINKABLE = 1;
+    }
+
+    CoffeeQuality coffee_quality = 11;
+
 }
 
 enum Genre {
