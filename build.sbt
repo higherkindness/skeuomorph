@@ -6,7 +6,7 @@ import sbtorgpolicies.templates._
 import sbtorgpolicies.templates.badges._
 
 val V = new {
-  val ammonite         = "2.0.2"
+  val ammonite         = "2.0.3"
   val avro             = "1.8.2"
   val betterMonadicFor = "0.3.1"
   val cats             = "2.1.0"
