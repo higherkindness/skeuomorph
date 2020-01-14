@@ -17,7 +17,7 @@
 package higherkindness.skeuomorph.mu
 
 import higherkindness.skeuomorph.avro.AvroF
-import higherkindness.skeuomorph.protobuf.ProtobufF
+import higherkindness.skeuomorph.protobuf.{FixedWidth, ProtobufF, Signed, Unsigned}
 import higherkindness.droste.{Embed, Trans}
 
 object Transform {
@@ -31,16 +31,16 @@ object Transform {
     case ProtobufF.TNull()                          => TNull()
     case ProtobufF.TDouble()                        => TDouble()
     case ProtobufF.TFloat()                         => TFloat()
-    case ProtobufF.TInt32()                         => TInt()
-    case ProtobufF.TInt64()                         => TLong()
-    case ProtobufF.TUint32()                        => TInt()
-    case ProtobufF.TUint64()                        => TLong()
-    case ProtobufF.TSint32()                        => TInt()
-    case ProtobufF.TSint64()                        => TLong()
-    case ProtobufF.TFixed32()                       => TInt()
-    case ProtobufF.TFixed64()                       => TLong()
-    case ProtobufF.TSfixed32()                      => TInt()
-    case ProtobufF.TSfixed64()                      => TLong()
+    case ProtobufF.TInt32()                         => pbInt()
+    case ProtobufF.TInt64()                         => pbLong()
+    case ProtobufF.TUint32()                        => pbInt(Unsigned)
+    case ProtobufF.TUint64()                        => pbLong(Unsigned)
+    case ProtobufF.TSint32()                        => pbInt(Signed)
+    case ProtobufF.TSint64()                        => pbLong(Signed)
+    case ProtobufF.TFixed32()                       => pbInt(FixedWidth)
+    case ProtobufF.TFixed64()                       => pbLong(FixedWidth)
+    case ProtobufF.TSfixed32()                      => pbInt(FixedWidth, Signed)
+    case ProtobufF.TSfixed64()                      => pbLong(FixedWidth, Signed)
     case ProtobufF.TBool()                          => TBoolean()
     case ProtobufF.TString()                        => TString()
     case ProtobufF.TBytes()                         => TByteArray()
@@ -58,8 +58,8 @@ object Transform {
   def transformAvro[A]: Trans[AvroF, MuF, A] = Trans {
     case AvroF.TNull()          => TNull()
     case AvroF.TBoolean()       => TBoolean()
-    case AvroF.TInt()           => TInt()
-    case AvroF.TLong()          => TLong()
+    case AvroF.TInt()           => int()
+    case AvroF.TLong()          => long()
     case AvroF.TFloat()         => TFloat()
     case AvroF.TDouble()        => TDouble()
     case AvroF.TBytes()         => TByteArray()

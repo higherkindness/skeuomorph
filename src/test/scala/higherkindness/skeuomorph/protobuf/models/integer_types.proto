@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package com.acme;
+
+message IntegerTypes {
+  int32 a = 1;
+  uint32 b = 2;
+  sint32 c = 3;
+  fixed32 d = 4;
+  sfixed32 e = 5;
+  int64 f = 6;
+  uint64 g = 7;
+  sint64 h = 8;
+  fixed64 i = 9;
+  sfixed64 j = 10;
+}
+

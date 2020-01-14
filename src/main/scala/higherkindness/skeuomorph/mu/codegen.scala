@@ -22,6 +22,7 @@ import scala.meta.Term.Block
 import higherkindness.droste._
 import higherkindness.skeuomorph.mu.MuF._
 import higherkindness.skeuomorph.mu.Optimize._
+import higherkindness.skeuomorph.{protobuf => pb}
 import scala.reflect.ClassTag
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -129,12 +130,29 @@ object codegen {
       }
     }
 
+    def intModsToType(modifiers: List[pb.IntModifier]): Type =
+      modifiers
+        .map {
+          case pb.Unsigned   => t"_root_.pbdirect.Unsigned"
+          case pb.Signed     => t"_root_.pbdirect.Signed"
+          case pb.FixedWidth => t"_root_.pbdirect.Fixed"
+        }
+        .reduceLeft[Type] {
+          case (a, b) => t"$a with $b"
+        }
+
+    def intType(x: TInt[Tree]): Type = x match {
+      case TSimpleInt(`_32`) | TProtobufInt(`_32`, Nil) => t"_root_.scala.Int"
+      case TSimpleInt(`_64`) | TProtobufInt(`_64`, Nil) => t"_root_.scala.Long"
+      case TProtobufInt(`_32`, modifiers)               => t"_root_.shapeless.tag.@@[_root_.scala.Int, ${intModsToType(modifiers)}]"
+      case TProtobufInt(`_64`, modifiers)               => t"_root_.shapeless.tag.@@[_root_.scala.Long, ${intModsToType(modifiers)}]"
+    }
+
     val algebra: AlgebraM[Either[String, ?], MuF, Tree] = AlgebraM {
       case TNull()                  => t"Null".asRight
       case TDouble()                => t"_root_.scala.Double".asRight
       case TFloat()                 => t"_root_.scala.Float".asRight
-      case TInt()                   => t"_root_.scala.Int".asRight
-      case TLong()                  => t"_root_.scala.Long".asRight
+      case x: TInt[Tree]            => intType(x).asRight
       case TBoolean()               => t"_root_.scala.Boolean".asRight
       case TString()                => t"_root_.java.lang.String".asRight
       case TByteArray()             => t"_root_.scala.Array[Byte]".asRight

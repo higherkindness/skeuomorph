@@ -52,6 +52,11 @@ object FieldF {
   }
 }
 
+sealed trait IntModifier
+case object Signed     extends IntModifier
+case object Unsigned   extends IntModifier
+case object FixedWidth extends IntModifier
+
 sealed trait ProtobufF[A]
 
 object ProtobufF {

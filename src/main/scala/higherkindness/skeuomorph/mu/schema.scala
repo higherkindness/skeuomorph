@@ -19,6 +19,7 @@ package higherkindness.skeuomorph.mu
 import higherkindness.droste.macros.deriveTraverse
 import higherkindness.droste.{Algebra, Project}
 import higherkindness.droste.scheme.cata
+import higherkindness.skeuomorph.{protobuf => pb}
 import cats.Eq
 import cats.Show
 import cats.data.NonEmptyList
@@ -28,20 +29,25 @@ import cats.instances.string._
 import cats.instances.option._
 import cats.syntax.eq._
 
-/**
- *
- */
 @deriveTraverse sealed trait MuF[A]
 object MuF {
   @deriveTraverse final case class Field[A](name: String, tpe: A, indices: List[Int])
 
   final case class SumField(name: String, value: Int)
 
+  sealed trait NumberSize
+  case object _32 extends NumberSize
+  case object _64 extends NumberSize
+
+  sealed abstract class TInt[A](val size: NumberSize)           extends MuF[A]
+  final case class TSimpleInt[A](override val size: NumberSize) extends TInt[A](size) with MuF[A]
+  final case class TProtobufInt[A](override val size: NumberSize, modifiers: List[pb.IntModifier])
+      extends TInt[A](size)
+      with MuF[A]
+
   final case class TNull[A]()                                        extends MuF[A]
   final case class TDouble[A]()                                      extends MuF[A]
   final case class TFloat[A]()                                       extends MuF[A]
-  final case class TInt[A]()                                         extends MuF[A]
-  final case class TLong[A]()                                        extends MuF[A]
   final case class TBoolean[A]()                                     extends MuF[A]
   final case class TString[A]()                                      extends MuF[A]
   final case class TByteArray[A]()                                   extends MuF[A]
@@ -70,12 +76,17 @@ object MuF {
     case (SumField(n, v), SumField(n2, v2)) => n === n2 && v === v2
   }
 
+  implicit val numberSizeEq: Eq[NumberSize] = Eq.fromUniversalEquals
+
+  implicit val pbIntModifierEq: Eq[pb.IntModifier] = Eq.fromUniversalEquals
+
   implicit def muEq[T](implicit T: Eq[T]): Eq[MuF[T]] = Eq.instance {
-    case (TNull(), TNull())           => true
-    case (TDouble(), TDouble())       => true
-    case (TFloat(), TFloat())         => true
-    case (TInt(), TInt())             => true
-    case (TLong(), TLong())           => true
+    case (TNull(), TNull())                     => true
+    case (TDouble(), TDouble())                 => true
+    case (TFloat(), TFloat())                   => true
+    case (TSimpleInt(size1), TSimpleInt(size2)) => size1 === size2
+    case (TProtobufInt(size1, mods1), TProtobufInt(size2, mods2)) =>
+      size1 === size2 && mods1.sortBy(_.toString) === mods2.sortBy(_.toString)
     case (TBoolean(), TBoolean())     => true
     case (TString(), TString())       => true
     case (TByteArray(), TByteArray()) => true
@@ -98,24 +109,24 @@ object MuF {
 
   implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] = Show.show {
     cata(Algebra[MuF, String] {
-      case TNull()          => "null"
-      case TDouble()        => "double"
-      case TFloat()         => "float"
-      case TInt()           => "int"
-      case TLong()          => "long"
-      case TBoolean()       => "boolean"
-      case TString()        => "string"
-      case TByteArray()     => "bytes"
-      case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
-      case TOption(v)       => s"?$v"
-      case TList(e)         => s"[$e]"
-      case TMap(k, v)       => s"$k->$v"
-      case TRequired(v)     => v
-      case TContaining(ts)  => ts.mkString("cont<", ", ", ">")
-      case TEither(l, r)    => s"either<$l, $r>"
-      case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
-      case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
-      case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
+      case TNull()                     => "null"
+      case TDouble()                   => "double"
+      case TFloat()                    => "float"
+      case t: TInt[_] if t.size == _32 => "int"
+      case t: TInt[_] if t.size == _64 => "long"
+      case TBoolean()                  => "boolean"
+      case TString()                   => "string"
+      case TByteArray()                => "bytes"
+      case TNamedType(p, n)            => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
+      case TOption(v)                  => s"?$v"
+      case TList(e)                    => s"[$e]"
+      case TMap(k, v)                  => s"$k->$v"
+      case TRequired(v)                => v
+      case TContaining(ts)             => ts.mkString("cont<", ", ", ">")
+      case TEither(l, r)               => s"either<$l, $r>"
+      case TGeneric(g, ps)             => ps.mkString(s"$g<", ", ", ">")
+      case TCoproduct(ts)              => ts.toList.mkString("(", " | ", ")")
+      case TSum(n, vs)                 => vs.map(_.name).mkString(s"$n[", ", ", "]")
       case TProduct(n, fields, _, _) =>
         fields.map(f => s"@pbIndex(${f.indices.mkString(",")}) ${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
@@ -126,8 +137,10 @@ object MuF {
   def `null`[A](): MuF[A]                                      = TNull()
   def double[A](): MuF[A]                                      = TDouble()
   def float[A](): MuF[A]                                       = TFloat()
-  def int[A](): MuF[A]                                         = TInt()
-  def long[A](): MuF[A]                                        = TLong()
+  def int[A](): MuF[A]                                         = TSimpleInt(_32)
+  def pbInt[A](mods: pb.IntModifier*): MuF[A]                  = TProtobufInt(_32, mods.toList)
+  def long[A](): MuF[A]                                        = TSimpleInt(_64)
+  def pbLong[A](mods: pb.IntModifier*): MuF[A]                 = TProtobufInt(_64, mods.toList)
   def boolean[A](): MuF[A]                                     = TBoolean()
   def string[A](): MuF[A]                                      = TString()
   def byteArray[A](): MuF[A]                                   = TByteArray()
