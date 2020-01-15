@@ -152,7 +152,7 @@ object codegen {
       case TNull()                  => t"Null".asRight
       case TDouble()                => t"_root_.scala.Double".asRight
       case TFloat()                 => t"_root_.scala.Float".asRight
-      case x: TInt[Tree]            => intType(x).asRight
+      case x @ TInt(_)              => intType(x).asRight
       case TBoolean()               => t"_root_.scala.Boolean".asRight
       case TString()                => t"_root_.java.lang.String".asRight
       case TByteArray()             => t"_root_.scala.Array[Byte]".asRight

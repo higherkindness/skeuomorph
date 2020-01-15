@@ -36,10 +36,13 @@ object MuF {
   final case class SumField(name: String, value: Int)
 
   sealed trait NumberSize extends Product with Serializable
-  case object _32 extends NumberSize
-  case object _64 extends NumberSize
+  case object _32         extends NumberSize
+  case object _64         extends NumberSize
 
-  sealed abstract class TInt[A](val size: NumberSize)           extends MuF[A]
+  sealed abstract class TInt[A](val size: NumberSize) extends MuF[A]
+  object TInt {
+    def unapply[A](x: TInt[A]): Option[NumberSize] = Some(x.size)
+  }
   final case class TSimpleInt[A](override val size: NumberSize) extends TInt[A](size) with MuF[A]
   final case class TProtobufInt[A](override val size: NumberSize, modifiers: List[pb.IntModifier])
       extends TInt[A](size)
@@ -109,24 +112,24 @@ object MuF {
 
   implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] = Show.show {
     cata(Algebra[MuF, String] {
-      case TNull()                     => "null"
-      case TDouble()                   => "double"
-      case TFloat()                    => "float"
-      case t: TInt[_] if t.size == _32 => "int"
-      case t: TInt[_] if t.size == _64 => "long"
-      case TBoolean()                  => "boolean"
-      case TString()                   => "string"
-      case TByteArray()                => "bytes"
-      case TNamedType(p, n)            => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
-      case TOption(v)                  => s"?$v"
-      case TList(e)                    => s"[$e]"
-      case TMap(k, v)                  => s"$k->$v"
-      case TRequired(v)                => v
-      case TContaining(ts)             => ts.mkString("cont<", ", ", ">")
-      case TEither(l, r)               => s"either<$l, $r>"
-      case TGeneric(g, ps)             => ps.mkString(s"$g<", ", ", ">")
-      case TCoproduct(ts)              => ts.toList.mkString("(", " | ", ")")
-      case TSum(n, vs)                 => vs.map(_.name).mkString(s"$n[", ", ", "]")
+      case TNull()          => "null"
+      case TDouble()        => "double"
+      case TFloat()         => "float"
+      case TInt(`_32`)      => "int"
+      case TInt(`_64`)      => "long"
+      case TBoolean()       => "boolean"
+      case TString()        => "string"
+      case TByteArray()     => "bytes"
+      case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
+      case TOption(v)       => s"?$v"
+      case TList(e)         => s"[$e]"
+      case TMap(k, v)       => s"$k->$v"
+      case TRequired(v)     => v
+      case TContaining(ts)  => ts.mkString("cont<", ", ", ">")
+      case TEither(l, r)    => s"either<$l, $r>"
+      case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
+      case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
+      case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
       case TProduct(n, fields, _, _) =>
         fields.map(f => s"@pbIndex(${f.indices.mkString(",")}) ${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 

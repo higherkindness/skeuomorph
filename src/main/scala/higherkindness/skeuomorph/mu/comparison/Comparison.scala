@@ -184,7 +184,7 @@ object Comparison extends ComparisonInstances {
 
         // Numeric widening
         // TODO: this is not valid for Protobuf or Avro (e.g. changing an int to a float would be a breaking change)
-        case (x: TInt[_], y: TInt[_]) if x.size == _32 && y.size == _64 =>
+        case (TInt(`_32`), TInt(`_64`)) =>
           End(Match(path, NumericWidening(writer, reader)))
         case (_: TInt[_], TFloat() | TDouble()) | (TFloat(), TDouble()) =>
           End(Match(path, NumericWidening(writer, reader)))

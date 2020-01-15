@@ -81,24 +81,24 @@ object Protocol {
   }
 
   def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
-    case MuF.TNull()                         => AvroF.`null`()
-    case MuF.TDouble()                       => AvroF.double()
-    case MuF.TFloat()                        => AvroF.float()
-    case x: MuF.TInt[_] if x.size == MuF._32 => AvroF.int()
-    case x: MuF.TInt[_] if x.size == MuF._64 => AvroF.long()
-    case MuF.TBoolean()                      => AvroF.boolean()
-    case MuF.TString()                       => AvroF.string()
-    case MuF.TByteArray()                    => AvroF.bytes()
-    case MuF.TNamedType(_, name)             => AvroF.namedType(name)
-    case MuF.TOption(value)                  => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
-    case MuF.TEither(left, right)            => AvroF.union(NonEmptyList(left, List(right)))
-    case MuF.TList(value)                    => AvroF.array(value)
-    case MuF.TMap(_, value)                  => AvroF.map(value)
-    case MuF.TGeneric(_, _)                  => ??? // WAT
-    case MuF.TContaining(_)                  => ??? // TBD
-    case MuF.TRequired(t)                    => T.coalgebra(t)
-    case MuF.TCoproduct(invariants)          => AvroF.union(invariants)
-    case MuF.TSum(name, fields)              => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
+    case MuF.TNull()                => AvroF.`null`()
+    case MuF.TDouble()              => AvroF.double()
+    case MuF.TFloat()               => AvroF.float()
+    case MuF.TInt(MuF._32)          => AvroF.int()
+    case MuF.TInt(MuF._64)          => AvroF.long()
+    case MuF.TBoolean()             => AvroF.boolean()
+    case MuF.TString()              => AvroF.string()
+    case MuF.TByteArray()           => AvroF.bytes()
+    case MuF.TNamedType(_, name)    => AvroF.namedType(name)
+    case MuF.TOption(value)         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
+    case MuF.TEither(left, right)   => AvroF.union(NonEmptyList(left, List(right)))
+    case MuF.TList(value)           => AvroF.array(value)
+    case MuF.TMap(_, value)         => AvroF.map(value)
+    case MuF.TGeneric(_, _)         => ??? // WAT
+    case MuF.TContaining(_)         => ??? // TBD
+    case MuF.TRequired(t)           => T.coalgebra(t)
+    case MuF.TCoproduct(invariants) => AvroF.union(invariants)
+    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
     case MuF.TProduct(name, fields, _, _) =>
       TRecord(
         name,
