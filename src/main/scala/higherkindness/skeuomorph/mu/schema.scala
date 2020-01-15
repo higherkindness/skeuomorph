@@ -35,7 +35,7 @@ object MuF {
 
   final case class SumField(name: String, value: Int)
 
-  sealed trait NumberSize
+  sealed trait NumberSize extends Product with Serializable
   case object _32 extends NumberSize
   case object _64 extends NumberSize
 

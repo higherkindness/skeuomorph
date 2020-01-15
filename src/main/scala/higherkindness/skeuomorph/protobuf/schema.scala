@@ -52,7 +52,7 @@ object FieldF {
   }
 }
 
-sealed trait IntModifier
+sealed trait IntModifier extends Product with Serializable
 case object Signed     extends IntModifier
 case object Unsigned   extends IntModifier
 case object FixedWidth extends IntModifier
