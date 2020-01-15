@@ -139,23 +139,23 @@ object Comparison extends ComparisonInstances {
       rep(searchResult)
   }
 
-  /** */
   private def unfoldComparison[T](implicit basis: Basis[MuF, T]): (Context[T]) => Comparison[T, Context[T]] = {
     case (path, w @ Some(writer), Some(reader)) =>
       (writer.project, reader.project) match {
 
         // Identities
-        case (TNull(), TNull())                                               => same
-        case (TDouble(), TDouble())                                           => same
-        case (TFloat(), TFloat())                                             => same
-        case (TInt(), TInt())                                                 => same
-        case (TLong(), TLong())                                               => same
-        case (TBoolean(), TBoolean())                                         => same
-        case (TString(), TString())                                           => same
-        case (TByteArray(), TByteArray())                                     => same
-        case (TNamedType(p1, a), TNamedType(p2, b)) if (p1 === p2 && a === b) => same
-        case (TOption(a), TOption(b))                                         => Compare((path, a.some, b.some))
-        case (TList(a), TList(b))                                             => Compare((path / Items, a.some, b.some))
+        case (TNull(), TNull())                                                                             => same
+        case (TDouble(), TDouble())                                                                         => same
+        case (TFloat(), TFloat())                                                                           => same
+        case (TSimpleInt(size1), TSimpleInt(size2)) if size1 === size2                                      => same
+        case (TProtobufInt(size1, mods1), TProtobufInt(size2, mods2)) if size1 === size2 && mods1 === mods2 => same
+        case (TProtobufInt(_, _), TProtobufInt(_, _))                                                       => End(Result.mismatch(Different(path)))
+        case (TBoolean(), TBoolean())                                                                       => same
+        case (TString(), TString())                                                                         => same
+        case (TByteArray(), TByteArray())                                                                   => same
+        case (TNamedType(p1, a), TNamedType(p2, b)) if (p1 === p2 && a === b)                               => same
+        case (TOption(a), TOption(b))                                                                       => Compare((path, a.some, b.some))
+        case (TList(a), TList(b))                                                                           => Compare((path / Items, a.some, b.some))
         // According to the spec, Avro ignores the keys' schemas when resolving map schemas
         case (TMap(_, a), TMap(_, b))     => Compare((path / Values, a.some, b.some))
         case (TRequired(a), TRequired(b)) => Compare((path, a.some, b.some))
@@ -182,8 +182,11 @@ object Comparison extends ComparisonInstances {
           val nestedCoproducts = zipLists(path, nc, nc2, _ => Name(n))
           CompareList(fields ++ nestedProducts ++ nestedCoproducts)
 
-        // Numeric widdening
-        case (TInt(), TLong() | TFloat() | TDouble()) | (TLong(), TFloat() | TDouble()) | (TFloat(), TDouble()) =>
+        // Numeric widening
+        // TODO: this is not valid for Protobuf or Avro (e.g. changing an int to a float would be a breaking change)
+        case (TInt(`_32`), TInt(`_64`)) =>
+          End(Match(path, NumericWidening(writer, reader)))
+        case (_: TInt[_], TFloat() | TDouble()) | (TFloat(), TDouble()) =>
           End(Match(path, NumericWidening(writer, reader)))
 
         // String and Byte arrays are considered compatible
@@ -222,7 +225,7 @@ object Comparison extends ComparisonInstances {
           MatchInList(Vector((path, w, l2.some), (path, w, r2.some)), Reporter.promotedToEither(path, reader))
 
         // No compatible transformation found
-        case _ => End(Result.mismatch(Different(path)))
+        case _ => different(path)
       }
     case (path, None, Some(reader)) => End(Match(path, Addition(reader)))
     case (path, Some(writer), None) => End(Match(path, Removal(writer)))
@@ -230,6 +233,8 @@ object Comparison extends ComparisonInstances {
   }
 
   private def same[T, A]: Comparison[T, A] = End(Result.empty)
+
+  private def different[T, A](path: Path): Comparison[T, A] = End(Result.mismatch(Different(path)))
 
   private def zipLists[T](path: Path, l1: List[T], l2: List[T], pathElem: Int => PathElement): List[Context[T]] = {
     val l1s = l1.toStream.map(_.some) ++ Stream.continually(None)

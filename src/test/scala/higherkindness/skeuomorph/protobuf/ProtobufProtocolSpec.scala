@@ -50,6 +50,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
 
   It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
+
+  The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
   """
 
   def codegenProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
@@ -170,13 +172,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |}""".stripMargin
   }
 
-  def codegenOpencensus = {
-    val opencensusProtocol: Protocol[Mu[ProtobufF]] = {
-      val path   = workingDirectory + s"$testDirectory/models/opencensus"
-      val source = ProtoSource(s"trace.proto", path, importRoot)
-      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
-    }
-
+  def check(protobufProtocol: Protocol[Mu[ProtobufF]], expectedOutput: String) = {
     val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
       p: Protocol[Mu[ProtobufF]] =>
         higherkindness.skeuomorph.mu.Protocol
@@ -192,9 +188,9 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
         higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
     }
 
-    val actual = (toMuProtocol andThen codegen)(opencensusProtocol)
+    val actual = (toMuProtocol andThen codegen)(protobufProtocol)
 
-    val expected = opencensusExpectation.parse[Source].get.children.head.asInstanceOf[Pkg]
+    val expected = expectedOutput.parse[Source].get.children.head.asInstanceOf[Pkg]
 
     actual.isEqual(expected) :| s"""
       |Actual output:
@@ -204,6 +200,16 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |Expected output:
       |$expected"
       """.stripMargin
+  }
+
+  def codegenOpencensus = {
+    val opencensusProtocol: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/models/opencensus"
+      val source = ProtoSource(s"trace.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(opencensusProtocol, opencensusExpectation)
   }
 
   val opencensusExpectation = s"""
@@ -250,9 +256,9 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |      )
     |      @message final case class MessageEvent(
     |        @_root_.pbdirect.pbIndex(1) `type`: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.MessageEvent.Type],
-    |        @_root_.pbdirect.pbIndex(2) id: _root_.scala.Long,
-    |        @_root_.pbdirect.pbIndex(3) uncompressed_size: _root_.scala.Long,
-    |        @_root_.pbdirect.pbIndex(4) compressed_size: _root_.scala.Long
+    |        @_root_.pbdirect.pbIndex(2) id: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned],
+    |        @_root_.pbdirect.pbIndex(3) uncompressed_size: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned],
+    |        @_root_.pbdirect.pbIndex(4) compressed_size: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned]
     |      )
     |      object MessageEvent {
     |        sealed abstract class Type(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
@@ -305,7 +311,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |  )
     |  @message final case class StackTrace(
     |    @_root_.pbdirect.pbIndex(1) stack_frames: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.StackTrace.StackFrames],
-    |    @_root_.pbdirect.pbIndex(2) stack_trace_hash_id: _root_.scala.Long
+    |    @_root_.pbdirect.pbIndex(2) stack_trace_hash_id: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned]
     |  )
     |  object StackTrace {
     |    @message final case class StackFrame(
@@ -331,4 +337,35 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |    @_root_.pbdirect.pbIndex(2) truncated_byte_count: _root_.scala.Int
     |  )
     |}""".stripMargin
+
+  def codegenTaggedIntegers = {
+    val integerTypesProtocol: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/models"
+      val source = ProtoSource(s"integer_types.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(integerTypesProtocol, taggedIntegersExpectation)
+  }
+
+  val taggedIntegersExpectation = s"""
+    |package com.acme
+    |
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |
+    |object integer_types {
+    |  @message final case class IntegerTypes(
+    |    @_root_.pbdirect.pbIndex(1) a: _root_.scala.Int,
+    |    @_root_.pbdirect.pbIndex(2) b: _root_.shapeless.tag.@@[_root_.scala.Int, _root_.pbdirect.Unsigned],
+    |    @_root_.pbdirect.pbIndex(3) c: _root_.shapeless.tag.@@[_root_.scala.Int, _root_.pbdirect.Signed],
+    |    @_root_.pbdirect.pbIndex(4) d: _root_.shapeless.tag.@@[_root_.scala.Int, _root_.pbdirect.Fixed],
+    |    @_root_.pbdirect.pbIndex(5) e: _root_.shapeless.tag.@@[_root_.scala.Int, (_root_.pbdirect.Fixed with _root_.pbdirect.Signed)],
+    |    @_root_.pbdirect.pbIndex(6) f: _root_.scala.Long,
+    |    @_root_.pbdirect.pbIndex(7) g: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned],
+    |    @_root_.pbdirect.pbIndex(8) h: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Signed],
+    |    @_root_.pbdirect.pbIndex(9) i: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Fixed],
+    |    @_root_.pbdirect.pbIndex(10) j: _root_.shapeless.tag.@@[_root_.scala.Long, (_root_.pbdirect.Fixed with _root_.pbdirect.Signed)]
+    |  )
+    |}
+    |""".stripMargin
 }

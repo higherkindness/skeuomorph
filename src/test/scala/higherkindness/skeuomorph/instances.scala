@@ -89,8 +89,8 @@ object instances {
           MuF.TByteArray[T](),
           MuF.TDouble[T](),
           MuF.TFloat[T](),
-          MuF.TInt[T](),
-          MuF.TLong[T]()
+          MuF.int[T](),
+          MuF.long[T]()
         )
       )
 
