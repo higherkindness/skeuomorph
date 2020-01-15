@@ -1,5 +1,21 @@
 # Changelog
 
+## 01/15/2020 - Version 0.0.20
+
+Release changes:
+
+* Use scalameta for codegen ([#205](https://github.com/higherkindness/skeuomorph/pull/205))
+* Update specs2-core, specs2-scalacheck to 4.8.2 ([#207](https://github.com/higherkindness/skeuomorph/pull/207))
+* Support protobuf nested messages and enums ([#206](https://github.com/higherkindness/skeuomorph/pull/206))
+* Update specs2-core, specs2-scalacheck to 4.8.3 ([#208](https://github.com/higherkindness/skeuomorph/pull/208))
+* Update ammonite to 2.0.2 ([#209](https://github.com/higherkindness/skeuomorph/pull/209))
+* Update ammonite to 2.0.3 ([#210](https://github.com/higherkindness/skeuomorph/pull/210))
+* Update sbt-microsites to 1.1.0 ([#211](https://github.com/higherkindness/skeuomorph/pull/211))
+* Update ammonite to 2.0.4 ([#212](https://github.com/higherkindness/skeuomorph/pull/212))
+* Support for protobuf signed/unsigned/fixed-width integers ([#213](https://github.com/higherkindness/skeuomorph/pull/213))
+* Release 0.0.20 ([#214](https://github.com/higherkindness/skeuomorph/pull/214))
+
+
 ## 01/02/2020 - Version 0.0.19
 
 Release changes:
