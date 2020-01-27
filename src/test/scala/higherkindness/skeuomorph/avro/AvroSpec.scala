@@ -60,8 +60,10 @@ class AvroSpec extends Specification with ScalaCheck {
       (sch.getName should_== name)
         .and(sch.getNamespace should_== namespace.getOrElse(""))
         .and(sch.getDoc should_== doc.getOrElse(""))
-        .and(sch.getFields.asScala.toList.map(f => (f.name, f.doc)) should_== fields.map(f =>
-          (f.name, f.doc.getOrElse(""))))
+        .and(
+          sch.getFields.asScala.toList.map(f => (f.name, f.doc)) should_== fields.map(f => (f.name, f.doc.getOrElse(""))
+          )
+        )
 
     case AvroF.TEnum(_, _, _, _, _) => true
     case AvroF.TUnion(_)            => true

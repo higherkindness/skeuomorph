@@ -86,7 +86,8 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         "enum" -> Json.arr(
           Json.fromString("green"),
           Json.fromString("blue")
-        ))
+        )
+      )
       decoder.decodeJson(enumType) must beRight(Fixed.enum(List("green", "blue")))
     }
     "when sum object is provided" >> {
@@ -97,7 +98,8 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         )
       )
       decoder.decodeJson(sumType) must beRight(
-        Fixed.sum(List(Fixed.reference("#/components/schemas/Cat"), Fixed.reference("#/components/schemas/Dog"))))
+        Fixed.sum(List(Fixed.reference("#/components/schemas/Cat"), Fixed.reference("#/components/schemas/Dog")))
+      )
     }
     "when array object is provided" >> {
       val arrayType = Json.obj(
@@ -117,7 +119,8 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
           "age" -> Json.obj(
             "type"    -> Json.fromString("integer"),
             "format"  -> Json.fromString("int32"),
-            "minimum" -> Json.fromInt(0)),
+            "minimum" -> Json.fromInt(0)
+          ),
           "address" -> Json.obj(s"$$ref" -> Json.fromString("#/components/schemas/Address"))
         ),
         "required" -> Json.arr(Json.fromString("name"))
@@ -126,7 +129,8 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         obj(
           "name"    -> Fixed.string(),
           "age"     -> Fixed.integer(),
-          "address" -> Fixed.reference("#/components/schemas/Address"))("name")
+          "address" -> Fixed.reference("#/components/schemas/Address")
+        )("name")
       )
     }
 
@@ -145,7 +149,9 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
         .decodeJson(
           Json.obj(
             "type"                 -> Json.fromString("object"),
-            "additionalProperties" -> Json.obj("type" -> Json.fromString("object")))) must beRight(obj()())
+            "additionalProperties" -> Json.obj("type" -> Json.fromString("object"))
+          )
+        ) must beRight(obj()())
     }
 
     "when object does have type" >> {
@@ -160,7 +166,8 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
             )
           ),
           "required" -> Json.arr(Json.fromString("subscriptionId"))
-        )) must beRight(obj("subscriptionId" -> Fixed.string())("subscriptionId"))
+        )
+      ) must beRight(obj("subscriptionId" -> Fixed.string())("subscriptionId"))
     }
 
   }
@@ -168,16 +175,19 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
   "Decoder[JsonSchemaF.Fixed] should not able to decode" >> {
     "when the type is not valid" >> {
       decoder.decodeJson(Json.obj("type" -> Json.fromString("foo"))).leftMap(_.message) must beLeft(
-        "foo is not well formed type")
+        "foo is not well formed type"
+      )
     }
     "when it is not valid schema" >> {
       decoder.decodeJson(Json.fromString("string")).leftMap(_.message) must beLeft(
-        "Attempt to decode value on failed cursor")
+        "Attempt to decode value on failed cursor"
+      )
     }
 
     "when array does not have values" >> {
       decoder.decodeJson(Json.obj("type" -> Json.fromString("array"))).leftMap(_.message) must beLeft(
-        "array is not well formed type")
+        "array is not well formed type"
+      )
     }
 
   }
@@ -186,7 +196,8 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
     format.fold(
       Json
         .obj(
-          "type"                -> Json.fromString(tpe)
-        ))(x => Json.obj("type" -> Json.fromString(tpe), "format" -> Json.fromString(x)))
+          "type" -> Json.fromString(tpe)
+        )
+    )(x => Json.obj("type" -> Json.fromString(tpe), "format" -> Json.fromString(x)))
 
 }

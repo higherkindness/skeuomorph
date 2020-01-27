@@ -36,14 +36,13 @@ object ParseOpenApi {
     new Parser[F, YamlSource, OpenApi[T]] {
       import yaml.{Decoder => _, _}
       override def parse(input: YamlSource)(implicit S: Sync[F]): F[OpenApi[T]] =
-        readContent(input.file).flatMap(
-          x =>
-            S.fromEither(
-              yaml
-                .Decoder[OpenApi[T]]
-                .apply(x)
-                .left
-                .map(_.valueOr(identity))
+        readContent(input.file).flatMap(x =>
+          S.fromEither(
+            yaml
+              .Decoder[OpenApi[T]]
+              .apply(x)
+              .left
+              .map(_.valueOr(identity))
           )
         )
     }

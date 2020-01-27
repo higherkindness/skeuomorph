@@ -45,7 +45,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
           }""")
 
       Decoder[Info].decodeJson(json) must beRight(
-        Info("Sample Pet Store App", "This is a sample server for a pet store.".some, "1.0.1"))
+        Info("Sample Pet Store App", "This is a sample server for a pet store.".some, "1.0.1")
+      )
     }
   }
 
@@ -60,7 +61,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       }
       """)
       Decoder[Header[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
-        Header[JsonSchemaF.Fixed]("The number of allowed requests in the current period", Fixed.integer()))
+        Header[JsonSchemaF.Fixed]("The number of allowed requests in the current period", Fixed.integer())
+      )
     }
 
   }
@@ -87,7 +89,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       }
       """)
       Decoder[ExternalDocs].decodeJson(json) must beRight(
-        ExternalDocs("https://example.com", "Find more info here".some))
+        ExternalDocs("https://example.com", "Find more info here".some)
+      )
     }
 
   }
@@ -137,13 +140,15 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
             request("application/json" -> mediaType(Fixed.reference("#/components/schemas/SomePayload"))).optional
               .withDescription("Callback payload"),
             responses = "200" -> response("webhook successfully processed and no retries will be performed")
-          ))
+          )
+        )
 
       Decoder[Callback[JsonSchemaF.Fixed]].decodeJson(json) should beRight(
         Callback(
           "http://notificationServer.com?transactionId={$request.body#/id}&email={$request.body#/email}" ->
             itemObject
-        ))
+        )
+      )
     }
   }
 
@@ -187,14 +192,16 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
             "skip",
             JsonSchemaF.Fixed.integer(),
             required = true,
-            description = "number of items to skip".some).asLeft,
+            description = "number of items to skip".some
+          ).asLeft,
           "limitParam" -> query(
             "limit",
             JsonSchemaF.Fixed.integer(),
             required = true,
             description = "max records to return".some
           ).asLeft
-        ))
+        )
+        )
       )
 
     }
@@ -242,7 +249,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
     "when a valid object is provided" >> {
       val json = unsafeParse("{}")
       Decoder[Encoding[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
-        Encoding[JsonSchemaF.Fixed](None, Map.empty, None, None, None))
+        Encoding[JsonSchemaF.Fixed](None, Map.empty, None, None, None)
+      )
     }
   }
 
@@ -256,7 +264,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       )
 
       Decoder[Server].decodeJson(json) must beRight(
-        Server("https://development.gigantic-server.com/v1", "Development server".some, Map.empty))
+        Server("https://development.gigantic-server.com/v1", "Development server".some, Map.empty)
+      )
     }
 
     "when is valid and variables are provided" >> {
@@ -291,11 +300,13 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
             "username" -> Server.Variable(
               List.empty,
               "demo",
-              """this value is assigned by the service provider, in this example `gigantic-server.com`""".some),
+              """this value is assigned by the service provider, in this example `gigantic-server.com`""".some
+            ),
             "port"     -> Server.Variable(List("8443", "443"), "8443", None),
             "basePath" -> Server.Variable(List.empty, "v2", None)
           )
-        ))
+        )
+      )
     }
   }
   "Open api object should be able to decode" >> {
@@ -319,7 +330,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
           None,
           List.empty,
           None
-        ))
+        )
+      )
     }
 
     "when paths are provided" >> {
@@ -346,7 +358,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
           None,
           List.empty,
           None
-        ))
+        )
+      )
     }
   }
 
@@ -385,7 +398,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
           name = "limit",
           description = "How many items to return at one time (max 100)".some,
           allowEmptyValue = false,
-          schema = Fixed.integer())
+          schema = Fixed.integer()
+        )
       )
     }
 
@@ -414,7 +428,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
           required = true,
           style = "simple",
           schema = Fixed.array(Fixed.long())
-        ))
+        )
+      )
     }
 
     "when cookie object is provided" >> {
@@ -431,7 +446,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
           name = "csrftoken",
           description = None,
           schema = Fixed.string()
-        ))
+        )
+      )
     }
 
   }
@@ -458,7 +474,9 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
 
       Decoder[Path.ItemObject[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         emptyItemObject[JsonSchemaF.Fixed].withParameter(
-          path("id", JsonSchemaF.Fixed.array(JsonSchemaF.Fixed.string()), description = "ID of pet to use".some)))
+          path("id", JsonSchemaF.Fixed.array(JsonSchemaF.Fixed.string()), description = "ID of pet to use".some)
+        )
+      )
     }
 
     "when get operation is defined" >> {
@@ -544,7 +562,8 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
                   obj(
                     "name"   -> Fixed.string(),
                     "status" -> Fixed.string()
-                  )("status"))
+                  )("status")
+                )
           ).optional,
           "200" -> response("Pet updated.", expectedResponseContent: _*),
           "405" -> response("Method Not Allowed", expectedResponseContent: _*)

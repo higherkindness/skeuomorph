@@ -152,11 +152,13 @@ object ParseProto {
       .replace(".proto", "")
 
   def toService[A](s: ServiceDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): Service[A] =
+      implicit A: Embed[ProtobufF, A]
+  ): Service[A] =
     Service(s.getName, s.getMethodList.asScala.toList.map(o => toOperation[A](o, files)))
 
   def toOperation[A](o: MethodDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): Protocol.Operation[A] =
+      implicit A: Embed[ProtobufF, A]
+  ): Protocol.Operation[A] =
     Protocol.Operation(
       name = o.getName,
       request = findMessage(o.getInputType, files)
@@ -187,7 +189,8 @@ object ParseProto {
     descriptor.getOptions.getMapEntry
 
   def toMessage[A](descriptor: DescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): A = {
+      implicit A: Embed[ProtobufF, A]
+  ): A = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.asScala.toList
     val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.asScala.toList
     val oneOfFields: List[(FieldF[A], List[Int])] =
@@ -208,7 +211,8 @@ object ParseProto {
       name = descriptor.getName,
       fields = (fields ++ oneOfFields.map(_._1)).sortBy(_.indices.headOption),
       reserved = descriptor.getReservedRangeList.asScala.toList.map(range =>
-        (range.getStart until range.getEnd).map(_.toString).toList),
+        (range.getStart until range.getEnd).map(_.toString).toList
+      ),
       nestedMessages = nestedMessages,
       nestedEnums = nestedEnums
     ).embed
@@ -222,12 +226,14 @@ object ParseProto {
         name = enum.getName,
         symbols = values,
         options = fromFieldOptionsEnum(enum.getOptions),
-        aliases = aliases)
+        aliases = aliases
+      )
       .embed
   }
 
   def partitionValuesAliases(
-      valuesAndAliases: List[EnumValueDescriptorProto]): (List[(String, Int)], List[(String, Int)]) = {
+      valuesAndAliases: List[EnumValueDescriptorProto]
+  ): (List[(String, Int)], List[(String, Int)]) = {
     val (hasAlias, noAlias) = valuesAndAliases.groupBy(_.getNumber).values.partition(_.lengthCompare(1) > 0)
     val separateValueFromAliases: Iterable[(EnumValueDescriptorProto, List[EnumValueDescriptorProto])] = hasAlias.map {
       case h :: t => (h, t)
@@ -238,13 +244,15 @@ object ParseProto {
       (separateValueFromAliases.map(_._1) ++ noAlias.flatten).toList
         .sortBy(_.getNumber)
         .map(i => (i.getName, i.getNumber)),
-      separateValueFromAliases.flatMap(_._2).toList.map(i => (i.getName, i.getNumber)))
+      separateValueFromAliases.flatMap(_._2).toList.map(i => (i.getName, i.getNumber))
+    )
   }
 
   def fromFieldDescriptorProto[A](
       field: FieldDescriptorProto,
       source: DescriptorProto,
-      files: List[FileDescriptorProto])(implicit A: Embed[ProtobufF, A]): FieldF[A] =
+      files: List[FileDescriptorProto]
+  )(implicit A: Embed[ProtobufF, A]): FieldF[A] =
     (field.getLabel.isRepeated, isMap(field.getName, source)) match {
       case (true, false) =>
         FieldF.Field(
@@ -284,16 +292,17 @@ object ParseProto {
     source.getNestedTypeList.asScala.toList.exists(isMapEntryTypeForField(_, fieldName))
 
   def getTMap[A](name: String, source: DescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]): A =
+      implicit A: Embed[ProtobufF, A]
+  ): A =
     (for {
       maybeMsg <- source.getNestedTypeList.asScala.toList
         .find(isMapEntryTypeForField(_, name))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
-    } yield
-      map(
-        fromFieldType(maybeKey, files, makeNamedTypesOptional = false),
-        fromFieldType(maybeValue, files, makeNamedTypesOptional = false)).embed)
+    } yield map(
+      fromFieldType(maybeKey, files, makeNamedTypesOptional = false),
+      fromFieldType(maybeValue, files, makeNamedTypesOptional = false)
+    ).embed)
       .getOrElse(throw ProtobufNativeException(s"Could not find map entry for: $name"))
 
   def getMapField(msg: DescriptorProto, name: String): Option[FieldDescriptorProto] =
@@ -312,7 +321,8 @@ object ParseProto {
       oneOfFields: List[OneofDescriptorProto],
       fields: List[FieldDescriptorProto],
       source: DescriptorProto,
-      files: List[FileDescriptorProto])(
+      files: List[FileDescriptorProto]
+  )(
       implicit A: Embed[ProtobufF, A]
   ): List[(FieldF[A], List[Int])] = oneOfFields.zipWithIndex.map {
     case (oneof, index) => {
@@ -321,7 +331,8 @@ object ParseProto {
           fields
             .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
             .map(fromFieldDescriptorProto(_, source, files))
-            .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b })
+            .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
+        )
         .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
       val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
@@ -370,20 +381,24 @@ object ParseProto {
   }
 
   def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto], makeNamedTypesOptional: Boolean)(
-      implicit A: Embed[ProtobufF, A]): A =
+      implicit A: Embed[ProtobufF, A]
+  ): A =
     scheme.ana(fromFieldTypeCoalgebra(field, files, makeNamedTypesOptional)).apply(field.getType)
 
   def fromFieldOptionsMsg(options: FieldOptions): List[OptionValue] =
     OptionValue("deprecated", options.getDeprecated.toString) ::
       options.getUninterpretedOptionList.asScala.toList.map(t =>
-      OptionValue(toString(t.getNameList.asScala.toList), t.getIdentifierValue))
+        OptionValue(toString(t.getNameList.asScala.toList), t.getIdentifierValue)
+      )
 
   def fromFieldOptionsEnum(options: EnumOptions): List[OptionValue] = {
     List(
       OptionValue("allow_alias", options.getAllowAlias.toString),
-      OptionValue("deprecated", options.getDeprecated.toString)) ++
+      OptionValue("deprecated", options.getDeprecated.toString)
+    ) ++
       options.getUninterpretedOptionList.asScala.toList.map(t =>
-        OptionValue(toString(t.getNameList.asScala.toList), t.getIdentifierValue))
+        OptionValue(toString(t.getNameList.asScala.toList), t.getIdentifierValue)
+      )
   }
 
   def toString(nameParts: Seq[NamePart]): String =

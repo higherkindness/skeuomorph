@@ -44,14 +44,16 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
     "when an array is provided in the first level" >> {
       val nestedObject = obj("foo" -> Fixed.string())("foo")
       nestedTypesFrom(Fixed.array(nestedObject)) must ===(
-        expectedTypes("AnonymousObject" -> nestedObject)(Fixed.array(Fixed.reference("AnonymousObject"))))
+        expectedTypes("AnonymousObject" -> nestedObject)(Fixed.array(Fixed.reference("AnonymousObject")))
+      )
     }
 
     "when an object is nested inside another object " >> {
       val nestedObject = obj("name" -> Fixed.string(), "password" -> Fixed.password())("name")
       nestedTypesFrom(obj("user" -> nestedObject, "another" -> Fixed.binary())("user")) must ===(
         expectedTypes("User"     -> nestedObject)(
-          obj("user" -> Fixed.reference("User"), "another" -> Fixed.binary())("user"))
+          obj("user" -> Fixed.reference("User"), "another" -> Fixed.binary())("user")
+        )
       )
     }
 
@@ -59,7 +61,9 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
       val nestedObject = obj("foo" -> Fixed.string())("foo")
       nestedTypesFrom(obj("foo"         -> Fixed.array(nestedObject))()) must ===(
         expectedTypes("AnonymousObject" -> nestedObject)(
-          obj("foo" -> Fixed.array(Fixed.reference("AnonymousObject")))()))
+          obj("foo" -> Fixed.array(Fixed.reference("AnonymousObject")))()
+        )
+      )
     }
 
     "when an enum is nested inside an object" >> {
@@ -89,29 +93,44 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
           "foo1" ->
             obj(
               "foo2" ->
-                obj("foo3" ->
-                  obj("foo4" ->
-                    obj("foo5" -> Fixed.string())())())())())()) must ===(
+                obj(
+                  "foo3" ->
+                    obj(
+                      "foo4" ->
+                        obj("foo5" -> Fixed.string())()
+                    )()
+                )()
+            )()
+        )()
+      ) must ===(
         expectedTypes(
           "Foo4" -> obj("foo5" -> Fixed.string())(),
           "Foo3" -> obj("foo4" -> Fixed.reference("Foo4"))(),
           "Foo2" -> obj("foo3" -> Fixed.reference("Foo3"))(),
           "Foo1" -> obj("foo2" -> Fixed.reference("Foo2"))()
-        )(obj("foo1" -> Fixed.reference("Foo1"))()))
+        )(obj("foo1" -> Fixed.reference("Foo1"))())
+      )
     }
 
     "when there are multiple level of nested objects when than alpha characters are the same" >> {
       nestedTypesFrom(
         obj(
           "foo" ->
-            obj("foo1" ->
-              obj("foo" ->
-                obj("foo" -> Fixed.string())())())())()) must ===(
+            obj(
+              "foo1" ->
+                obj(
+                  "foo" ->
+                    obj("foo" -> Fixed.string())()
+                )()
+            )()
+        )()
+      ) must ===(
         expectedTypes(
           "Foo"  -> obj("foo"  -> Fixed.string())(),
           "Foo1" -> obj("foo"  -> Fixed.reference("Foo"))(),
           "Foo2" -> obj("foo1" -> Fixed.reference("Foo1"))()
-        )(obj("foo" -> Fixed.reference("Foo2"))()))
+        )(obj("foo" -> Fixed.reference("Foo2"))())
+      )
     }
 
     "when there are multiple level of nested object of different types" >> {
@@ -119,16 +138,30 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
         obj(
           "foo1" ->
             Fixed.array(
-              obj("foo2" ->
-                Fixed.array(obj("foo3" ->
-                  Fixed.array(obj("foo4" ->
-                    Fixed.array(obj("foo5" -> Fixed.array(Fixed.string()))()))()))()))()))()) must ===(
+              obj(
+                "foo2" ->
+                  Fixed.array(
+                    obj(
+                      "foo3" ->
+                        Fixed.array(
+                          obj(
+                            "foo4" ->
+                              Fixed.array(obj("foo5" -> Fixed.array(Fixed.string()))())
+                          )()
+                        )
+                    )()
+                  )
+              )()
+            )
+        )()
+      ) must ===(
         expectedTypes(
           "AnonymousObject3" -> obj("foo2" -> Fixed.array(Fixed.reference("AnonymousObject2")))(),
           "AnonymousObject2" -> obj("foo3" -> Fixed.array(Fixed.reference("AnonymousObject1")))(),
           "AnonymousObject1" -> obj("foo4" -> Fixed.array(Fixed.reference("AnonymousObject")))(),
           "AnonymousObject"  -> obj("foo5" -> Fixed.array(Fixed.string()))()
-        )(obj("foo1" -> Fixed.array(Fixed.reference("AnonymousObject3")))()))
+        )(obj("foo1" -> Fixed.array(Fixed.reference("AnonymousObject3")))())
+      )
     }
   }
   "when the name of the anonymous object exists already as a type" >> {
@@ -139,7 +172,8 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
       expectedTypes(
         "User"  -> Fixed.string(),
         "User1" -> obj("name" -> Fixed.string())()
-      )(obj("user" -> Fixed.reference("User1"))()))
+      )(obj("user" -> Fixed.reference("User1"))())
+    )
 
   }
 }

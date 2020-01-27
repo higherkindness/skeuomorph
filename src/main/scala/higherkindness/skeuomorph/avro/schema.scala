@@ -100,15 +100,15 @@ object AvroF {
       namespace: Option[String],
       aliases: List[String],
       doc: Option[String],
-      fields: List[Field[A]])
-      extends AvroF[A]
+      fields: List[Field[A]]
+  ) extends AvroF[A]
   final case class TEnum[A](
       name: String,
       namespace: Option[String],
       aliases: List[String],
       doc: Option[String],
-      symbols: List[String])
-      extends AvroF[A]
+      symbols: List[String]
+  ) extends AvroF[A]
   final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
   final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
 
@@ -153,13 +153,15 @@ object AvroF {
       namespace: Option[String],
       aliases: List[String],
       doc: Option[String],
-      fields: List[Field[A]]): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
+      fields: List[Field[A]]
+  ): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
   def enum[A](
       name: String,
       namespace: Option[String],
       aliases: List[String],
       doc: Option[String],
-      symbols: List[String]): AvroF[A]             = TEnum(name, namespace, aliases, doc, symbols)
+      symbols: List[String]
+  ): AvroF[A]                                      = TEnum(name, namespace, aliases, doc, symbols)
   def union[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
   def fixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int): AvroF[A] =
     TFixed(name, namespace, aliases, size)

@@ -25,21 +25,15 @@ object FileUtils {
   def fileHandle[F[_]: Sync](name: String): Resource[F, File] =
     Resource.make(
       Sync[F].delay(new File(name))
-    )(
-      file => Sync[F].delay(file.deleteOnExit())
-    )
+    )(file => Sync[F].delay(file.deleteOnExit()))
 
   def fileOutputStream[F[_]: Sync](file: File): Resource[F, FileOutputStream] =
     Resource.make(
       Sync[F].delay(new FileOutputStream(file))
-    )(
-      fos => Sync[F].delay(fos.close())
-    )
+    )(fos => Sync[F].delay(fos.close()))
 
   def fileInputStream[F[_]: Sync](name: String): Resource[F, InputStream] =
     Resource.make(
       Sync[F].delay(Files.newInputStream(Paths.get(name), StandardOpenOption.DELETE_ON_CLOSE))
-    )(
-      is => Sync[F].delay(is.close())
-    )
+    )(is => Sync[F].delay(is.close()))
 }

@@ -30,7 +30,8 @@ object schema {
       paths: Map[String, Path.ItemObject[A]],
       components: Option[Components[A]],
       tags: List[Tag],
-      externalDocs: Option[ExternalDocs])
+      externalDocs: Option[ExternalDocs]
+  )
 
   object OpenApi {
     import higherkindness.droste._
@@ -43,16 +44,17 @@ object schema {
 
     private def withSchemas[T](openApi: OpenApi[T])(models: Map[String, T]): OpenApi[T] = {
       openApi.copy(
-        components =
-          openApi.components
-            .fold(
-              if (models.nonEmpty)
-                Components[T](
-                  schemas = models,
-                  responses = Map.empty,
-                  requestBodies = Map.empty,
-                  parameters = Map.empty).some
-              else none)(x => x.copy(x.schemas ++ models).some)
+        components = openApi.components
+          .fold(
+            if (models.nonEmpty)
+              Components[T](
+                schemas = models,
+                responses = Map.empty,
+                requestBodies = Map.empty,
+                parameters = Map.empty
+              ).some
+            else none
+          )(x => x.copy(x.schemas ++ models).some)
       )
     }
 
@@ -63,53 +65,57 @@ object schema {
         mediaType.copy(schema = x)
       }
     private def extractTypesFromContent[T: Basis[JsonSchemaF, ?]](
-        content: Map[String, MediaType[T]]): NestedTypesState[T, Map[String, MediaType[T]]] =
+        content: Map[String, MediaType[T]]
+    ): NestedTypesState[T, Map[String, MediaType[T]]] =
       content.toList
         .traverse { case (x, m) => extractTypesFromMediaType[T](m).map(t => x -> t) }
         .map(_.toMap)
 
     private def extractTypesFromRequest[T: Basis[JsonSchemaF, ?]](
-        request: Either[Request[T], Reference]): NestedTypesState[T, Either[Request[T], Reference]] =
+        request: Either[Request[T], Reference]
+    ): NestedTypesState[T, Either[Request[T], Reference]] =
       request.fold(
         x => extractTypesFromContent(x.content).map(y => x.copy(content = y).asLeft),
         x => State.pure(x.asRight)
       )
 
     private def extractTypesFromResponse[T: Basis[JsonSchemaF, ?]](
-        response: Either[Response[T], Reference]): NestedTypesState[T, Either[Response[T], Reference]] = response.fold(
+        response: Either[Response[T], Reference]
+    ): NestedTypesState[T, Either[Response[T], Reference]] = response.fold(
       x => extractTypesFromContent(x.content).map(y => x.copy(content = y).asLeft),
       x => State.pure(x.asRight)
     )
 
     private def extractTypesFormOperation[T: Basis[JsonSchemaF, ?]](
-        operation: Path.Operation[T]): NestedTypesState[T, Path.Operation[T]] =
+        operation: Path.Operation[T]
+    ): NestedTypesState[T, Path.Operation[T]] =
       for {
         requestBody <- operation.requestBody.traverse(extractTypesFromRequest[T])
         responses <- operation.responses.toList
           .traverse { case (x, r) => extractTypesFromResponse(r).map(t => x -> t) }
           .map(_.toMap)
-      } yield
-        operation.copy(
-          requestBody = requestBody,
-          responses = responses
-        )
+      } yield operation.copy(
+        requestBody = requestBody,
+        responses = responses
+      )
 
     private def extractTypesFromItemObject[T: Basis[JsonSchemaF, ?]](
-        itemObject: ItemObject[T]): NestedTypesState[T, ItemObject[T]] =
+        itemObject: ItemObject[T]
+    ): NestedTypesState[T, ItemObject[T]] =
       for {
         get    <- itemObject.get.traverse(extractTypesFormOperation[T])
         post   <- itemObject.post.traverse(extractTypesFormOperation[T])
         delete <- itemObject.delete.traverse(extractTypesFormOperation[T])
         put    <- itemObject.put.traverse(extractTypesFormOperation[T])
-      } yield
-        itemObject.copy(
-          get = get,
-          post = post,
-          delete = delete,
-          put = put
-        )
+      } yield itemObject.copy(
+        get = get,
+        post = post,
+        delete = delete,
+        put = put
+      )
     private def extractTypesFromComponents[T: Basis[JsonSchemaF, ?]](
-        components: Components[T]): NestedTypesState[T, Components[T]] =
+        components: Components[T]
+    ): NestedTypesState[T, Components[T]] =
       components.schemas.toList
         .traverse {
           case (name, tpe) =>
@@ -118,7 +124,8 @@ object schema {
         .map(cc => components.copy(schemas = cc.toMap))
 
     private def extractTypesFromPath[T: Basis[JsonSchemaF, ?]](
-        paths: Map[String, Path.ItemObject[T]]): NestedTypesState[T, Map[String, Path.ItemObject[T]]] =
+        paths: Map[String, Path.ItemObject[T]]
+    ): NestedTypesState[T, Map[String, Path.ItemObject[T]]] =
       paths.toList
         .traverse { case (x, i) => extractTypesFromItemObject(i).map(z => x -> z) }
         .map(_.toMap)
@@ -127,11 +134,10 @@ object schema {
       val state = for {
         components <- openApi.components.traverse(extractTypesFromComponents[T])
         paths      <- extractTypesFromPath(openApi.paths)
-      } yield
-        openApi.copy(
-          components = components,
-          paths = paths
-        )
+      } yield openApi.copy(
+        components = components,
+        paths = paths
+      )
       val ((y, _), newOpenApi) = state.run(Map.empty[String, T] -> 0).value
       withSchemas(newOpenApi)(y)
     }
@@ -159,7 +165,8 @@ object schema {
         patch: Option[Operation[A]],
         trace: Option[Operation[A]],
         servers: List[Server],
-        parameters: List[Either[Parameter[A], Reference]])
+        parameters: List[Either[Parameter[A], Reference]]
+    )
 
     final case class Operation[A](
         tags: List[String],
@@ -172,7 +179,8 @@ object schema {
         responses: Map[String, Either[Response[A], Reference]],
         callbacks: Map[String, Either[Callback[A], Reference]],
         deprecated: Boolean,
-        servers: List[Server])
+        servers: List[Server]
+    )
   }
   final case class Components[A](
       schemas: Map[String, A],
@@ -190,12 +198,14 @@ object schema {
       headers: Map[String, Either[Header[A], Reference]],
       style: Option[String],
       explode: Option[Boolean],
-      allowReserved: Option[Boolean])
+      allowReserved: Option[Boolean]
+  )
 
   final case class Response[A](
       description: String,
       headers: Map[String, Either[Header[A], Reference]],
-      content: Map[String, MediaType[A]])
+      content: Map[String, MediaType[A]]
+  )
 
   final case class Tag(name: String, description: Option[String], externalDocs: Option[ExternalDocs])
 
@@ -236,7 +246,8 @@ object schema {
         explode: Option[Boolean],
         allowEmptyValue: Option[Boolean],
         allowReserved: Option[Boolean],
-        schema: A): Parameter[A] = in match {
+        schema: A
+    ): Parameter[A] = in match {
       case Location.Path =>
         Path(
           name,
@@ -244,7 +255,8 @@ object schema {
           deprecated.getOrElse(false),
           style.getOrElse("simple"),
           explode.getOrElse(false),
-          schema)
+          schema
+        )
       case Location.Query =>
         Query(
           name,
@@ -265,7 +277,8 @@ object schema {
           deprecated.getOrElse(false),
           style.getOrElse("simple"),
           explode.getOrElse(false),
-          schema)
+          schema
+        )
       case Location.Cookie =>
         Cookie(
           name,
@@ -274,7 +287,8 @@ object schema {
           deprecated.getOrElse(false),
           style.getOrElse("form"),
           explode.getOrElse(false),
-          schema)
+          schema
+        )
     }
 
     final case class Path[A](

@@ -105,7 +105,8 @@ object Protocol {
         none[String],
         Nil,
         none[String],
-        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe)))
+        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe))
+      )
   }
 
   def fromFreesFProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {

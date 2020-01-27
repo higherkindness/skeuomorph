@@ -66,8 +66,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       import client.http4s.circe._
       model.print(
         petstoreOpenApi
-          .withSchema("212bar_Foo-X1", obj("1fo_o" -> Fixed.string(), "ba-r" -> Fixed.integer())())) must ===(
-        s"""|object models {
+          .withSchema("212bar_Foo-X1", obj("1fo_o" -> Fixed.string(), "ba-r" -> Fixed.integer())())
+      ) must ===(s"""|object models {
             |$modelImports
             |final case class `212bar_Foo-X1`(`1fo_o`: Option[String], `ba-r`: Option[Int])
             |object `212bar_Foo-X1` {
@@ -94,7 +94,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         petstoreOpenApi.withSchema(
           "Bars",
           Fixed.array(Fixed.reference("#/components/schemas/Bar"))
-        )) must ===(s"""|object models {
+        )
+      ) must ===(s"""|object models {
               |$modelImports
               |type Bars = List[Bar]
               |}""".stripMargin)
@@ -106,7 +107,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
         petstoreOpenApi.withSchema(
           "bar_Foo-X1s",
           Fixed.array(Fixed.reference("#/components/schemas/bar_Foo-X1"))
-        )) must ===(s"""|object models {
+        )
+      ) must ===(s"""|object models {
               |$modelImports
               |type `bar_Foo-X1s` = List[`bar_Foo-X1`]
               |}""".stripMargin)
@@ -189,10 +191,12 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     "when a sum type is provided" >> {
 
       import client.http4s.circe._
-      model.print(petstoreOpenApi.withSchema(
-        "Pet",
-        Fixed.sum(List(Fixed.reference("#/components/schemas/Dog"), Fixed.reference("#/components/schemas/Cat"))))) must ===(
-        s"""|object models {
+      model.print(
+        petstoreOpenApi.withSchema(
+          "Pet",
+          Fixed.sum(List(Fixed.reference("#/components/schemas/Dog"), Fixed.reference("#/components/schemas/Cat")))
+        )
+      ) must ===(s"""|object models {
             |$modelImports
             |import Pet._
             |type Pet = Dog :+: Cat :+: CNil
@@ -230,9 +234,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
       model.print(
         petstoreOpenApi.withSchema(
           "1-Pet",
-          Fixed.sum(List(
-            Fixed.reference("#/components/schemas/2-Dog"),
-            Fixed.reference("#/components/schemas/3-Cat"))))) must ===(s"""|object models {
+          Fixed.sum(List(Fixed.reference("#/components/schemas/2-Dog"), Fixed.reference("#/components/schemas/3-Cat")))
+        )
+      ) must ===(s"""|object models {
             |$modelImports
             |import `1-Pet`._
             |type `1-Pet` = `2-Dog` :+: `3-Cat` :+: CNil
@@ -272,7 +276,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           .withSchema(
             "Bars",
             Fixed.array(Fixed.reference("#/components/schemas/Bar"))
-          )) must ===(s"""|object models {
+          )
+      ) must ===(s"""|object models {
                           |$modelImports
                           |final case class Bar(foo: String)
                           |object Bar {
@@ -306,7 +311,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when a put and delete are provided" >> {
@@ -327,7 +333,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when get endpoints are provided" >> {
@@ -348,7 +355,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when optional body and not optional query parameters are provided" >> {
@@ -437,7 +445,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when there are multiple responses with a default one" >> {
@@ -456,7 +465,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  type GetPayloadErrorResponse = GetPayloadUnexpectedErrorResponse
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when there are multiple responses with not found response" >> {
@@ -700,7 +710,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  type DeletePayloadsErrorResponse = DeletePayloadsNotFoundError
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when multiple failure response are empty" >> {
@@ -720,7 +731,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |  type DeletePayloadsErrorResponse = DeletePayloadsNotFoundError :+: DeletePayloadsUnexpectedErrorResponse :+: CNil
            |
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when a post operation is provided and operation id is not provided" >> {
@@ -733,23 +745,27 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
                 request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPet"))),
                 responses = "200"          -> response("Null response")
               )
-            ))
+            )
+          )
           .withPath(
             "/pets/{id}" -> emptyItemObject.withPut(
               operation[JsonSchemaF.Fixed](
                 request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePet"))),
                 responses = "201"          -> response("Null response")
               ).withParameter(path("id", Fixed.string()))
-            ))
+            )
+          )
           .withPath(
             "/pets/{id}/owners/" -> emptyItemObject.withGet(
               operation[JsonSchemaF.Fixed](
                 request(),
                 responses = "201" -> response(
                   "Null response",
-                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Owners")))
+                  "application/json" -> mediaType(Fixed.reference("#/components/schemas/Owners"))
+                )
               ).withParameter(path("id", Fixed.string()))
-            ))
+            )
+          )
       ) must ===("""|import models._
                     |import shapeless.{:+:, CNil}
                     |trait PetstoreClient[F[_]] {
@@ -803,7 +819,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    def updatePayload(id: String, updatePayload: UpdatePayload): F[Unit] = client.expect[Unit](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updatePayload))
            |  }
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when get endpoints are provided" >> {
@@ -881,7 +898,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    }
            |  }
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when there are multiple responses with not found response" >> {
@@ -909,7 +927,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
           |    def updateAnotherPayload(id: String, updateAnotherPayloadRequest: UpdateAnotherPayloadRequest): F[UpdatedPayload] = client.expect[UpdatedPayload](Request[F](method = Method.PUT, uri = baseUrl / "payloads" / id.show).with(updateAnotherPayloadRequest))
           |  }
           |
-          |}""".stripMargin)
+          |}""".stripMargin
+      )
     }
 
     "when multiple responses with anonymous objects with default response" >> {
@@ -925,7 +944,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
            |    }
            |  }
            |
-           |}""".stripMargin)
+           |}""".stripMargin
+      )
     }
 
     "when multiple responses and multiple error scenarios" >> {
@@ -1154,7 +1174,8 @@ object OpenApiPrintSpecification {
         request("application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads"))),
         responses = "200" -> response(
           "",
-          "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
+          "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads"))
+        )
       ).withOperationId("updatePayloads")
     )
 
@@ -1163,18 +1184,21 @@ object OpenApiPrintSpecification {
       operation[JsonSchemaF.Fixed](
         request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePayload"))),
         successNull
-      ).withOperationId("updatePayload").withParameter(pathId))
+      ).withOperationId("updatePayload").withParameter(pathId)
+    )
     .withDelete(
       operation[JsonSchemaF.Fixed](
         request(),
         successNull
-      ).withOperationId("deletePayload").withParameter(pathId))
+      ).withOperationId("deletePayload").withParameter(pathId)
+    )
 
   val mediaTypeReferenceGet = payloadPath -> emptyItemObject.withGet(
     operationWithResponses[JsonSchemaF.Fixed](
       responses = "200" -> response(
         "",
-        "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
+        "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads"))
+      )
     ).withOperationId("getPayload")
       .withParameter(query("limit", Fixed.integer()))
       .withParameter(query("name", Fixed.string()))
@@ -1186,7 +1210,8 @@ object OpenApiPrintSpecification {
       operationWithResponses[JsonSchemaF.Fixed](
         responses = "200" -> response(
           "",
-          "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads")))
+          "application/json" -> mediaType(Fixed.reference("#/components/schemas/Payloads"))
+        )
       ).withOperationId("getPayload")
         .withParameter(path("id", JsonSchemaF.Fixed.string()))
         .withParameter(Reference("#/components/parameters/initParam"))
@@ -1206,7 +1231,8 @@ object OpenApiPrintSpecification {
     .withGet(
       operationWithResponses[JsonSchemaF.Fixed](successPayload)
         .withOperationId("getPayload")
-        .withParameter(path("id", Fixed.string())))
+        .withParameter(path("id", Fixed.string()))
+    )
 
   val mediaTypeOptionBody = payloadPathId -> emptyItemObject
     .withDelete(
@@ -1215,14 +1241,16 @@ object OpenApiPrintSpecification {
         successNull
       ).withOperationId("deletePayload")
         .withParameter(path("id", Fixed.string()))
-        .withParameter(query("size", Fixed.long(), required = true)))
+        .withParameter(query("size", Fixed.long(), required = true))
+    )
 
   val references = payloadPath -> emptyItemObject
     .withPut(
       operationWithReferences[JsonSchemaF.Fixed](
         reference("#/components/schemas/UpdatePayload"),
         responses = "200" -> reference("#/components/schemas/UpdatedPayload")
-      ).withOperationId("updatePayload"))
+      ).withOperationId("updatePayload")
+    )
 
   val multipleResponsesWithDefaultOne = payloadPathId -> emptyItemObject
     .withGet(
@@ -1237,7 +1265,8 @@ object OpenApiPrintSpecification {
       operationWithResponses[JsonSchemaF.Fixed](
         responses = successPayload,
         notFound
-      ).withOperationId("getPayload").withParameter(path("id", Fixed.string())))
+      ).withOperationId("getPayload").withParameter(path("id", Fixed.string()))
+    )
 
   val multipleResponsesWithAnonymousObject = payloadPathId -> emptyItemObject
     .withPut(

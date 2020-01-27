@@ -27,7 +27,8 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
       extractNestedTypes(
         openApi("name")
           .withSchema("Foo", obj("bar" -> obj("x" -> Fixed.string())())())
-          .withSchema("Foos", Fixed.array(obj("y" -> Fixed.integer())()))) must ===(
+          .withSchema("Foos", Fixed.array(obj("y" -> Fixed.integer())()))
+      ) must ===(
         openApi("name")
           .withSchema("Bar", obj("x" -> Fixed.string)())
           .withSchema("Foo", obj("bar" -> Fixed.reference("Bar"))())
@@ -44,15 +45,22 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
               operation[JsonSchemaF.Fixed](
                 request("application/json" -> mediaType(obj("foo" -> Fixed.enum(List("1", "2")))())),
                 "200" -> response[JsonSchemaF.Fixed]("Null response")
-              )))) must ===(
+              )
+            )
+        )
+      ) must ===(
         openApi("name")
           .withPath(
             "foo" -> emptyItemObject
-              .withPut(operation[JsonSchemaF.Fixed](
-                request("application/json" -> mediaType(obj("foo" -> Fixed.reference("Foo"))())),
-                "200" -> response[JsonSchemaF.Fixed]("Null response")
-              )))
-          .withSchema("Foo", Fixed.enum(List("1", "2"))))
+              .withPut(
+                operation[JsonSchemaF.Fixed](
+                  request("application/json" -> mediaType(obj("foo" -> Fixed.reference("Foo"))())),
+                  "200" -> response[JsonSchemaF.Fixed]("Null response")
+                )
+              )
+          )
+          .withSchema("Foo", Fixed.enum(List("1", "2")))
+      )
     }
 
     "when nested objects are defined in request" >> {
@@ -63,16 +71,24 @@ class OpenApiNestedObjectSpecification extends org.specs2.mutable.Specification 
               operationWithResponses[JsonSchemaF.Fixed](
                 "200" -> response[JsonSchemaF.Fixed](
                   "Response",
-                  "application/json" -> mediaType(obj("values" -> Fixed.array(obj("value" -> Fixed.integer())()))()))
-              )))) must ===(
+                  "application/json" -> mediaType(obj("values" -> Fixed.array(obj("value" -> Fixed.integer())()))())
+                )
+              )
+            )
+        )
+      ) must ===(
         openApi("name")
           .withPath(
             "foo" -> emptyItemObject
               .withGet(
-                operationWithResponses[JsonSchemaF.Fixed]("200" -> response[JsonSchemaF.Fixed](
-                  "Response",
-                  "application/json" -> mediaType(obj("values" -> Fixed.array(Fixed.reference("AnonymousObject")))())))
-              ))
+                operationWithResponses[JsonSchemaF.Fixed](
+                  "200" -> response[JsonSchemaF.Fixed](
+                    "Response",
+                    "application/json" -> mediaType(obj("values" -> Fixed.array(Fixed.reference("AnonymousObject")))())
+                  )
+                )
+              )
+          )
           .withSchema("AnonymousObject", obj("value" -> Fixed.integer())())
       )
     }
