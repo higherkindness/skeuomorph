@@ -130,7 +130,8 @@ object Comparison extends ComparisonInstances {
                 .getOrElse(Result.mismatch(UnionMemberRemoved(p)))
           }
           .toList
-          .combineAll)
+          .combineAll
+      )
 
     case MatchInList(res, rep) =>
       val firstMatch = res.find(Result.isMatch)
@@ -171,10 +172,12 @@ object Comparison extends ComparisonInstances {
               .map {
                 case (item, idx) =>
                   path / Alternative(idx) -> (List(item.some), i2.toList.map(_.some)).tupled.map(p =>
-                    (path / Alternative(idx), p._1, p._2))
+                    (path / Alternative(idx), p._1, p._2)
+                  )
               }
               .toList
-              .toMap)
+              .toMap
+          )
         case (TSum(n, f), TSum(n2, f2)) if (n === n2 && f.forall(f2.toSet)) => same
         case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) if (n === n2) =>
           val fields           = zipFields(path / Name(n), f, f2)
@@ -206,7 +209,8 @@ object Comparison extends ComparisonInstances {
         case (TOption(i1), TEither(r1, r2)) =>
           MatchInList(
             Vector((path, i1.some, r1.some), (path, i1.some, r2.some)),
-            Reporter.promotedToEither(path, reader))
+            Reporter.promotedToEither(path, reader)
+          )
 
         case (TEither(l1, r1), TCoproduct(rs)) =>
           AlignUnionMembers(

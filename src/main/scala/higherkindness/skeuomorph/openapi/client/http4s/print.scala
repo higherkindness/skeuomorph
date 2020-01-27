@@ -33,57 +33,75 @@ object print {
 
   def impl[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
-      codecs: Printer[Codecs]): Printer[(PackageName, OpenApi[T])] =
+      codecs: Printer[Codecs]
+  ): Printer[(PackageName, OpenApi[T])] =
     optional(divBy(sepBy(importDef, "\n"), newLine, implDefinition[T])).contramap {
       case (packageName, openApi) =>
-        openApi.paths.toList.headOption.map(
-          _ =>
-            packages ++ (List(
-              s"${packageName.show}.${TraitName(openApi).show}",
-              s"${packageName.show}.models._"
-            ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply) ->
-            openApi)
+        openApi.paths.toList.headOption.map(_ =>
+          packages ++ (List(
+            s"${packageName.show}.${TraitName(openApi).show}",
+            s"${packageName.show}.models._"
+          ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply) ->
+            openApi
+        )
     }
 
   val listEncoderPrinter: Printer[Unit] = κ(
-    "implicit def listEntityEncoder[T: Encoder]: EntityEncoder[F, List[T]] = jsonEncoderOf[F, List[T]]")
+    "implicit def listEntityEncoder[T: Encoder]: EntityEncoder[F, List[T]] = jsonEncoderOf[F, List[T]]"
+  )
   val listDecoderPrinter: Printer[Unit] = κ(
-    "implicit def listEntityDecoder[T: Decoder]: EntityDecoder[F, List[T]] = jsonOf[F, List[T]]")
+    "implicit def listEntityDecoder[T: Decoder]: EntityDecoder[F, List[T]] = jsonOf[F, List[T]]"
+  )
   val optionListEncoderPrinter: Printer[Unit] = κ(
-    "implicit def optionListEntityEncoder[T: Encoder]: EntityEncoder[F, Option[List[T]]] = jsonEncoderOf[F, Option[List[T]]]")
+    "implicit def optionListEntityEncoder[T: Encoder]: EntityEncoder[F, Option[List[T]]] = jsonEncoderOf[F, Option[List[T]]]"
+  )
   val optionListDecoderPrinter: Printer[Unit] = κ(
-    "implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]")
+    "implicit def optionListEntityDecoder[T: Decoder]: EntityDecoder[F, Option[List[T]]] = jsonOf[F, Option[List[T]]]"
+  )
   val timeQueryParamEncoder: Printer[Unit] =
-    κ("localDateTimeQueryEncoder: QueryParamEncoder[java.time.LocalDateTime], localDateQueryEncoder: QueryParamEncoder[java.time.LocalDate]")
+    κ(
+      "localDateTimeQueryEncoder: QueryParamEncoder[java.time.LocalDateTime], localDateQueryEncoder: QueryParamEncoder[java.time.LocalDate]"
+    )
   val showQueryParamEncoder: Printer[Unit] =
-    κ("implicit def showQueryParameter[T: Show]: QueryParamEncoder[T] = QueryParamEncoder.stringQueryParamEncoder.contramap(_.show)")
+    κ(
+      "implicit def showQueryParameter[T: Show]: QueryParamEncoder[T] = QueryParamEncoder.stringQueryParamEncoder.contramap(_.show)"
+    )
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[Http.Operation[T]], (TraitName, ImplName))
   def implDefinition[T: Basis[JsonSchemaF, ?]](
       implicit http4sSpecifics: Http4sSpecifics,
-      codecs: Printer[Codecs]): Printer[OpenApi[T]] =
-    optional(objectDef[ImplDef[T]]((
-      κ("  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)") *< κ("(implicit ") *< timeQueryParamEncoder *< κ(
-        ")") *< κ(": ") *< show[TraitName] >* κ("[F]"),
-      κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
-      twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine *<
-        twoSpaces *< twoSpaces *< listEncoderPrinter *< newLine *<
-        twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
-        twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
-        twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine *<
-        twoSpaces *< twoSpaces *< showQueryParamEncoder *< newLine,
-      sepBy(twoSpaces *< methodImpl, "\n") >* newLine *< κ("  }") *< newLine,
-      http4sSpecifics.applyMethod).contramapN(identity))).contramap { x =>
-      x.paths.toList.headOption.map(
-        _ =>
+      codecs: Printer[Codecs]
+  ): Printer[OpenApi[T]] =
+    optional(
+      objectDef[ImplDef[T]](
+        (
+          κ("  def build[F[_]: Effect: Sync](client: Client[F], baseUrl: Uri)") *< κ("(implicit ") *< timeQueryParamEncoder *< κ(
+            ")"
+          ) *< κ(": ") *< show[TraitName] >* κ("[F]"),
+          κ(" = new ") *< show[TraitName] >* κ("[F] {") >* newLine,
+          twoSpaces *< twoSpaces *< sepBy(importDef, "\n") >* newLine *<
+            twoSpaces *< twoSpaces *< listEncoderPrinter *< newLine *<
+            twoSpaces *< twoSpaces *< listDecoderPrinter *< newLine *<
+            twoSpaces *< twoSpaces *< optionListEncoderPrinter *< newLine *<
+            twoSpaces *< twoSpaces *< optionListDecoderPrinter *< newLine *<
+            twoSpaces *< twoSpaces *< showQueryParamEncoder *< newLine,
+          sepBy(twoSpaces *< methodImpl, "\n") >* newLine *< κ("  }") *< newLine,
+          http4sSpecifics.applyMethod
+        ).contramapN(identity)
+      )
+    ).contramap { x =>
+      x.paths.toList.headOption.map(_ =>
+        (
+          (ImplName(x).show, none),
+          List.empty,
           (
-            (ImplName(x).show, none),
-            List.empty,
-            (
-              TraitName(x),
-              TraitName(x),
-              List(PackageName(s"${TraitName(x).show}._")),
-              toOperationsWithPath(TraitName(x), x.paths, componentsFrom(x))._2,
-              TraitName(x) -> ImplName(x))))
+            TraitName(x),
+            TraitName(x),
+            List(PackageName(s"${TraitName(x).show}._")),
+            toOperationsWithPath(TraitName(x), x.paths, componentsFrom(x))._2,
+            TraitName(x) -> ImplName(x)
+          )
+        )
+      )
     }
 
   def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
@@ -100,38 +118,44 @@ object print {
     }
 
   def statusResponseImpl[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
+      implicit codecs: Printer[Codecs]
+  ): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (
       κ("case response if response.status.code == ") *< string >* κ(" => "),
       κ("response.as[") *< string >* κ("]"),
-      κ(".map(x => ") *< coproductIf(string >* κ("(x)") >|< κ("x")) >* κ(".asLeft)"))
-      .contramapN {
-        case (operationId, status, (r, n)) =>
-          val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
-          val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
+      κ(".map(x => ") *< coproductIf(string >* κ("(x)") >|< κ("x")) >* κ(".asLeft)")
+    ).contramapN {
+      case (operationId, status, (r, n)) =>
+        val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
+        val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
+        (
+          status,
+          responseTpe,
           (
-            status,
-            responseTpe,
-            (
-              TypeAliasErrorResponse(operationId).show,
-              anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
-                ().asRight),
-              n))
-      }
+            TypeAliasErrorResponse(operationId).show,
+            anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
+              ().asRight
+            ),
+            n
+          )
+        )
+    }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, (Either[Response[T], Reference], Int))] =
+      implicit codecs: Printer[Codecs]
+  ): Printer[(Http.OperationId, (Either[Response[T], Reference], Int))] =
     (
       κ("case default => default.as[") *< string >* κ("]"),
-      κ(".map(x => ") *< coproductIf(string >* κ("(default.status.code, x)")) >* κ(".asLeft)"))
-      .contramapN {
-        case (operationId, (x, n)) =>
-          val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
-          (innerTpe, (TypeAliasErrorResponse(operationId).show, tpe, n))
-      }
+      κ(".map(x => ") *< coproductIf(string >* κ("(default.status.code, x)")) >* κ(".asLeft)")
+    ).contramapN {
+      case (operationId, (x, n)) =>
+        val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
+        (innerTpe, (TypeAliasErrorResponse(operationId).show, tpe, n))
+    }
 
   def responseImpl[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
+      implicit codecs: Printer[Codecs]
+  ): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (successResponseImpl[T] >|< defaultResponseImpl[T] >|< statusResponseImpl[T]).contramap {
       case (_, statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
       case (operationId, "default", x)                                     => (operationId -> x).asRight.asLeft
@@ -152,35 +176,40 @@ object print {
       κ("Request[F](method = Method.") *< show[Http.Verb],
       κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
       optional(http4sSpecifics.withBody),
-      optional(http4sSpecifics.withHeaders[T]))
-      .contramapN { x =>
-        val headers = headerParametersFrom(x)
-        (
-          x.verb,
-          x.path -> queryParametersFrom(x),
-          x.requestBody.flatMap { requestOrTuple[T](x.operationId, _) }.map(_.name),
-          headers.headOption.map(_ => headers))
-      }
+      optional(http4sSpecifics.withHeaders[T])
+    ).contramapN { x =>
+      val headers = headerParametersFrom(x)
+      (
+        x.verb,
+        x.path -> queryParametersFrom(x),
+        x.requestBody.flatMap { requestOrTuple[T](x.operationId, _) }.map(_.name),
+        headers.headOption.map(_ => headers)
+      )
+    }
 
   def fetchImpl[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs],
-      http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
+      http4sSpecifics: Http4sSpecifics
+  ): Printer[Http.Operation[T]] =
     (
       κ("fetch[") *< responsesTypes >* κ("]("),
       requestImpl[T] >* κ(") {") >* newLine,
       sepBy(twoSpaces *< twoSpaces *< twoSpaces *< responseImpl[T], "\n") >* newLine,
-      twoSpaces *< twoSpaces *< κ("}"))
-      .contramapN { operation =>
-        (
-          (operation.operationId -> operation.responses),
-          operation,
-          operation.responses.toList.map { x =>
-            un(operation.operationId -> second(x)(y =>
-              y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size))
-          },
-          ()
-        )
-      }
+      twoSpaces *< twoSpaces *< κ("}")
+    ).contramapN { operation =>
+      (
+        (operation.operationId -> operation.responses),
+        operation,
+        operation.responses.toList.map { x =>
+          un(
+            operation.operationId -> second(x)(y =>
+              y -> operation.responses.filterNot { case (s, _) => successStatusCode(s) }.size
+            )
+          )
+        },
+        ()
+      )
+    }
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T] >* κ(")"))
@@ -190,7 +219,8 @@ object print {
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs],
-      http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
+      http4sSpecifics: Http4sSpecifics
+  ): Printer[Http.Operation[T]] =
     (
       method[T] >* κ(" = client."),
       expectImpl[T] >|< fetchImpl[T]
@@ -252,7 +282,8 @@ object print {
       def applyMethod: Printer[(TraitName, ImplName)] =
         divBy(
           κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext, ") *< timeQueryParamEncoder *< κ(
-            "): Resource[F, ") *< show[TraitName] >* κ("[F]] ="),
+            "): Resource[F, "
+          ) *< show[TraitName] >* κ("[F]] ="),
           space,
           κ("BlazeClientBuilder(executionContext).resource.map(") *< show[ImplName] >* κ(".build(_, baseUrl))")
         )
@@ -269,10 +300,12 @@ object print {
       def applyMethod: Printer[(TraitName, ImplName)] =
         divBy(
           κ("  def apply[F[_]: ConcurrentEffect](baseUrl: Uri)(implicit executionContext: ExecutionContext, ") *< timeQueryParamEncoder *< κ(
-            "): F[") *< show[TraitName] >* κ("[F]] ="),
+            "): F["
+          ) *< show[TraitName] >* κ("[F]] ="),
           space,
           κ("Http1Client[F](config = BlazeClientConfig.defaultConfig.copy(executionContext = executionContext)).map(") *< show[
-            ImplName] >* κ(".build(_, baseUrl))")
+            ImplName
+          ] >* κ(".build(_, baseUrl))")
         )
 
       def withBody: Printer[Var] =

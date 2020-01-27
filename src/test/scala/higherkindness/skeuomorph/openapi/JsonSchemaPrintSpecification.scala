@@ -72,9 +72,11 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
                 "name"    -> Fixed.string(),
                 "surname" -> Fixed.string(),
                 "age"     -> Fixed.integer(),
-                "email"   -> Fixed.string()),
-              List("name", "surname"))) must ===(
-        s"""|final case class Person(name: String, surname: String, age: Option[Int], email: Option[String])
+                "email"   -> Fixed.string()
+              ),
+              List("name", "surname")
+            )
+        ) must ===(s"""|final case class Person(name: String, surname: String, age: Option[Int], email: Option[String])
             |object Person {
             |
             |
@@ -85,8 +87,8 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
       schemaWithName
         .print(
           "=>" ->
-            Fixed.`object`(List("name" -> Fixed.string()), List("name"))) must ===(
-        s"""|final case class `=>`(name: String)
+            Fixed.`object`(List("name" -> Fixed.string()), List("name"))
+        ) must ===(s"""|final case class `=>`(name: String)
             |object `=>` {
             |
             |
@@ -97,8 +99,8 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
       schemaWithName
         .print(
           "Person" -> Fixed
-            .`object`(List("age" -> Fixed.integer(), "email" -> Fixed.string()), List("name", "surname"))) must ===(
-        s"""|final case class Person(age: Option[Int], email: Option[String])
+            .`object`(List("age" -> Fixed.integer(), "email" -> Fixed.string()), List("name", "surname"))
+        ) must ===(s"""|final case class Person(age: Option[Int], email: Option[String])
             |object Person {
             |
             |
@@ -114,7 +116,9 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
                 "name"    -> Fixed.string(),
                 "surname" -> Fixed.string()
               ),
-              List("name", "surname"))) must ===(s"""|final case class Person(name: String, surname: String)
+              List("name", "surname")
+            )
+        ) must ===(s"""|final case class Person(name: String, surname: String)
                                                    |object Person {
                                                    |
                                                    |
@@ -130,7 +134,9 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
                 "name" -> Fixed.string(),
                 "type" -> Fixed.string()
               ),
-              List("name", "type"))) must ===(s"""|final case class Person(name: String, `type`: String)
+              List("name", "type")
+            )
+        ) must ===(s"""|final case class Person(name: String, `type`: String)
                                                    |object Person {
                                                    |
                                                    |
@@ -153,8 +159,9 @@ class JsonSchemaPrintSpecification extends org.specs2.mutable.Specification {
     "when sum is provided" >> {
       schemaWithName
         .print(
-          "Pet" -> Fixed.sum(
-            List(Fixed.reference("#/components/schemas/Dog"), Fixed.reference("#/components/schemas/Cat")))) must
+          "Pet" -> Fixed
+            .sum(List(Fixed.reference("#/components/schemas/Dog"), Fixed.reference("#/components/schemas/Cat")))
+        ) must
         ===("""|type Pet = Dog :+: Cat :+: CNil
                |object Pet {
                |

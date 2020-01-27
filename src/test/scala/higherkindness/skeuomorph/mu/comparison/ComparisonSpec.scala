@@ -69,7 +69,8 @@ class ComparisonSpec extends Specification {
       Path.empty -> List(
         PromotionToCoproduct(extended),
         NumericWidening(original, long[T].embed)
-      ))
+      )
+    )
   }
 
   def optionToEither = {
@@ -132,7 +133,8 @@ class ComparisonSpec extends Specification {
       "foo",
       List(Field("name", string[T].embed, List(1)), Field("age", option(int[T].embed).embed, List(2))),
       Nil,
-      Nil).embed
+      Nil
+    ).embed
 
     Comparison(original, promoted) must_== Match(Path.empty / Name("foo") / FieldName("age"), PromotionToOption[T]())
   }
@@ -145,21 +147,26 @@ class ComparisonSpec extends Specification {
       "foo",
       List(
         Field("name", string[T].embed, List(1)),
-        Field("age", either(int[T].embed, boolean[T].embed).embed, List(2))),
+        Field("age", either(int[T].embed, boolean[T].embed).embed, List(2))
+      ),
       Nil,
-      Nil).embed
+      Nil
+    ).embed
     val promotedR = product(
       "foo",
       List(Field("name", either(long[T].embed, string[T].embed).embed, List(1)), Field("age", int[T].embed, List(2))),
       Nil,
-      Nil).embed
+      Nil
+    ).embed
 
     Comparison(original, promotedL) must_== Match(
       Path.empty / Name("foo") / FieldName("age"),
-      PromotionToEither(either(int[T].embed, boolean[T].embed).embed))
+      PromotionToEither(either(int[T].embed, boolean[T].embed).embed)
+    )
     Comparison(original, promotedR) must_== Match(
       Path.empty / Name("foo") / FieldName("name"),
-      PromotionToEither(either(long[T].embed, string[T].embed).embed))
+      PromotionToEither(either(long[T].embed, string[T].embed).embed)
+    )
 
   }
 
@@ -173,16 +180,15 @@ class ComparisonSpec extends Specification {
     val extended = product(
       "foo",
       List(Field("name", string[T].embed, List(1))),
-      List(product(
-        "bar",
-        List(Field("first", string[T].embed, List(1)), Field("second", int[T].embed, List(1))),
-        Nil,
-        Nil).embed),
+      List(
+        product("bar", List(Field("first", string[T].embed, List(1)), Field("second", int[T].embed, List(1))), Nil, Nil).embed
+      ),
       Nil
     ).embed
 
     Comparison(original, extended) must_== Match(
       Path.empty / Name("foo") / Name("bar") / FieldName("second"),
-      Addition(int[T].embed))
+      Addition(int[T].embed)
+    )
   }
 }

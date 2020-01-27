@@ -140,7 +140,8 @@ object JsonEncoders {
         p.explode,
         p.allowEmptyValue,
         p.allowReserved,
-        p.schema)
+        p.schema
+      )
     }
 
   // Avoid forProductXX

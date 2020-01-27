@@ -206,7 +206,7 @@ object codegen {
           nestedCoproducts.traverse(_.as[Stat])
         ).mapN {
           case (args, prods, coprods) =>
-            val caseClass = q"@message final case class ${Type.Name(name)}(..$args)"
+            val caseClass = q"final case class ${Type.Name(name)}(..$args)"
             if (prods.nonEmpty || coprods.nonEmpty) {
               q"""
             $caseClass
@@ -226,7 +226,8 @@ object codegen {
   }
 
   def service[T](srv: Service[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]): Either[String, Stat] = {
+      implicit T: Basis[MuF, T]
+  ): Either[String, Stat] = {
     val serializationType = Term.Name(srv.serializationType.toString)
     val compressionType   = Term.Name(srv.compressionType.toString)
 
@@ -249,14 +250,16 @@ object codegen {
   }
 
   def operation[T](op: Service.Operation[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]): Either[String, Decl.Def] =
+      implicit T: Basis[MuF, T]
+  ): Either[String, Decl.Def] =
     for {
       reqType  <- requestType(op.request, streamCtor)
       respType <- responseType(op.response, streamCtor)
     } yield q"def ${Term.Name(op.name)}(req: $reqType): $respType"
 
   def requestType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]): Either[String, Type] =
+      implicit T: Basis[MuF, T]
+  ): Either[String, Type] =
     for {
       tree <- schema(opType.tpe)
       tpe  <- tree.as[Type]
@@ -268,7 +271,8 @@ object codegen {
     }
 
   def responseType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]): Either[String, Type.Apply] =
+      implicit T: Basis[MuF, T]
+  ): Either[String, Type.Apply] =
     for {
       tree <- schema(opType.tpe)
       tpe  <- tree.as[Type]

@@ -40,7 +40,8 @@ object helpers {
 
   private def operationFrom[A](
       requestBody: Option[Either[Request[A], Reference]],
-      responses: Map[String, Either[Response[A], Reference]]): Path.Operation[A] =
+      responses: Map[String, Either[Response[A], Reference]]
+  ): Path.Operation[A] =
     Path.Operation[A](
       tags = List.empty,
       summary = None,
@@ -83,7 +84,8 @@ object helpers {
       name: String,
       schema: A,
       description: Option[String] = None,
-      required: Boolean = true): Parameter.Header[A] =
+      required: Boolean = true
+  ): Parameter.Header[A] =
     Parameter.Header(name, description, schema = schema, required = required)
 
   def path[A](name: String, schema: A, description: Option[String] = None): Parameter[A] =
@@ -93,13 +95,15 @@ object helpers {
       schema: A,
       allowEmptyValue: Boolean = false,
       required: Boolean = false,
-      description: Option[String] = None): Parameter[A] =
+      description: Option[String] = None
+  ): Parameter[A] =
     Parameter.Query(
       name = name,
       description = description,
       allowEmptyValue = allowEmptyValue,
       schema = schema,
-      required = required)
+      required = required
+    )
 
   def noneMediaType[A] = MediaType[A](schema = None, encoding = Map.empty)
 

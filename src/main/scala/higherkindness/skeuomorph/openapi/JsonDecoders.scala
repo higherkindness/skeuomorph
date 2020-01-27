@@ -61,7 +61,8 @@ object JsonDecoders {
       for {
         values <- c.downField("enum").as[List[String]]
         _      <- validateType(c, "string")
-      } yield JsonSchemaF.enum[A](values).embed)
+      } yield JsonSchemaF.enum[A](values).embed
+    )
 
   private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder.instance(_.downField("oneOf").as[List[A]].map(JsonSchemaF.sum[A](_).embed))
@@ -72,7 +73,8 @@ object JsonDecoders {
         c.downField(name)
           .success
           .fold(DecodingFailure(s"$name property does not exist", c.history).asLeft[Unit])(_ =>
-            ().asRight[DecodingFailure])
+            ().asRight[DecodingFailure]
+          )
       def isObject: Decoder.Result[Unit] =
         validateType(c, "object") orElse
           propertyExists("properties") orElse
@@ -121,7 +123,8 @@ object JsonDecoders {
       "default",
       "description"
     )((enum: Option[List[String]], default: String, description: Option[String]) =>
-      Server.Variable(enum.getOrElse(List.empty), default, description))
+      Server.Variable(enum.getOrElse(List.empty), default, description)
+    )
 
   implicit val serverDecoder: Decoder[Server] =
     Decoder.forProduct3(
@@ -164,15 +167,17 @@ object JsonDecoders {
           headers: Option[Map[String, Either[Header[A], Reference]]],
           style: Option[String],
           explode: Option[Boolean],
-          allowReserved: Option[Boolean]) =>
-        Encoding(contentType, headers.getOrElse(Map.empty), style, explode, allowReserved))
+          allowReserved: Option[Boolean]
+      ) => Encoding(contentType, headers.getOrElse(Map.empty), style, explode, allowReserved)
+    )
 
   implicit def mediaTypeDecoder[A: Decoder]: Decoder[MediaType[A]] =
     Decoder.forProduct2(
       "schema",
       "encoding"
     )((schema: Option[A], encoding: Option[Map[String, Encoding[A]]]) =>
-      MediaType(schema, encoding.getOrElse(Map.empty)))
+      MediaType(schema, encoding.getOrElse(Map.empty))
+    )
 
   implicit def requestDecoder[A: Decoder]: Decoder[Request[A]] =
     Decoder.forProduct3(
@@ -180,7 +185,8 @@ object JsonDecoders {
       "content",
       "required"
     )((description: Option[String], content: Map[String, MediaType[A]], required: Option[Boolean]) =>
-      Request(description, content, required.getOrElse(false)))
+      Request(description, content, required.getOrElse(false))
+    )
 
   implicit def responseDecoder[A: Decoder]: Decoder[Response[A]] =
     Decoder.forProduct3(
@@ -191,8 +197,9 @@ object JsonDecoders {
       (
           description: String,
           headers: Option[Map[String, Either[Header[A], Reference]]],
-          content: Option[Map[String, MediaType[A]]]) =>
-        Response(description, headers.getOrElse(Map.empty), content.getOrElse(Map.empty)))
+          content: Option[Map[String, MediaType[A]]]
+      ) => Response(description, headers.getOrElse(Map.empty), content.getOrElse(Map.empty))
+    )
 
   implicit val locationDecoder: Decoder[Location] = Decoder.decodeString.emap(Location.parse)
 
@@ -212,34 +219,33 @@ object JsonDecoders {
 
   // Avoid forProductXX
   implicit def operationDecoder[A: Decoder]: Decoder[Path.Operation[A]] =
-    Decoder.instance(
-      c =>
-        for {
-          tags         <- c.downField("tags").as[Option[List[String]]]
-          summary      <- c.downField("summary").as[Option[String]]
-          description  <- c.downField("description").as[Option[String]]
-          externalDocs <- c.downField("externalDocs").as[Option[ExternalDocs]]
-          operationId  <- c.downField("operationId").as[Option[String]]
-          parameters   <- c.downField("parameters").as[Option[List[Either[Parameter[A], Reference]]]]
-          requestBody  <- c.downField("requestBody").as[Option[Either[Request[A], Reference]]]
-          responses    <- c.downField("responses").as[Map[String, Either[Response[A], Reference]]]
-          callbacks    <- c.downField("callbacks").as[Option[Map[String, Either[Callback[A], Reference]]]]
-          deprecated   <- c.downField("deprecated").as[Option[Boolean]]
-          servers      <- c.downField("servers").as[Option[List[Server]]]
-        } yield
-          Path.Operation(
-            tags.getOrElse(List.empty),
-            summary,
-            description,
-            externalDocs,
-            operationId,
-            parameters.getOrElse(List.empty),
-            requestBody,
-            responses,
-            callbacks.getOrElse(Map.empty),
-            deprecated.getOrElse(false),
-            servers.getOrElse(List.empty)
-        ))
+    Decoder.instance(c =>
+      for {
+        tags         <- c.downField("tags").as[Option[List[String]]]
+        summary      <- c.downField("summary").as[Option[String]]
+        description  <- c.downField("description").as[Option[String]]
+        externalDocs <- c.downField("externalDocs").as[Option[ExternalDocs]]
+        operationId  <- c.downField("operationId").as[Option[String]]
+        parameters   <- c.downField("parameters").as[Option[List[Either[Parameter[A], Reference]]]]
+        requestBody  <- c.downField("requestBody").as[Option[Either[Request[A], Reference]]]
+        responses    <- c.downField("responses").as[Map[String, Either[Response[A], Reference]]]
+        callbacks    <- c.downField("callbacks").as[Option[Map[String, Either[Callback[A], Reference]]]]
+        deprecated   <- c.downField("deprecated").as[Option[Boolean]]
+        servers      <- c.downField("servers").as[Option[List[Server]]]
+      } yield Path.Operation(
+        tags.getOrElse(List.empty),
+        summary,
+        description,
+        externalDocs,
+        operationId,
+        parameters.getOrElse(List.empty),
+        requestBody,
+        responses,
+        callbacks.getOrElse(Map.empty),
+        deprecated.getOrElse(false),
+        servers.getOrElse(List.empty)
+      )
+    )
 
   implicit def itemObjectDecoder[A: Decoder]: Decoder[Path.ItemObject[A]] =
     Decoder.forProduct13(
@@ -255,7 +261,8 @@ object JsonDecoders {
       "patch",
       "trace",
       "servers",
-      "parameters")(
+      "parameters"
+    )(
       (
           (
               ref: Option[String], // $ref
@@ -285,7 +292,10 @@ object JsonDecoders {
               patch,
               trace,
               servers.getOrElse(List.empty),
-              parameters.getOrElse(List.empty))))
+              parameters.getOrElse(List.empty)
+            )
+        )
+    )
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =
     Decoder.forProduct4(
@@ -298,12 +308,15 @@ object JsonDecoders {
           schemas: Option[Map[String, A]],
           responses: Option[Map[String, Either[Response[A], Reference]]],
           requestBodies: Option[Map[String, Either[Request[A], Reference]]],
-          parameters: Option[Map[String, Either[Parameter[A], Reference]]]) =>
+          parameters: Option[Map[String, Either[Parameter[A], Reference]]]
+      ) =>
         Components(
           schemas.getOrElse(Map.empty),
           responses.getOrElse(Map.empty),
           requestBodies.getOrElse(Map.empty),
-          parameters.getOrElse(Map.empty)))
+          parameters.getOrElse(Map.empty)
+        )
+    )
 
   implicit def openApiDecoder[A: Decoder]: Decoder[OpenApi[A]] =
     Decoder.forProduct7(
@@ -322,7 +335,8 @@ object JsonDecoders {
           paths: Option[Map[String, Path.ItemObject[A]]],
           components: Option[Components[A]],
           tags: Option[List[Tag]],
-          externalDocs: Option[ExternalDocs]) =>
+          externalDocs: Option[ExternalDocs]
+      ) =>
         OpenApi(
           openapi,
           info,
@@ -330,6 +344,8 @@ object JsonDecoders {
           paths.getOrElse(Map.empty),
           components,
           tags.getOrElse(List.empty),
-          externalDocs))
+          externalDocs
+        )
+    )
 
 }

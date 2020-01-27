@@ -43,7 +43,8 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
   val traverse =
     checkAll(
       "Traverse[JsonSchemaF]",
-      TraverseTests[JsonSchemaF].traverse[MiniInt, MiniInt, MiniInt, Set[MiniInt], Option, Option])
+      TraverseTests[JsonSchemaF].traverse[MiniInt, MiniInt, MiniInt, Set[MiniInt], Option, Option]
+    )
   val functor  = checkAll("Functor[JsonSchemaF]", FunctorTests[JsonSchemaF].functor[MiniInt, MiniInt, String])
   val foldable = checkAll("Foldable[JsonSchemaF]", FoldableTests[JsonSchemaF].foldable[MiniInt, MiniInt])
 
@@ -88,6 +89,8 @@ object Spec {
     Arbitrary(
       eitherGen(
         examplesArbitrary(x => s"/openapi/yaml/$x.yaml")(identity),
-        examplesArbitrary(x => s"/openapi/json/$x.json")(helpers.unsafeParse)))
+        examplesArbitrary(x => s"/openapi/json/$x.json")(helpers.unsafeParse)
+      )
+    )
 
 }

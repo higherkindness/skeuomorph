@@ -36,8 +36,8 @@ object FieldF {
       position: Int,
       options: List[OptionValue],
       isRepeated: Boolean,
-      isMapField: Boolean)
-      extends FieldF[A] {
+      isMapField: Boolean
+  ) extends FieldF[A] {
     def indices: List[Int] = List(position)
   }
 
@@ -129,7 +129,8 @@ object ProtobufF {
       name: String,
       symbols: List[(String, Int)],
       options: List[OptionValue],
-      aliases: List[(String, Int)]): ProtobufF[A] = TEnum(name, symbols, options, aliases)
+      aliases: List[(String, Int)]
+  ): ProtobufF[A] = TEnum(name, symbols, options, aliases)
   def message[A](
       name: String,
       fields: List[FieldF[A]],
@@ -170,7 +171,8 @@ object ProtobufF {
 
       def makeFieldB(field: FieldF.Field[A]): G[FieldF.Field[B]] =
         f(field.tpe).map(b =>
-          FieldF.Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField))
+          FieldF.Field[B](field.name, b, field.position, field.options, field.isRepeated, field.isMapField)
+        )
 
       def makeOneOfB(oneOf: FieldF.OneOfField[A]): G[FieldF[B]] =
         f(oneOf.tpe).map(b => FieldF.OneOfField[B](oneOf.name, b, oneOf.indices): FieldF[B])

@@ -95,7 +95,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |
       |object book {
       |
-      |@message final case class Book(
+      |final case class Book(
       |  @_root_.pbdirect.pbIndex(1) isbn: _root_.scala.Long,
       |  @_root_.pbdirect.pbIndex(2) title: _root_.java.lang.String,
       |  @_root_.pbdirect.pbIndex(3) author: _root_.scala.List[_root_.com.acme.author.Author],
@@ -105,17 +105,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(16) `type`: _root_.scala.Option[_root_.com.acme.book.`type`],
       |  @_root_.pbdirect.pbIndex(17) nearest_copy: _root_.scala.Option[_root_.com.acme.book.BookStore.Location]
       |)
-      |@message final case class `type`(
+      |final case class `type`(
       |  @_root_.pbdirect.pbIndex(1) foo: _root_.scala.Long,
       |  @_root_.pbdirect.pbIndex(2) thing: _root_.scala.Option[_root_.com.acme.`hyphenated-name`.Thing]
       |)
-      |@message final case class GetBookRequest(
+      |final case class GetBookRequest(
       |  @_root_.pbdirect.pbIndex(1) isbn: _root_.scala.Long
       |)
-      |@message final case class GetBookViaAuthor(
+      |final case class GetBookViaAuthor(
       |  @_root_.pbdirect.pbIndex(1) author: _root_.scala.Option[_root_.com.acme.author.Author]
       |)
-      |@message final case class BookStore(
+      |final case class BookStore(
       |  @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
       |  @_root_.pbdirect.pbIndex(2) books: _root_.scala.Predef.Map[_root_.scala.Long, _root_.java.lang.String],
       |  @_root_.pbdirect.pbIndex(3) genres: _root_.scala.List[_root_.com.acme.book.Genre],
@@ -125,12 +125,12 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |  @_root_.pbdirect.pbIndex(11) coffee_quality: _root_.scala.Option[_root_.com.acme.book.BookStore.CoffeeQuality]
       |)
       |object BookStore {
-      |  @message final case class Location(
+      |  final case class Location(
       |    @_root_.pbdirect.pbIndex(1) town: _root_.java.lang.String,
       |    @_root_.pbdirect.pbIndex(2) country: _root_.scala.Option[_root_.com.acme.book.BookStore.Location.Country]
       |  )
       |  object Location {
-      |    @message final case class Country(
+      |    final case class Country(
       |      @_root_.pbdirect.pbIndex(1) name: _root_.java.lang.String,
       |      @_root_.pbdirect.pbIndex(2) iso_code: _root_.java.lang.String
       |    )
@@ -218,7 +218,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |import _root_.higherkindness.mu.rpc.protocol._
     |
     |object trace {
-    |  @message final case class Span(
+    |  final case class Span(
     |    @_root_.pbdirect.pbIndex(1) trace_id: _root_.scala.Array[Byte],
     |    @_root_.pbdirect.pbIndex(2) span_id: _root_.scala.Array[Byte],
     |    @_root_.pbdirect.pbIndex(3) parent_span_id: _root_.scala.Array[Byte],
@@ -233,28 +233,28 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |    @_root_.pbdirect.pbIndex(16) resource: _root_.scala.Option[_root_.opencensus.proto.resource.v1.resource.Resource]
     |  )
     |  object Span {
-    |    @message final case class Tracestate(
+    |    final case class Tracestate(
     |      @_root_.pbdirect.pbIndex(1) entries: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.Span.Tracestate.Entry]
     |    )
     |    object Tracestate {
-    |      @message final case class Entry(
+    |      final case class Entry(
     |        @_root_.pbdirect.pbIndex(1) key: _root_.java.lang.String,
     |        @_root_.pbdirect.pbIndex(2) value: _root_.java.lang.String
     |      )
     |    }
-    |    @message final case class Attributes(
+    |    final case class Attributes(
     |      @_root_.pbdirect.pbIndex(1) attribute_map: _root_.scala.Predef.Map[_root_.java.lang.String, _root_.opencensus.proto.trace.v1.trace.AttributeValue],
     |      @_root_.pbdirect.pbIndex(2) dropped_attributes_count: _root_.scala.Int
     |    )
-    |    @message final case class TimeEvent(
+    |    final case class TimeEvent(
     |      @_root_.pbdirect.pbIndex(2, 3) value: _root_.scala.Option[_root_.scala.Either[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.Annotation, _root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.MessageEvent]]
     |    )
     |    object TimeEvent {
-    |      @message final case class Annotation(
+    |      final case class Annotation(
     |        @_root_.pbdirect.pbIndex(1) description: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
     |        @_root_.pbdirect.pbIndex(2) attributes: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Attributes]
     |      )
-    |      @message final case class MessageEvent(
+    |      final case class MessageEvent(
     |        @_root_.pbdirect.pbIndex(1) `type`: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent.MessageEvent.Type],
     |        @_root_.pbdirect.pbIndex(2) id: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned],
     |        @_root_.pbdirect.pbIndex(3) uncompressed_size: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned],
@@ -270,12 +270,12 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |        }
     |      }
     |    }
-    |    @message final case class TimeEvents(
+    |    final case class TimeEvents(
     |      @_root_.pbdirect.pbIndex(1) time_event: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.Span.TimeEvent],
     |      @_root_.pbdirect.pbIndex(2) dropped_annotations_count: _root_.scala.Int,
     |      @_root_.pbdirect.pbIndex(3) dropped_message_events_count: _root_.scala.Int
     |    )
-    |    @message final case class Link(
+    |    final case class Link(
     |      @_root_.pbdirect.pbIndex(1) trace_id: _root_.scala.Array[Byte],
     |      @_root_.pbdirect.pbIndex(2) span_id: _root_.scala.Array[Byte],
     |      @_root_.pbdirect.pbIndex(3) `type`: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Span.Link.Type],
@@ -290,7 +290,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |        val values = findValues
     |      }
     |    }
-    |    @message final case class Links(
+    |    final case class Links(
     |      @_root_.pbdirect.pbIndex(1) link: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.Span.Link],
     |      @_root_.pbdirect.pbIndex(2) dropped_links_count: _root_.scala.Int
     |    )
@@ -302,19 +302,19 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |      val values = findValues
     |    }
     |  }
-    |  @message final case class Status(
+    |  final case class Status(
     |    @_root_.pbdirect.pbIndex(1) code: _root_.scala.Int,
     |    @_root_.pbdirect.pbIndex(2) message: _root_.java.lang.String
     |  )
-    |  @message final case class AttributeValue(
+    |  final case class AttributeValue(
     |    @_root_.pbdirect.pbIndex(1, 2, 3, 4) value: _root_.scala.Option[_root_.shapeless.:+:[_root_.opencensus.proto.trace.v1.trace.TruncatableString, _root_.shapeless.:+:[_root_.scala.Long, _root_.shapeless.:+:[_root_.scala.Boolean, _root_.shapeless.:+:[_root_.scala.Double, _root_.shapeless.CNil]]]]]
     |  )
-    |  @message final case class StackTrace(
+    |  final case class StackTrace(
     |    @_root_.pbdirect.pbIndex(1) stack_frames: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.StackTrace.StackFrames],
     |    @_root_.pbdirect.pbIndex(2) stack_trace_hash_id: _root_.shapeless.tag.@@[_root_.scala.Long, _root_.pbdirect.Unsigned]
     |  )
     |  object StackTrace {
-    |    @message final case class StackFrame(
+    |    final case class StackFrame(
     |      @_root_.pbdirect.pbIndex(1) function_name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
     |      @_root_.pbdirect.pbIndex(2) original_function_name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
     |      @_root_.pbdirect.pbIndex(3) file_name: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
@@ -323,16 +323,16 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |      @_root_.pbdirect.pbIndex(6) load_module: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.Module],
     |      @_root_.pbdirect.pbIndex(7) source_version: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString]
     |    )
-    |    @message final case class StackFrames(
+    |    final case class StackFrames(
     |      @_root_.pbdirect.pbIndex(1) frame: _root_.scala.List[_root_.opencensus.proto.trace.v1.trace.StackTrace.StackFrame],
     |      @_root_.pbdirect.pbIndex(2) dropped_frames_count: _root_.scala.Int
     |    )
     |  }
-    |  @message final case class Module(
+    |  final case class Module(
     |    @_root_.pbdirect.pbIndex(1) module: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString],
     |    @_root_.pbdirect.pbIndex(2) build_id: _root_.scala.Option[_root_.opencensus.proto.trace.v1.trace.TruncatableString]
     |  )
-    |  @message final case class TruncatableString(
+    |  final case class TruncatableString(
     |    @_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String,
     |    @_root_.pbdirect.pbIndex(2) truncated_byte_count: _root_.scala.Int
     |  )
@@ -354,7 +354,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |import _root_.higherkindness.mu.rpc.protocol._
     |
     |object integer_types {
-    |  @message final case class IntegerTypes(
+    |  final case class IntegerTypes(
     |    @_root_.pbdirect.pbIndex(1) a: _root_.scala.Int,
     |    @_root_.pbdirect.pbIndex(2) b: _root_.shapeless.tag.@@[_root_.scala.Int, _root_.pbdirect.Unsigned],
     |    @_root_.pbdirect.pbIndex(3) c: _root_.shapeless.tag.@@[_root_.scala.Int, _root_.pbdirect.Signed],

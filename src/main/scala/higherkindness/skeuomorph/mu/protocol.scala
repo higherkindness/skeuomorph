@@ -54,7 +54,8 @@ object Protocol {
    * create a [[higherkindness.skeuomorph.mu.Protocol]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
   def fromAvroProtocol[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
-      proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
+      proto: avro.Protocol[T]
+  )(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
 
     val toMu: T => U = scheme.cata(transformAvro[U].algebra)
     val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
@@ -63,7 +64,7 @@ object Protocol {
           msg.name,
           request = OperationType(toMu(msg.request), false),
           response = OperationType(toMu(msg.response), false)
-      )
+        )
 
     Protocol(
       proto.name,
@@ -76,13 +77,16 @@ object Protocol {
           SerializationType.Avro,
           compressionType,
           IdiomaticEndpoints(proto.namespace, useIdiomaticEndpoints),
-          proto.messages.map(toOperation))),
+          proto.messages.map(toOperation)
+        )
+      ),
       Nil
     )
   }
 
   def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
-      protocol: protobuf.Protocol[T])(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
+      protocol: protobuf.Protocol[T]
+  )(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
       msg =>
@@ -90,7 +94,7 @@ object Protocol {
           name = msg.name,
           request = OperationType(toMu(msg.request), msg.requestStreaming),
           response = OperationType(toMu(msg.response), msg.responseStreaming)
-      )
+        )
 
     val toImports: DependentImport[T] => DependentImport[U] =
       imp => DependentImport(imp.pkg, imp.protocol, toMu(imp.tpe))
@@ -101,15 +105,15 @@ object Protocol {
       options = protocol.options,
       declarations = protocol.declarations.map(toMu),
       services = protocol.services
-        .map(
-          s =>
-            new Service[U](
-              s.name,
-              SerializationType.Protobuf,
-              compressionType,
-              IdiomaticEndpoints(Option(protocol.pkg), useIdiomaticEndpoints),
-              s.operations.map(toOperation)
-          )),
+        .map(s =>
+          new Service[U](
+            s.name,
+            SerializationType.Protobuf,
+            compressionType,
+            IdiomaticEndpoints(Option(protocol.pkg), useIdiomaticEndpoints),
+            s.operations.map(toOperation)
+          )
+        ),
       imports = protocol.imports.map(toImports)
     )
 
@@ -122,7 +126,8 @@ final case class Service[T](
     serializationType: SerializationType,
     compressionType: CompressionType,
     idiomaticEndpoints: IdiomaticEndpoints,
-    operations: List[Service.Operation[T]])
+    operations: List[Service.Operation[T]]
+)
 object Service {
   final case class OperationType[T](tpe: T, stream: Boolean)
   final case class Operation[T](name: String, request: OperationType[T], response: OperationType[T])

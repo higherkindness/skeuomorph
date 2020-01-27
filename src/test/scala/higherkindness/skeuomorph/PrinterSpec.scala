@@ -49,7 +49,8 @@ class PrinterSpec extends Specification with ScalaCheck with Discipline {
 
   val contravariantMonoidalPrinter = checkAll(
     "ContravariantMonoidal[Printer].contravariantMonoidal",
-    ContravariantMonoidalTests[Printer].contravariantMonoidal[MiniInt, MiniInt, MiniInt])
+    ContravariantMonoidalTests[Printer].contravariantMonoidal[MiniInt, MiniInt, MiniInt]
+  )
 
   val monoidPrinter = checkAll("ContravariantMonoidal[Printer].monoid", MonoidTests[Printer[MiniInt]].monoid)
   val semigroupPrinter =

@@ -99,8 +99,11 @@ object instances {
         if (withTNull) Gen.const(MuF.TNull[T]()) else nonNullPrimitives,
         sampleBool
       ).mapN((t1, t2, reversed) =>
-        MuF.TCoproduct(if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
-        else NonEmptyList.of(B.algebra(t1), B.algebra(t2))))
+        MuF.TCoproduct(
+          if (reversed) NonEmptyList.of(B.algebra(t2), B.algebra(t1))
+          else NonEmptyList.of(B.algebra(t1), B.algebra(t2))
+        )
+      )
     }
 
   implicit def muArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[MuF[T]] = {
@@ -147,7 +150,8 @@ object instances {
         ).mapN { (n, f, p, c) =>
           MuF.product(n, f, p, c)
         }
-      ))
+      )
+    )
   }
 
   def eitherGen[A, B](left: Gen[A], right: Gen[B]): Gen[Either[A, B]] =
@@ -190,7 +194,8 @@ object instances {
         Gen.option(sampleBool),
         Gen.option(sampleBool),
         Gen.option(sampleBool),
-        T.arbitrary).mapN(Parameter.apply)
+        T.arbitrary
+      ).mapN(Parameter.apply)
 
     val parameters: Gen[List[Either[Parameter[T], Reference]]] = Gen.listOfN(2, eitherGen(parameterGen, referenceGen))
 
@@ -206,7 +211,8 @@ object instances {
         responsesGen,
         Map.empty[String, Either[Callback[T], Reference]].pure[Gen],
         sampleBool,
-        serversGen).mapN(Path.Operation.apply)
+        serversGen
+      ).mapN(Path.Operation.apply)
 
     val itemObjectsGen: Gen[Path.ItemObject[T]] =
       (
@@ -230,8 +236,8 @@ object instances {
         mapStringToGen(T.arbitrary),
         responsesGen,
         mapStringToGen(eitherGen(requestGen, referenceGen)),
-        mapStringToGen(eitherGen(parameterGen, referenceGen)))
-        .mapN(Components.apply)
+        mapStringToGen(eitherGen(parameterGen, referenceGen))
+      ).mapN(Components.apply)
 
     Arbitrary(
       (
@@ -241,8 +247,9 @@ object instances {
         mapStringToGen(itemObjectsGen),
         Gen.option(componentsGen),
         Gen.listOfN(5, tagGen),
-        Gen.option(externalDocsGen))
-        .mapN(OpenApi[T]))
+        Gen.option(externalDocsGen)
+      ).mapN(OpenApi[T])
+    )
   }
 
   implicit def jsonSchemaFOpenApiArbitrary: Arbitrary[JsonSchemaF.Fixed] = {
@@ -355,7 +362,8 @@ object instances {
           Gen.listOf(nonEmptyString),
           Gen.posNum[Int]
         ).mapN(AvroF.fixed[T])
-      ))
+      )
+    )
   }
 
   def protobufFMessage[T](implicit T: Arbitrary[T]): Gen[ProtobufF.TMessage[T]] = {
