@@ -24,7 +24,7 @@ val V = new {
   val scalacheck       = "1.14.3"
   val specs2           = "4.8.3"
   val protoc           = "3.11.1"
-  val protobuf         = "3.11.1"
+  val protobuf         = "3.11.3"
 }
 
 lazy val skeuomorph = project
