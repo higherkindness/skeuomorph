@@ -1,5 +1,27 @@
 # Changelog
 
+## 02/19/2020 - Version 0.0.21
+
+Release changes:
+
+* Remove deprecated object ([#215](https://github.com/higherkindness/skeuomorph/pull/215))
+* Update sbt to 1.3.7 ([#216](https://github.com/higherkindness/skeuomorph/pull/216))
+* Update sbt-org-policies to 0.12.3 ([#217](https://github.com/higherkindness/skeuomorph/pull/217))
+* Remove `@message` annotation from generated case classes ([#219](https://github.com/higherkindness/skeuomorph/pull/219))
+* Update protobuf-java to 3.11.3 ([#222](https://github.com/higherkindness/skeuomorph/pull/222))
+* Update cats-effect to 2.1.0 ([#220](https://github.com/higherkindness/skeuomorph/pull/220))
+* Update sbt to 1.3.8 ([#224](https://github.com/higherkindness/skeuomorph/pull/224))
+* Update cats-effect to 2.1.1 ([#225](https://github.com/higherkindness/skeuomorph/pull/225))
+* Update circe-core, circe-parser, ... to 0.13.0 ([#226](https://github.com/higherkindness/skeuomorph/pull/226))
+* Update sbt-mima-plugin to 0.6.4 ([#227](https://github.com/higherkindness/skeuomorph/pull/227))
+* Mergify: configuration update ([#229](https://github.com/higherkindness/skeuomorph/pull/229))
+* Update protobuf-java to 3.11.4 ([#230](https://github.com/higherkindness/skeuomorph/pull/230))
+* Update scalafmt-core to 2.4.0 ([#231](https://github.com/higherkindness/skeuomorph/pull/231))
+* Update scalafmt-core to 2.4.1 ([#232](https://github.com/higherkindness/skeuomorph/pull/232))
+* Update avro to 1.9.2 ([#228](https://github.com/higherkindness/skeuomorph/pull/228))
+* Release 0.0.21 ([#233](https://github.com/higherkindness/skeuomorph/pull/233))
+
+
 ## 01/15/2020 - Version 0.0.20
 
 Release changes:
