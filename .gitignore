@@ -31,6 +31,7 @@ project/target
 .metals
 .bloop
 .vscode
+secret_key.asc
 
 # Jekyll
 docs/_site
