@@ -71,7 +71,7 @@ object Printer {
     def print(a: A): String = a.toString
   }
 
-  def show[F: Show]: Printer[F] = Printer { _.show }
+  def show[F: Show]: Printer[F] = Printer(_.show)
 
   def optional[A](p: Printer[A]): Printer[Option[A]] =
     Printer(_.fold("")(p.print))

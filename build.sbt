@@ -21,6 +21,7 @@ val V = new {
   val meta             = "4.3.0"
   val metaContrib      = "4.1.6"
   val scala212         = "2.12.10"
+  val scala213         = "2.13.1"
   val scalacheck       = "1.14.3"
   val specs2           = "4.8.3"
   val protoc           = "3.11.1"
@@ -66,9 +67,9 @@ lazy val docs = project
     micrositePushSiteWith := GitHub4s,
     micrositeFavicons := Seq(MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
-      "brand-primary"     -> "#4A00D8",
-      "brand-secondary"   -> "#FC00CD",
-      "white-color"       -> "#FFF"
+      "brand-primary"   -> "#4A00D8",
+      "brand-secondary" -> "#FC00CD",
+      "white-color"     -> "#FFF"
     ),
     micrositeExtraMdFiles := Map(
       file("CHANGELOG.md") -> ExtraMdFileConfig(
@@ -93,10 +94,10 @@ lazy val commonSettings = Seq(
     organizationHomePage = url("https://www.47deg.com"),
     organizationEmail = "hello@47deg.com"
   ),
-  scalaVersion := V.scala212,
   startYear := Some(2018),
-  crossScalaVersions := Seq(V.scala212),
-  ThisBuild / scalacOptions -= "-Xplugin-require:macroparadise",
+  scalaVersion := V.scala213,
+  crossScalaVersions := Seq(V.scala212, V.scala213),
+  scalacOptions ~= (_ filterNot Set("-Xfuture").contains),
   libraryDependencies ++= Seq(
     %%("cats-core", V.cats),
     "io.higherkindness"   %% "droste-core"   % V.droste,
@@ -108,20 +109,22 @@ lazy val commonSettings = Seq(
     %%("cats-effect", V.catsEffect),
     %%("circe-core", V.circe),
     %%("circe-parser", V.circe),
-    "org.scalameta"       %% "scalameta"     % V.meta,
-    %%("cats-laws", V.cats) % Test,
-    "io.circe"            %% "circe-testing" % V.circe % Test,
+    "org.scalameta"                   %% "scalameta" % V.meta,
+    %%("cats-laws", V.cats)           % Test,
+    "io.circe"                        %% "circe-testing" % V.circe % Test,
     %%("scalacheck", V.scalacheck)    % Test,
     %%("specs2-core", V.specs2)       % Test,
     "org.typelevel"                   %% "discipline-specs2" % V.disciplineSpecs2 % Test,
     %%("specs2-scalacheck", V.specs2) % Test,
     "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll (
       ExclusionRule(organization = "org.scalacheck"),
-    "org.scalameta"       %% "contrib"     % V.metaContrib % Test
+      "org.scalameta" %% "contrib" % V.metaContrib % Test
     )
   ),
   orgProjectName := "Skeuomorph",
-  orgUpdateDocFilesSetting ++= List(baseDirectory.value / "docs" / "docs", baseDirectory.value / "docs" / "docs" / "docs"),
+  orgUpdateDocFilesSetting ++= List(
+    baseDirectory.value / "docs" / "docs",
+    baseDirectory.value / "docs" / "docs" / "docs"),
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
@@ -170,7 +173,7 @@ lazy val commonSettings = Seq(
   ),
   releaseIgnoreUntrackedFiles := true,
   coverageFailOnMinimum := false
-) ++ compilerPlugins
+) ++ compilerPlugins ++ macroSettings
 
 lazy val mdocSettings = Seq(
   scalacOptions ~= filterConsoleScalacOptions,
@@ -179,8 +182,36 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel"   % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"      %% "better-monadic-for" % V.betterMonadicFor),
-    compilerPlugin("org.scalamacros" % "paradise"            % V.macroParadise cross CrossVersion.patch)
+    compilerPlugin("org.typelevel" % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"    %% "better-monadic-for" % V.betterMonadicFor)
   )
 )
+
+def isOlderScalaVersion(sv: String): Boolean =
+  CrossVersion.partialVersion(sv) match {
+    case Some((2, minor)) if minor < 13 => true
+    case _                              => false
+  }
+
+lazy val macroSettings: Seq[Setting[_]] = {
+
+  def paradiseDependency(sv: String): Seq[ModuleID] =
+    if (isOlderScalaVersion(sv)) {
+      Seq(
+        compilerPlugin(
+          ("org.scalamacros" % "paradise" % V.macroParadise).cross(CrossVersion.patch)
+        )
+      )
+    } else Seq.empty
+
+  def macroAnnotationScalacOption(sv: String): Seq[String] =
+    if (isOlderScalaVersion(sv)) Seq.empty
+    else Seq("-Ymacro-annotations")
+
+  Seq(
+    libraryDependencies ++= Seq(
+      scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided
+    ) ++ paradiseDependency(scalaVersion.value),
+    scalacOptions ++= macroAnnotationScalacOption(scalaVersion.value)
+  )
+}
