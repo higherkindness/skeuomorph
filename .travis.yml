@@ -30,6 +30,7 @@ install:
   - sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/makeMicrosite
   - ./.codecov -X gcov
 
+
 stages:
   - test
   - deploy
