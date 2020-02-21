@@ -80,11 +80,6 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
-// check for library updates whenever the project is [re]load
-onLoad in Global := { s =>
-  "dependencyUpdates" :: s
-}
-
 pgpPassphrase := sys.env.get("PGP_PASSPHRASE").map(_.toCharArray)
 
 // General Settings
