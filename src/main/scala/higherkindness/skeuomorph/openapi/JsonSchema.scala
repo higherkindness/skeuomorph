@@ -125,9 +125,7 @@ object JsonSchemaF {
 
   }
 
-  implicit def eqProperty[T: Eq]: Eq[Property[T]] = Eq.instance { (p1, p2) =>
-    p1.name === p2.name && p1.tpe === p2.tpe
-  }
+  implicit def eqProperty[T: Eq]: Eq[Property[T]] = Eq.instance((p1, p2) => p1.name === p2.name && p1.tpe === p2.tpe)
 
   implicit def eqJsonSchemaF[T: Eq]: Eq[JsonSchemaF[T]] = Eq.instance {
     case (IntegerF(), IntegerF())           => true

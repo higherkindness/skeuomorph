@@ -61,9 +61,7 @@ object schema {
     private def extractTypesFromMediaType[T: Basis[JsonSchemaF, ?]](
         mediaType: MediaType[T]
     ): NestedTypesState[T, MediaType[T]] =
-      mediaType.schema.traverse(nestedTypes.apply).map { x =>
-        mediaType.copy(schema = x)
-      }
+      mediaType.schema.traverse(nestedTypes.apply).map(x => mediaType.copy(schema = x))
     private def extractTypesFromContent[T: Basis[JsonSchemaF, ?]](
         content: Map[String, MediaType[T]]
     ): NestedTypesState[T, Map[String, MediaType[T]]] =

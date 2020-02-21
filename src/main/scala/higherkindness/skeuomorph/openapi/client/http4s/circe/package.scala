@@ -71,9 +71,7 @@ package object circe {
         )
       case CaseClassCodecs(name, fields) =>
         val (default, optionType) = codecsTypes[T](name)
-        val withFields = un(second(default) { x =>
-          x -> fields
-        })
+        val withFields            = un(second(default)(x => x -> fields))
         (
           packages,
           none,

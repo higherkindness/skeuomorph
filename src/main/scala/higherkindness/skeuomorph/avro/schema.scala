@@ -239,17 +239,13 @@ object AvroF {
         "name"   -> Json.fromString(name),
         "fields" -> Json.arr(fields.map(field2Obj): _*)
       )
-      val withNamespace = namespace.fold(base) { n =>
-        base deepMerge Json.obj("namespace" -> Json.fromString(n))
-      }
+      val withNamespace = namespace.fold(base)(n => base deepMerge Json.obj("namespace" -> Json.fromString(n)))
       val withAliases =
         if (aliases.isEmpty)
           withNamespace
         else
           withNamespace deepMerge Json.obj("aliases" -> Json.arr(aliases.map(Json.fromString): _*))
-      val withDoc = doc.fold(withAliases) { f =>
-        withAliases deepMerge Json.obj("doc" -> Json.fromString(f))
-      }
+      val withDoc = doc.fold(withAliases)(f => withAliases deepMerge Json.obj("doc" -> Json.fromString(f)))
       withDoc
     case TEnum(_, _, _, _, _) => ???
     case TUnion(options)      => Json.arr(options.toList: _*)

@@ -76,9 +76,7 @@ object JsonEncoders {
     Encoder.forProduct2(
       "description",
       "schema"
-    ) { h =>
-      (h.description, h.schema)
-    }
+    )(h => (h.description, h.schema))
 
   implicit def encodingEncoder[A: Encoder]: Encoder[Encoding[A]] =
     Encoder.forProduct5(
@@ -87,17 +85,13 @@ object JsonEncoders {
       "style",
       "explode",
       "allowReserved"
-    ) { e =>
-      (e.contentType, e.headers, e.style, e.explode, e.allowReserved)
-    }
+    )(e => (e.contentType, e.headers, e.style, e.explode, e.allowReserved))
 
   implicit def mediaTypeEncoder[A: Encoder]: Encoder[MediaType[A]] =
     Encoder.forProduct2(
       "schema",
       "encoding"
-    ) { m =>
-      (m.schema, m.encoding)
-    }
+    )(m => (m.schema, m.encoding))
 
   implicit def requestEncoder[A: Encoder]: Encoder[Request[A]] =
     Encoder.forProduct3(
@@ -111,9 +105,7 @@ object JsonEncoders {
       "description",
       "headers",
       "content"
-    ) { r =>
-      (r.description, r.headers, r.content)
-    }
+    )(r => (r.description, r.headers, r.content))
 
   implicit val locationEncoder: Encoder[Location] = Encoder.encodeString.contramap(_.value)
 
@@ -178,7 +170,7 @@ object JsonEncoders {
       "trace",
       "servers",
       "parameters"
-    ) { Path.ItemObject.unapply(_).get }
+    )(Path.ItemObject.unapply(_).get)
 
   implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
     Encoder.forProduct4(
@@ -197,7 +189,5 @@ object JsonEncoders {
       "components",
       "tags",
       "externalDocs"
-    ) { o =>
-      (o.openapi, o.info, o.servers, o.paths, o.components, o.tags, o.externalDocs)
-    }
+    )(o => (o.openapi, o.info, o.servers, o.paths, o.components, o.tags, o.externalDocs))
 }
