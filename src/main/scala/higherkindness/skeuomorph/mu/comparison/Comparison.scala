@@ -261,20 +261,6 @@ object Comparison extends ComparisonInstances {
 
 }
 
-trait ComparisonInstances {
-
-  implicit def comparisonCatsFunctor[T] = new Functor[Comparison[T, ?]] {
-    def map[A, B](fa: Comparison[T, A])(f: (A) => B): Comparison[T, B] = fa match {
-      case Comparison.End(res)                  => Comparison.End(res)
-      case Comparison.Compare(a, rep)           => Comparison.Compare(f(a), rep)
-      case Comparison.CompareBoth(x, y)         => Comparison.CompareBoth(f(x), f(y))
-      case Comparison.CompareList(i, rep)       => Comparison.CompareList(i.map(f), rep)
-      case Comparison.MatchInList(a, rep)       => Comparison.MatchInList(a.map(f), rep)
-      case Comparison.AlignUnionMembers(a, rep) => Comparison.AlignUnionMembers(a.mapValues(_.map(f)), rep)
-    }
-  }
-}
-
 object Reporter {
 
   import Comparison.{Match, Result}

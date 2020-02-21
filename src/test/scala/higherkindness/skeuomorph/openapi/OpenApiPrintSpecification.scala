@@ -795,11 +795,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
     import client.http4s.print.Http4sSpecifics
     import Printer.avoid._
     implicit val none: Http4sSpecifics = new Http4sSpecifics {
-      def none[A]                                     = Printer.unit.contramap[A](_ => ())
-      def applyMethod: Printer[(TraitName, ImplName)] = none
-      def withBody: Printer[Var] = Printer { x =>
-        s".with(${x.show})"
-      }
+      def none[A]                                            = Printer.unit.contramap[A](_ => ())
+      def applyMethod: Printer[(TraitName, ImplName)]        = none
+      def withBody: Printer[Var]                             = Printer(x => s".with(${x.show})")
       def withHeaders[T]: Printer[List[Parameter.Header[T]]] = none
 
     }

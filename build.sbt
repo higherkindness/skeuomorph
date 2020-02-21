@@ -97,7 +97,7 @@ lazy val commonSettings = Seq(
   startYear := Some(2018),
   scalaVersion := V.scala213,
   crossScalaVersions := Seq(V.scala212, V.scala213),
-  scalacOptions ~= (_ filterNot Set("-Xfuture").contains),
+  scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     %%("cats-core", V.cats),
     "io.higherkindness"   %% "droste-core"   % V.droste,

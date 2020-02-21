@@ -50,7 +50,7 @@ object Printer {
   }
 
   def konst(str: String): Printer[Unit] =
-    Printer(Function.const(str))
+    Printer(Function.const(str)(_))
 
   val space: Printer[Unit] = konst(" ")
 

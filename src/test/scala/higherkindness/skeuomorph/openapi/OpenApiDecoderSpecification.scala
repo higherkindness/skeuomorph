@@ -187,20 +187,21 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       }
       """)
       Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
-        components[JsonSchemaF.Fixed]().copy(parameters = Map(
-          "skipParam" -> query(
-            "skip",
-            JsonSchemaF.Fixed.integer(),
-            required = true,
-            description = "number of items to skip".some
-          ).asLeft,
-          "limitParam" -> query(
-            "limit",
-            JsonSchemaF.Fixed.integer(),
-            required = true,
-            description = "max records to return".some
-          ).asLeft
-        )
+        components[JsonSchemaF.Fixed]().copy(parameters =
+          Map(
+            "skipParam" -> query(
+              "skip",
+              JsonSchemaF.Fixed.integer(),
+              required = true,
+              description = "number of items to skip".some
+            ).asLeft,
+            "limitParam" -> query(
+              "limit",
+              JsonSchemaF.Fixed.integer(),
+              required = true,
+              description = "max records to return".some
+            ).asLeft
+          )
         )
       )
 
