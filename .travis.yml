@@ -23,6 +23,13 @@ install:
   - rvm use 2.6.5 --install --fuzzy
   - gem install jekyll -v 4
 
+script:
+  - curl -s https://codecov.io/bash > .codecov
+  - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
+  - chmod +x .codecov
+  - sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/makeMicrosite
+  - if [ $TRAVIS_SCALA_VERSION = "2.13.1" ]; then ./.codecov -X gcov; fi
+
 stages:
   - test
   - deploy
@@ -30,13 +37,6 @@ stages:
 
 jobs:
   include:
-    - name: "Tests, coverage and docs compilation"
-      script:
-        - curl -s https://codecov.io/bash > .codecov
-        - sed -i -e 's/TRAVIS_.*_VERSION/^TRAVIS_.*_VERSION=/' .codecov
-        - chmod +x .codecov
-        - sbt ++$TRAVIS_SCALA_VERSION clean test coverageReport coverageAggregate docs/makeMicrosite
-        - ./.codecov -X gcov
     - stage: deploy
       name: "Publish artifacts"
       scala: 2.13.1
