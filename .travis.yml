@@ -50,7 +50,8 @@ jobs:
             git clean -f;
             git checkout master;
             git pull origin master;
-            openssl aes-256-cbc -K $encrypted_ca54c9c78452_key -iv $encrypted_ca54c9c78452_iv -in secring.gpg.enc -out secring.gpg -d;
+            openssl aes-256-cbc -K $encrypted_ca54c9c78452_key -iv $encrypted_ca54c9c78452_iv -in secret_key.asc.enc -out secret_key.asc -d;
+            gpg --import --batch --passphrase "$PGP_PASSPHRASE" secret_key.asc;
             sbt release;
           fi
     - stage: microsite
