@@ -16,7 +16,7 @@
 
 package higherkindness.skeuomorph.openapi
 
-object helpers extends OperationHelpers {
+object helpers {
   import io.circe.parser._
   import io.circe.Json
   import cats.implicits._
@@ -27,8 +27,34 @@ object helpers extends OperationHelpers {
   def response[A](description: String, content: (String, MediaType[A])*): Response[A] =
     Response[A](description, Map.empty, content.toMap)
 
+  def operationWithReferences[A](request: Reference, responses: (String, Reference)*): Path.Operation[A] =
+    operationFrom(request.asRight.some, responses.toMap.mapValues(_.asRight))
+
+  def operationWithResponses[A](responses: (String, Response[A])*): Path.Operation[A] =
+    operationFrom(none, responses.toMap.mapValues(_.asLeft))
+
+  def operation[A](request: Request[A], responses: (String, Response[A])*): Path.Operation[A] =
+    operationFrom(request.asLeft.some, responses.toMap.mapValues(_.asLeft))
+
   def reference(value: String): Reference = Reference(value)
 
+  private def operationFrom[A](
+      requestBody: Option[Either[Request[A], Reference]],
+      responses: Map[String, Either[Response[A], Reference]]
+  ): Path.Operation[A] =
+    Path.Operation[A](
+      tags = List.empty,
+      summary = None,
+      description = None,
+      externalDocs = None,
+      operationId = None,
+      parameters = List.empty,
+      requestBody = requestBody,
+      responses = responses,
+      callbacks = Map.empty,
+      deprecated = false,
+      servers = List.empty
+    )
   implicit class OperationOps[A](operation: Path.Operation[A]) {
     def withParameter(parameter: Parameter[A]): Path.Operation[A] =
       operation.copy(parameters = operation.parameters :+ parameter.asLeft)
