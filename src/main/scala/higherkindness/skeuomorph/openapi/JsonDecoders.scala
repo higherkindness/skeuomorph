@@ -32,7 +32,7 @@ object JsonDecoders {
 
   private def basicJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] = {
     import JsonSchemaF._
-    Decoder.forProduct2[(String, Option[String]), String, Option[String]]("type", "format") { Tuple2.apply }.emap {
+    Decoder.forProduct2[(String, Option[String]), String, Option[String]]("type", "format")(Tuple2.apply).emap {
       case ("integer", Some("int32"))    => integer[A].embed.asRight
       case ("integer", Some("int64"))    => long[A].embed.asRight
       case ("integer", _)                => integer[A].embed.asRight
@@ -294,7 +294,7 @@ object JsonDecoders {
               servers.getOrElse(List.empty),
               parameters.getOrElse(List.empty)
             )
-        )
+      )
     )
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =

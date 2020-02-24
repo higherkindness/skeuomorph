@@ -50,7 +50,7 @@ object Printer {
   }
 
   def konst(str: String): Printer[Unit] =
-    Printer(Function.const(str))
+    Printer(Function.const(str)(_))
 
   val space: Printer[Unit] = konst(" ")
 
@@ -71,7 +71,7 @@ object Printer {
     def print(a: A): String = a.toString
   }
 
-  def show[F: Show]: Printer[F] = Printer { _.show }
+  def show[F: Show]: Printer[F] = Printer(_.show)
 
   def optional[A](p: Printer[A]): Printer[Option[A]] =
     Printer(_.fold("")(p.print))

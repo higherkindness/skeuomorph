@@ -16,11 +16,13 @@
 
 package higherkindness.skeuomorph.openapi
 
+import io.circe.parser._
+import io.circe.Json
+import cats.implicits._
+import schema._
+import scala.collection.compat._
+
 object helpers {
-  import io.circe.parser._
-  import io.circe.Json
-  import cats.implicits._
-  import schema._
 
   def unsafeParse: String => Json = parse(_).valueOr(x => sys.error(x.message))
 
@@ -28,13 +30,13 @@ object helpers {
     Response[A](description, Map.empty, content.toMap)
 
   def operationWithReferences[A](request: Reference, responses: (String, Reference)*): Path.Operation[A] =
-    operationFrom(request.asRight.some, responses.toMap.mapValues(_.asRight))
+    operationFrom(request.asRight.some, responses.toMap.view.mapValues(_.asRight).toMap)
 
   def operationWithResponses[A](responses: (String, Response[A])*): Path.Operation[A] =
-    operationFrom(none, responses.toMap.mapValues(_.asLeft))
+    operationFrom(none, responses.toMap.view.mapValues(_.asLeft).toMap)
 
   def operation[A](request: Request[A], responses: (String, Response[A])*): Path.Operation[A] =
-    operationFrom(request.asLeft.some, responses.toMap.mapValues(_.asLeft))
+    operationFrom(request.asLeft.some, responses.toMap.view.mapValues(_.asLeft).toMap)
 
   def reference(value: String): Reference = Reference(value)
 

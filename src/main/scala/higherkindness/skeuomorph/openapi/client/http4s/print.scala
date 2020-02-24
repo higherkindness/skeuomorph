@@ -182,7 +182,7 @@ object print {
       (
         x.verb,
         x.path -> queryParametersFrom(x),
-        x.requestBody.flatMap { requestOrTuple[T](x.operationId, _) }.map(_.name),
+        x.requestBody.flatMap(requestOrTuple[T](x.operationId, _)).map(_.name),
         headers.headOption.map(_ => headers)
       )
     }
@@ -213,9 +213,7 @@ object print {
 
   def expectImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T] >* κ(")"))
-      .contramapN { x =>
-        (x.operationId -> x.responses, x)
-      }
+      .contramapN(x => (x.operationId -> x.responses, x))
 
   def methodImpl[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs],
@@ -224,9 +222,7 @@ object print {
     (
       method[T] >* κ(" = client."),
       expectImpl[T] >|< fetchImpl[T]
-    ).contramapN { x =>
-      (x, if (x.responses.size > 1) x.asRight else x.asLeft)
-    }
+    ).contramapN(x => (x, if (x.responses.size > 1) x.asRight else x.asLeft))
 
   def queryParameter[T]: Printer[Parameter.Query[T]] =
     (space *< string >* space, κ("(\"") *< divBy(string, κ("\", "), show[Var]) >* κ(")")).contramapN { q =>

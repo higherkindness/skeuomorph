@@ -162,15 +162,11 @@ object ParseProto {
     Protocol.Operation(
       name = o.getName,
       request = findMessage(o.getInputType, files)
-        .fold(`null`[A]()) { namedMessage =>
-          namedType[A](namedMessage.scalaPrefix, namedMessage.name)
-        }
+        .fold(`null`[A]())(namedMessage => namedType[A](namedMessage.scalaPrefix, namedMessage.name))
         .embed,
       requestStreaming = o.getClientStreaming,
       response = findMessage(o.getOutputType, files)
-        .fold(`null`[A]()) { namedMessage =>
-          namedType[A](namedMessage.scalaPrefix, namedMessage.name)
-        }
+        .fold(`null`[A]())(namedMessage => namedType[A](namedMessage.scalaPrefix, namedMessage.name))
         .embed,
       responseStreaming = o.getServerStreaming
     )

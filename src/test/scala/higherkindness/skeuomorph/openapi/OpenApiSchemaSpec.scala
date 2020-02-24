@@ -57,9 +57,9 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
 
   def shouldAbleToReadSpecExamples = Prop.forAll { (format: Spec.Format) =>
     import JsonDecoders._
-    import yaml.{Decoder => _, _}
+    import _root_.higherkindness.skeuomorph.openapi.yaml.{Decoder => YamlDecoder, _}
     format.fold(
-      yaml.Decoder[OpenApi[JsonSchemaF.Fixed]].apply(_).isRight,
+      YamlDecoder[OpenApi[JsonSchemaF.Fixed]].apply(_).isRight,
       Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(_).isRight
     )
   }

@@ -56,8 +56,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   def codegenProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
     val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-      p: Protocol[Mu[ProtobufF]] =>
-        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
+      p: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
     }
 
     val streamCtor: (Type, Type) => Type.Apply = {

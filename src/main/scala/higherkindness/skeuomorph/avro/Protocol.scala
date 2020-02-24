@@ -113,9 +113,7 @@ object Protocol {
     def fromMu: T => U = scheme.cata(fromFreesFSchema.algebra)
     val services: List[Message[U]] = protocol.services
       .filter(_.serializationType == SerializationType.Avro)
-      .flatMap { s =>
-        s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe)))
-      }
+      .flatMap(s => s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe))))
 
     Protocol(
       protocol.name,

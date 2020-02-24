@@ -127,29 +127,19 @@ object instances {
         MuF.byteArray[T]().pure[Gen],
         (Gen.listOf(nonEmptyString), nonEmptyString) mapN MuF.namedType[T],
         T.arbitrary map MuF.option[T],
-        (T.arbitrary, T.arbitrary) mapN { (a, b) =>
-          MuF.either(a, b)
-        },
+        (T.arbitrary, T.arbitrary) mapN { (a, b) => MuF.either(a, b) },
         T.arbitrary map MuF.list[T],
         T.arbitrary map (t => MuF.map[T](None, t)),
         T.arbitrary map MuF.required[T],
-        (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
-          MuF.generic[T](a, b)
-        },
-        (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) =>
-          MuF.generic[T](a, b)
-        },
-        Gen.nonEmptyListOf(T.arbitrary) map { l =>
-          MuF.coproduct[T](NonEmptyList.fromListUnsafe(l))
-        },
+        (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) => MuF.generic[T](a, b) },
+        (T.arbitrary, Gen.listOf(T.arbitrary)) mapN { (a, b) => MuF.generic[T](a, b) },
+        Gen.nonEmptyListOf(T.arbitrary) map { l => MuF.coproduct[T](NonEmptyList.fromListUnsafe(l)) },
         (
           nonEmptyString,
           Gen.nonEmptyListOf(Gen.lzy(fieldGen)),
           Gen.listOfN(1, T.arbitrary),
           Gen.listOfN(1, T.arbitrary)
-        ).mapN { (n, f, p, c) =>
-          MuF.product(n, f, p, c)
-        }
+        ).mapN((n, f, p, c) => MuF.product(n, f, p, c))
       )
     )
   }
@@ -346,9 +336,7 @@ object instances {
           Gen.option(nonEmptyString),
           Gen.listOf(fieldGen)
         ).mapN(AvroF.record[T]),
-        Gen.nonEmptyListOf(T.arbitrary) map { l =>
-          AvroF.union[T](NonEmptyList.fromListUnsafe(l))
-        },
+        Gen.nonEmptyListOf(T.arbitrary) map { l => AvroF.union[T](NonEmptyList.fromListUnsafe(l)) },
         (
           nonEmptyString,
           Gen.option(nonEmptyString),

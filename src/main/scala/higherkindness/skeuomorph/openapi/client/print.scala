@@ -262,7 +262,7 @@ object print {
       κ("  def ") *< show[Http.OperationId],
       κ("(") *< sepBy(argumentDef, ", "),
       κ("): F[") *< responsesTypes >* κ("]")
-    ).contramapN { operationTuple[T] }
+    ).contramapN(operationTuple[T])
 
   private def itemObjectTuple[T](
       thePath: String,
@@ -292,9 +292,7 @@ object print {
       typeFromResponse(response).map(schema(innerType.some).print).getOrElse("Unit")
     tpe match {
       case _ if (tpe === newSchema) =>
-        un(second(success) { x =>
-          none -> x
-        })
+        un(second(success)(x => none -> x))
       case _ if (newSchema.nonEmpty) => (tpe, innerType.some, List(newSchema))
       case _                         => (tpe, none, Nil)
     }
@@ -312,7 +310,7 @@ object print {
       caseClassDef.print(newType -> List("statusCode" -> Tpe[T]("Int"), "value" -> Tpe[T](tpe)))
     responseOr.fold(
       r => {
-        val (_, anonymousType, schemas) = typeAndSchemaFor(operationId.some, r, tpe) { tpe -> List.empty }
+        val (_, anonymousType, schemas) = typeAndSchemaFor(operationId.some, r, tpe)(tpe -> List.empty)
         un(second(newType -> schemas) { x =>
           anonymousType.getOrElse(tpe) -> (x ++ List(statusCaseClass(anonymousType.getOrElse(tpe))))
         })
@@ -379,7 +377,7 @@ object print {
           .toList
           .flatMap {
             case (response, tpe) =>
-              typeAndSchemaFor(none, response, tpe) { tpe -> Nil }._3
+              typeAndSchemaFor(none, response, tpe)(tpe -> Nil)._3
           }
           .asRight
       case _ =>
@@ -432,9 +430,7 @@ object print {
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
   private def parameterSchema[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
-    schemaWithName[T].contramap { x =>
-      x.name -> x.schema
-    }
+    schemaWithName[T].contramap(x => x.name -> x.schema)
 
   private def clientTypes[T: Basis[JsonSchemaF, ?]](
       implicit codecs: Printer[Codecs]
