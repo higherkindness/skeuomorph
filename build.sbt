@@ -14,6 +14,7 @@ val V = new {
   val catsScalacheck   = "0.2.0"
   val circe            = "0.13.0"
   val circeYaml        = "0.12.0"
+  val collectionCompat = "2.1.4"
   val disciplineSpecs2 = "1.0.0"
   val droste           = "0.8.0"
   val kindProjector    = "0.10.3"
@@ -110,6 +111,7 @@ lazy val commonSettings = Seq(
     %%("circe-core", V.circe),
     %%("circe-parser", V.circe),
     "org.scalameta"                   %% "scalameta" % V.meta,
+    "org.scala-lang.modules"          %% "scala-collection-compat" % V.collectionCompat,
     %%("cats-laws", V.cats)           % Test,
     "io.circe"                        %% "circe-testing" % V.circe % Test,
     %%("scalacheck", V.scalacheck)    % Test,

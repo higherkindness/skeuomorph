@@ -30,6 +30,7 @@ import cats.syntax.option._
 import cats.syntax.foldable._
 import cats.syntax.semigroup._
 import cats.syntax.apply._
+import scala.collection.compat._
 
 /** An ADT representing the "shape" of the computation of the differences between two schemas.
  *
@@ -270,7 +271,7 @@ trait ComparisonInstances {
       case Comparison.CompareBoth(x, y)         => Comparison.CompareBoth(f(x), f(y))
       case Comparison.CompareList(i, rep)       => Comparison.CompareList(i.map(f), rep)
       case Comparison.MatchInList(a, rep)       => Comparison.MatchInList(a.map(f), rep)
-      case Comparison.AlignUnionMembers(a, rep) => Comparison.AlignUnionMembers(a.mapValues(_.map(f)), rep)
+      case Comparison.AlignUnionMembers(a, rep) => Comparison.AlignUnionMembers(a.view.mapValues(_.map(f)).toMap, rep)
     }
   }
 }
