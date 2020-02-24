@@ -1,5 +1,15 @@
 # Changelog
 
+## 02/24/2020 - Version 0.0.22
+
+Release changes:
+
+* Update sbt-microsites to 1.1.2 ([#237](https://github.com/higherkindness/skeuomorph/pull/237))
+* Update scalafmt-core to 2.4.2 ([#239](https://github.com/higherkindness/skeuomorph/pull/239))
+* Cross compilation Scala 2.13 ([#236](https://github.com/higherkindness/skeuomorph/pull/236))
+* Releases 0.0.22 ([#240](https://github.com/higherkindness/skeuomorph/pull/240))
+
+
 ## 02/21/2020 - Version 0.0.21
 
 Release changes:
