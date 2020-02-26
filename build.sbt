@@ -20,7 +20,6 @@ val V = new {
   val kindProjector    = "0.10.3"
   val macroParadise    = "2.1.1"
   val meta             = "4.3.0"
-  val metaContrib      = "4.1.6"
   val scala212         = "2.12.10"
   val scala213         = "2.13.1"
   val scalacheck       = "1.14.3"
@@ -36,7 +35,8 @@ lazy val skeuomorph = project
   .settings(
     libraryDependencies ++= Seq(
       ("com.lihaoyi" % "ammonite" % V.ammonite % Test).cross(CrossVersion.full)
-    ))
+    )
+  )
   .settings(
     sourceGenerators in Test += Def.task {
       val file = (sourceManaged in Test).value / "amm.scala"
@@ -100,43 +100,41 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq(V.scala212, V.scala213),
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    %%("cats-core", V.cats),
-    "io.higherkindness"   %% "droste-core"   % V.droste,
-    "io.higherkindness"   %% "droste-macros" % V.droste,
-    "org.apache.avro"     % "avro"           % V.avro,
-    "com.github.os72"     % "protoc-jar"     % V.protoc,
-    "com.google.protobuf" % "protobuf-java"  % V.protobuf,
-    "io.circe"            %% "circe-yaml"    % V.circeYaml,
-    %%("cats-effect", V.catsEffect),
-    %%("circe-core", V.circe),
-    %%("circe-parser", V.circe),
-    "org.scalameta"                   %% "scalameta" % V.meta,
-    "org.scala-lang.modules"          %% "scala-collection-compat" % V.collectionCompat,
-    %%("cats-laws", V.cats)           % Test,
-    "io.circe"                        %% "circe-testing" % V.circe % Test,
-    %%("scalacheck", V.scalacheck)    % Test,
-    %%("specs2-core", V.specs2)       % Test,
-    "org.typelevel"                   %% "discipline-specs2" % V.disciplineSpecs2 % Test,
-    %%("specs2-scalacheck", V.specs2) % Test,
-    "io.chrisdavenport"               %% "cats-scalacheck" % V.catsScalacheck % Test excludeAll (
-      ExclusionRule(organization = "org.scalacheck"),
-      "org.scalameta" %% "contrib" % V.metaContrib % Test
+    "org.typelevel"          %% "cats-core"               % V.cats,
+    "org.typelevel"          %% "cats-effect"             % V.catsEffect,
+    "io.higherkindness"      %% "droste-core"             % V.droste,
+    "io.higherkindness"      %% "droste-macros"           % V.droste,
+    "org.apache.avro"        % "avro"                     % V.avro,
+    "com.github.os72"        % "protoc-jar"               % V.protoc,
+    "com.google.protobuf"    % "protobuf-java"            % V.protobuf,
+    "io.circe"               %% "circe-core"              % V.circe,
+    "io.circe"               %% "circe-parser"            % V.circe,
+    "io.circe"               %% "circe-yaml"              % V.circeYaml,
+    "org.scalameta"          %% "scalameta"               % V.meta,
+    "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat,
+    "org.typelevel"          %% "cats-laws"               % V.cats % Test,
+    "io.circe"               %% "circe-testing"           % V.circe % Test,
+    "org.typelevel"          %% "discipline-specs2"       % V.disciplineSpecs2 % Test,
+    "org.specs2"             %% "specs2-core"             % V.specs2 % Test,
+    "org.specs2"             %% "specs2-scalacheck"       % V.specs2 % Test,
+    "org.scalacheck"         %% "scalacheck"              % V.scalacheck % Test,
+    "io.chrisdavenport"      %% "cats-scalacheck"         % V.catsScalacheck % Test excludeAll (
+      ExclusionRule(organization = "org.scalacheck")
     )
   ),
   orgProjectName := "Skeuomorph",
   orgUpdateDocFilesSetting ++= List(
     baseDirectory.value / "docs" / "docs",
-    baseDirectory.value / "docs" / "docs" / "docs"),
+    baseDirectory.value / "docs" / "docs" / "docs"
+  ),
   orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
   orgBadgeListSetting := List(
     TravisBadge.apply,
-    CodecovBadge.apply, { info =>
-      MavenCentralBadge.apply(info.copy(libName = "skeuomorph"))
-    },
+    CodecovBadge.apply,
+    info => MavenCentralBadge.apply(info.copy(libName = "skeuomorph")),
     ScalaLangBadge.apply,
-    LicenseBadge.apply, { info =>
-      GitterBadge.apply(info.copy(owner = "higherkindness", repo = "skeuomorph"))
-    },
+    LicenseBadge.apply,
+    info => GitterBadge.apply(info.copy(owner = "higherkindness", repo = "skeuomorph")),
     GitHubIssuesBadge.apply
   ),
   orgEnforcedFilesSetting := List(
