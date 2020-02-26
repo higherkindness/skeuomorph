@@ -41,7 +41,7 @@ object CompressionType {
 final case class IdiomaticEndpoints(pkg: Option[String], value: Boolean)
 
 final case class Protocol[T](
-    name: String,
+    name: Option[String],
     pkg: Option[String],
     options: List[(String, String)],
     declarations: List[T],
@@ -67,11 +67,11 @@ object Protocol {
         )
 
     Protocol(
-      proto.name,
-      proto.namespace,
-      Nil,
-      proto.types.map(toMu),
-      List(
+      name = None,
+      pkg = proto.namespace,
+      options = Nil,
+      declarations = proto.types.map(toMu),
+      services = List(
         Service(
           proto.name,
           SerializationType.Avro,
@@ -80,7 +80,7 @@ object Protocol {
           proto.messages.map(toOperation)
         )
       ),
-      Nil
+      imports = Nil
     )
   }
 
@@ -100,7 +100,7 @@ object Protocol {
       imp => DependentImport(imp.pkg, imp.protocol, toMu(imp.tpe))
 
     new Protocol[U](
-      name = protocol.name,
+      name = Some(protocol.name),
       pkg = Option(protocol.pkg),
       options = protocol.options,
       declarations = protocol.declarations.map(toMu),

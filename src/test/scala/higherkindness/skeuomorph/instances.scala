@@ -112,7 +112,7 @@ object instances {
       (
         nonEmptyString,
         Gen.lzy(T.arbitrary),
-        Gen.posNum[Int].map(List(_))
+        Gen.posNum[Int].map(i => Some(List(i)))
       ).mapN(MuF.Field.apply)
 
     Arbitrary(
@@ -326,7 +326,7 @@ object instances {
         AvroF.double[T]().pure[Gen],
         AvroF.bytes[T]().pure[Gen],
         AvroF.string[T]().pure[Gen],
-        nonEmptyString map AvroF.namedType[T],
+        (nonEmptyString, nonEmptyString).mapN(AvroF.namedType[T]),
         T.arbitrary map AvroF.array[T],
         T.arbitrary map AvroF.map[T],
         (

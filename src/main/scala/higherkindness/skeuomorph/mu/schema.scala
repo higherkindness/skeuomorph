@@ -31,7 +31,7 @@ import cats.syntax.eq._
 
 @deriveTraverse sealed trait MuF[A]
 object MuF {
-  @deriveTraverse final case class Field[A](name: String, tpe: A, indices: List[Int])
+  @deriveTraverse final case class Field[A](name: String, tpe: A, indices: Option[List[Int]])
 
   final case class SumField(name: String, value: Int)
 
