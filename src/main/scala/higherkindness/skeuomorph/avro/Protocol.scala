@@ -112,7 +112,7 @@ object Protocol {
     )
   }
 
-  def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
+  def fromMuSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
     case MuF.TNull()                  => AvroF.`null`()
     case MuF.TDouble()                => AvroF.double()
     case MuF.TFloat()                 => AvroF.float()
@@ -141,8 +141,8 @@ object Protocol {
       )
   }
 
-  def fromFreesFProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
-    def fromMu: T => U = scheme.cata(fromFreesFSchema.algebra)
+  def fromMuProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
+    def fromMu: T => U = scheme.cata(fromMuSchema.algebra)
     val services: List[Message[U]] = protocol.services
       .filter(_.serializationType == SerializationType.Avro)
       .flatMap(s => s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe))))
