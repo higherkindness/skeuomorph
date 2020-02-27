@@ -81,14 +81,22 @@ object codegen {
       decls   <- declarations
       srvs    <- services
     } yield {
-      val objDefn = q"""
-      ..$options object ${Term.Name(protocol.name)} {
-        ..$depImps
-        ..$decls
-        ..$srvs
+      protocol.name match {
+        case Some(protoName) =>
+          // If protocol has a name, wrap the declarations and services
+          // together in an object with that name
+          val objDefn = q"""
+          ..$options object ${Term.Name(protoName)} {
+            ..$depImps
+            ..$decls
+            ..$srvs
+          }
+          """
+          Pkg(pkgName, List(muImp, objDefn))
+        case None =>
+          val stats = muImp :: depImps ++ decls ++ srvs
+          Pkg(pkgName, stats)
       }
-      """
-      Pkg(pkgName, List(muImp, objDefn))
     }
   }
 
@@ -149,7 +157,7 @@ object codegen {
     }
 
     val algebra: AlgebraM[Either[String, ?], MuF, Tree] = AlgebraM {
-      case TNull()                  => t"Null".asRight
+      case TNull()                  => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
       case TDouble()                => t"_root_.scala.Double".asRight
       case TFloat()                 => t"_root_.scala.Float".asRight
       case x @ TInt(_)              => intType(x).asRight
@@ -197,8 +205,8 @@ object codegen {
       case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
         def arg(f: Field[Tree]): Either[String, Term.Param] =
           f.tpe.as[Type].map { tpe =>
-            val annotation = mod"@_root_.pbdirect.pbIndex(..${f.indices.map(Lit.Int(_))})"
-            param"$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
+            val annotation = f.indices.map(indices => mod"@_root_.pbdirect.pbIndex(..${indices.map(Lit.Int(_))})")
+            param"..$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
           }
         (
           fields.traverse(arg),

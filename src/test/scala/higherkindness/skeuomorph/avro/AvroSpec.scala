@@ -19,9 +19,16 @@ package higherkindness.skeuomorph.avro
 import higherkindness.skeuomorph.instances._
 
 import org.apache.avro.Schema
+import org.apache.avro.compiler.idl._
 import org.scalacheck._
 import org.specs2._
+import higherkindness.skeuomorph.mu.{Protocol => MuProtocol}
+import higherkindness.skeuomorph.mu.CompressionType
+import higherkindness.skeuomorph.mu.codegen
 import higherkindness.droste._
+import higherkindness.droste.data.Mu
+import scala.meta._
+import scala.meta.contrib._
 
 import scala.collection.JavaConverters._
 
@@ -32,7 +39,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
   It should be possible to create a Schema from org.apache.avro.Schema. $convertSchema
 
-  It should be possible to create a Protocol from org.apache.avro.Protocol. $convertProtocol
+  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. $convertAndPrintProtocol
   """
 
   def convertSchema = Prop.forAll { (schema: Schema) =>
@@ -40,8 +47,6 @@ class AvroSpec extends Specification with ScalaCheck {
 
     test(schema)
   }
-
-  def convertProtocol = todo
 
   def checkSchema(sch: Schema): Algebra[AvroF, Boolean] = Algebra {
     case AvroF.TNull()    => sch.getType should_== Schema.Type.NULL
@@ -53,9 +58,9 @@ class AvroSpec extends Specification with ScalaCheck {
     case AvroF.TBytes()   => sch.getType should_== Schema.Type.BYTES
     case AvroF.TString()  => sch.getType should_== Schema.Type.STRING
 
-    case AvroF.TNamedType(_) => false
-    case AvroF.TArray(_)     => sch.getType should_== Schema.Type.ARRAY
-    case AvroF.TMap(_)       => sch.getType should_== Schema.Type.MAP
+    case AvroF.TNamedType(_, _) => false
+    case AvroF.TArray(_)        => sch.getType should_== Schema.Type.ARRAY
+    case AvroF.TMap(_)          => sch.getType should_== Schema.Type.MAP
     case AvroF.TRecord(name, namespace, _, doc, fields) =>
       (sch.getName should_== name)
         .and(sch.getNamespace should_== namespace.getOrElse(""))
@@ -69,4 +74,66 @@ class AvroSpec extends Specification with ScalaCheck {
     case AvroF.TUnion(_)            => true
     case AvroF.TFixed(_, _, _, _)   => true
   }
+
+  def convertAndPrintProtocol = {
+    val idl       = new Idl(getClass.getClassLoader.getResourceAsStream("avro/GreeterService.avdl"))
+    val avroProto = idl.CompilationUnit()
+
+    val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
+
+    val muProto = MuProtocol.fromAvroProtocol(CompressionType.Identity, useIdiomaticEndpoints = true)(skeuoAvroProto)
+
+    val streamCtor: (Type, Type) => Type.Apply = {
+      case (f: Type, a: Type) => t"Stream[$f, $a]"
+    }
+
+    val actual = codegen.protocol(muProto, streamCtor).right.get
+
+    val expected = codegenExpectation(CompressionType.Identity, useIdiomaticEndpoints = true)
+      .parse[Source]
+      .get
+      .children
+      .head
+      .asInstanceOf[Pkg]
+
+    actual.isEqual(expected) :| s"""
+      |Actual output:
+      |$actual
+      |
+      |
+      |Expected output:
+      |$expected"
+      """.stripMargin
+  }
+
+  // TODO test for more complex schemas, importing other files, etc.
+
+  def codegenExpectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
+
+    val serviceParams: String = "Protobuf" +
+      (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
+      (if (useIdiomaticEndpoints) ", namespace = Some(\"foo.bar\"), methodNameStyle = Capitalize" else "")
+
+    s"""package foo.bar
+      |
+      |import _root_.higherkindness.mu.rpc.protocol._
+      |
+      |final case class HelloRequest(
+      |  arg1: _root_.java.lang.String,
+      |  arg2: _root_.scala.Option[_root_.java.lang.String],
+      |  arg3: _root_.scala.List[_root_.java.lang.String]
+      |)
+      |final case class HelloResponse(
+      |  arg1: _root_.java.lang.String,
+      |  arg2: _root_.scala.Option[_root_.java.lang.String],
+      |  arg3: _root_.scala.List[_root_.java.lang.String]
+      |)
+      |
+      |@service(Avro, Identity, namespace = Some("foo.bar"), methodNameStyle = Capitalize) trait MyGreeterService[F[_]] {
+      |  def sayHelloAvro(req: _root_.foo.bar.HelloRequest): F[_root_.foo.bar.HelloResponse]
+      |  def sayNothingAvro(req: _root_.higherkindness.mu.rpc.protocol.Empty.type): F[_root_.higherkindness.mu.rpc.protocol.Empty.type]
+      |}
+      """.stripMargin
+  }
+
 }

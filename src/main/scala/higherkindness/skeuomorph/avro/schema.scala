@@ -84,17 +84,17 @@ object AvroF {
     }
   }
 
-  final case class TNull[A]()                  extends AvroF[A]
-  final case class TBoolean[A]()               extends AvroF[A]
-  final case class TInt[A]()                   extends AvroF[A]
-  final case class TLong[A]()                  extends AvroF[A]
-  final case class TFloat[A]()                 extends AvroF[A]
-  final case class TDouble[A]()                extends AvroF[A]
-  final case class TBytes[A]()                 extends AvroF[A]
-  final case class TString[A]()                extends AvroF[A]
-  final case class TNamedType[A](name: String) extends AvroF[A]
-  final case class TArray[A](item: A)          extends AvroF[A]
-  final case class TMap[A](values: A)          extends AvroF[A]
+  final case class TNull[A]()                                     extends AvroF[A]
+  final case class TBoolean[A]()                                  extends AvroF[A]
+  final case class TInt[A]()                                      extends AvroF[A]
+  final case class TLong[A]()                                     extends AvroF[A]
+  final case class TFloat[A]()                                    extends AvroF[A]
+  final case class TDouble[A]()                                   extends AvroF[A]
+  final case class TBytes[A]()                                    extends AvroF[A]
+  final case class TString[A]()                                   extends AvroF[A]
+  final case class TNamedType[A](namespace: String, name: String) extends AvroF[A]
+  final case class TArray[A](item: A)                             extends AvroF[A]
+  final case class TMap[A](values: A)                             extends AvroF[A]
   final case class TRecord[A](
       name: String,
       namespace: Option[String],
@@ -121,7 +121,7 @@ object AvroF {
     case (TDouble(), TDouble())                         => true
     case (TBytes(), TBytes())                           => true
     case (TString(), TString())                         => true
-    case (TNamedType(n), TNamedType(n2))                => n === n2
+    case (TNamedType(ns, n), TNamedType(ns2, n2))       => ns === ns2 && n === n2
     case (TArray(i), TArray(i2))                        => i === i2
     case (TMap(v), TMap(v2))                            => v === v2
     case (TUnion(o), TUnion(o2))                        => o === o2
@@ -137,17 +137,17 @@ object AvroF {
    * Helper methods to construct AvroF values.  These methods are to
    * avoid scala infering the case type instead of AvroF.
    */
-  def `null`[A](): AvroF[A]                = TNull[A]()
-  def boolean[A](): AvroF[A]               = TBoolean[A]()
-  def int[A](): AvroF[A]                   = TInt[A]()
-  def long[A](): AvroF[A]                  = TLong[A]()
-  def float[A](): AvroF[A]                 = TFloat[A]()
-  def double[A](): AvroF[A]                = TDouble[A]()
-  def bytes[A](): AvroF[A]                 = TBytes[A]()
-  def string[A](): AvroF[A]                = TString[A]()
-  def namedType[A](name: String): AvroF[A] = TNamedType[A](name)
-  def array[A](item: A): AvroF[A]          = TArray[A](item)
-  def map[A](values: A): AvroF[A]          = TMap[A](values)
+  def `null`[A](): AvroF[A]                                   = TNull[A]()
+  def boolean[A](): AvroF[A]                                  = TBoolean[A]()
+  def int[A](): AvroF[A]                                      = TInt[A]()
+  def long[A](): AvroF[A]                                     = TLong[A]()
+  def float[A](): AvroF[A]                                    = TFloat[A]()
+  def double[A](): AvroF[A]                                   = TDouble[A]()
+  def bytes[A](): AvroF[A]                                    = TBytes[A]()
+  def string[A](): AvroF[A]                                   = TString[A]()
+  def namedType[A](namespace: String, name: String): AvroF[A] = TNamedType[A](namespace, name)
+  def array[A](item: A): AvroF[A]                             = TArray[A](item)
+  def map[A](values: A): AvroF[A]                             = TMap[A](values)
   def record[A](
       name: String,
       namespace: Option[String],
@@ -214,15 +214,15 @@ object AvroF {
   }
 
   def toJson: Algebra[AvroF, Json] = Algebra {
-    case TNull()          => Json.fromString("Null")
-    case TBoolean()       => Json.fromString("Boolean")
-    case TInt()           => Json.fromString("Int")
-    case TLong()          => Json.fromString("Long")
-    case TFloat()         => Json.fromString("Float")
-    case TDouble()        => Json.fromString("Double")
-    case TBytes()         => Json.fromString("Bytes")
-    case TString()        => Json.fromString("String")
-    case TNamedType(name) => Json.fromString(name)
+    case TNull()                     => Json.fromString("Null")
+    case TBoolean()                  => Json.fromString("Boolean")
+    case TInt()                      => Json.fromString("Int")
+    case TLong()                     => Json.fromString("Long")
+    case TFloat()                    => Json.fromString("Float")
+    case TDouble()                   => Json.fromString("Double")
+    case TBytes()                    => Json.fromString("Bytes")
+    case TString()                   => Json.fromString("String")
+    case TNamedType(namespace, name) => Json.fromString(s"$namespace.$name")
     case TArray(item) =>
       Json.obj(
         "type"  -> Json.fromString("array"),

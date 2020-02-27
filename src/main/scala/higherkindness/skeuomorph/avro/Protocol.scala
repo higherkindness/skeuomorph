@@ -57,8 +57,40 @@ object Protocol {
 
   def fromProto[T](proto: AvroProtocol)(implicit T: Embed[AvroF, T]): Protocol[T] = {
     val toAvroF: Schema => T = scheme.ana(fromAvro)
-    def toMessage(kv: (String, AvroProtocol#Message)): Message[T] =
-      Message[T](kv._2.getName, toAvroF(kv._2.getRequest), toAvroF(kv._2.getResponse))
+
+    def requestToAvroF(req: Schema): AvroF[T] = {
+      if (req.getType == Schema.Type.NULL) {
+        `null`[T]
+      } else {
+        // Assume it's a record type.
+        // We don't support primitive types for RPC requests/responses.
+        val fields = req.getFields
+        if (fields.size == 0)
+          `null`[T]
+        else {
+          val fieldSchema = fields.get(0).schema
+          namedType[T](fieldSchema.getNamespace, fieldSchema.getName)
+        }
+      }
+    }
+
+    def responseToAvroF(resp: Schema): AvroF[T] = {
+      if (resp.getType == Schema.Type.NULL) {
+        `null`[T]
+      } else {
+        // Assume it's a record type.
+        // We don't support primitive types for RPC requests/responses.
+        namedType[T](resp.getNamespace, resp.getName)
+      }
+    }
+
+    def toMessage(kv: (String, AvroProtocol#Message)): Message[T] = {
+      Message[T](
+        kv._2.getName,
+        requestToAvroF(kv._2.getRequest).embed,
+        responseToAvroF(kv._2.getResponse).embed
+      )
+    }
 
     Protocol(
       proto.getName,
@@ -80,25 +112,25 @@ object Protocol {
     )
   }
 
-  def fromFreesFSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
-    case MuF.TNull()                => AvroF.`null`()
-    case MuF.TDouble()              => AvroF.double()
-    case MuF.TFloat()               => AvroF.float()
-    case MuF.TInt(MuF._32)          => AvroF.int()
-    case MuF.TInt(MuF._64)          => AvroF.long()
-    case MuF.TBoolean()             => AvroF.boolean()
-    case MuF.TString()              => AvroF.string()
-    case MuF.TByteArray()           => AvroF.bytes()
-    case MuF.TNamedType(_, name)    => AvroF.namedType(name)
-    case MuF.TOption(value)         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
-    case MuF.TEither(left, right)   => AvroF.union(NonEmptyList(left, List(right)))
-    case MuF.TList(value)           => AvroF.array(value)
-    case MuF.TMap(_, value)         => AvroF.map(value)
-    case MuF.TGeneric(_, _)         => ??? // WAT
-    case MuF.TContaining(_)         => ??? // TBD
-    case MuF.TRequired(t)           => T.coalgebra(t)
-    case MuF.TCoproduct(invariants) => AvroF.union(invariants)
-    case MuF.TSum(name, fields)     => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
+  def fromMuSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
+    case MuF.TNull()                  => AvroF.`null`()
+    case MuF.TDouble()                => AvroF.double()
+    case MuF.TFloat()                 => AvroF.float()
+    case MuF.TInt(MuF._32)            => AvroF.int()
+    case MuF.TInt(MuF._64)            => AvroF.long()
+    case MuF.TBoolean()               => AvroF.boolean()
+    case MuF.TString()                => AvroF.string()
+    case MuF.TByteArray()             => AvroF.bytes()
+    case MuF.TNamedType(prefix, name) => AvroF.namedType(prefix.mkString("."), name)
+    case MuF.TOption(value)           => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
+    case MuF.TEither(left, right)     => AvroF.union(NonEmptyList(left, List(right)))
+    case MuF.TList(value)             => AvroF.array(value)
+    case MuF.TMap(_, value)           => AvroF.map(value)
+    case MuF.TGeneric(_, _)           => ??? // WAT
+    case MuF.TContaining(_)           => ??? // TBD
+    case MuF.TRequired(t)             => T.coalgebra(t)
+    case MuF.TCoproduct(invariants)   => AvroF.union(invariants)
+    case MuF.TSum(name, fields)       => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
     case MuF.TProduct(name, fields, _, _) =>
       TRecord(
         name,
@@ -109,14 +141,14 @@ object Protocol {
       )
   }
 
-  def fromFreesFProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
-    def fromMu: T => U = scheme.cata(fromFreesFSchema.algebra)
+  def fromMuProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
+    def fromMu: T => U = scheme.cata(fromMuSchema.algebra)
     val services: List[Message[U]] = protocol.services
       .filter(_.serializationType == SerializationType.Avro)
       .flatMap(s => s.operations.map(op => Message(op.name, fromMu(op.request.tpe), fromMu(op.response.tpe))))
 
     Protocol(
-      protocol.name,
+      protocol.name.getOrElse("Protocol"),
       protocol.pkg,
       protocol.declarations.map(fromMu),
       services

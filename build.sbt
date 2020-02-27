@@ -112,6 +112,8 @@ lazy val commonSettings = Seq(
     "io.circe"               %% "circe-yaml"              % V.circeYaml,
     "org.scalameta"          %% "scalameta"               % V.meta,
     "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat,
+    "org.apache.avro"        % "avro-compiler"            % V.avro % Test,
+
     "org.typelevel"          %% "cats-laws"               % V.cats % Test,
     "io.circe"               %% "circe-testing"           % V.circe % Test,
     "org.typelevel"          %% "discipline-specs2"       % V.disciplineSpecs2 % Test,
