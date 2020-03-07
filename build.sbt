@@ -24,7 +24,7 @@ val V = new {
   val scala213         = "2.13.1"
   val scalacheck       = "1.14.3"
   val specs2           = "4.9.2"
-  val protoc           = "3.11.1"
+  val protoc           = "3.11.4"
   val protobuf         = "3.11.4"
 }
 
