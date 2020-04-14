@@ -285,9 +285,10 @@ object codegen {
       tree <- schema(opType.tpe)
       tpe  <- tree.as[Type]
     } yield {
-      if (opType.stream)
-        streamCtor(Type.Name("F"), tpe)
-      else
+      if (opType.stream) {
+        val streamType = streamCtor(Type.Name("F"), tpe)
+        t"F[$streamType]"
+      } else
         t"F[$tpe]"
     }
 
