@@ -162,9 +162,9 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |
       |@service($serviceParams) trait BookService[F[_]] {
       |  def GetBook(req: _root_.com.acme.book.GetBookRequest): F[_root_.com.acme.book.Book]
-      |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): Stream[F, _root_.com.acme.book.Book]
+      |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): F[Stream[F, _root_.com.acme.book.Book]]
       |  def GetGreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]
-      |  def GetBooks(req: Stream[F, _root_.com.acme.book.GetBookRequest]): Stream[F, _root_.com.acme.book.Book]
+      |  def GetBooks(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[Stream[F, _root_.com.acme.book.Book]]
       |  def GetRatingOfAuthor(req: _root_.com.acme.author.Author): F[_root_.com.acme.rating.Rating]
       |}
       |
