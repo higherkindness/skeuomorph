@@ -1,12 +1,14 @@
 import microsites._
-import sbtorgpolicies.OrgPoliciesPlugin.autoImport._
-import sbtorgpolicies.model._
-import sbtorgpolicies.runnable.syntax._
-import sbtorgpolicies.templates._
-import sbtorgpolicies.templates.badges._
+
+lazy val checkScalafmt = "+scalafmtCheck; +scalafmtSbtCheck;"
+lazy val checkDocs     = "+docs/mdoc;"
+lazy val checkTests    = "+coverage; +test; +coverageReport; +coverageAggregate;"
+
+addCommandAlias("ci-test", s"$checkScalafmt $checkDocs $checkTests")
+addCommandAlias("ci-docs", "project-docs/mdoc; docs/mdoc; headerCreateAll")
+addCommandAlias("ci-microsite", "docs/publishMicrosite")
 
 val V = new {
-  val ammonite         = "2.0.4"
   val avro             = "1.9.2"
   val betterMonadicFor = "0.3.1"
   val cats             = "2.1.1"
@@ -20,7 +22,7 @@ val V = new {
   val kindProjector    = "0.10.3"
   val macroParadise    = "2.1.1"
   val meta             = "4.3.0"
-  val scala212         = "2.12.10"
+  val scala212         = "2.12.11"
   val scala213         = "2.13.1"
   val scalacheck       = "1.14.3"
   val specs2           = "4.9.3"
@@ -32,20 +34,6 @@ lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
-  .settings(
-    libraryDependencies ++= Seq(
-      ("com.lihaoyi" % "ammonite" % V.ammonite % Test).cross(CrossVersion.full)
-    )
-  )
-  .settings(
-    sourceGenerators in Test += Def.task {
-      val file = (sourceManaged in Test).value / "amm.scala"
-      IO.write(file, """object amm extends App {
-        ammonite.Main.main(args)
-      }""")
-      Seq(file)
-    }.taskValue
-  )
 
 lazy val docs = project
   .in(file("docs"))
@@ -64,7 +52,7 @@ lazy val docs = project
     micrositeCompilingDocsTool := WithMdoc,
     micrositeDocumentationUrl := "docs",
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
-    micrositeGithubToken := getEnvVar(orgGithubTokenSetting.value),
+    micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
     micrositePushSiteWith := GitHub4s,
     micrositeFavicons := Seq(MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
@@ -82,21 +70,22 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
-pgpPassphrase := sys.env.get("PGP_PASSPHRASE").map(_.toCharArray)
+lazy val `project-docs` = (project in file(".docs"))
+  .aggregate(skeuomorph)
+  .dependsOn(skeuomorph)
+  .settings(moduleName := "skeuomorph-project-docs")
+  .settings(mdocIn := file(".docs"))
+  .settings(mdocOut := file("."))
+  .settings(noPublishSettings)
+  .enablePlugins(MdocPlugin)
 
 // General Settings
 lazy val commonSettings = Seq(
-  name := "skeuomorph",
-  orgGithubSetting := GitHubSettings(
-    organization = "higherkindness",
-    project = (name in LocalRootProject).value,
-    organizationName = "47 Degrees",
-    groupId = "io.higherkindness",
-    organizationHomePage = url("https://www.47deg.com"),
-    organizationEmail = "hello@47deg.com"
-  ),
+  organization := "io.higherkindness",
+  organizationName := "47 Degrees",
+  organizationHomepage := Some(url("http://47deg.com")),
+  crossScalaVersions := Seq(V.scala212, V.scala213),
   startYear := Some(2018),
-  scalaVersion := V.scala213,
   crossScalaVersions := Seq(V.scala212, V.scala213),
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
@@ -113,67 +102,14 @@ lazy val commonSettings = Seq(
     "org.scalameta"          %% "scalameta"               % V.meta,
     "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat,
     "org.apache.avro"        % "avro-compiler"            % V.avro % Test,
-
     "org.typelevel"          %% "cats-laws"               % V.cats % Test,
     "io.circe"               %% "circe-testing"           % V.circe % Test,
     "org.typelevel"          %% "discipline-specs2"       % V.disciplineSpecs2 % Test,
     "org.specs2"             %% "specs2-core"             % V.specs2 % Test,
     "org.specs2"             %% "specs2-scalacheck"       % V.specs2 % Test,
     "org.scalacheck"         %% "scalacheck"              % V.scalacheck % Test,
-    "io.chrisdavenport"      %% "cats-scalacheck"         % V.catsScalacheck % Test excludeAll (
-      ExclusionRule(organization = "org.scalacheck")
-    )
+    "io.chrisdavenport"      %% "cats-scalacheck"         % V.catsScalacheck % Test
   ),
-  orgProjectName := "Skeuomorph",
-  orgUpdateDocFilesSetting ++= List(
-    baseDirectory.value / "docs" / "docs",
-    baseDirectory.value / "docs" / "docs" / "docs"
-  ),
-  orgMaintainersSetting := List(Dev("developer47deg", Some("47 Degrees (twitter: @47deg)"), Some("hello@47deg.com"))),
-  orgBadgeListSetting := List(
-    TravisBadge.apply,
-    CodecovBadge.apply,
-    info => MavenCentralBadge.apply(info.copy(libName = "skeuomorph")),
-    ScalaLangBadge.apply,
-    LicenseBadge.apply,
-    info => GitterBadge.apply(info.copy(owner = "higherkindness", repo = "skeuomorph")),
-    GitHubIssuesBadge.apply
-  ),
-  orgEnforcedFilesSetting := List(
-    LicenseFileType(orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
-    ContributingFileType(
-      orgProjectName.value,
-      // Organization field can be configured with default value if we migrate it to the frees-io organization
-      orgGithubSetting.value.copy(organization = "higherkindness", project = "skeuomorph")
-    ),
-    AuthorsFileType(name.value, orgGithubSetting.value, orgMaintainersSetting.value, orgContributorsSetting.value),
-    NoticeFileType(orgProjectName.value, orgGithubSetting.value, orgLicenseSetting.value, startYear.value),
-    VersionSbtFileType,
-    ChangelogFileType,
-    ReadmeFileType(
-      orgProjectName.value,
-      orgGithubSetting.value,
-      startYear.value,
-      orgLicenseSetting.value,
-      orgCommitBranchSetting.value,
-      sbtPlugin.value,
-      name.value,
-      version.value,
-      scalaBinaryVersion.value,
-      sbtBinaryVersion.value,
-      orgSupportedScalaJSVersion.value,
-      orgBadgeListSetting.value
-    ),
-    ScalafmtFileType,
-    TravisFileType(crossScalaVersions.value, orgScriptCICommandKey, orgAfterCISuccessCommandKey)
-  ),
-  orgScriptTaskListSetting := List(
-    (clean in Global).asRunnableItemFull,
-    (compile in Compile).asRunnableItemFull,
-    (test in Test).asRunnableItemFull,
-    "docs/tut".asRunnableItem
-  ),
-  releaseIgnoreUntrackedFiles := true,
   coverageFailOnMinimum := false
 ) ++ compilerPlugins ++ macroSettings
 
@@ -217,3 +153,10 @@ lazy val macroSettings: Seq[Setting[_]] = {
     scalacOptions ++= macroAnnotationScalacOption(scalaVersion.value)
   )
 }
+
+lazy val noPublishSettings = Seq(
+  publish := ((): Unit),
+  publishLocal := ((): Unit),
+  publishArtifact := false,
+  publishMavenStyle := false // suppress warnings about intransitive deps (not published anyway)
+)
