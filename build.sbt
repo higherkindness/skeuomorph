@@ -85,7 +85,6 @@ lazy val commonSettings = Seq(
   organizationName := "47 Degrees",
   organizationHomepage := Some(url("http://47deg.com")),
   crossScalaVersions := Seq(V.scala212, V.scala213),
-  startYear := Some(2018),
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     "org.typelevel"          %% "cats-core"               % V.cats,
