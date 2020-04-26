@@ -40,7 +40,7 @@ lazy val docs = project
   .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
-  .settings(noPublishSettings)
+  .settings(skip in publish := true)
   .settings(mdocSettings)
   .settings(
     micrositeName := "Skeuomorph",
@@ -76,7 +76,7 @@ lazy val `project-docs` = (project in file(".docs"))
   .settings(moduleName := "skeuomorph-project-docs")
   .settings(mdocIn := file(".docs"))
   .settings(mdocOut := file("."))
-  .settings(noPublishSettings)
+  .settings(skip in publish := true)
   .enablePlugins(MdocPlugin)
 
 // General Settings
@@ -151,10 +151,3 @@ lazy val macroSettings: Seq[Setting[_]] = {
     scalacOptions ++= macroAnnotationScalacOption(scalaVersion.value)
   )
 }
-
-lazy val noPublishSettings = Seq(
-  publish := ((): Unit),
-  publishLocal := ((): Unit),
-  publishArtifact := false,
-  publishMavenStyle := false // suppress warnings about intransitive deps (not published anyway)
-)
