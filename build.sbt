@@ -11,26 +11,6 @@ addCommandAlias("ci-test", s"$checkScalafmt $checkDocs $checkTests")
 addCommandAlias("ci-docs", "project-docs/mdoc; docs/mdoc; headerCreateAll")
 addCommandAlias("ci-microsite", "docs/publishMicrosite")
 
-val V = new {
-  val avro             = "1.9.2"
-  val betterMonadicFor = "0.3.1"
-  val cats             = "2.1.1"
-  val catsEffect       = "2.1.3"
-  val catsScalacheck   = "0.2.0"
-  val circe            = "0.13.0"
-  val circeYaml        = "0.13.0"
-  val collectionCompat = "2.1.6"
-  val disciplineSpecs2 = "1.1.0"
-  val droste           = "0.8.0"
-  val kindProjector    = "0.10.3"
-  val macroParadise    = "2.1.1"
-  val meta             = "4.3.0"
-  val scalacheck       = "1.14.3"
-  val specs2           = "4.9.3"
-  val protoc           = "3.11.4"
-  val protobuf         = "3.11.4"
-}
-
 lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
@@ -84,26 +64,26 @@ lazy val `project-docs` = (project in file(".docs"))
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    "org.typelevel"          %% "cats-core"               % V.cats,
-    "org.typelevel"          %% "cats-effect"             % V.catsEffect,
-    "io.higherkindness"      %% "droste-core"             % V.droste,
-    "io.higherkindness"      %% "droste-macros"           % V.droste,
-    "org.apache.avro"        % "avro"                     % V.avro,
-    "com.github.os72"        % "protoc-jar"               % V.protoc,
-    "com.google.protobuf"    % "protobuf-java"            % V.protobuf,
-    "io.circe"               %% "circe-core"              % V.circe,
-    "io.circe"               %% "circe-parser"            % V.circe,
-    "io.circe"               %% "circe-yaml"              % V.circeYaml,
-    "org.scalameta"          %% "scalameta"               % V.meta,
-    "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat,
-    "org.apache.avro"        % "avro-compiler"            % V.avro % Test,
-    "org.typelevel"          %% "cats-laws"               % V.cats % Test,
-    "io.circe"               %% "circe-testing"           % V.circe % Test,
-    "org.typelevel"          %% "discipline-specs2"       % V.disciplineSpecs2 % Test,
-    "org.specs2"             %% "specs2-core"             % V.specs2 % Test,
-    "org.specs2"             %% "specs2-scalacheck"       % V.specs2 % Test,
-    "org.scalacheck"         %% "scalacheck"              % V.scalacheck % Test,
-    "io.chrisdavenport"      %% "cats-scalacheck"         % V.catsScalacheck % Test
+    "org.typelevel"          %% "cats-core"               % "2.1.1",
+    "org.typelevel"          %% "cats-effect"             % "2.1.3",
+    "io.higherkindness"      %% "droste-core"             % "0.8.0",
+    "io.higherkindness"      %% "droste-macros"           % "0.8.0",
+    "org.apache.avro"        % "avro"                     % "1.9.2",
+    "com.github.os72"        % "protoc-jar"               % "3.11.4",
+    "com.google.protobuf"    % "protobuf-java"            % "3.11.4",
+    "io.circe"               %% "circe-core"              % "0.13.0",
+    "io.circe"               %% "circe-parser"            % "0.13.0",
+    "io.circe"               %% "circe-yaml"              % "0.13.0",
+    "org.scalameta"          %% "scalameta"               % "4.3.0",
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+    "org.apache.avro"        % "avro-compiler"            % "1.9.2" % Test,
+    "org.typelevel"          %% "cats-laws"               % "2.1.1" % Test,
+    "io.circe"               %% "circe-testing"           % "0.13.0" % Test,
+    "org.typelevel"          %% "discipline-specs2"       % "1.1.0" % Test,
+    "org.specs2"             %% "specs2-core"             % "4.9.3" % Test,
+    "org.specs2"             %% "specs2-scalacheck"       % "4.9.3" % Test,
+    "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
+    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.2.0" % Test
   ),
   coverageFailOnMinimum := false
 ) ++ compilerPlugins ++ macroSettings
@@ -115,8 +95,8 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"    %% "better-monadic-for" % V.betterMonadicFor)
+    compilerPlugin("org.typelevel" % "kind-projector"      % "0.10.3" cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1")
   )
 )
 
@@ -132,7 +112,7 @@ lazy val macroSettings: Seq[Setting[_]] = {
     if (isOlderScalaVersion(sv)) {
       Seq(
         compilerPlugin(
-          ("org.scalamacros" % "paradise" % V.macroParadise).cross(CrossVersion.patch)
+          ("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)
         )
       )
     } else Seq.empty
