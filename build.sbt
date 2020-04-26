@@ -1,6 +1,5 @@
 ThisBuild / organization := "io.higherkindness"
-ThisBuild / organizationName := "47 Degrees"
-ThisBuild / organizationHomepage := Some(url("http://47deg.com"))
+ThisBuild / githubOrganization := "47degrees"
 ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.1")
 
 lazy val checkScalafmt = "+scalafmtCheck; +scalafmtSbtCheck;"
