@@ -1,4 +1,7 @@
-import microsites._
+ThisBuild / organization := "io.higherkindness"
+ThisBuild / organizationName := "47 Degrees"
+ThisBuild / organizationHomepage := Some(url("http://47deg.com"))
+ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.1")
 
 lazy val checkScalafmt = "+scalafmtCheck; +scalafmtSbtCheck;"
 lazy val checkDocs     = "+docs/mdoc;"
@@ -22,8 +25,6 @@ val V = new {
   val kindProjector    = "0.10.3"
   val macroParadise    = "2.1.1"
   val meta             = "4.3.0"
-  val scala212         = "2.12.11"
-  val scala213         = "2.13.1"
   val scalacheck       = "1.14.3"
   val specs2           = "4.9.3"
   val protoc           = "3.11.4"
@@ -54,14 +55,14 @@ lazy val docs = project
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
     micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
     micrositePushSiteWith := GitHub4s,
-    micrositeFavicons := Seq(MicrositeFavicon("favicon.png", "32x32")),
+    micrositeFavicons := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
       "brand-primary"   -> "#4A00D8",
       "brand-secondary" -> "#FC00CD",
       "white-color"     -> "#FFF"
     ),
     micrositeExtraMdFiles := Map(
-      file("CHANGELOG.md") -> ExtraMdFileConfig(
+      file("CHANGELOG.md") -> microsites.ExtraMdFileConfig(
         "changelog.md",
         "docs",
         Map("title" -> "changelog", "permalink" -> "docs/changelog/")
@@ -81,10 +82,6 @@ lazy val `project-docs` = (project in file(".docs"))
 
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "io.higherkindness",
-  organizationName := "47 Degrees",
-  organizationHomepage := Some(url("http://47deg.com")),
-  crossScalaVersions := Seq(V.scala212, V.scala213),
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     "org.typelevel"          %% "cats-core"               % V.cats,
