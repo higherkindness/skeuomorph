@@ -1,4 +1,6 @@
-import microsites._
+ThisBuild / organization := "io.higherkindness"
+ThisBuild / githubOrganization := "47degrees"
+ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.1")
 
 lazy val checkScalafmt = "+scalafmtCheck; +scalafmtSbtCheck;"
 lazy val checkDocs     = "+docs/mdoc;"
@@ -7,28 +9,6 @@ lazy val checkTests    = "+coverage; +test; +coverageReport; +coverageAggregate;
 addCommandAlias("ci-test", s"$checkScalafmt $checkDocs $checkTests")
 addCommandAlias("ci-docs", "project-docs/mdoc; docs/mdoc; headerCreateAll")
 addCommandAlias("ci-microsite", "docs/publishMicrosite")
-
-val V = new {
-  val avro             = "1.9.2"
-  val betterMonadicFor = "0.3.1"
-  val cats             = "2.1.1"
-  val catsEffect       = "2.1.3"
-  val catsScalacheck   = "0.2.0"
-  val circe            = "0.13.0"
-  val circeYaml        = "0.13.0"
-  val collectionCompat = "2.1.6"
-  val disciplineSpecs2 = "1.1.0"
-  val droste           = "0.8.0"
-  val kindProjector    = "0.10.3"
-  val macroParadise    = "2.1.1"
-  val meta             = "4.3.0"
-  val scala212         = "2.12.11"
-  val scala213         = "2.13.1"
-  val scalacheck       = "1.14.3"
-  val specs2           = "4.9.4"
-  val protoc           = "3.11.4"
-  val protobuf         = "3.11.4"
-}
 
 lazy val skeuomorph = project
   .in(file("."))
@@ -40,28 +20,26 @@ lazy val docs = project
   .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-docs")
   .settings(commonSettings)
-  .settings(noPublishSettings)
+  .settings(skip in publish := true)
   .settings(mdocSettings)
   .settings(
     micrositeName := "Skeuomorph",
     micrositeDescription := "Skeuomorph is a library for transforming different schemas in Scala",
     micrositeBaseUrl := "/skeuomorph",
-    micrositeGithubOwner := "higherkindness",
-    micrositeGithubRepo := "skeuomorph",
     micrositeHighlightTheme := "tomorrow",
     micrositeCompilingDocsTool := WithMdoc,
     micrositeDocumentationUrl := "docs",
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
     micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
     micrositePushSiteWith := GitHub4s,
-    micrositeFavicons := Seq(MicrositeFavicon("favicon.png", "32x32")),
+    micrositeFavicons := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
       "brand-primary"   -> "#4A00D8",
       "brand-secondary" -> "#FC00CD",
       "white-color"     -> "#FFF"
     ),
     micrositeExtraMdFiles := Map(
-      file("CHANGELOG.md") -> ExtraMdFileConfig(
+      file("CHANGELOG.md") -> microsites.ExtraMdFileConfig(
         "changelog.md",
         "docs",
         Map("title" -> "changelog", "permalink" -> "docs/changelog/")
@@ -76,39 +54,33 @@ lazy val `project-docs` = (project in file(".docs"))
   .settings(moduleName := "skeuomorph-project-docs")
   .settings(mdocIn := file(".docs"))
   .settings(mdocOut := file("."))
-  .settings(noPublishSettings)
+  .settings(skip in publish := true)
   .enablePlugins(MdocPlugin)
 
 // General Settings
 lazy val commonSettings = Seq(
-  organization := "io.higherkindness",
-  organizationName := "47 Degrees",
-  organizationHomepage := Some(url("http://47deg.com")),
-  crossScalaVersions := Seq(V.scala212, V.scala213),
-  startYear := Some(2018),
-  crossScalaVersions := Seq(V.scala212, V.scala213),
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    "org.typelevel"          %% "cats-core"               % V.cats,
-    "org.typelevel"          %% "cats-effect"             % V.catsEffect,
-    "io.higherkindness"      %% "droste-core"             % V.droste,
-    "io.higherkindness"      %% "droste-macros"           % V.droste,
-    "org.apache.avro"        % "avro"                     % V.avro,
-    "com.github.os72"        % "protoc-jar"               % V.protoc,
-    "com.google.protobuf"    % "protobuf-java"            % V.protobuf,
-    "io.circe"               %% "circe-core"              % V.circe,
-    "io.circe"               %% "circe-parser"            % V.circe,
-    "io.circe"               %% "circe-yaml"              % V.circeYaml,
-    "org.scalameta"          %% "scalameta"               % V.meta,
-    "org.scala-lang.modules" %% "scala-collection-compat" % V.collectionCompat,
-    "org.apache.avro"        % "avro-compiler"            % V.avro % Test,
-    "org.typelevel"          %% "cats-laws"               % V.cats % Test,
-    "io.circe"               %% "circe-testing"           % V.circe % Test,
-    "org.typelevel"          %% "discipline-specs2"       % V.disciplineSpecs2 % Test,
-    "org.specs2"             %% "specs2-core"             % V.specs2 % Test,
-    "org.specs2"             %% "specs2-scalacheck"       % V.specs2 % Test,
-    "org.scalacheck"         %% "scalacheck"              % V.scalacheck % Test,
-    "io.chrisdavenport"      %% "cats-scalacheck"         % V.catsScalacheck % Test
+    "org.typelevel"          %% "cats-core"               % "2.1.1",
+    "org.typelevel"          %% "cats-effect"             % "2.1.3",
+    "io.higherkindness"      %% "droste-core"             % "0.8.0",
+    "io.higherkindness"      %% "droste-macros"           % "0.8.0",
+    "org.apache.avro"        % "avro"                     % "1.9.2",
+    "com.github.os72"        % "protoc-jar"               % "3.11.4",
+    "com.google.protobuf"    % "protobuf-java"            % "3.11.4",
+    "io.circe"               %% "circe-core"              % "0.13.0",
+    "io.circe"               %% "circe-parser"            % "0.13.0",
+    "io.circe"               %% "circe-yaml"              % "0.13.0",
+    "org.scalameta"          %% "scalameta"               % "4.3.0",
+    "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
+    "org.apache.avro"        % "avro-compiler"            % "1.9.2" % Test,
+    "org.typelevel"          %% "cats-laws"               % "2.1.1" % Test,
+    "io.circe"               %% "circe-testing"           % "0.13.0" % Test,
+    "org.typelevel"          %% "discipline-specs2"       % "1.1.0" % Test,
+    "org.specs2"             %% "specs2-core"             % "4.9.4" % Test,
+    "org.specs2"             %% "specs2-scalacheck"       % "4.9.4" % Test,
+    "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
+    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.2.0" % Test
   ),
   coverageFailOnMinimum := false
 ) ++ compilerPlugins ++ macroSettings
@@ -120,8 +92,8 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"      % V.kindProjector cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"    %% "better-monadic-for" % V.betterMonadicFor)
+    compilerPlugin("org.typelevel" % "kind-projector"      % "0.10.3" cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1")
   )
 )
 
@@ -137,7 +109,7 @@ lazy val macroSettings: Seq[Setting[_]] = {
     if (isOlderScalaVersion(sv)) {
       Seq(
         compilerPlugin(
-          ("org.scalamacros" % "paradise" % V.macroParadise).cross(CrossVersion.patch)
+          ("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)
         )
       )
     } else Seq.empty
@@ -153,10 +125,3 @@ lazy val macroSettings: Seq[Setting[_]] = {
     scalacOptions ++= macroAnnotationScalacOption(scalaVersion.value)
   )
 }
-
-lazy val noPublishSettings = Seq(
-  publish := ((): Unit),
-  publishLocal := ((): Unit),
-  publishArtifact := false,
-  publishMavenStyle := false // suppress warnings about intransitive deps (not published anyway)
-)
