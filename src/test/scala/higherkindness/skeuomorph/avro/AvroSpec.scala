@@ -112,7 +112,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def codegenExpectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
 
-    val serviceParams: String = "Protobuf" +
+    val serviceParams: String = "Avro" +
       (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
       (if (useIdiomaticEndpoints) ", namespace = Some(\"foo.bar\"), methodNameStyle = Capitalize" else "")
 
@@ -131,7 +131,7 @@ class AvroSpec extends Specification with ScalaCheck {
       |  arg3: _root_.scala.List[_root_.java.lang.String]
       |)
       |
-      |@service(Avro, Identity, namespace = Some("foo.bar"), methodNameStyle = Capitalize) trait MyGreeterService[F[_]] {
+      |@service($serviceParams) trait MyGreeterService[F[_]] {
       |  def sayHelloAvro(req: _root_.foo.bar.HelloRequest): F[_root_.foo.bar.HelloResponse]
       |  def sayNothingAvro(req: _root_.higherkindness.mu.rpc.protocol.Empty.type): F[_root_.higherkindness.mu.rpc.protocol.Empty.type]
       |}
