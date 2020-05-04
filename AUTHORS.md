@@ -9,6 +9,7 @@
 The maintainers of the project are:
 
 - [![47erbot](https://avatars1.githubusercontent.com/u/24799081?v=4&s=20) **47erbot**](https://github.com/47erbot)
+- [![alejandrohdezma](https://avatars0.githubusercontent.com/u/9027541?v=4&s=20) **Alejandro Hernández (alejandrohdezma)**](https://github.com/alejandrohdezma)
 - [![angoglez](https://avatars0.githubusercontent.com/u/10107285?v=4&s=20) **Ana Gómez González (angoglez)**](https://github.com/angoglez)
 - [![AntonioMateoGomez](https://avatars0.githubusercontent.com/u/25897490?v=4&s=20) **Antonio Mateo (AntonioMateoGomez)**](https://github.com/AntonioMateoGomez)
 - [![BenFradet](https://avatars2.githubusercontent.com/u/1737211?v=4&s=20) **Ben Fradet (BenFradet)**](https://github.com/BenFradet)
@@ -53,4 +54,5 @@ These are the people that have contributed to the _skeuomorph_ project:
 - [![BenFradet](https://avatars2.githubusercontent.com/u/1737211?v=4&s=20) **BenFradet**](https://github.com/BenFradet)
 - [![bilki](https://avatars0.githubusercontent.com/u/1669748?v=4&s=20) **bilki**](https://github.com/bilki)
 - [![AlvaroCaste](https://avatars0.githubusercontent.com/u/1271375?v=4&s=20) **AlvaroCaste**](https://github.com/AlvaroCaste)
+- [![alejandrohdezma](https://avatars0.githubusercontent.com/u/9027541?v=4&s=20) **alejandrohdezma**](https://github.com/alejandrohdezma)
 - [![dzanot](https://avatars3.githubusercontent.com/u/5342283?v=4&s=20) **dzanot**](https://github.com/dzanot)
