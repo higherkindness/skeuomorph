@@ -52,8 +52,12 @@ package object circe {
     (
       sepBy(space *< space *< importDef, "\n") >* newLine,
       optional(space *< space *< showEnum >* newLine),
-      space *< space *< (optional(circeEncoder[T]) >|< forProductCirceEncoder[T] >|< enumCirceEncoder >|< sumCirceEncoder) >* newLine,
-      space *< space *< (optional(circeDecoder[T]) >|< forProductCirceDecoder[T] >|< enumCirceDecoder >|< sumCirceDecoder) >* newLine,
+      space *< space *< (optional(circeEncoder[T]) >|< forProductCirceEncoder[
+        T
+      ] >|< enumCirceEncoder >|< sumCirceEncoder) >* newLine,
+      space *< space *< (optional(circeDecoder[T]) >|< forProductCirceDecoder[
+        T
+      ] >|< enumCirceDecoder >|< sumCirceDecoder) >* newLine,
       space *< space *< entityEncoder[T] >* newLine,
       space *< space *< entityEncoder[T] >* newLine,
       space *< space *< entityDecoder[T] >* newLine
@@ -204,7 +208,10 @@ package object circe {
     divBy(
       implicitVal(κ("Show.show {")).contramap { case (x, y) => (normalize(x), "Show", Tpe[T](y), ()) },
       newLine,
-      sepBy(divBy(space *< space *< κ("case ") *< string, κ(" => "), κ("\"") *< string >* κ("\"")), "\n") >* newLine >* κ(
+      sepBy(
+        divBy(space *< space *< κ("case ") *< string, κ(" => "), κ("\"") *< string >* κ("\"")),
+        "\n"
+      ) >* newLine >* κ(
         "}"
       )
     )

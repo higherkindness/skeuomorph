@@ -111,21 +111,22 @@ object helpers {
 
   def mediaType[A](a: A) = MediaType[A](schema = a.some, encoding = Map.empty)
 
-  def emptyItemObject[A] = Path.ItemObject[A](
-    ref = None,
-    summary = None,
-    description = None,
-    get = None,
-    put = None,
-    post = None,
-    delete = None,
-    options = None,
-    head = None,
-    patch = None,
-    trace = None,
-    servers = List.empty,
-    parameters = List.empty
-  )
+  def emptyItemObject[A] =
+    Path.ItemObject[A](
+      ref = None,
+      summary = None,
+      description = None,
+      get = None,
+      put = None,
+      post = None,
+      delete = None,
+      options = None,
+      head = None,
+      patch = None,
+      trace = None,
+      servers = List.empty,
+      parameters = List.empty
+    )
 
   def obj(properties: (String, JsonSchemaF.Fixed)*)(required: String*): JsonSchemaF.Fixed =
     JsonSchemaF.Fixed.`object`(properties.toList, required.toList)
@@ -153,15 +154,16 @@ object helpers {
 
   }
 
-  def openApi[A](name: String, version: String = "0.0.0"): OpenApi[A] = OpenApi(
-    openapi = "",
-    info = Info(name, None, version),
-    servers = List.empty,
-    paths = Map.empty,
-    components = None,
-    tags = List.empty,
-    externalDocs = None
-  )
+  def openApi[A](name: String, version: String = "0.0.0"): OpenApi[A] =
+    OpenApi(
+      openapi = "",
+      info = Info(name, None, version),
+      servers = List.empty,
+      paths = Map.empty,
+      components = None,
+      tags = List.empty,
+      externalDocs = None
+    )
 
   implicit class OpenApiOps[A](openApi: OpenApi[A]) {
     def withPath(path: (String, Path.ItemObject[A])): OpenApi[A] =

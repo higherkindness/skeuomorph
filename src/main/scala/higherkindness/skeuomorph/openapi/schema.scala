@@ -79,19 +79,21 @@ object schema {
 
     private def extractTypesFromResponse[T: Basis[JsonSchemaF, ?]](
         response: Either[Response[T], Reference]
-    ): NestedTypesState[T, Either[Response[T], Reference]] = response.fold(
-      x => extractTypesFromContent(x.content).map(y => x.copy(content = y).asLeft),
-      x => State.pure(x.asRight)
-    )
+    ): NestedTypesState[T, Either[Response[T], Reference]] =
+      response.fold(
+        x => extractTypesFromContent(x.content).map(y => x.copy(content = y).asLeft),
+        x => State.pure(x.asRight)
+      )
 
     private def extractTypesFormOperation[T: Basis[JsonSchemaF, ?]](
         operation: Path.Operation[T]
     ): NestedTypesState[T, Path.Operation[T]] =
       for {
         requestBody <- operation.requestBody.traverse(extractTypesFromRequest[T])
-        responses <- operation.responses.toList
-          .traverse { case (x, r) => extractTypesFromResponse(r).map(t => x -> t) }
-          .map(_.toMap)
+        responses <-
+          operation.responses.toList
+            .traverse { case (x, r) => extractTypesFromResponse(r).map(t => x -> t) }
+            .map(_.toMap)
       } yield operation.copy(
         requestBody = requestBody,
         responses = responses
@@ -245,49 +247,50 @@ object schema {
         allowEmptyValue: Option[Boolean],
         allowReserved: Option[Boolean],
         schema: A
-    ): Parameter[A] = in match {
-      case Location.Path =>
-        Path(
-          name,
-          description,
-          deprecated.getOrElse(false),
-          style.getOrElse("simple"),
-          explode.getOrElse(false),
-          schema
-        )
-      case Location.Query =>
-        Query(
-          name,
-          description,
-          required.getOrElse(false),
-          deprecated.getOrElse(false),
-          style.getOrElse("form"),
-          allowEmptyValue.getOrElse(false),
-          explode.getOrElse(true),
-          allowReserved.getOrElse(false),
-          schema
-        )
-      case Location.Header =>
-        Header(
-          name,
-          description,
-          required.getOrElse(false),
-          deprecated.getOrElse(false),
-          style.getOrElse("simple"),
-          explode.getOrElse(false),
-          schema
-        )
-      case Location.Cookie =>
-        Cookie(
-          name,
-          description,
-          required.getOrElse(false),
-          deprecated.getOrElse(false),
-          style.getOrElse("form"),
-          explode.getOrElse(false),
-          schema
-        )
-    }
+    ): Parameter[A] =
+      in match {
+        case Location.Path =>
+          Path(
+            name,
+            description,
+            deprecated.getOrElse(false),
+            style.getOrElse("simple"),
+            explode.getOrElse(false),
+            schema
+          )
+        case Location.Query =>
+          Query(
+            name,
+            description,
+            required.getOrElse(false),
+            deprecated.getOrElse(false),
+            style.getOrElse("form"),
+            allowEmptyValue.getOrElse(false),
+            explode.getOrElse(true),
+            allowReserved.getOrElse(false),
+            schema
+          )
+        case Location.Header =>
+          Header(
+            name,
+            description,
+            required.getOrElse(false),
+            deprecated.getOrElse(false),
+            style.getOrElse("simple"),
+            explode.getOrElse(false),
+            schema
+          )
+        case Location.Cookie =>
+          Cookie(
+            name,
+            description,
+            required.getOrElse(false),
+            deprecated.getOrElse(false),
+            style.getOrElse("form"),
+            explode.getOrElse(false),
+            schema
+          )
+      }
 
     final case class Path[A](
         name: String,
@@ -357,13 +360,14 @@ object schema {
 
     def all = List(Path, Query, Header, Cookie)
 
-    def parse(value: String): Either[String, Location] = value match {
-      case "path"   => Path.asRight
-      case "query"  => Query.asRight
-      case "header" => Header.asRight
-      case "cookie" => Cookie.asRight
-      case _        => s"$value is not valid location".asLeft
-    }
+    def parse(value: String): Either[String, Location] =
+      value match {
+        case "path"   => Path.asRight
+        case "query"  => Query.asRight
+        case "header" => Header.asRight
+        case "cookie" => Cookie.asRight
+        case _        => s"$value is not valid location".asLeft
+      }
   }
 
 }

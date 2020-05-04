@@ -71,9 +71,10 @@ object MuF {
       nestedCoproducts: List[A]
   ) extends MuF[A]
 
-  implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] = Eq.instance {
-    case (Field(n, t, is), Field(n2, t2, is2)) => n === n2 && t === t2 && is === is2
-  }
+  implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] =
+    Eq.instance {
+      case (Field(n, t, is), Field(n2, t2, is2)) => n === n2 && t === t2 && is === is2
+    }
 
   implicit val sumFieldEq: Eq[SumField] = Eq.instance {
     case (SumField(n, v), SumField(n2, v2)) => n === n2 && v === v2
@@ -83,58 +84,60 @@ object MuF {
 
   implicit val pbIntModifierEq: Eq[pb.IntModifier] = Eq.fromUniversalEquals
 
-  implicit def muEq[T](implicit T: Eq[T]): Eq[MuF[T]] = Eq.instance {
-    case (TNull(), TNull())                     => true
-    case (TDouble(), TDouble())                 => true
-    case (TFloat(), TFloat())                   => true
-    case (TSimpleInt(size1), TSimpleInt(size2)) => size1 === size2
-    case (TProtobufInt(size1, mods1), TProtobufInt(size2, mods2)) =>
-      size1 === size2 && mods1.sortBy(_.toString) === mods2.sortBy(_.toString)
-    case (TBoolean(), TBoolean())     => true
-    case (TString(), TString())       => true
-    case (TByteArray(), TByteArray()) => true
+  implicit def muEq[T](implicit T: Eq[T]): Eq[MuF[T]] =
+    Eq.instance {
+      case (TNull(), TNull())                     => true
+      case (TDouble(), TDouble())                 => true
+      case (TFloat(), TFloat())                   => true
+      case (TSimpleInt(size1), TSimpleInt(size2)) => size1 === size2
+      case (TProtobufInt(size1, mods1), TProtobufInt(size2, mods2)) =>
+        size1 === size2 && mods1.sortBy(_.toString) === mods2.sortBy(_.toString)
+      case (TBoolean(), TBoolean())     => true
+      case (TString(), TString())       => true
+      case (TByteArray(), TByteArray()) => true
 
-    case (TNamedType(p1, a), TNamedType(p2, b)) => p1 === p2 && a === b
-    case (TOption(a), TOption(b))               => a === b
-    case (TList(a), TList(b))                   => a === b
-    case (TMap(k1, a), TMap(k2, b))             => k1 === k2 && a === b
-    case (TRequired(a), TRequired(b))           => a === b
+      case (TNamedType(p1, a), TNamedType(p2, b)) => p1 === p2 && a === b
+      case (TOption(a), TOption(b))               => a === b
+      case (TList(a), TList(b))                   => a === b
+      case (TMap(k1, a), TMap(k2, b))             => k1 === k2 && a === b
+      case (TRequired(a), TRequired(b))           => a === b
 
-    case (TContaining(a), TContaining(b))                     => a === b
-    case (TEither(l, r), TEither(l2, r2))                     => l === l2 && r === r2
-    case (TGeneric(g, p), TGeneric(g2, p2))                   => g === g2 && p === p2
-    case (TCoproduct(i), TCoproduct(i2))                      => i === i2
-    case (TSum(n, f), TSum(n2, f2))                           => n === n2 && f === f2
-    case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) => n === n2 && f === f2 && np === np2 && nc === nc2
+      case (TContaining(a), TContaining(b))                     => a === b
+      case (TEither(l, r), TEither(l2, r2))                     => l === l2 && r === r2
+      case (TGeneric(g, p), TGeneric(g2, p2))                   => g === g2 && p === p2
+      case (TCoproduct(i), TCoproduct(i2))                      => i === i2
+      case (TSum(n, f), TSum(n2, f2))                           => n === n2 && f === f2
+      case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) => n === n2 && f === f2 && np === np2 && nc === nc2
 
-    case _ => false
-  }
+      case _ => false
+    }
 
-  implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] = Show.show {
-    cata(Algebra[MuF, String] {
-      case TNull()          => "null"
-      case TDouble()        => "double"
-      case TFloat()         => "float"
-      case TInt(`_32`)      => "int"
-      case TInt(`_64`)      => "long"
-      case TBoolean()       => "boolean"
-      case TString()        => "string"
-      case TByteArray()     => "bytes"
-      case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
-      case TOption(v)       => s"?$v"
-      case TList(e)         => s"[$e]"
-      case TMap(k, v)       => s"$k->$v"
-      case TRequired(v)     => v
-      case TContaining(ts)  => ts.mkString("cont<", ", ", ">")
-      case TEither(l, r)    => s"either<$l, $r>"
-      case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
-      case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
-      case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
-      case TProduct(n, fields, _, _) =>
-        fields.map(f => s"@pbIndex(${f.indices.mkString(",")}) ${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
+  implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] =
+    Show.show {
+      cata(Algebra[MuF, String] {
+        case TNull()          => "null"
+        case TDouble()        => "double"
+        case TFloat()         => "float"
+        case TInt(`_32`)      => "int"
+        case TInt(`_64`)      => "long"
+        case TBoolean()       => "boolean"
+        case TString()        => "string"
+        case TByteArray()     => "bytes"
+        case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
+        case TOption(v)       => s"?$v"
+        case TList(e)         => s"[$e]"
+        case TMap(k, v)       => s"$k->$v"
+        case TRequired(v)     => v
+        case TContaining(ts)  => ts.mkString("cont<", ", ", ">")
+        case TEither(l, r)    => s"either<$l, $r>"
+        case TGeneric(g, ps)  => ps.mkString(s"$g<", ", ", ">")
+        case TCoproduct(ts)   => ts.toList.mkString("(", " | ", ")")
+        case TSum(n, vs)      => vs.map(_.name).mkString(s"$n[", ", ", "]")
+        case TProduct(n, fields, _, _) =>
+          fields.map(f => s"@pbIndex(${f.indices.mkString(",")}) ${f.name}: ${f.tpe}").mkString(s"$n{", ", ", "}")
 
-    })
-  }
+      })
+    }
 
   // smart constructors, to avoid scala inferring specific types instead of MuF
   def `null`[A](): MuF[A]                                      = TNull()

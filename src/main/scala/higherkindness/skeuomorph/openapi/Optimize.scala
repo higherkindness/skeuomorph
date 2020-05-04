@@ -22,11 +22,12 @@ import cats.implicits._
 import scala.annotation.tailrec
 
 object Optimize {
-  def namedTypesTrans[T](name: String): Trans[JsonSchemaF, JsonSchemaF, T] = Trans {
-    case JsonSchemaF.ObjectF(_, _) => JsonSchemaF.reference[T](name)
-    case JsonSchemaF.EnumF(_)      => JsonSchemaF.reference[T](name)
-    case other                     => other
-  }
+  def namedTypesTrans[T](name: String): Trans[JsonSchemaF, JsonSchemaF, T] =
+    Trans {
+      case JsonSchemaF.ObjectF(_, _) => JsonSchemaF.reference[T](name)
+      case JsonSchemaF.EnumF(_)      => JsonSchemaF.reference[T](name)
+      case other                     => other
+    }
 
   def namedTypes[T: Basis[JsonSchemaF, ?]](name: String): T => T = scheme.cata(namedTypesTrans(name).algebra)
 
@@ -40,7 +41,7 @@ object Optimize {
       case JsonSchemaF.ObjectF(fields, required) =>
         fields
           .traverse[NestedTypesState[T, ?], JsonSchemaF.Property[T]] {
-            case p if (isNestedType(p.tpe)) =>
+            case p if isNestedType(p.tpe) =>
               extractNestedTypes(p.name.capitalize, p.tpe).map { //TODO Maybe we should normalize
                 case (n, t) => p.copy(tpe = namedTypes[T](n).apply(t))
               }
@@ -65,9 +66,10 @@ object Optimize {
   }
 
   private def extractNestedTypes[T: Basis[JsonSchemaF, ?]](name: String, tpe: T): NestedTypesState[T, (String, T)] = {
-    def addType(items: (String, T)): NestedTypesState[T, Unit] = State.modify {
-      case (x, y) => (x + items) -> y
-    }
+    def addType(items: (String, T)): NestedTypesState[T, Unit] =
+      State.modify {
+        case (x, y) => (x + items) -> y
+      }
 
     def generateName(originalName: String, previousOccurrences: Long): String =
       originalName.capitalize + (if (previousOccurrences > 0) previousOccurrences.toString else "")
@@ -78,11 +80,12 @@ object Optimize {
       if (x.contains(n)) findNameAndIndex(ix + 1, x) else n -> ix
     }
 
-    def findName: NestedTypesState[T, String] = State {
-      case (x, i) =>
-        val (name, nextI) = findNameAndIndex(i, x)
-        (x, nextI) -> name
-    }
+    def findName: NestedTypesState[T, String] =
+      State {
+        case (x, i) =>
+          val (name, nextI) = findNameAndIndex(i, x)
+          (x, nextI) -> name
+      }
 
     for {
       newType <- nestedTypes.apply(tpe)

@@ -113,8 +113,8 @@ object ParseProto {
   private def makeFileDescriptor[F[_]: Sync](descriptorFileName: String): F[FileDescriptorSet] =
     fileInputStream(descriptorFileName).use(fis => Sync[F].delay(FileDescriptorSet.parseFrom(fis)))
 
-  private def getTFiles[F[_]: Sync, T](descriptorFileName: String, source: FileDescriptorSet)(
-      implicit T: Embed[ProtobufF, T]
+  private def getTFiles[F[_]: Sync, T](descriptorFileName: String, source: FileDescriptorSet)(implicit
+      T: Embed[ProtobufF, T]
   ): F[Protocol[T]] = {
     Sync[F].delay {
       fromProto[T](descriptorFileName, source.getFileList.asScala.toList)
@@ -151,13 +151,13 @@ object ParseProto {
       .last
       .replace(".proto", "")
 
-  def toService[A](s: ServiceDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]
+  def toService[A](s: ServiceDescriptorProto, files: List[FileDescriptorProto])(implicit
+      A: Embed[ProtobufF, A]
   ): Service[A] =
     Service(s.getName, s.getMethodList.asScala.toList.map(o => toOperation[A](o, files)))
 
-  def toOperation[A](o: MethodDescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]
+  def toOperation[A](o: MethodDescriptorProto, files: List[FileDescriptorProto])(implicit
+      A: Embed[ProtobufF, A]
   ): Protocol.Operation[A] =
     Protocol.Operation(
       name = o.getName,
@@ -184,8 +184,8 @@ object ParseProto {
   def isMapEntryType(descriptor: DescriptorProto): Boolean =
     descriptor.getOptions.getMapEntry
 
-  def toMessage[A](descriptor: DescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]
+  def toMessage[A](descriptor: DescriptorProto, files: List[FileDescriptorProto])(implicit
+      A: Embed[ProtobufF, A]
   ): A = {
     val protoFields: List[FieldDescriptorProto] = descriptor.getFieldList.asScala.toList
     val protoOneOf: List[OneofDescriptorProto]  = descriptor.getOneofDeclList.asScala.toList
@@ -287,12 +287,13 @@ object ParseProto {
   def isMap(fieldName: String, source: DescriptorProto): Boolean =
     source.getNestedTypeList.asScala.toList.exists(isMapEntryTypeForField(_, fieldName))
 
-  def getTMap[A](name: String, source: DescriptorProto, files: List[FileDescriptorProto])(
-      implicit A: Embed[ProtobufF, A]
+  def getTMap[A](name: String, source: DescriptorProto, files: List[FileDescriptorProto])(implicit
+      A: Embed[ProtobufF, A]
   ): A =
     (for {
-      maybeMsg <- source.getNestedTypeList.asScala.toList
-        .find(isMapEntryTypeForField(_, name))
+      maybeMsg <-
+        source.getNestedTypeList.asScala.toList
+          .find(isMapEntryTypeForField(_, name))
       maybeKey   <- getMapField(maybeMsg, "key")
       maybeValue <- getMapField(maybeMsg, "value")
     } yield map(
@@ -318,63 +319,64 @@ object ParseProto {
       fields: List[FieldDescriptorProto],
       source: DescriptorProto,
       files: List[FileDescriptorProto]
-  )(
-      implicit A: Embed[ProtobufF, A]
-  ): List[(FieldF[A], List[Int])] = oneOfFields.zipWithIndex.map {
-    case (oneof, index) => {
-      val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
-        .fromList(
-          fields
-            .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
-            .map(fromFieldDescriptorProto(_, source, files))
-            .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
-        )
-        .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
+  )(implicit
+      A: Embed[ProtobufF, A]
+  ): List[(FieldF[A], List[Int])] =
+    oneOfFields.zipWithIndex.map {
+      case (oneof, index) =>
+        val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
+          .fromList(
+            fields
+              .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
+              .map(fromFieldDescriptorProto(_, source, files))
+              .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
+          )
+          .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-      val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
-      val indices = oneOfFields.map(_.position).toList
-      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
+        val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
+        val indices = oneOfFields.map(_.position).toList
+        (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
     }
-  }
 
   def fromFieldTypeCoalgebra(
       field: FieldDescriptorProto,
       files: List[FileDescriptorProto],
       makeNamedTypesOptional: Boolean
-  ): Coalgebra[ProtobufF, Type] = Coalgebra {
-    case Type.TYPE_BOOL     => TBool()
-    case Type.TYPE_BYTES    => TBytes()
-    case Type.TYPE_DOUBLE   => TDouble()
-    case Type.TYPE_FIXED32  => TFixed32()
-    case Type.TYPE_FIXED64  => TFixed64()
-    case Type.TYPE_FLOAT    => TFloat()
-    case Type.TYPE_INT32    => TInt32()
-    case Type.TYPE_INT64    => TInt64()
-    case Type.TYPE_SFIXED32 => TSfixed32()
-    case Type.TYPE_SFIXED64 => TSfixed64()
-    case Type.TYPE_SINT32   => TSint32()
-    case Type.TYPE_SINT64   => TSint64()
-    case Type.TYPE_STRING   => TString()
-    case Type.TYPE_UINT32   => TUint32()
-    case Type.TYPE_UINT64   => TUint64()
-    case Type.TYPE_ENUM =>
-      findEnum(field.getTypeName, files)
-        .fold[ProtobufF[Type]](TNull()) { namedEnum =>
-          if (makeNamedTypesOptional)
-            TOptionalNamedType(namedEnum.scalaPrefix, namedEnum.name)
-          else
-            TNamedType(namedEnum.scalaPrefix, namedEnum.name)
-        }
-    case Type.TYPE_MESSAGE =>
-      findMessage(field.getTypeName, files)
-        .fold[ProtobufF[Type]](TNull()) { namedMessage =>
-          if (makeNamedTypesOptional)
-            TOptionalNamedType(namedMessage.scalaPrefix, namedMessage.name)
-          else
-            TNamedType(namedMessage.scalaPrefix, namedMessage.name)
-        }
-    case _ => TNull()
-  }
+  ): Coalgebra[ProtobufF, Type] =
+    Coalgebra {
+      case Type.TYPE_BOOL     => TBool()
+      case Type.TYPE_BYTES    => TBytes()
+      case Type.TYPE_DOUBLE   => TDouble()
+      case Type.TYPE_FIXED32  => TFixed32()
+      case Type.TYPE_FIXED64  => TFixed64()
+      case Type.TYPE_FLOAT    => TFloat()
+      case Type.TYPE_INT32    => TInt32()
+      case Type.TYPE_INT64    => TInt64()
+      case Type.TYPE_SFIXED32 => TSfixed32()
+      case Type.TYPE_SFIXED64 => TSfixed64()
+      case Type.TYPE_SINT32   => TSint32()
+      case Type.TYPE_SINT64   => TSint64()
+      case Type.TYPE_STRING   => TString()
+      case Type.TYPE_UINT32   => TUint32()
+      case Type.TYPE_UINT64   => TUint64()
+      case Type.TYPE_ENUM =>
+        findEnum(field.getTypeName, files)
+          .fold[ProtobufF[Type]](TNull()) { namedEnum =>
+            if (makeNamedTypesOptional)
+              TOptionalNamedType(namedEnum.scalaPrefix, namedEnum.name)
+            else
+              TNamedType(namedEnum.scalaPrefix, namedEnum.name)
+          }
+      case Type.TYPE_MESSAGE =>
+        findMessage(field.getTypeName, files)
+          .fold[ProtobufF[Type]](TNull()) { namedMessage =>
+            if (makeNamedTypesOptional)
+              TOptionalNamedType(namedMessage.scalaPrefix, namedMessage.name)
+            else
+              TNamedType(namedMessage.scalaPrefix, namedMessage.name)
+          }
+      case _ => TNull()
+    }
 
   def fromFieldType[A](field: FieldDescriptorProto, files: List[FileDescriptorProto], makeNamedTypesOptional: Boolean)(
       implicit A: Embed[ProtobufF, A]

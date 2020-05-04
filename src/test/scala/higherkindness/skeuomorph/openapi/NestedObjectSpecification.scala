@@ -51,7 +51,7 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
     "when an object is nested inside another object " >> {
       val nestedObject = obj("name" -> Fixed.string(), "password" -> Fixed.password())("name")
       nestedTypesFrom(obj("user" -> nestedObject, "another" -> Fixed.binary())("user")) must ===(
-        expectedTypes("User"     -> nestedObject)(
+        expectedTypes("User" -> nestedObject)(
           obj("user" -> Fixed.reference("User"), "another" -> Fixed.binary())("user")
         )
       )
@@ -59,7 +59,7 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
 
     "when an object is nested inside an array that is nested inside another object" >> {
       val nestedObject = obj("foo" -> Fixed.string())("foo")
-      nestedTypesFrom(obj("foo"         -> Fixed.array(nestedObject))()) must ===(
+      nestedTypesFrom(obj("foo" -> Fixed.array(nestedObject))()) must ===(
         expectedTypes("AnonymousObject" -> nestedObject)(
           obj("foo" -> Fixed.array(Fixed.reference("AnonymousObject")))()
         )
@@ -126,8 +126,8 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
         )()
       ) must ===(
         expectedTypes(
-          "Foo"  -> obj("foo"  -> Fixed.string())(),
-          "Foo1" -> obj("foo"  -> Fixed.reference("Foo"))(),
+          "Foo"  -> obj("foo" -> Fixed.string())(),
+          "Foo1" -> obj("foo" -> Fixed.reference("Foo"))(),
           "Foo2" -> obj("foo1" -> Fixed.reference("Foo1"))()
         )(obj("foo" -> Fixed.reference("Foo2"))())
       )

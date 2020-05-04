@@ -261,16 +261,17 @@ object instances {
       nonEmptyString map Fixed.reference
     )
 
-    def rec(depth: Int): Gen[JsonSchemaF.Fixed] = depth match {
-      case 1 => basicGen
-      case n =>
-        Gen.oneOf(
-          rec(n - 1) map Fixed.array,
-          Gen.listOfN(3, Gen.zip(nonEmptyString, rec(n - 1))) map { n =>
-            Fixed.`object`(n, n.take(n.size - 1).map(_._1))
-          }
-        )
-    }
+    def rec(depth: Int): Gen[JsonSchemaF.Fixed] =
+      depth match {
+        case 1 => basicGen
+        case n =>
+          Gen.oneOf(
+            rec(n - 1) map Fixed.array,
+            Gen.listOfN(3, Gen.zip(nonEmptyString, rec(n - 1))) map { n =>
+              Fixed.`object`(n, n.take(n.size - 1).map(_._1))
+            }
+          )
+      }
 
     Arbitrary(rec(2))
   }

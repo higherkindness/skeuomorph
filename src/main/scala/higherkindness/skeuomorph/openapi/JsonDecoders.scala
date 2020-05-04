@@ -82,22 +82,23 @@ object JsonDecoders {
       for {
         _        <- isObject
         required <- c.downField("required").as[Option[List[String]]]
-        properties <- c
-          .downField("properties")
-          .as[Option[Map[String, A]]](
-            Decoder.decodeOption(Decoder.decodeMap[String, A](KeyDecoder.decodeKeyString, jsonSchemaDecoder[A]))
-          )
-          .map(_.getOrElse(Map.empty))
-          .map(_.toList.map(JsonSchemaF.Property.apply[A] _ tupled))
+        properties <-
+          c.downField("properties")
+            .as[Option[Map[String, A]]](
+              Decoder.decodeOption(Decoder.decodeMap[String, A](KeyDecoder.decodeKeyString, jsonSchemaDecoder[A]))
+            )
+            .map(_.getOrElse(Map.empty))
+            .map(_.toList.map(JsonSchemaF.Property.apply[A] _ tupled))
       } yield JsonSchemaF.`object`[A](properties, required.getOrElse(List.empty)).embed
     }
 
-  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]: Decoder]: Decoder[A] = Decoder.instance { c =>
-    for {
-      items <- c.downField("items").as[A](jsonSchemaDecoder[A])
-      _     <- validateType(c, "array")
-    } yield JsonSchemaF.array(items).embed
-  }
+  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]: Decoder]: Decoder[A] =
+    Decoder.instance { c =>
+      for {
+        items <- c.downField("items").as[A](jsonSchemaDecoder[A])
+        _     <- validateType(c, "array")
+      } yield JsonSchemaF.array(items).embed
+    }
 
   private def referenceJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
     Decoder[Reference].map(x => JsonSchemaF.reference[A](x.ref).embed)

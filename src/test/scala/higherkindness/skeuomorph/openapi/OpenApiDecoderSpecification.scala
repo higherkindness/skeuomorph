@@ -240,7 +240,7 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       Decoder[Components[JsonSchemaF.Fixed]].decodeJson(json) must beRight(
         components[JsonSchemaF.Fixed](
           "GeneralError" -> obj("code" -> Fixed.integer(), "message" -> Fixed.string())(),
-          "Category"     -> obj("id"   -> Fixed.long(), "name"       -> Fixed.string())()
+          "Category"     -> obj("id" -> Fixed.long(), "name" -> Fixed.string())()
         )
       )
     }

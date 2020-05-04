@@ -89,62 +89,64 @@ object JsonSchemaF {
     Json.obj((("type" -> Json.fromString(value)) :: attr.toList): _*)
 
   private def format(value: String): (String, Json) =
-    ("format" -> Json.fromString(value))
+    "format" -> Json.fromString(value)
 
-  def render: Algebra[JsonSchemaF, Json] = Algebra {
-    case IntegerF()  => jsonType("integer", format("int32"))
-    case LongF()     => jsonType("integer", format("int64"))
-    case FloatF()    => jsonType("number", format("float"))
-    case DoubleF()   => jsonType("number", format("double"))
-    case StringF()   => jsonType("string")
-    case ByteF()     => jsonType("string", format("byte"))
-    case BinaryF()   => jsonType("string", format("binary"))
-    case BooleanF()  => jsonType("boolean")
-    case DateF()     => jsonType("string", format("date"))
-    case DateTimeF() => jsonType("string", format("date-time"))
-    case PasswordF() => jsonType("string", format("password"))
-    case ObjectF(properties, required) =>
-      jsonType(
-        "object",
-        "properties" -> Json.obj(properties.map(prop => prop.name -> prop.tpe): _*),
-        "required"   -> Json.fromValues(required.map(Json.fromString))
-      )
-    case ArrayF(values) =>
-      jsonType(
-        "array",
-        "items" -> values
-      )
-    case EnumF(cases) =>
-      jsonType("string", "enum" -> Json.fromValues(cases.map(Json.fromString)))
-    case SumF(cases) =>
-      Json.obj("oneOf" -> Json.arr(cases: _*))
-    case ReferenceF(value) =>
-      Json.obj(
-        s"$$ref" -> Json.fromString(value)
-      )
+  def render: Algebra[JsonSchemaF, Json] =
+    Algebra {
+      case IntegerF()  => jsonType("integer", format("int32"))
+      case LongF()     => jsonType("integer", format("int64"))
+      case FloatF()    => jsonType("number", format("float"))
+      case DoubleF()   => jsonType("number", format("double"))
+      case StringF()   => jsonType("string")
+      case ByteF()     => jsonType("string", format("byte"))
+      case BinaryF()   => jsonType("string", format("binary"))
+      case BooleanF()  => jsonType("boolean")
+      case DateF()     => jsonType("string", format("date"))
+      case DateTimeF() => jsonType("string", format("date-time"))
+      case PasswordF() => jsonType("string", format("password"))
+      case ObjectF(properties, required) =>
+        jsonType(
+          "object",
+          "properties" -> Json.obj(properties.map(prop => prop.name -> prop.tpe): _*),
+          "required"   -> Json.fromValues(required.map(Json.fromString))
+        )
+      case ArrayF(values) =>
+        jsonType(
+          "array",
+          "items" -> values
+        )
+      case EnumF(cases) =>
+        jsonType("string", "enum" -> Json.fromValues(cases.map(Json.fromString)))
+      case SumF(cases) =>
+        Json.obj("oneOf" -> Json.arr(cases: _*))
+      case ReferenceF(value) =>
+        Json.obj(
+          s"$$ref" -> Json.fromString(value)
+        )
 
-  }
+    }
 
   implicit def eqProperty[T: Eq]: Eq[Property[T]] = Eq.instance((p1, p2) => p1.name === p2.name && p1.tpe === p2.tpe)
 
-  implicit def eqJsonSchemaF[T: Eq]: Eq[JsonSchemaF[T]] = Eq.instance {
-    case (IntegerF(), IntegerF())           => true
-    case (LongF(), LongF())                 => true
-    case (FloatF(), FloatF())               => true
-    case (DoubleF(), DoubleF())             => true
-    case (StringF(), StringF())             => true
-    case (ByteF(), ByteF())                 => true
-    case (BinaryF(), BinaryF())             => true
-    case (BooleanF(), BooleanF())           => true
-    case (DateF(), DateF())                 => true
-    case (DateTimeF(), DateTimeF())         => true
-    case (PasswordF(), PasswordF())         => true
-    case (ObjectF(p1, r1), ObjectF(p2, r2)) => p1 === p2 && r1 === r2
-    case (ArrayF(v1), ArrayF(v2))           => v1 === v2
-    case (EnumF(c1), EnumF(c2))             => c1 === c2
-    case (SumF(c1), SumF(c2))               => c1 === c2
-    case (ReferenceF(r1), ReferenceF(r2))   => r1 === r2
-    case _                                  => false
-  }
+  implicit def eqJsonSchemaF[T: Eq]: Eq[JsonSchemaF[T]] =
+    Eq.instance {
+      case (IntegerF(), IntegerF())           => true
+      case (LongF(), LongF())                 => true
+      case (FloatF(), FloatF())               => true
+      case (DoubleF(), DoubleF())             => true
+      case (StringF(), StringF())             => true
+      case (ByteF(), ByteF())                 => true
+      case (BinaryF(), BinaryF())             => true
+      case (BooleanF(), BooleanF())           => true
+      case (DateF(), DateF())                 => true
+      case (DateTimeF(), DateTimeF())         => true
+      case (PasswordF(), PasswordF())         => true
+      case (ObjectF(p1, r1), ObjectF(p2, r2)) => p1 === p2 && r1 === r2
+      case (ArrayF(v1), ArrayF(v2))           => v1 === v2
+      case (EnumF(c1), EnumF(c2))             => c1 === c2
+      case (SumF(c1), SumF(c2))               => c1 === c2
+      case (ReferenceF(r1), ReferenceF(r2))   => r1 === r2
+      case _                                  => false
+    }
 
 }

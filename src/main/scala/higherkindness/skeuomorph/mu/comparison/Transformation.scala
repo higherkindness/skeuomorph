@@ -32,16 +32,17 @@ object Transformation {
   final case class PromotionToCoproduct[T](coproduct: T) extends Transformation[T]
   final case class CoproductWidening[T](coproduct: T)    extends Transformation[T]
 
-  implicit def transformationShow[T](implicit showT: Show[T]): Show[Transformation[T]] = Show.show {
-    case NumericWidening(f, t)   => "numeric widening from " ++ f.show ++ " to " ++ t.show
-    case StringConversion(f, t)  => "string conversion from " ++ f.show ++ " to " ++ t.show
-    case Addition(a)             => "added field with schema " ++ a.show
-    case Removal(_)              => "field removed"
-    case PromotionToOption()     => "promotion to option"
-    case PromotionToEither(e)    => "promotion to either " ++ e.show
-    case PromotionToCoproduct(c) => "promotion to coproduct " ++ c.show
-    case CoproductWidening(c)    => "coproduct widening to " ++ c.show
-  }
+  implicit def transformationShow[T](implicit showT: Show[T]): Show[Transformation[T]] =
+    Show.show {
+      case NumericWidening(f, t)   => "numeric widening from " ++ f.show ++ " to " ++ t.show
+      case StringConversion(f, t)  => "string conversion from " ++ f.show ++ " to " ++ t.show
+      case Addition(a)             => "added field with schema " ++ a.show
+      case Removal(_)              => "field removed"
+      case PromotionToOption()     => "promotion to option"
+      case PromotionToEither(e)    => "promotion to either " ++ e.show
+      case PromotionToCoproduct(c) => "promotion to coproduct " ++ c.show
+      case CoproductWidening(c)    => "coproduct widening to " ++ c.show
+    }
 }
 
 sealed trait Incompatibility

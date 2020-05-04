@@ -155,7 +155,7 @@ object Comparison extends ComparisonInstances {
         case (TBoolean(), TBoolean())                                                                       => same
         case (TString(), TString())                                                                         => same
         case (TByteArray(), TByteArray())                                                                   => same
-        case (TNamedType(p1, a), TNamedType(p2, b)) if (p1 === p2 && a === b)                               => same
+        case (TNamedType(p1, a), TNamedType(p2, b)) if p1 === p2 && a === b                                 => same
         case (TOption(a), TOption(b))                                                                       => Compare((path, a.some, b.some))
         case (TList(a), TList(b))                                                                           => Compare((path / Items, a.some, b.some))
         // According to the spec, Avro ignores the keys' schemas when resolving map schemas
@@ -179,8 +179,8 @@ object Comparison extends ComparisonInstances {
               .toList
               .toMap
           )
-        case (TSum(n, f), TSum(n2, f2)) if (n === n2 && f.forall(f2.toSet)) => same
-        case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) if (n === n2) =>
+        case (TSum(n, f), TSum(n2, f2)) if n === n2 && f.forall(f2.toSet) => same
+        case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) if n === n2 =>
           val fields           = zipFields(path / Name(n), f, f2)
           val nestedProducts   = zipLists(path, np, np2, _ => Name(n))
           val nestedCoproducts = zipLists(path, nc, nc2, _ => Name(n))
@@ -264,16 +264,19 @@ object Comparison extends ComparisonInstances {
 
 trait ComparisonInstances {
 
-  implicit def comparisonCatsFunctor[T] = new Functor[Comparison[T, ?]] {
-    def map[A, B](fa: Comparison[T, A])(f: (A) => B): Comparison[T, B] = fa match {
-      case Comparison.End(res)                  => Comparison.End(res)
-      case Comparison.Compare(a, rep)           => Comparison.Compare(f(a), rep)
-      case Comparison.CompareBoth(x, y)         => Comparison.CompareBoth(f(x), f(y))
-      case Comparison.CompareList(i, rep)       => Comparison.CompareList(i.map(f), rep)
-      case Comparison.MatchInList(a, rep)       => Comparison.MatchInList(a.map(f), rep)
-      case Comparison.AlignUnionMembers(a, rep) => Comparison.AlignUnionMembers(a.view.mapValues(_.map(f)).toMap, rep)
+  implicit def comparisonCatsFunctor[T] =
+    new Functor[Comparison[T, ?]] {
+      def map[A, B](fa: Comparison[T, A])(f: (A) => B): Comparison[T, B] =
+        fa match {
+          case Comparison.End(res)            => Comparison.End(res)
+          case Comparison.Compare(a, rep)     => Comparison.Compare(f(a), rep)
+          case Comparison.CompareBoth(x, y)   => Comparison.CompareBoth(f(x), f(y))
+          case Comparison.CompareList(i, rep) => Comparison.CompareList(i.map(f), rep)
+          case Comparison.MatchInList(a, rep) => Comparison.MatchInList(a.map(f), rep)
+          case Comparison.AlignUnionMembers(a, rep) =>
+            Comparison.AlignUnionMembers(a.view.mapValues(_.map(f)).toMap, rep)
+        }
     }
-  }
 }
 
 object Reporter {

@@ -60,12 +60,13 @@ object ParseOpenApi {
         } yield openApi
     }
 
-  private def readContent[F[_]: Sync](file: File): F[String] = Sync[F].delay {
-    scala.io.Source
-      .fromFile(file)
-      .getLines()
-      .toList
-      .mkString("\n")
-  }
+  private def readContent[F[_]: Sync](file: File): F[String] =
+    Sync[F].delay {
+      scala.io.Source
+        .fromFile(file)
+        .getLines()
+        .toList
+        .mkString("\n")
+    }
 
 }

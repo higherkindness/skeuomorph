@@ -42,38 +42,40 @@ class AvroSpec extends Specification with ScalaCheck {
   It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. $convertAndPrintProtocol
   """
 
-  def convertSchema = Prop.forAll { (schema: Schema) =>
-    val test = scheme.hylo(checkSchema(schema), AvroF.fromAvro)
+  def convertSchema =
+    Prop.forAll { (schema: Schema) =>
+      val test = scheme.hylo(checkSchema(schema), AvroF.fromAvro)
 
-    test(schema)
-  }
+      test(schema)
+    }
 
-  def checkSchema(sch: Schema): Algebra[AvroF, Boolean] = Algebra {
-    case AvroF.TNull()    => sch.getType should_== Schema.Type.NULL
-    case AvroF.TBoolean() => sch.getType should_== Schema.Type.BOOLEAN
-    case AvroF.TInt()     => sch.getType should_== Schema.Type.INT
-    case AvroF.TLong()    => sch.getType should_== Schema.Type.LONG
-    case AvroF.TFloat()   => sch.getType should_== Schema.Type.FLOAT
-    case AvroF.TDouble()  => sch.getType should_== Schema.Type.DOUBLE
-    case AvroF.TBytes()   => sch.getType should_== Schema.Type.BYTES
-    case AvroF.TString()  => sch.getType should_== Schema.Type.STRING
+  def checkSchema(sch: Schema): Algebra[AvroF, Boolean] =
+    Algebra {
+      case AvroF.TNull()    => sch.getType should_== Schema.Type.NULL
+      case AvroF.TBoolean() => sch.getType should_== Schema.Type.BOOLEAN
+      case AvroF.TInt()     => sch.getType should_== Schema.Type.INT
+      case AvroF.TLong()    => sch.getType should_== Schema.Type.LONG
+      case AvroF.TFloat()   => sch.getType should_== Schema.Type.FLOAT
+      case AvroF.TDouble()  => sch.getType should_== Schema.Type.DOUBLE
+      case AvroF.TBytes()   => sch.getType should_== Schema.Type.BYTES
+      case AvroF.TString()  => sch.getType should_== Schema.Type.STRING
 
-    case AvroF.TNamedType(_, _) => false
-    case AvroF.TArray(_)        => sch.getType should_== Schema.Type.ARRAY
-    case AvroF.TMap(_)          => sch.getType should_== Schema.Type.MAP
-    case AvroF.TRecord(name, namespace, _, doc, fields) =>
-      (sch.getName should_== name)
-        .and(sch.getNamespace should_== namespace.getOrElse(""))
-        .and(sch.getDoc should_== doc.getOrElse(""))
-        .and(
-          sch.getFields.asScala.toList.map(f => (f.name, f.doc)) should_== fields
-            .map(f => (f.name, f.doc.getOrElse("")))
-        )
+      case AvroF.TNamedType(_, _) => false
+      case AvroF.TArray(_)        => sch.getType should_== Schema.Type.ARRAY
+      case AvroF.TMap(_)          => sch.getType should_== Schema.Type.MAP
+      case AvroF.TRecord(name, namespace, _, doc, fields) =>
+        (sch.getName should_== name)
+          .and(sch.getNamespace should_== namespace.getOrElse(""))
+          .and(sch.getDoc should_== doc.getOrElse(""))
+          .and(
+            sch.getFields.asScala.toList.map(f => (f.name, f.doc)) should_== fields
+              .map(f => (f.name, f.doc.getOrElse("")))
+          )
 
-    case AvroF.TEnum(_, _, _, _, _) => true
-    case AvroF.TUnion(_)            => true
-    case AvroF.TFixed(_, _, _, _)   => true
-  }
+      case AvroF.TEnum(_, _, _, _, _) => true
+      case AvroF.TUnion(_)            => true
+      case AvroF.TFixed(_, _, _, _)   => true
+    }
 
   def convertAndPrintProtocol = {
     val idl       = new Idl(getClass.getClassLoader.getResourceAsStream("avro/GreeterService.avdl"))

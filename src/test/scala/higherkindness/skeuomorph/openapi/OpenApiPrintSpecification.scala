@@ -339,7 +339,9 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
 
     "when get endpoints are provided" >> {
       import client.http4s.circe._
-      interfaceDefinition.print(payloadOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)) must ===(
+      interfaceDefinition.print(
+        payloadOpenApi.withPath(mediaTypeReferenceGet).withPath(mediaTypeReferenceGetId)
+      ) must ===(
         """|import models._
            |import shapeless.{:+:, CNil}
            |trait PayloadClient[F[_]] {

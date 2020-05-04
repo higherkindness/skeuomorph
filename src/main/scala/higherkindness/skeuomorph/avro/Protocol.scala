@@ -59,9 +59,9 @@ object Protocol {
     val toAvroF: Schema => T = scheme.ana(fromAvro)
 
     def requestToAvroF(req: Schema): AvroF[T] = {
-      if (req.getType == Schema.Type.NULL) {
+      if (req.getType == Schema.Type.NULL)
         `null`[T]
-      } else {
+      else {
         // Assume it's a record type.
         // We don't support primitive types for RPC requests/responses.
         val fields = req.getFields
@@ -75,13 +75,12 @@ object Protocol {
     }
 
     def responseToAvroF(resp: Schema): AvroF[T] = {
-      if (resp.getType == Schema.Type.NULL) {
+      if (resp.getType == Schema.Type.NULL)
         `null`[T]
-      } else {
+      else
         // Assume it's a record type.
         // We don't support primitive types for RPC requests/responses.
         namedType[T](resp.getNamespace, resp.getName)
-      }
     }
 
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] = {
@@ -112,34 +111,35 @@ object Protocol {
     )
   }
 
-  def fromMuSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] = Trans {
-    case MuF.TNull()                  => AvroF.`null`()
-    case MuF.TDouble()                => AvroF.double()
-    case MuF.TFloat()                 => AvroF.float()
-    case MuF.TInt(MuF._32)            => AvroF.int()
-    case MuF.TInt(MuF._64)            => AvroF.long()
-    case MuF.TBoolean()               => AvroF.boolean()
-    case MuF.TString()                => AvroF.string()
-    case MuF.TByteArray()             => AvroF.bytes()
-    case MuF.TNamedType(prefix, name) => AvroF.namedType(prefix.mkString("."), name)
-    case MuF.TOption(value)           => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
-    case MuF.TEither(left, right)     => AvroF.union(NonEmptyList(left, List(right)))
-    case MuF.TList(value)             => AvroF.array(value)
-    case MuF.TMap(_, value)           => AvroF.map(value)
-    case MuF.TGeneric(_, _)           => ??? // WAT
-    case MuF.TContaining(_)           => ??? // TBD
-    case MuF.TRequired(t)             => T.coalgebra(t)
-    case MuF.TCoproduct(invariants)   => AvroF.union(invariants)
-    case MuF.TSum(name, fields)       => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
-    case MuF.TProduct(name, fields, _, _) =>
-      TRecord(
-        name,
-        none[String],
-        Nil,
-        none[String],
-        fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe))
-      )
-  }
+  def fromMuSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] =
+    Trans {
+      case MuF.TNull()                  => AvroF.`null`()
+      case MuF.TDouble()                => AvroF.double()
+      case MuF.TFloat()                 => AvroF.float()
+      case MuF.TInt(MuF._32)            => AvroF.int()
+      case MuF.TInt(MuF._64)            => AvroF.long()
+      case MuF.TBoolean()               => AvroF.boolean()
+      case MuF.TString()                => AvroF.string()
+      case MuF.TByteArray()             => AvroF.bytes()
+      case MuF.TNamedType(prefix, name) => AvroF.namedType(prefix.mkString("."), name)
+      case MuF.TOption(value)           => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
+      case MuF.TEither(left, right)     => AvroF.union(NonEmptyList(left, List(right)))
+      case MuF.TList(value)             => AvroF.array(value)
+      case MuF.TMap(_, value)           => AvroF.map(value)
+      case MuF.TGeneric(_, _)           => ??? // WAT
+      case MuF.TContaining(_)           => ??? // TBD
+      case MuF.TRequired(t)             => T.coalgebra(t)
+      case MuF.TCoproduct(invariants)   => AvroF.union(invariants)
+      case MuF.TSum(name, fields)       => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
+      case MuF.TProduct(name, fields, _, _) =>
+        TRecord(
+          name,
+          none[String],
+          Nil,
+          none[String],
+          fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe))
+        )
+    }
 
   def fromMuProtocol[T, U](protocol: mu.Protocol[T])(implicit T: Basis[MuF, T], U: Basis[AvroF, U]): Protocol[U] = {
     def fromMu: T => U = scheme.cata(fromMuSchema.algebra)

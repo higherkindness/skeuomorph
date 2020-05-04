@@ -33,12 +33,13 @@ object print {
   val schemasRegex    = """#/components/schemas/(.+)""".r
   val parametersRegex = """#/components/parameters/(.+)""".r
 
-  def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] = Printer {
-    case (name, t) if (isBasicType(t)) => typeAliasDef(schema[T]()).print((ident(name), t, none))
-    case (name, t) if (isArray(t)) =>
-      typeAliasDef(schema[T]()).print((ident(name), t, none))
-    case (name, t) => schema[T](ident(name).some).print(t)
-  }
+  def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
+    Printer {
+      case (name, t) if isBasicType(t) => typeAliasDef(schema[T]()).print((ident(name), t, none))
+      case (name, t) if isArray(t) =>
+        typeAliasDef(schema[T]()).print((ident(name), t, none))
+      case (name, t) => schema[T](ident(name).some).print(t)
+    }
 
   protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](
       name: Option[String] = None
@@ -47,18 +48,18 @@ object print {
     val algebra: Algebra[JsonSchemaF, String] = Algebra { x =>
       import JsonSchemaF._
       (x, name) match {
-        case (IntegerF(), _)                                              => "Int"
-        case (LongF(), _)                                                 => "Long"
-        case (FloatF(), _)                                                => "Float"
-        case (DoubleF(), _)                                               => "Double"
-        case (StringF(), _)                                               => "String"
-        case (ByteF(), _)                                                 => "Array[Byte]"
-        case (BinaryF(), _)                                               => "List[Boolean]"
-        case (BooleanF(), _)                                              => "Boolean"
-        case (DateF(), _)                                                 => "java.time.LocalDate"
-        case (DateTimeF(), _)                                             => "java.time.ZonedDateTime"
-        case (PasswordF(), _)                                             => "String"
-        case (ObjectF(properties, _), Some(name)) if (properties.isEmpty) => s"type $name = io.circe.Json"
+        case (IntegerF(), _)                                            => "Int"
+        case (LongF(), _)                                               => "Long"
+        case (FloatF(), _)                                              => "Float"
+        case (DoubleF(), _)                                             => "Double"
+        case (StringF(), _)                                             => "String"
+        case (ByteF(), _)                                               => "Array[Byte]"
+        case (BinaryF(), _)                                             => "List[Boolean]"
+        case (BooleanF(), _)                                            => "Boolean"
+        case (DateF(), _)                                               => "java.time.LocalDate"
+        case (DateTimeF(), _)                                           => "java.time.ZonedDateTime"
+        case (PasswordF(), _)                                           => "String"
+        case (ObjectF(properties, _), Some(name)) if properties.isEmpty => s"type $name = io.circe.Json"
         case (ObjectF(properties, required), Some(name)) =>
           caseClassWithCodecsDef.print(
             (
@@ -75,13 +76,13 @@ object print {
             )
           )
 
-        case (ObjectF(properties, _), _) if (properties.isEmpty) => "io.circe.Json"
-        case (ArrayF(x), _)                                      => listDef.print(x)
-        case (EnumF(fields), Some(name))                         => sealedTraitDef.print(name -> fields)
-        case (SumF(cases), Some(name))                           => sumDef.print(name -> cases)
-        case (ReferenceF(schemasRegex(ref)), _)                  => ident(ref)
-        case (ReferenceF(parametersRegex(ref)), _)               => ident(ref)
-        case (ReferenceF(ref), _)                                => ident(ref)
+        case (ObjectF(properties, _), _) if properties.isEmpty => "io.circe.Json"
+        case (ArrayF(x), _)                                    => listDef.print(x)
+        case (EnumF(fields), Some(name))                       => sealedTraitDef.print(name -> fields)
+        case (SumF(cases), Some(name))                         => sumDef.print(name -> cases)
+        case (ReferenceF(schemasRegex(ref)), _)                => ident(ref)
+        case (ReferenceF(parametersRegex(ref)), _)             => ident(ref)
+        case (ReferenceF(ref), _)                              => ident(ref)
       }
     }
     Printer.print(scheme.cata(algebra))
@@ -146,14 +147,15 @@ object print {
     def apply[T](tpe: T, required: Boolean, description: String, nestedTypes: List[String]): Tpe[T] =
       Tpe(tpe.asRight, required, description, nestedTypes)
 
-    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String = tpe.tpe.fold(
-      identity,
-      x =>
-        tpe.nestedTypes.headOption.map(_ => s"${tpe.nestedTypes.mkString(".")}.").getOrElse("") +
-          Printer
-            .print(Optimize.namedTypes[T](ident(tpe.description)) >>> schema(none).print)
-            .print(x)
-    )
+    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String =
+      tpe.tpe.fold(
+        identity,
+        x =>
+          tpe.nestedTypes.headOption.map(_ => s"${tpe.nestedTypes.mkString(".")}.").getOrElse("") +
+            Printer
+              .print(Optimize.namedTypes[T](ident(tpe.description)) >>> schema(none).print)
+              .print(x)
+      )
     def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
       if (tpe.required)
         name(tpe).asRight
@@ -201,13 +203,13 @@ object print {
       divBy(κ("type ") *< string, κ(" = "), sepBy(string, " :+: ") >* κ(" :+: CNil")),
       newLine,
       objectDef(codecs)
-    ).contramap(x => (x, ((x._1, none), List.empty, SumCodecs.apply _ tupled (x))))
+    ).contramap(x => (x, ((x._1, none), List.empty, SumCodecs.apply _ tupled x)))
 
   private def caseObjectDef: Printer[(String, String)] =
     (κ("final case object ") *< string >* κ(" extends "), string).contramapN { case (x, y) => (ident(x), y) }
 
-  private def sealedTraitCompanionObjectDef(
-      implicit codecs: Printer[Codecs]
+  private def sealedTraitCompanionObjectDef(implicit
+      codecs: Printer[Codecs]
   ): Printer[(List[(String, String)], Codecs)] =
     divBy(sepBy(space *< space *< caseObjectDef, "\n"), newLine, codecs)
 
@@ -223,8 +225,8 @@ object print {
       case (x, y) => x -> y.map { case (x, y) => VarWithType(Var(x), y) }
     }
 
-  def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](
-      implicit codecs: Printer[Codecs]
+  def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](implicit
+      codecs: Printer[Codecs]
   ): Printer[(String, List[(String, Tpe[T])])] =
     (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
       ((x._1 -> x._2), ((x._1, none), List.empty[PackageName], CaseClassCodecs(x._1, x._2.map(_._1))).some)
