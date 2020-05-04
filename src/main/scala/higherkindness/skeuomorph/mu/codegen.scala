@@ -53,9 +53,6 @@ object codegen {
       .leftMap(e => s"Failed to parse package name: $e")
       .flatMap(_.as[Term.Ref])
 
-    val options: List[Mod.Annot] =
-      protocol.options.map(option)
-
     val muImport: Either[String, Import] =
       parseImport("import _root_.higherkindness.mu.rpc.protocol._")
 
@@ -86,7 +83,7 @@ object codegen {
           // If protocol has a name, wrap the declarations and services
           // together in an object with that name
           val objDefn = q"""
-          ..$options object ${Term.Name(protoName)} {
+          object ${Term.Name(protoName)} {
             ..$depImps
             ..$decls
             ..$srvs
@@ -111,12 +108,6 @@ object codegen {
     stat match {
       case Block(stats) => stats
       case other        => List(other)
-    }
-
-  private def option(opt: (String, String)): Mod.Annot =
-    opt match {
-      case (name, value) =>
-        mod"@option(name = $name, value = $value)"
     }
 
   private def _import[T](depImport: DependentImport[T]): Either[String, Import] =
