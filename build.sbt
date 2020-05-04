@@ -2,7 +2,7 @@ ThisBuild / organization := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
 ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.1")
 
-lazy val checkScalafmt = "+scalafmtCheck; +scalafmtSbtCheck;"
+lazy val checkScalafmt = "+scalafmtCheckAll; +scalafmtSbtCheck;"
 lazy val checkDocs     = "+docs/mdoc;"
 lazy val checkTests    = "+coverage; +test; +coverageReport; +coverageAggregate;"
 
@@ -65,22 +65,22 @@ lazy val commonSettings = Seq(
     "org.typelevel"          %% "cats-effect"             % "2.1.3",
     "io.higherkindness"      %% "droste-core"             % "0.8.0",
     "io.higherkindness"      %% "droste-macros"           % "0.8.0",
-    "org.apache.avro"        % "avro"                     % "1.9.2",
-    "com.github.os72"        % "protoc-jar"               % "3.11.4",
-    "com.google.protobuf"    % "protobuf-java"            % "3.11.4",
+    "org.apache.avro"         % "avro"                    % "1.9.2",
+    "com.github.os72"         % "protoc-jar"              % "3.11.4",
+    "com.google.protobuf"     % "protobuf-java"           % "3.11.4",
     "io.circe"               %% "circe-core"              % "0.13.0",
     "io.circe"               %% "circe-parser"            % "0.13.0",
     "io.circe"               %% "circe-yaml"              % "0.13.0",
     "org.scalameta"          %% "scalameta"               % "4.3.10",
     "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
-    "org.apache.avro"        % "avro-compiler"            % "1.9.2" % Test,
-    "org.typelevel"          %% "cats-laws"               % "2.1.1" % Test,
+    "org.apache.avro"         % "avro-compiler"           % "1.9.2"  % Test,
+    "org.typelevel"          %% "cats-laws"               % "2.1.1"  % Test,
     "io.circe"               %% "circe-testing"           % "0.13.0" % Test,
-    "org.typelevel"          %% "discipline-specs2"       % "1.1.0" % Test,
-    "org.specs2"             %% "specs2-core"             % "4.9.4" % Test,
-    "org.specs2"             %% "specs2-scalacheck"       % "4.9.4" % Test,
+    "org.typelevel"          %% "discipline-specs2"       % "1.1.0"  % Test,
+    "org.specs2"             %% "specs2-core"             % "4.9.4"  % Test,
+    "org.specs2"             %% "specs2-scalacheck"       % "4.9.4"  % Test,
     "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
-    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.2.0" % Test
+    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.2.0"  % Test
   ),
   coverageFailOnMinimum := false
 ) ++ compilerPlugins ++ macroSettings
@@ -92,8 +92,8 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"      % "0.10.3" cross CrossVersion.binary),
-    compilerPlugin("com.olegpy"    %% "better-monadic-for" % "0.3.1")
+    compilerPlugin("org.typelevel" % "kind-projector"     % "0.10.3" cross CrossVersion.binary),
+    compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
   )
 )
 

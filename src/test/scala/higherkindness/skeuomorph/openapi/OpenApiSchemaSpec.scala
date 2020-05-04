@@ -48,21 +48,23 @@ class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
   val functor  = checkAll("Functor[JsonSchemaF]", FunctorTests[JsonSchemaF].functor[MiniInt, MiniInt, String])
   val foldable = checkAll("Foldable[JsonSchemaF]", FoldableTests[JsonSchemaF].foldable[MiniInt, MiniInt])
 
-  def shouldAbleCodecRoundTrip = Prop.forAll { (openApi: OpenApi[JsonSchemaF.Fixed]) =>
-    import JsonEncoders._
-    import JsonDecoders._
+  def shouldAbleCodecRoundTrip =
+    Prop.forAll { (openApi: OpenApi[JsonSchemaF.Fixed]) =>
+      import JsonEncoders._
+      import JsonDecoders._
 
-    CodecTests[OpenApi[JsonSchemaF.Fixed]].laws.codecRoundTrip(openApi)
-  }
+      CodecTests[OpenApi[JsonSchemaF.Fixed]].laws.codecRoundTrip(openApi)
+    }
 
-  def shouldAbleToReadSpecExamples = Prop.forAll { (format: Spec.Format) =>
-    import JsonDecoders._
-    import _root_.higherkindness.skeuomorph.openapi.yaml.{Decoder => YamlDecoder, _}
-    format.fold(
-      YamlDecoder[OpenApi[JsonSchemaF.Fixed]].apply(_).isRight,
-      Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(_).isRight
-    )
-  }
+  def shouldAbleToReadSpecExamples =
+    Prop.forAll { (format: Spec.Format) =>
+      import JsonDecoders._
+      import _root_.higherkindness.skeuomorph.openapi.yaml.{Decoder => YamlDecoder, _}
+      format.fold(
+        YamlDecoder[OpenApi[JsonSchemaF.Fixed]].apply(_).isRight,
+        Decoder[OpenApi[JsonSchemaF.Fixed]].decodeJson(_).isRight
+      )
+    }
 }
 
 object Spec {

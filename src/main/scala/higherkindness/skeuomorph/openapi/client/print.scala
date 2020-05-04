@@ -41,10 +41,11 @@ object print {
     content.get(jsonMediaType) orElse content.get(allContent)
 
   val statusCodePattern = """(\d+)""".r
-  def successStatusCode(code: String): Boolean = code match {
-    case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
-    case _                       => false
-  }
+  def successStatusCode(code: String): Boolean =
+    code match {
+      case statusCodePattern(code) => code.toInt >= 200 && code.toInt < 400
+      case _                       => false
+    }
 
   def componentsFrom[T](openApi: OpenApi[T]): Components[T] =
     openApi.components.getOrElse(Components(Map.empty, Map.empty, Map.empty, Map.empty))
@@ -142,10 +143,11 @@ object print {
         def findParameter(name: String): Option[Parameter[T]] =
           components.parameters.get(name).flatMap(_.fold(_.some, parameterFrom))
 
-        def parameterFrom(reference: Reference): Option[Parameter[T]] = reference.ref match {
-          case parametersRegex(name) => findParameter(name)
-          case name                  => findParameter(name)
-        }
+        def parameterFrom(reference: Reference): Option[Parameter[T]] =
+          reference.ref match {
+            case parametersRegex(name) => findParameter(name)
+            case name                  => findParameter(name)
+          }
         val parameters = (itemObject.parameters ++ operation.parameters).flatMap(_.fold(_.some, parameterFrom)).distinct
 
         Http.Operation(
@@ -245,17 +247,18 @@ object print {
   def successType[T](responses: Map[String, Either[Response[T], Reference]]): Option[Either[Response[T], Reference]] =
     responses.find(x => successStatusCode(x._1)).map(_._2)
 
-  def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[Http.Responses[T]] = Printer {
-    case (x, y) =>
-      val defaultName = TypeAliasErrorResponse(x)
-      y.size match {
-        case 0 => "Unit"
-        case 1 => responseOrType.print(y.head._2)
-        case _ =>
-          val success = successType(y).fold("Unit")(responseOrType.print)
-          show"Either[$defaultName, $success]"
-      }
-  }
+  def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[Http.Responses[T]] =
+    Printer {
+      case (x, y) =>
+        val defaultName = TypeAliasErrorResponse(x)
+        y.size match {
+          case 0 => "Unit"
+          case 1 => responseOrType.print(y.head._2)
+          case _ =>
+            val success = successType(y).fold("Unit")(responseOrType.print)
+            show"Either[$defaultName, $success]"
+        }
+    }
 
   def method[T: Basis[JsonSchemaF, ?]]: Printer[Http.Operation[T]] =
     (
@@ -291,10 +294,10 @@ object print {
     val newSchema =
       typeFromResponse(response).map(schema(innerType.some).print).getOrElse("Unit")
     tpe match {
-      case _ if (tpe === newSchema) =>
+      case _ if tpe === newSchema =>
         un(second(success)(x => none -> x))
-      case _ if (newSchema.nonEmpty) => (tpe, innerType.some, List(newSchema))
-      case _                         => (tpe, none, Nil)
+      case _ if newSchema.nonEmpty => (tpe, innerType.some, List(newSchema))
+      case _                       => (tpe, none, Nil)
     }
   }
 
@@ -346,7 +349,7 @@ object print {
     val statusCodePattern = """(\d+)""".r
     val tpe               = responseOrType.print(responseOr)
     status match {
-      case statusCodePattern(code) if (successStatusCode(code)) =>
+      case statusCodePattern(code) if successStatusCode(code) =>
         responseOr.left.toOption
           .map { response =>
             val (newTpe, _, schemas) = typeAndSchemaFor(none, response, tpe) {
@@ -405,8 +408,8 @@ object print {
     }
   }
 
-  private def responsesSchema[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]
+  private def responsesSchema[T: Basis[JsonSchemaF, ?]](implicit
+      codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, Map[String, Either[Response[T], Reference]])] =
     (multipleResponsesSchema >|< sepBy((space >* space) *< string, "\n")).contramap((responsesSchemaTuple[T] _).tupled)
 
@@ -424,16 +427,16 @@ object print {
       if name === newType
     } yield (newType -> requestTpe)
 
-  private def requestSchema[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]
+  private def requestSchema[T: Basis[JsonSchemaF, ?]](implicit
+      codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
   private def parameterSchema[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
     schemaWithName[T].contramap(x => x.name -> x.schema)
 
-  private def clientTypes[T: Basis[JsonSchemaF, ?]](
-      implicit codecs: Printer[Codecs]
+  private def clientTypes[T: Basis[JsonSchemaF, ?]](implicit
+      codecs: Printer[Codecs]
   ): Printer[(List[Http.Operation[T]], List[Parameter[T]])] =
     (
       sepBy(requestSchema[T], "\n") >* newLine,

@@ -107,15 +107,17 @@ object codegen {
 
   // A class and its companion object will be wrapped inside a Block (i.e. curly braces).
   // We need to extract them from there and lift them to the same level as other statements.
-  private def explodeBlock(stat: Stat): List[Stat] = stat match {
-    case Block(stats) => stats
-    case other        => List(other)
-  }
+  private def explodeBlock(stat: Stat): List[Stat] =
+    stat match {
+      case Block(stats) => stats
+      case other        => List(other)
+    }
 
-  private def option(opt: (String, String)): Mod.Annot = opt match {
-    case (name, value) =>
-      mod"@option(name = $name, value = $value)"
-  }
+  private def option(opt: (String, String)): Mod.Annot =
+    opt match {
+      case (name, value) =>
+        mod"@option(name = $name, value = $value)"
+    }
 
   private def _import[T](depImport: DependentImport[T]): Either[String, Import] =
     parseImport(s"import ${depImport.pkg}.${depImport.protocol}._")
@@ -149,12 +151,14 @@ object codegen {
           case (a, b) => t"$a with $b"
         }
 
-    def intType(x: TInt[Tree]): Type = x match {
-      case TSimpleInt(`_32`) | TProtobufInt(`_32`, Nil) => t"_root_.scala.Int"
-      case TSimpleInt(`_64`) | TProtobufInt(`_64`, Nil) => t"_root_.scala.Long"
-      case TProtobufInt(`_32`, modifiers)               => t"_root_.shapeless.tag.@@[_root_.scala.Int, ${intModsToType(modifiers)}]"
-      case TProtobufInt(`_64`, modifiers)               => t"_root_.shapeless.tag.@@[_root_.scala.Long, ${intModsToType(modifiers)}]"
-    }
+    def intType(x: TInt[Tree]): Type =
+      x match {
+        case TSimpleInt(`_32`) | TProtobufInt(`_32`, Nil) => t"_root_.scala.Int"
+        case TSimpleInt(`_64`) | TProtobufInt(`_64`, Nil) => t"_root_.scala.Long"
+        case TProtobufInt(`_32`, modifiers)               => t"_root_.shapeless.tag.@@[_root_.scala.Int, ${intModsToType(modifiers)}]"
+        case TProtobufInt(`_64`, modifiers) =>
+          t"_root_.shapeless.tag.@@[_root_.scala.Long, ${intModsToType(modifiers)}]"
+      }
 
     val algebra: AlgebraM[Either[String, ?], MuF, Tree] = AlgebraM {
       case TNull()                  => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
@@ -224,17 +228,16 @@ object codegen {
               ..${coprods.flatMap(explodeBlock)}
             }
             """
-            } else {
+            } else
               caseClass
-            }
         }
     }
 
     scheme.cataM(algebra).apply(optimize(t))
   }
 
-  def service[T](srv: Service[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]
+  def service[T](srv: Service[T], streamCtor: (Type, Type) => Type.Apply)(implicit
+      T: Basis[MuF, T]
   ): Either[String, Stat] = {
     val serializationType = Term.Name(srv.serializationType.toString)
     val compressionType   = Term.Name(srv.compressionType.toString)
@@ -257,16 +260,16 @@ object codegen {
     }
   }
 
-  def operation[T](op: Service.Operation[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]
+  def operation[T](op: Service.Operation[T], streamCtor: (Type, Type) => Type.Apply)(implicit
+      T: Basis[MuF, T]
   ): Either[String, Decl.Def] =
     for {
       reqType  <- requestType(op.request, streamCtor)
       respType <- responseType(op.response, streamCtor)
     } yield q"def ${Term.Name(op.name)}(req: $reqType): $respType"
 
-  def requestType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]
+  def requestType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(implicit
+      T: Basis[MuF, T]
   ): Either[String, Type] =
     for {
       tree <- schema(opType.tpe)
@@ -278,8 +281,8 @@ object codegen {
         tpe
     }
 
-  def responseType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(
-      implicit T: Basis[MuF, T]
+  def responseType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(implicit
+      T: Basis[MuF, T]
   ): Either[String, Type.Apply] =
     for {
       tree <- schema(opType.tpe)

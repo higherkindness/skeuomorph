@@ -28,9 +28,10 @@ object Printer {
   def apply[A](implicit instance: Printer[A]): Printer[A] = instance
 
   /** creates an instance of [[Printer]] using the provided function */
-  def print[A](f: A => String): Printer[A] = new Printer[A] {
-    def print(a: A): String = f(a)
-  }
+  def print[A](f: A => String): Printer[A] =
+    new Printer[A] {
+      def print(a: A): String = f(a)
+    }
 
   trait ContravariantPrinter[-T] extends Serializable {
     def print(t: T): String
@@ -43,10 +44,11 @@ object Printer {
   }
 
   trait ToPrinterOps {
-    implicit def toPrinter[A](target: A)(implicit tc: Printer[A]): Ops[A] = new Ops[A] {
-      val self              = target
-      val typeClassInstance = tc
-    }
+    implicit def toPrinter[A](target: A)(implicit tc: Printer[A]): Ops[A] =
+      new Ops[A] {
+        val self              = target
+        val typeClassInstance = tc
+      }
   }
 
   def konst(str: String): Printer[Unit] =
@@ -67,9 +69,10 @@ object Printer {
   }
 
   /** creates an instance of [[Printer]] using object toString */
-  def fromToString[A]: Printer[A] = new Printer[A] {
-    def print(a: A): String = a.toString
-  }
+  def fromToString[A]: Printer[A] =
+    new Printer[A] {
+      def print(a: A): String = a.toString
+    }
 
   def show[F: Show]: Printer[F] = Printer(_.show)
 
@@ -94,9 +97,10 @@ object Printer {
 
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
     def unit: Printer[Unit] = Printer.unit
-    def product[A, B](fa: Printer[A], fb: Printer[B]): Printer[(A, B)] = new Printer[(A, B)] {
-      def print(ab: (A, B)): String = fa.print(ab._1) + fb.print(ab._2)
-    }
+    def product[A, B](fa: Printer[A], fb: Printer[B]): Printer[(A, B)] =
+      new Printer[(A, B)] {
+        def print(ab: (A, B)): String = fa.print(ab._1) + fb.print(ab._2)
+      }
     def contramap[A, B](fa: Printer[A])(f: B => A): Printer[B] =
       print[B]((fa.print _).compose(f))
     def choose[A, B, C](fa: Printer[A], fb: Printer[B])(cab: C => Either[A, B]): Printer[C] =

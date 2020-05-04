@@ -43,13 +43,14 @@ object FieldF {
 
   final case class OneOfField[A](name: String, tpe: A, indices: List[Int]) extends FieldF[A]
 
-  implicit def fieldEq[T: Eq]: Eq[FieldF[T]] = Eq.instance {
-    case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
-      n === n2 && t === t2 && p === p2 && o === o2 && r === r2 && m === m2
-    case (OneOfField(n, tpe, is), OneOfField(n2, tpe2, is2)) =>
-      n === n2 && tpe === tpe2 && is === is2
-    case _ => false
-  }
+  implicit def fieldEq[T: Eq]: Eq[FieldF[T]] =
+    Eq.instance {
+      case (Field(n, t, p, o, r, m), Field(n2, t2, p2, o2, r2, m2)) =>
+        n === n2 && t === t2 && p === p2 && o === o2 && r === r2 && m === m2
+      case (OneOfField(n, tpe, is), OneOfField(n2, tpe2, is2)) =>
+        n === n2 && tpe === tpe2 && is === is2
+      case _ => false
+    }
 }
 
 sealed trait IntModifier extends Product with Serializable
@@ -140,31 +141,32 @@ object ProtobufF {
   ): ProtobufF[A] =
     TMessage(name, fields, reserved, nestedMessages, nestedEnums)
 
-  implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] = Eq.instance {
-    case (TNull(), TNull())                                     => true
-    case (TDouble(), TDouble())                                 => true
-    case (TFloat(), TFloat())                                   => true
-    case (TInt32(), TInt32())                                   => true
-    case (TInt64(), TInt64())                                   => true
-    case (TUint32(), TUint32())                                 => true
-    case (TUint64(), TUint64())                                 => true
-    case (TSint32(), TSint32())                                 => true
-    case (TSint64(), TSint64())                                 => true
-    case (TFixed32(), TFixed32())                               => true
-    case (TFixed64(), TFixed64())                               => true
-    case (TSfixed32(), TSfixed32())                             => true
-    case (TSfixed64(), TSfixed64())                             => true
-    case (TBool(), TBool())                                     => true
-    case (TString(), TString())                                 => true
-    case (TBytes(), TBytes())                                   => true
-    case (TNamedType(p, n), TNamedType(p2, n2))                 => p === p2 && n === n2
-    case (TOptionalNamedType(p, n), TOptionalNamedType(p2, n2)) => p === p2 && n === n2
-    case (TRepeated(v), TRepeated(v2))                          => v === v2
-    case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2))             => n === n2 && s === s2 && o === o2 && a === a2
-    case (TMessage(n, f, r, nm, ne), TMessage(n2, f2, r2, nm2, ne2)) =>
-      n === n2 && f === f2 && r === r2 && nm == nm2 && ne == ne2
-    case _ => false
-  }
+  implicit def protobufEq[T: Eq]: Eq[ProtobufF[T]] =
+    Eq.instance {
+      case (TNull(), TNull())                                     => true
+      case (TDouble(), TDouble())                                 => true
+      case (TFloat(), TFloat())                                   => true
+      case (TInt32(), TInt32())                                   => true
+      case (TInt64(), TInt64())                                   => true
+      case (TUint32(), TUint32())                                 => true
+      case (TUint64(), TUint64())                                 => true
+      case (TSint32(), TSint32())                                 => true
+      case (TSint64(), TSint64())                                 => true
+      case (TFixed32(), TFixed32())                               => true
+      case (TFixed64(), TFixed64())                               => true
+      case (TSfixed32(), TSfixed32())                             => true
+      case (TSfixed64(), TSfixed64())                             => true
+      case (TBool(), TBool())                                     => true
+      case (TString(), TString())                                 => true
+      case (TBytes(), TBytes())                                   => true
+      case (TNamedType(p, n), TNamedType(p2, n2))                 => p === p2 && n === n2
+      case (TOptionalNamedType(p, n), TOptionalNamedType(p2, n2)) => p === p2 && n === n2
+      case (TRepeated(v), TRepeated(v2))                          => v === v2
+      case (TEnum(n, s, o, a), TEnum(n2, s2, o2, a2))             => n === n2 && s === s2 && o === o2 && a === a2
+      case (TMessage(n, f, r, nm, ne), TMessage(n2, f2, r2, nm2, ne2)) =>
+        n === n2 && f === f2 && r === r2 && nm == nm2 && ne == ne2
+      case _ => false
+    }
 
   implicit val traverse: DefaultTraverse[ProtobufF] = new DefaultTraverse[ProtobufF] {
     def traverse[G[_], A, B](fa: ProtobufF[A])(f: A => G[B])(implicit G: Applicative[G]): G[ProtobufF[B]] = {

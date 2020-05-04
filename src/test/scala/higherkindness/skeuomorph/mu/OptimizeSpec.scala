@@ -36,30 +36,33 @@ class OptimizeSpec extends Specification with ScalaCheck {
   It should convert a TCoproduct into a TEither. $convertCoproduct2Either
   """
 
-  def convertCoproduct2Option: Prop = Prop.forAll(muCoproductWithTNullGen[Mu[MuF]]) { coproduct: TCoproduct[Mu[MuF]] =>
-    val transformation: Mu[MuF] = knownCoproductTypesTrans[Mu[MuF]].algebra.run(coproduct)
+  def convertCoproduct2Option: Prop =
+    Prop.forAll(muCoproductWithTNullGen[Mu[MuF]]) { coproduct: TCoproduct[Mu[MuF]] =>
+      val transformation: Mu[MuF] = knownCoproductTypesTrans[Mu[MuF]].algebra.run(coproduct)
 
-    val test = scheme.hylo(checkOptionalValue, Project[MuF, Mu[MuF]].coalgebra)
+      val test = scheme.hylo(checkOptionalValue, Project[MuF, Mu[MuF]].coalgebra)
 
-    test(transformation)
-  }
+      test(transformation)
+    }
 
-  def convertCoproduct2Either: Prop = Prop.forAll(muCoproductWithoutTNullGen[Mu[MuF]]) {
-    coproduct: TCoproduct[Mu[MuF]] =>
+  def convertCoproduct2Either: Prop =
+    Prop.forAll(muCoproductWithoutTNullGen[Mu[MuF]]) { coproduct: TCoproduct[Mu[MuF]] =>
       val transformation: Mu[MuF] = knownCoproductTypesTrans[Mu[MuF]].algebra.run(coproduct)
 
       val test = scheme.hylo(checkEitherValue, Project[MuF, Mu[MuF]].coalgebra)
 
       test(transformation)
-  }
+    }
 
-  def checkEitherValue: Algebra[MuF, Boolean] = Algebra[MuF, Boolean] {
-    case MuF.TEither(_, _) => true
-    case _                 => false
-  }
+  def checkEitherValue: Algebra[MuF, Boolean] =
+    Algebra[MuF, Boolean] {
+      case MuF.TEither(_, _) => true
+      case _                 => false
+    }
 
-  def checkOptionalValue: Algebra[MuF, Boolean] = Algebra[MuF, Boolean] {
-    case MuF.TOption(_) => true
-    case _              => false
-  }
+  def checkOptionalValue: Algebra[MuF, Boolean] =
+    Algebra[MuF, Boolean] {
+      case MuF.TOption(_) => true
+      case _              => false
+    }
 }

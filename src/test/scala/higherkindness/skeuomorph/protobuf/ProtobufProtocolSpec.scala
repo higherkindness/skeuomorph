@@ -54,25 +54,26 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
   """
 
-  def codegenProtobufProtocol = prop { (ct: CompressionType, useIdiom: Boolean) =>
-    val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-      p: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
-    }
+  def codegenProtobufProtocol =
+    prop { (ct: CompressionType, useIdiom: Boolean) =>
+      val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
+        p: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
+      }
 
-    val streamCtor: (Type, Type) => Type.Apply = {
-      case (f: Type, a: Type) => t"Stream[$f, $a]"
-    }
+      val streamCtor: (Type, Type) => Type.Apply = {
+        case (f: Type, a: Type) => t"Stream[$f, $a]"
+      }
 
-    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
-      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
-    }
+      val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
+        p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
+          higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+      }
 
-    val actual = (toMuProtocol andThen codegen)(bookProtocol)
+      val actual = (toMuProtocol andThen codegen)(bookProtocol)
 
-    val expected = bookExpectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
+      val expected = bookExpectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
 
-    actual.isEqual(expected) :| s"""
+      actual.isEqual(expected) :| s"""
       |Actual output:
       |$actual
       |
@@ -80,7 +81,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |Expected output:
       |$expected"
       """.stripMargin
-  }
+    }
 
   def bookExpectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
 

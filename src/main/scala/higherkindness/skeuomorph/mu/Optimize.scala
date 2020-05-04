@@ -42,33 +42,37 @@ object Optimize {
    * case class Product(field1: String, field2: OtherField)
    * }}}
    */
-  def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
-    case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
-      def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
-      TProduct[T](
-        name,
-        fields.map(nameTypes),
-        nestedProducts,
-        nestedCoproducts
-      )
-    case other => other
-  }
+  def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] =
+    Trans {
+      case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
+        def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
+        TProduct[T](
+          name,
+          fields.map(nameTypes),
+          nestedProducts,
+          nestedCoproducts
+        )
+      case other => other
+    }
 
-  def nestedOptionInCoproductsTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
-    case TCoproduct(nel) => TCoproduct(nel.map(toRequiredTypes))
-    case other           => other
-  }
+  def nestedOptionInCoproductsTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] =
+    Trans {
+      case TCoproduct(nel) => TCoproduct(nel.map(toRequiredTypes))
+      case other           => other
+    }
 
-  def toRequiredTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
-    case TOption(value) => TRequired(value)
-    case other          => other
-  }
+  def toRequiredTypesTrans[T]: Trans[MuF, MuF, T] =
+    Trans {
+      case TOption(value) => TRequired(value)
+      case other          => other
+    }
 
-  def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
-    case TProduct(name, _, _, _) => TNamedType[T](Nil, name)
-    case TSum(name, _)           => TNamedType[T](Nil, name)
-    case other                   => other
-  }
+  def namedTypesTrans[T]: Trans[MuF, MuF, T] =
+    Trans {
+      case TProduct(name, _, _, _) => TNamedType[T](Nil, name)
+      case TSum(name, _)           => TNamedType[T](Nil, name)
+      case other                   => other
+    }
 
   def namedTypes[T: Basis[MuF, ?]]: T => T              = scheme.cata(namedTypesTrans.algebra)
   def nestedNamedTypes[T: Basis[MuF, ?]]: T => T        = scheme.cata(nestedNamedTypesTrans.algebra)
@@ -92,15 +96,16 @@ object Optimize {
    * case class Product(field1: Either[Int, String], field2: Option[Int])
    * }}}
    */
-  def knownCoproductTypesTrans[T](implicit B: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
-    case TCoproduct(NonEmptyList(x, List(y))) =>
-      (B.coalgebra(x), B.coalgebra(y)) match {
-        case (_, TNull()) => TOption[T](x)
-        case (TNull(), _) => TOption[T](y)
-        case _            => TEither[T](x, y)
-      }
-    case other => other
-  }
+  def knownCoproductTypesTrans[T](implicit B: Basis[MuF, T]): Trans[MuF, MuF, T] =
+    Trans {
+      case TCoproduct(NonEmptyList(x, List(y))) =>
+        (B.coalgebra(x), B.coalgebra(y)) match {
+          case (_, TNull()) => TOption[T](x)
+          case (TNull(), _) => TOption[T](y)
+          case _            => TEither[T](x, y)
+        }
+      case other => other
+    }
 
   def knownCoproductTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
 }
