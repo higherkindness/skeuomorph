@@ -70,7 +70,7 @@ lazy val commonSettings = Seq(
     "com.google.protobuf"     % "protobuf-java"           % "3.11.4",
     "io.circe"               %% "circe-core"              % "0.13.0",
     "io.circe"               %% "circe-parser"            % "0.13.0",
-    "io.circe"               %% "circe-yaml"              % "0.13.0",
+    "io.circe"               %% "circe-yaml"              % "0.13.1",
     "org.scalameta"          %% "scalameta"               % "4.3.10",
     "org.scala-lang.modules" %% "scala-collection-compat" % "2.1.6",
     "org.apache.avro"         % "avro-compiler"           % "1.9.2"  % Test,
