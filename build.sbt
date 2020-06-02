@@ -80,7 +80,7 @@ lazy val commonSettings = Seq(
     "org.specs2"             %% "specs2-core"             % "4.9.4"  % Test,
     "org.specs2"             %% "specs2-scalacheck"       % "4.9.4"  % Test,
     "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
-    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.2.0"  % Test
+    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.3.0"  % Test
   ),
   coverageFailOnMinimum := false
 ) ++ compilerPlugins ++ macroSettings
