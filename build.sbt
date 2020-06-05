@@ -6,22 +6,21 @@ ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.2")
 publish / skip := true
 
 lazy val checkScalafmt = "+scalafmtCheckAll; +scalafmtSbtCheck;"
-lazy val checkDocs     = "+docs/mdoc;"
+lazy val checkDocs     = "+microsite/mdoc;"
 lazy val checkTests    = "+coverage; +test; +coverageReport; +coverageAggregate;"
 
 addCommandAlias("ci-test", s"$checkScalafmt $checkDocs $checkTests")
-addCommandAlias("ci-docs", "project-docs/mdoc; docs/mdoc; headerCreateAll")
-addCommandAlias("ci-microsite", "docs/publishMicrosite")
+addCommandAlias("ci-docs", "mdoc; microsite/mdoc; headerCreateAll")
+addCommandAlias("ci-microsite", "microsite/publishMicrosite")
 
 lazy val skeuomorph = project
   .in(file("."))
   .settings(commonSettings)
   .settings(moduleName := "skeuomorph")
 
-lazy val docs = project
-  .in(file("docs"))
+lazy val microsite = project
   .dependsOn(skeuomorph)
-  .settings(moduleName := "skeuomorph-docs")
+  .settings(moduleName := "skeuomorph-microsite")
   .settings(commonSettings)
   .settings(skip in publish := true)
   .settings(mdocSettings)
