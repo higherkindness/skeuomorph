@@ -3,6 +3,8 @@ ThisBuild / githubOrganization := "47degrees"
 ThisBuild / scalaVersion := "2.13.2"
 ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.2")
 
+publish / skip := true
+
 lazy val checkScalafmt = "+scalafmtCheckAll; +scalafmtSbtCheck;"
 lazy val checkDocs     = "+docs/mdoc;"
 lazy val checkTests    = "+coverage; +test; +coverageReport; +coverageAggregate;"
@@ -49,13 +51,9 @@ lazy val docs = project
   )
   .enablePlugins(MicrositesPlugin)
 
-lazy val `project-docs` = (project in file(".docs"))
-  .aggregate(skeuomorph)
-  .dependsOn(skeuomorph)
-  .settings(moduleName := "skeuomorph-project-docs")
-  .settings(mdocIn := file(".docs"))
+lazy val documentation = project
   .settings(mdocOut := file("."))
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .enablePlugins(MdocPlugin)
 
 // General Settings
@@ -93,36 +91,25 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"     % "0.10.3" cross CrossVersion.binary),
+    compilerPlugin("org.typelevel" % "kind-projector"     % "0.11.0" cross CrossVersion.full),
     compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
   )
 )
 
-def isOlderScalaVersion(sv: String): Boolean =
-  CrossVersion.partialVersion(sv) match {
-    case Some((2, minor)) if minor < 13 => true
-    case _                              => false
+lazy val macroSettings: Seq[Setting[_]] = Seq(
+  libraryDependencies ++= Seq(
+    scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided
+  ),
+  libraryDependencies ++= on(2, 12)(
+    compilerPlugin("org.scalamacros" %% "paradise" % "2.1.1" cross CrossVersion.full)
+  ).value,
+  scalacOptions ++= on(2, 13)("-Ymacro-annotations").value
+)
+
+def on[A](major: Int, minor: Int)(a: A): Def.Initialize[Seq[A]] =
+  Def.setting {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some(v) if v == (major, minor) => Seq(a)
+      case _                              => Nil
+    }
   }
-
-lazy val macroSettings: Seq[Setting[_]] = {
-
-  def paradiseDependency(sv: String): Seq[ModuleID] =
-    if (isOlderScalaVersion(sv)) {
-      Seq(
-        compilerPlugin(
-          ("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)
-        )
-      )
-    } else Seq.empty
-
-  def macroAnnotationScalacOption(sv: String): Seq[String] =
-    if (isOlderScalaVersion(sv)) Seq.empty
-    else Seq("-Ymacro-annotations")
-
-  Seq(
-    libraryDependencies ++= Seq(
-      scalaOrganization.value % "scala-compiler" % scalaVersion.value % Provided
-    ) ++ paradiseDependency(scalaVersion.value),
-    scalacOptions ++= macroAnnotationScalacOption(scalaVersion.value)
-  )
-}
