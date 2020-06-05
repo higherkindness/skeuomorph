@@ -140,7 +140,7 @@ import higherkindness.droste.data.Mu._
 import cats.implicits._
 import scala.meta._
 
-val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/docs/protobuf")
+val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsolutePath ++ "/microsite/protobuf")
 
 val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
