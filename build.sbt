@@ -18,7 +18,7 @@ lazy val microsite = project
   .dependsOn(skeuomorph)
   .settings(moduleName := "skeuomorph-microsite")
   .settings(commonSettings)
-  .settings(skip in publish := true)
+  .settings(publish / skip := true)
   .settings(mdocSettings)
   .settings(
     micrositeName := "Skeuomorph",
