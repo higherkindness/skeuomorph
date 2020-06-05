@@ -5,11 +5,7 @@ ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.2")
 
 publish / skip := true
 
-lazy val checkScalafmt = "scalafmtCheckAll; scalafmtSbtCheck;"
-lazy val checkDocs     = "microsite/mdoc;"
-lazy val checkTests    = "+coverage; +test; +coverageReport; +coverageAggregate;"
-
-addCommandAlias("ci-test", s"$checkScalafmt $checkDocs $checkTests")
+addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; mdoc; testCovered")
 addCommandAlias("ci-docs", "mdoc; microsite/mdoc; headerCreateAll")
 addCommandAlias("ci-microsite", "microsite/publishMicrosite")
 
