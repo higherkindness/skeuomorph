@@ -32,13 +32,9 @@ example.  Or to a mu service description.
 
 You can install skeuomorph as follows:
 
-[comment]: # (Start Replace)
-
 ```scala
 libraryDependencies += "io.higherkindness" %% "skeuomorph" % "@VERSION@"
 ```
-
-[comment]: # (End Replace)
 
 ## Examples
 
@@ -190,11 +186,8 @@ it in the list below.
 [cats]: https://typelevel.org/cats
 [droste]: https://github.com/andyscott/droste
 
-[comment]: # (Start Copyright)
 # Copyright
 
 Skeuomorph is designed and developed by 47 Degrees
 
 Copyright (C) 2018-2019 47 Degrees. <http://47deg.com>
-
-[comment]: # (End Copyright)
