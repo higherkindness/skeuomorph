@@ -6,8 +6,8 @@ ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.2")
 publish / skip := true
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; mdoc; testCovered")
-addCommandAlias("ci-docs", "mdoc; headerCreateAll")
-addCommandAlias("ci-microsite", "microsite/publishMicrosite")
+addCommandAlias("ci-docs", "github; mdoc; headerCreateAll; microsite/publishMicrosite")
+addCommandAlias("ci-publish", "github; ci-release")
 
 lazy val skeuomorph = project
   .in(file("."))
