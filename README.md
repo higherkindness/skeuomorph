@@ -46,6 +46,6 @@ it in the list below.
 
 # Copyright
 
-skeuomorph is designed and developed by 47 Degrees
+skeuomorph is designed and developed by 47 Degrees Open Source
 
-Copyright (C)  2018-2020 47 Degrees <https://www.47deg.com>
+Copyright (C)  2018-2020 47 Degrees Open Source <https://www.47deg.com>

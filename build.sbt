@@ -1,5 +1,5 @@
 ThisBuild / organization := "io.higherkindness"
-ThisBuild / githubOrganization := "47deg"
+ThisBuild / githubOrganization := "47degrees"
 ThisBuild / scalaVersion := "2.13.2"
 ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.2")
 
@@ -16,7 +16,6 @@ lazy val skeuomorph = project
 
 lazy val microsite = project
   .dependsOn(skeuomorph)
-  .settings(moduleName := "skeuomorph-microsite")
   .settings(commonSettings)
   .settings(publish / skip := true)
   .settings(mdocSettings)
@@ -75,8 +74,7 @@ lazy val commonSettings = Seq(
     "org.specs2"             %% "specs2-scalacheck"       % "4.9.4"  % Test,
     "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
     "io.chrisdavenport"      %% "cats-scalacheck"         % "0.3.0"  % Test
-  ),
-  coverageFailOnMinimum := false
+  )
 ) ++ compilerPlugins ++ macroSettings
 
 lazy val mdocSettings = Seq(
