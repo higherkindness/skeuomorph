@@ -113,7 +113,7 @@ object AvroF {
       aliases: List[String],
       doc: Option[String],
       symbols: List[String]
-  ) extends AvroF[A]
+  )                                                                                                     extends AvroF[A]
   final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
   final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
 
