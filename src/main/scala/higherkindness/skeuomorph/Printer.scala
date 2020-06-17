@@ -27,7 +27,8 @@ object Printer {
 
   def apply[A](implicit instance: Printer[A]): Printer[A] = instance
 
-  /** creates an instance of [[Printer]] using the provided function */
+  /**
+   * creates an instance of [[Printer]] using the provided function */
   def print[A](f: A => String): Printer[A] =
     new Printer[A] {
       def print(a: A): String = f(a)
@@ -68,7 +69,8 @@ object Printer {
     implicit def nonePrinter[T]: Printer[T] = Contravariant[Printer].contramap(unit)(_ => ())
   }
 
-  /** creates an instance of [[Printer]] using object toString */
+  /**
+   * creates an instance of [[Printer]] using object toString */
   def fromToString[A]: Printer[A] =
     new Printer[A] {
       def print(a: A): String = a.toString

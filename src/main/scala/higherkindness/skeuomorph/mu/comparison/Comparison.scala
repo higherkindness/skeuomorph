@@ -32,7 +32,8 @@ import cats.syntax.semigroup._
 import cats.syntax.apply._
 import scala.collection.compat._
 
-/** An ADT representing the "shape" of the computation of the differences between two schemas.
+/**
+ * An ADT representing the "shape" of the computation of the differences between two schemas.
  *
  * Comparing two schemas involves recursively comparing (various combinations of) their
  * respective sub-schemas; each member of the `Comparison` ADT represents one of such
@@ -40,13 +41,13 @@ import scala.collection.compat._
  *
  * @tparam T the type of schemas under comparison, typically a fix-point of [[higherkindness.skeuomorph.mu.MuF]], like `Mu[MuF]`
  * @tparam A the type acted upon by this pattern-functor
- *
  */
 sealed trait Comparison[T, A]
 
 object Comparison extends ComparisonInstances {
 
-  /** The schemas being compared at a given path of the current comparison */
+  /**
+   * The schemas being compared at a given path of the current comparison */
   type Context[T] = (Path, Option[T], Option[T])
 
   type CompatibleDelta[T] = Map[Path, List[Transformation[T]]]
@@ -67,33 +68,41 @@ object Comparison extends ComparisonInstances {
       if (result._2.isEmpty) Some(result._1) else None
   }
 
-  /** Function for result enrichment */
+  /**
+   * Function for result enrichment */
   type Reporter[T] = Result[T] => Result[T]
 
-  /** Early result: there is nothing left to compare */
+  /**
+   * Early result: there is nothing left to compare */
   final case class End[T, A](result: Result[T]) extends Comparison[T, A]
 
-  /** Perform a single recursive comparison and enrich its result */
+  /**
+   * Perform a single recursive comparison and enrich its result */
   final case class Compare[T, A](a: A, reporter: Reporter[T] = Reporter.id[T]) extends Comparison[T, A]
 
-  /** Perform two recursive comparisons and combine their results */
+  /**
+   * Perform two recursive comparisons and combine their results */
   final case class CompareBoth[T, A](x: A, y: A) extends Comparison[T, A]
 
-  /** Perform a list of recursive comparisons, combine and then enrich their results */
+  /**
+   * Perform a list of recursive comparisons, combine and then enrich their results */
   final case class CompareList[T, A](items: List[A], reporter: Reporter[T] = Reporter.id[T]) extends Comparison[T, A]
 
-  /** Perform a list of recursive comparisons but return the first positive result (or a mismatch if none), enriched */
+  /**
+   * Perform a list of recursive comparisons but return the first positive result (or a mismatch if none), enriched */
   final case class MatchInList[T, A](attempts: Vector[A], reporter: Reporter[T] = Reporter.id[T])
       extends Comparison[T, A]
 
-  /** Perform lists of recursive comparisons indexed by paths,
+  /**
+   * Perform lists of recursive comparisons indexed by paths,
    * then select the first positive result for each entry (or a mismatch if none)
    * then combine results of all entries and enrich it.
    */
   final case class AlignUnionMembers[T, A](attempts: Map[Path, List[A]], reporter: Reporter[T] = Reporter.id[T])
       extends Comparison[T, A]
 
-  /** Performs the comparison of two schemas
+  /**
+   * Performs the comparison of two schemas
    *
    * Compares two schemas to verify that messages written using the writer schema are compatible with the reader schema.
    * Both schemas' roots are shallowly compared to unfold a `Comparison[T, ?]`, to compare their children or to signal a result.
