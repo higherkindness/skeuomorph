@@ -23,6 +23,7 @@ import higherkindness.droste._
 import higherkindness.skeuomorph.mu.MuF._
 import higherkindness.skeuomorph.mu.Optimize._
 import higherkindness.skeuomorph.{protobuf => pb}
+import higherkindness.skeuomorph.Printer.toValidIdentifier
 import scala.reflect.ClassTag
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -47,6 +48,7 @@ object codegen {
   )(implicit T: Basis[MuF, T]): Either[String, Pkg] = {
 
     val packageName = protocol.pkg
+      .map(_.split('.').toList.map(toValidIdentifier).mkString("."))
       .getOrElse("proto")
       .parse[Term]
       .toEither
