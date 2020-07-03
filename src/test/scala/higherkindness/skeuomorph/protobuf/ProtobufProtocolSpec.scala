@@ -52,6 +52,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
 
   The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
+
+  The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
   """
 
   def codegenProtobufProtocol =
@@ -368,4 +370,21 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |  )
     |}
     |""".stripMargin
+
+  def codegenGoogleApi = {
+    val googleApiProtocol: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/models/type"
+      val source = ProtoSource(s"date.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(googleApiProtocol, googleApiExpectation)
+  }
+
+  val googleApiExpectation = s"""
+    |package google.`type`
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object date { final case class Date(@_root_.pbdirect.pbIndex(1) year: _root_.scala.Int, @_root_.pbdirect.pbIndex(2) month: _root_.scala.Int, @_root_.pbdirect.pbIndex(3) day: _root_.scala.Int) }
+    |""".stripMargin
+
 }
