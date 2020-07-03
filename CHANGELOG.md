@@ -1,5 +1,39 @@
 # Changelog
 
+## [v0.0.24](https://github.com/higherkindness/skeuomorph/tree/v0.0.24) (2020-07-03)
+
+[Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.23...v0.0.24)
+
+🐛 **Bug Fixes**
+
+- Unescaped 'type' keyword in package \(directory\) name [\#288](https://github.com/higherkindness/skeuomorph/issues/288)
+
+📈 **Dependency updates**
+
+- Update scalameta to 4.3.18 [\#304](https://github.com/higherkindness/skeuomorph/pull/304) ([scala-steward](https://github.com/scala-steward))
+- Update avro, avro-compiler to 1.10.0 [\#302](https://github.com/higherkindness/skeuomorph/pull/302) ([scala-steward](https://github.com/scala-steward))
+- Update sbt to 1.3.13 [\#301](https://github.com/higherkindness/skeuomorph/pull/301) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-tpolecat to 0.1.13 [\#300](https://github.com/higherkindness/skeuomorph/pull/300) ([scala-steward](https://github.com/scala-steward))
+- Update scalameta to 4.3.17 [\#299](https://github.com/higherkindness/skeuomorph/pull/299) ([scala-steward](https://github.com/scala-steward))
+- Update scalameta to 4.3.16 [\#298](https://github.com/higherkindness/skeuomorph/pull/298) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-mdoc to 2.2.3 [\#297](https://github.com/higherkindness/skeuomorph/pull/297) ([scala-steward](https://github.com/scala-steward))
+- Update specs2-core, specs2-scalacheck to 4.10.0 [\#294](https://github.com/higherkindness/skeuomorph/pull/294) ([scala-steward](https://github.com/scala-steward))
+- Update scalameta to 4.3.15 [\#291](https://github.com/higherkindness/skeuomorph/pull/291) ([scala-steward](https://github.com/scala-steward))
+- Update scalafmt-core to 2.5.3 [\#290](https://github.com/higherkindness/skeuomorph/pull/290) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-mdoc to 2.2.2 [\#289](https://github.com/higherkindness/skeuomorph/pull/289) ([scala-steward](https://github.com/scala-steward))
+- Update sbt-tpolecat to 0.1.12 [\#286](https://github.com/higherkindness/skeuomorph/pull/286) ([scala-steward](https://github.com/scala-steward))
+- Update cats-scalacheck to 0.3.0 [\#285](https://github.com/higherkindness/skeuomorph/pull/285) ([scala-steward](https://github.com/scala-steward))
+- Update sbt to 1.3.11 [\#284](https://github.com/higherkindness/skeuomorph/pull/284) ([scala-steward](https://github.com/scala-steward))
+- Update protobuf-java to 3.12.0 [\#281](https://github.com/higherkindness/skeuomorph/pull/281) ([scala-steward](https://github.com/scala-steward))
+- Update circe-yaml to 0.13.1 [\#280](https://github.com/higherkindness/skeuomorph/pull/280) ([scala-steward](https://github.com/scala-steward))
+
+**Merged pull requests:**
+
+- Escaping 'type' keyword in package \(directory\) names [\#305](https://github.com/higherkindness/skeuomorph/pull/305) ([juanpedromoreno](https://github.com/juanpedromoreno))
+- Update scalafmt-core to 2.6.1 [\#296](https://github.com/higherkindness/skeuomorph/pull/296) ([BenFradet](https://github.com/BenFradet))
+- Update scalafmt-core to 2.6.0 [\#293](https://github.com/higherkindness/skeuomorph/pull/293) ([BenFradet](https://github.com/BenFradet))
+- Prepare repository for next `.github` release and SBT build improvements [\#287](https://github.com/higherkindness/skeuomorph/pull/287) ([juanpedromoreno](https://github.com/juanpedromoreno))
+
 ## [v0.0.23](https://github.com/higherkindness/skeuomorph/tree/v0.0.23) (2020-05-04)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.22...v0.0.23)
@@ -91,6 +125,7 @@
 - Update ammonite to 2.0.3 [\#210](https://github.com/higherkindness/skeuomorph/pull/210) ([scala-steward](https://github.com/scala-steward))
 - Update ammonite to 2.0.2 [\#209](https://github.com/higherkindness/skeuomorph/pull/209) ([scala-steward](https://github.com/scala-steward))
 - Update specs2-core, specs2-scalacheck to 4.8.3 [\#208](https://github.com/higherkindness/skeuomorph/pull/208) ([scala-steward](https://github.com/scala-steward))
+- Update specs2-core, specs2-scalacheck to 4.8.2 [\#207](https://github.com/higherkindness/skeuomorph/pull/207) ([scala-steward](https://github.com/scala-steward))
 - Support protobuf nested messages and enums [\#206](https://github.com/higherkindness/skeuomorph/pull/206) ([cb372](https://github.com/cb372))
 - Use scalameta for codegen [\#205](https://github.com/higherkindness/skeuomorph/pull/205) ([cb372](https://github.com/cb372))
 
@@ -111,7 +146,6 @@
 
 **Merged pull requests:**
 
-- Update specs2-core, specs2-scalacheck to 4.8.2 [\#207](https://github.com/higherkindness/skeuomorph/pull/207) ([scala-steward](https://github.com/scala-steward))
 - Release v0.0.18 [\#199](https://github.com/higherkindness/skeuomorph/pull/199) ([cb372](https://github.com/cb372))
 - Wrap coproducts in Option [\#198](https://github.com/higherkindness/skeuomorph/pull/198) ([cb372](https://github.com/cb372))
 - Generate a shapeless Coproduct instead of a placeholder type [\#197](https://github.com/higherkindness/skeuomorph/pull/197) ([cb372](https://github.com/cb372))
@@ -261,6 +295,7 @@
 - CompressionType and useIdiomaticEndpoints for Protobuf and Avro [\#101](https://github.com/higherkindness/skeuomorph/pull/101) ([fedefernandez](https://github.com/fedefernandez))
 - Support for compression [\#99](https://github.com/higherkindness/skeuomorph/pull/99) ([AlvaroCaste](https://github.com/AlvaroCaste))
 - Ff/print open api [\#97](https://github.com/higherkindness/skeuomorph/pull/97) ([BeniVF](https://github.com/BeniVF))
+- Ff/open api to mu [\#90](https://github.com/higherkindness/skeuomorph/pull/90) ([BeniVF](https://github.com/BeniVF))
 
 ## [v0.0.10](https://github.com/higherkindness/skeuomorph/tree/v0.0.10) (2019-05-30)
 
@@ -291,7 +326,6 @@
 
 - Bump version to release optional fields work [\#93](https://github.com/higherkindness/skeuomorph/pull/93) ([noelmarkham](https://github.com/noelmarkham))
 - Make fields optional for non-primitive protobuf fields [\#92](https://github.com/higherkindness/skeuomorph/pull/92) ([noelmarkham](https://github.com/noelmarkham))
-- Ff/open api to mu [\#90](https://github.com/higherkindness/skeuomorph/pull/90) ([BeniVF](https://github.com/BeniVF))
 - Fix scaladoc generation [\#88](https://github.com/higherkindness/skeuomorph/pull/88) ([vil1](https://github.com/vil1))
 - Append the `fs2` prefix to the `Stream` [\#84](https://github.com/higherkindness/skeuomorph/pull/84) ([fedefernandez](https://github.com/fedefernandez))
 - Revert "Use the fully qualified name for fs2 Stream" [\#83](https://github.com/higherkindness/skeuomorph/pull/83) ([fedefernandez](https://github.com/fedefernandez))
