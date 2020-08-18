@@ -30,7 +30,7 @@ import higherkindness.droste.data.Mu
 import scala.meta._
 import scala.meta.contrib._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 class AvroSpec extends Specification with ScalaCheck {
 

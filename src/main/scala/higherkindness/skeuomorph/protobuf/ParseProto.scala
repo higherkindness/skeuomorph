@@ -33,7 +33,7 @@ import higherkindness.skeuomorph.{Parser, _}
 import higherkindness.droste._
 import higherkindness.droste.syntax.embed._
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 object ParseProto {
 
@@ -312,7 +312,7 @@ object ParseProto {
     normalizeName(source.getName) == normalizeName(s"${name}Entry")
 
   def normalizeName(name: String): String =
-    name.toLowerCase.replaceAllLiterally("_", "")
+    name.toLowerCase.replace("_", "")
 
   def fromOneofDescriptorsProto[A](
       oneOfFields: List[OneofDescriptorProto],

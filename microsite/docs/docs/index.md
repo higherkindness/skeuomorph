@@ -40,7 +40,7 @@ libraryDependencies += "io.higherkindness" %% "skeuomorph" % "@VERSION@"
 
 ### Parsing an Avro schema and converting it into Scala code
 
-Given an Avro schema:
+Given an Avro `.avpr` schema:
 
 ```scala mdoc:silent
 val definition = """
@@ -111,7 +111,7 @@ println("```")
 
 ## Protobuf
 
-### Parsing a `.proto` file and converting into Scala code
+### Parsing a proto3 `.proto` file and converting into Scala code
 
 Given the proto file below:
 
@@ -170,6 +170,12 @@ println("=====")
 (toMuProtocol >>> printProtocolAsScala >>> println)(protobufProtocol)
 println("```")
 ```
+
+#### Proto2 Incompatibility
+
+Please note that the design of Skeuomorph supports Proto3, and while it can still generate Scala code using Proto2, not
+all fields will be supported (most notably _optional_ fields).  For more details on this incompatibility, please see the
+[schema notes](schemas/).  For this reason, we strongly encourage only using Skeuomorph with Proto3 schemas.
 
 ## Skeuomorph in the wild
 
