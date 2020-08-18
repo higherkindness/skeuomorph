@@ -258,8 +258,8 @@ object Comparison extends ComparisonInstances {
   private def different[T, A](path: Path): Comparison[T, A] = End(Result.mismatch(Different(path)))
 
   private def zipLists[T](path: Path, l1: List[T], l2: List[T], pathElem: Int => PathElement): List[Context[T]] = {
-    val l1s = l1.to(LazyList).map(_.some) ++ LazyList.continually(None)
-    val l2s = l2.to(LazyList).map(_.some) ++ LazyList.continually(None)
+    val l1s = l1.toStream.map(_.some) ++ Stream.continually(None)
+    val l2s = l2.toStream.map(_.some) ++ Stream.continually(None)
     l1s.zip(l2s).takeWhile((None, None) != _).toList.zipWithIndex.map {
       case (p, i) => (path / pathElem(i), p._1, p._2)
     }
