@@ -46,7 +46,7 @@ service HelloWorldService {
 
 Skeuomorph (with mu) will generate the following Scala code:
 
-```scala mdoc:silent
+```scala
 object hello {
   final case class SayHelloRequest(name: String)
   final case class SayHelloResponse(message: String)

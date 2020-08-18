@@ -175,7 +175,7 @@ println("```")
 
 Please note that the design of Skeuomorph supports Proto3, and while it can still generate Scala code using Proto2, not
 all fields will be supported (most notably _optional_ fields).  For more details on this incompatibility, please see the
-[schema notes](docs/schemas/).  For this reason, we strongly encourage only using Skeuomorph with Proto3 schemas.
+[schema notes](schemas/).  For this reason, we strongly encourage only using Skeuomorph with Proto3 schemas.
 
 ## Skeuomorph in the wild
 
