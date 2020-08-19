@@ -29,7 +29,7 @@ import protobuf._
 import openapi._
 import openapi.schema.OpenApi
 import higherkindness.droste._
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 object instances {
   lazy val nonEmptyString: Gen[String] = Gen.alphaStr.filter(_.nonEmpty)

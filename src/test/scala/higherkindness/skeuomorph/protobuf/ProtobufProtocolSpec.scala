@@ -21,10 +21,12 @@ import higherkindness.skeuomorph.mu.MuF
 import higherkindness.skeuomorph.protobuf.ProtobufF._
 import higherkindness.skeuomorph.protobuf.ParseProto._
 import higherkindness.skeuomorph.mu.CompressionType
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.{Arbitrary, Gen, Prop}
 import org.specs2.{ScalaCheck, Specification}
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
+import org.specs2.scalacheck.ScalaCheckFunction2
+
 import scala.meta._
 import scala.meta.contrib._
 
@@ -56,7 +58,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
   """
 
-  def codegenProtobufProtocol =
+  def codegenProtobufProtocol: ScalaCheckFunction2[CompressionType, Boolean, Prop] =
     prop { (ct: CompressionType, useIdiom: Boolean) =>
       val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
         p: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
