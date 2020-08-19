@@ -103,7 +103,7 @@ object ProtobufF {
       nestedMessages: List[A],
       nestedEnums: List[A]
   )                                                                                     extends ProtobufF[A]
-  final case class TFileDescriptor[A](values: List[A], name: String, `package`: Option[String]) extends ProtobufF[A]
+  final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
   def `null`[A](): ProtobufF[A]                                                   = TNull()
   def double[A](): ProtobufF[A]                                                   = TDouble()
