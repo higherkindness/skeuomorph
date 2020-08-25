@@ -131,9 +131,20 @@ object ParseProto {
 
         val enums: List[A] = file.getEnumTypeList.asScala.toList.map(toEnum[A])
 
+        val javaPackage: String = file.getOptions.getJavaPackage
+
+        val filePackage: String = file.getPackage
+
+        val fileName: String = formatName(file.getName)
+
         Protocol[A](
-          formatName(file.getName),
-          file.getPackage,
+          fileName,
+          // ratchet first take
+          if (javaPackage.isEmpty) {
+            if (filePackage.isEmpty) {
+              fileName
+            } else filePackage
+          } else javaPackage,
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),

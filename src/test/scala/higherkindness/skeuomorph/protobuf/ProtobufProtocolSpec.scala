@@ -49,6 +49,16 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   Protobuf Protocol
 
   It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
+
+  It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
+
+  The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
+
+  The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
+
+  The generated Scala code should use the `java_package` for the package name when no package name is present. $codeGenProtobufOptionalPackage
+
+  The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufJavaPackage
   """
 
   def codegenProtobufProtocol =
@@ -377,9 +387,50 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   }
 
   val googleApiExpectation = s"""
-    |package google.`type`
+    |package com.google.`type`
     |import _root_.higherkindness.mu.rpc.protocol._
     |object date { final case class Date(@_root_.pbdirect.pbIndex(1) year: _root_.scala.Int, @_root_.pbdirect.pbIndex(2) month: _root_.scala.Int, @_root_.pbdirect.pbIndex(3) day: _root_.scala.Int) }
     |""".stripMargin
 
+  def codeGenProtobufNoPackage = {
+    val optionalPackage: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/packages"
+      val source = ProtoSource(s"test_no_package.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(optionalPackage, protobufNoPackage)
+  }
+
+  val protobufNoPackage =
+    s"""
+    |package my_package
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object test_no_package {
+    |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.other_package.test_no_package.MyRequest): F[_root_.other_package.test_no_package.MyResponse] }
+    |}
+    |""".stripMargin
+
+  def codeGenProtobufJavaPackage = {
+    val javaPackageAndRegularPackage: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/packages"
+      val source = ProtoSource(s"test_java_package.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(javaPackageAndRegularPackage, protobufJavaPackageExpectation)
+  }
+
+  val protobufJavaPackageExpectation =
+    s"""
+    |package my_package
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object test_java_package {
+    |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.other_package.test_java_package.MyRequest): F[_root_.other_package.test_java_package.MyResponse] }
+    |}
+    |""".stripMargin
 }
