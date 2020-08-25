@@ -56,8 +56,6 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
 
-  The generated Scala code should use the `java_package` for the package name when no package name is present. $codeGenProtobufOptionalPackage
-
   The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufJavaPackage
   """
 
