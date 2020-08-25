@@ -1,0 +1,6 @@
+syntax = "proto3";
+
+message Rating {
+    int32 stars = 1;
+    uint32 reviews = 2;
+}

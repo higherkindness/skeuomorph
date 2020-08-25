@@ -95,9 +95,15 @@ object Printer {
    * https://scala-lang.org/files/archive/spec/2.13/01-lexical-syntax.html#identifiers,
    * but it's quite wrong/misleading). So we let scalameta take care of it for us.
    */
-  def toValidIdentifier(string: String): String =
+  def toValidIdentifier(string: String): String = {
+    println(s"identifier arg is: $string")
     if (string.isEmpty) string
-    else scala.meta.Term.Name(string).syntax
+    else {
+      val returned = scala.meta.Term.Name(string).syntax
+      println(s"parsed identifier: $returned")
+      returned
+    }
+  }
 
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
     def unit: Printer[Unit] = Printer.unit

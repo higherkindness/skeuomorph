@@ -49,11 +49,15 @@ object codegen {
 
     val packageName = protocol.pkg
       .map(_.split('.').toList.map(toValidIdentifier).mkString("."))
+      .filter(_ != "")
       .getOrElse("proto")
+      // TODO can i get the package location from here?
       .parse[Term]
       .toEither
       .leftMap(e => s"Failed to parse package name: $e")
       .flatMap(_.as[Term.Ref])
+
+    println(packageName)
 
     val muImport: Either[String, Import] =
       parseImport("import _root_.higherkindness.mu.rpc.protocol._")

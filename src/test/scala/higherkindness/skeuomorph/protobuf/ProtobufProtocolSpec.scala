@@ -49,12 +49,6 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   Protobuf Protocol
 
   It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
-
-  It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
-
-  The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
-
-  The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
   """
 
   def codegenProtobufProtocol =
