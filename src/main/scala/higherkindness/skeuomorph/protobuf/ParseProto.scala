@@ -141,9 +141,9 @@ object ParseProto {
           fileName,
           // ratchet first take
           if (javaPackage.isEmpty) {
-            if (filePackage.isEmpty) {
+            if (filePackage.isEmpty)
               fileName
-            } else filePackage
+            else filePackage
           } else javaPackage,
           Nil,
           messages ++ enums,
