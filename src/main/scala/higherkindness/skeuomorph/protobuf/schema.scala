@@ -179,12 +179,11 @@ object ProtobufF {
       def makeOneOfB(oneOf: FieldF.OneOfField[A]): G[FieldF[B]] =
         f(oneOf.tpe).map(b => FieldF.OneOfField[B](oneOf.name, b, oneOf.indices): FieldF[B])
 
-      def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] = {
+      def traverseFieldF(fieldFList: List[FieldF[A]]): G[List[FieldF[B]]] =
         fieldFList.traverse {
           case field: FieldF.Field[A]      => makeFieldB(field).widen
           case oneOf: FieldF.OneOfField[A] => makeOneOfB(oneOf).widen
         }
-      }
 
       def makeMessageB(m: TMessage[A]): G[TMessage[B]] =
         (

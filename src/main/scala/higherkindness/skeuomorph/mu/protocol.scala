@@ -99,7 +99,7 @@ object Protocol {
     val toImports: DependentImport[T] => DependentImport[U] =
       imp => DependentImport(imp.pkg, imp.protocol, toMu(imp.tpe))
 
-    val res = new Protocol[U](
+    new Protocol[U](
       name = Some(protocol.name),
       pkg = Option(protocol.pkg),
       options = protocol.options,
@@ -116,9 +116,6 @@ object Protocol {
         ),
       imports = protocol.imports.map(toImports)
     )
-
-//    println(s"the resultant protocol is $res")
-    res
 
   }
 

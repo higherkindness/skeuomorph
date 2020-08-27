@@ -49,7 +49,6 @@ object codegen {
 
     val packageName = protocol.pkg
       .map(_.split('.').toList.map(toValidIdentifier).mkString("."))
-      // shouldn't ever get here because it'll use the filename instead
       .getOrElse("proto")
       .parse[Term]
       .toEither
