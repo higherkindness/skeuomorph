@@ -168,7 +168,6 @@ object ParseProto {
 
         Protocol[A](
           fileName,
-          // ratchet first take
           getPackageOrJavaPackage(file),
           Nil,
           messages ++ enums,
@@ -453,8 +452,7 @@ object ParseProto {
           .filterNot(isMapEntryType)
           .flatMap(rec(_, parents :+ m.getName))
 
-      val messages = f.getMessageTypeList.asScala.toList.flatMap(rec(_, Nil))
-      messages
+      f.getMessageTypeList.asScala.toList.flatMap(rec(_, Nil))
     }
   }
 
