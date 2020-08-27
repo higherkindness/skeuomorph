@@ -1,4 +1,5 @@
 syntax = "proto3";
+
 package other_package;
 
 option java_package = "my_package";

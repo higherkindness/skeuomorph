@@ -121,6 +121,38 @@ object ParseProto {
     }
   }
 
+  private def getPackageOrJavaPackage(file: FileDescriptorProto): String = {
+
+    val javaPackage: String = file.getOptions.getJavaPackage
+
+    val filePackage: String = file.getPackage
+
+    val fileName: String = formatName(file.getName)
+
+    if (javaPackage.isEmpty) {
+      if (filePackage.isEmpty)
+        // need to check if this is the behavior we want
+        // or if we should just respect the java package
+        // if we only care about java package and then just failing
+        // to parse if this doesn't play then we're good
+        // definitely needs to error at some point, perhaps
+        // that will be caught in the codegen step
+        fileName
+      else filePackage
+    } else javaPackage
+
+  }
+
+  private def getNameFromQualifiedName(fullName: String): String = {
+    // more info is later in the file, but when we compare
+    // the types, we only care about the name of it, not the
+    // fully-qualified name.  This matters because types that come
+    // from files with the `package` header will have the fully-qualified
+    // name, whereas files that use `java_package` header will just have
+    // the sub-name.  We want to be able to compare both of them
+    fullName.substring(fullName.lastIndexOf(".") + 1)
+  }
+
   def fromProto[A](
       descriptorFileName: String,
       files: List[FileDescriptorProto]
@@ -131,20 +163,12 @@ object ParseProto {
 
         val enums: List[A] = file.getEnumTypeList.asScala.toList.map(toEnum[A])
 
-        val javaPackage: String = file.getOptions.getJavaPackage
-
-        val filePackage: String = file.getPackage
-
         val fileName: String = formatName(file.getName)
 
         Protocol[A](
           fileName,
           // ratchet first take
-          if (javaPackage.isEmpty) {
-            if (filePackage.isEmpty)
-              fileName
-            else filePackage
-          } else javaPackage,
+          getPackageOrJavaPackage(file),
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
@@ -419,7 +443,7 @@ object ParseProto {
 
       def rec(m: DescriptorProto, parents: List[String]): List[NamedDescriptor[DescriptorProto]] =
         NamedDescriptor(
-          f.getPackage,
+          getPackageOrJavaPackage(f),
           enclosingProto,
           parents,
           m.getName,
@@ -428,17 +452,27 @@ object ParseProto {
           .filterNot(isMapEntryType)
           .flatMap(rec(_, parents :+ m.getName))
 
-      f.getMessageTypeList.asScala.toList.flatMap(rec(_, Nil))
+      val messages = f.getMessageTypeList.asScala.toList.flatMap(rec(_, Nil))
+      messages
     }
   }
 
-  def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    allMessages(files).find(_.fullName == name)
+  def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] = {
+    // this should only be a contains the file being accessed doesn't have a package,
+    // otherwise we should match exactly
+    // this evil-looking hackery is just to make sure that all we care about is the name of the type
+    // in a given named type node.  HOWEVER, the major caveat here is that since it only looks at the type
+    // name, and not the complete path, it'll behave poorly if we have the same type name getting imported from
+    // different protobuf packages (I _think_, I haven't actually tested the behavior yet
+    allMessages(files).find(_.fullName.contains(getNameFromQualifiedName(name)))
+  }
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
       val enclosingProto = formatName(f.getName)
-      f.getEnumTypeList.asScala.toList.map(e => NamedDescriptor(f.getPackage, enclosingProto, Nil, e.getName, e))
+      f.getEnumTypeList.asScala.toList.map(e =>
+        NamedDescriptor(getPackageOrJavaPackage(f), enclosingProto, Nil, e.getName, e)
+      )
     }
 
     val allNestedInsideMessages = for {
