@@ -129,14 +129,16 @@ object ParseProto {
 
     val fileName: String = formatName(file.getName)
 
+    // So, we, need to check if this is the behavior we want
+    // or if we should just respect the java package
+    // if we only care about java package and then just failing
+    // to parse if this doesn't play then we're good
+    // definitely needs to error at some point, perhaps
+    // that will be caught in the codegen step.  For now,
+    // I implemented behavior that is consistent with ScalaPB, see
+    // https://scalapb.github.io/docs/generated-code/#default-package-structure
     if (javaPackage.isEmpty) {
       if (filePackage.isEmpty)
-        // need to check if this is the behavior we want
-        // or if we should just respect the java package
-        // if we only care about java package and then just failing
-        // to parse if this doesn't play then we're good
-        // definitely needs to error at some point, perhaps
-        // that will be caught in the codegen step
         fileName
       else filePackage
     } else javaPackage
