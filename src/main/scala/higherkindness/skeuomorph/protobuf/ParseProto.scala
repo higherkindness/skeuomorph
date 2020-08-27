@@ -143,7 +143,7 @@ object ParseProto {
 
   }
 
-  private def getNameFromQualifiedName(fullName: String): String = {
+  private def getNameFromQualifiedName(fullName: String): String =
     // more info is later in the file, but when we compare
     // the types, we only care about the name of it, not the
     // fully-qualified name.  This matters because types that come
@@ -151,7 +151,6 @@ object ParseProto {
     // name, whereas files that use `java_package` header will just have
     // the sub-name.  We want to be able to compare both of them
     fullName.substring(fullName.lastIndexOf(".") + 1)
-  }
 
   def fromProto[A](
       descriptorFileName: String,
@@ -457,7 +456,7 @@ object ParseProto {
     }
   }
 
-  def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] = {
+  def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
     // this should only be a contains the file being accessed doesn't have a package,
     // otherwise we should match exactly
     // this evil-looking hackery is just to make sure that all we care about is the name of the type
@@ -465,7 +464,6 @@ object ParseProto {
     // name, and not the complete path, it'll behave poorly if we have the same type name getting imported from
     // different protobuf packages (I _think_, I haven't actually tested the behavior yet
     allMessages(files).find(_.fullName.contains(getNameFromQualifiedName(name)))
-  }
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
