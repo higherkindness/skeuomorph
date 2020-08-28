@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package com.acme;
+option java_package = "com.acme";
 
 message Rating {
     int32 stars = 1;

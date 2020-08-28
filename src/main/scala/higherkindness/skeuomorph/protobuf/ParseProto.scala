@@ -128,14 +128,7 @@ object ParseProto {
     val filePackage: String = file.getPackage
 
     val fileName: String = formatName(file.getName)
-
-    // So, we, need to check if this is the behavior we want
-    // or if we should just respect the java package
-    // if we only care about java package and then just failing
-    // to parse if this doesn't play then we're good
-    // definitely needs to error at some point, perhaps
-    // that will be caught in the codegen step.  For now,
-    // I implemented behavior that is consistent with ScalaPB, see
+    // This package naming behavior is consistent with ScalaPB, see
     // https://scalapb.github.io/docs/generated-code/#default-package-structure
     if (javaPackage.isEmpty) {
       if (filePackage.isEmpty)
@@ -145,13 +138,15 @@ object ParseProto {
 
   }
 
-  private def getNameFromQualifiedName(fullName: String): String =
-    // more info is later in the file, but when we compare
-    // the types, we only care about the name of it, not the
-    // fully-qualified name.  This matters because types that come
-    // from files with the `package` header will have the fully-qualified
-    // name, whereas files that use `java_package` header will just have
-    // the sub-name.  We want to be able to compare both of them
+  private def getTypeNameFromQualifiedName(fullName: String): String =
+    // When comparing the types, we only need to know the name of the type, not the
+    // fully-qualified name (since we use the value of the package passed into the protoc to create
+    // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
+    // different behavior depending on whether we access a type name from a file with a `package` header
+    // (which will return the fully-qualified name) vs accessing a type name from a file with a `java_package`
+    // header (which will just return the name of the type).  This method trims the type name from a fully-
+    // qualified name if necessary, which provides consistent behavior when comparing the name of a message
+    // to the name of a type
     fullName.substring(fullName.lastIndexOf(".") + 1)
 
   def fromProto[A](
@@ -457,13 +452,10 @@ object ParseProto {
   }
 
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    // this should only be a contains the file being accessed doesn't have a package,
-    // otherwise we should match exactly
-    // this evil-looking hackery is just to make sure that all we care about is the name of the type
-    // in a given named type node.  HOWEVER, the major caveat here is that since it only looks at the type
-    // name, and not the complete path, it'll behave poorly if we have the same type name getting imported from
-    // different protobuf packages (I _think_, I haven't actually tested the behavior yet
-    allMessages(files).find(_.fullName.contains(getNameFromQualifiedName(name)))
+    // Note that this method checks that the name of the message matches against the type name that is
+    // extracted from the fully-qualified type name via `getTypeNameFromQualifiedName`.  More context
+    // on why that happens is in the method signature for `getTypeNameFromQualifiedName`.
+    allMessages(files).find(_.fullName.contains(getTypeNameFromQualifiedName(name)))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
