@@ -25,7 +25,7 @@ import org.apache.avro.{Schema, Protocol => AvroProtocol}
 import higherkindness.droste._
 import higherkindness.droste.syntax.all._
 
-import scala.jdk.CollectionConverters._
+import scala.collection.JavaConverters._
 
 final case class Protocol[A](
     name: String,

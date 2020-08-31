@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option java_package = "my_package";
+
+service MyService {
+  rpc Check(MyRequest) returns (MyResponse);
+}
+
+message MyRequest {
+  string value = 1;
+}
+
+message MyResponse {
+  string value = 1;
+}
