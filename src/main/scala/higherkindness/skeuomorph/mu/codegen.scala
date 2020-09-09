@@ -140,8 +140,8 @@ object codegen {
           case pb.Signed     => t"_root_.pbdirect.Signed"
           case pb.FixedWidth => t"_root_.pbdirect.Fixed"
         }
-        .reduceLeft[Type] {
-          case (a, b) => t"$a with $b"
+        .reduceLeft[Type] { case (a, b) =>
+          t"$a with $b"
         }
 
     def intType(x: TInt[Tree]): Type =
@@ -209,11 +209,10 @@ object codegen {
           fields.traverse(arg),
           nestedProducts.traverse(_.as[Stat]),
           nestedCoproducts.traverse(_.as[Stat])
-        ).mapN {
-          case (args, prods, coprods) =>
-            val caseClass = q"final case class ${Type.Name(name)}(..$args)"
-            if (prods.nonEmpty || coprods.nonEmpty) {
-              q"""
+        ).mapN { case (args, prods, coprods) =>
+          val caseClass = q"final case class ${Type.Name(name)}(..$args)"
+          if (prods.nonEmpty || coprods.nonEmpty) {
+            q"""
             $caseClass
             ;
             object ${Term.Name(name)} {
@@ -221,8 +220,8 @@ object codegen {
               ..${coprods.flatMap(explodeBlock)}
             }
             """
-            } else
-              caseClass
+          } else
+            caseClass
         }
     }
 

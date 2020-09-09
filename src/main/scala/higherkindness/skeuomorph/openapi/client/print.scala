@@ -248,16 +248,15 @@ object print {
     responses.find(x => successStatusCode(x._1)).map(_._2)
 
   def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[Http.Responses[T]] =
-    Printer {
-      case (x, y) =>
-        val defaultName = TypeAliasErrorResponse(x)
-        y.size match {
-          case 0 => "Unit"
-          case 1 => responseOrType.print(y.head._2)
-          case _ =>
-            val success = successType(y).fold("Unit")(responseOrType.print)
-            show"Either[$defaultName, $success]"
-        }
+    Printer { case (x, y) =>
+      val defaultName = TypeAliasErrorResponse(x)
+      y.size match {
+        case 0 => "Unit"
+        case 1 => responseOrType.print(y.head._2)
+        case _ =>
+          val success = successType(y).fold("Unit")(responseOrType.print)
+          show"Either[$defaultName, $success]"
+      }
     }
 
   def method[T: Basis[JsonSchemaF, ?]]: Printer[Http.Operation[T]] =
@@ -378,9 +377,8 @@ object print {
         response.left.toOption
           .map(_ -> responseOrType.print(response))
           .toList
-          .flatMap {
-            case (response, tpe) =>
-              typeAndSchemaFor(none, response, tpe)(tpe -> Nil)._3
+          .flatMap { case (response, tpe) =>
+            typeAndSchemaFor(none, response, tpe)(tpe -> Nil)._3
           }
           .asRight
       case _ =>
@@ -403,8 +401,8 @@ object print {
     (
       sepBy((space >* space) *< string, "\n") >* newLine,
       space *< space *< typeAliasDef(responseErrorsDef)
-    ).contramapN {
-      case (schemas, tpe, errorTypes) => (schemas, (tpe.show, errorTypes, none))
+    ).contramapN { case (schemas, tpe, errorTypes) =>
+      (schemas, (tpe.show, errorTypes, none))
     }
   }
 
@@ -442,13 +440,12 @@ object print {
       sepBy(requestSchema[T], "\n") >* newLine,
       sepBy(responsesSchema[T], "\n") >* newLine,
       optional(objectDef(sepBy(parameterSchema[T], "\n")))
-    ).contramapN {
-      case (ops, params) =>
-        (
-          ops.map(operation => operation.operationId -> operation.requestBody),
-          ops.map(operation => operation.operationId -> operation.responses),
-          params.headOption.map(_ => ((parametersPackage, none), List.empty, params))
-        )
+    ).contramapN { case (ops, params) =>
+      (
+        ops.map(operation => operation.operationId -> operation.requestBody),
+        ops.map(operation => operation.operationId -> operation.responses),
+        params.headOption.map(_ => ((parametersPackage, none), List.empty, params))
+      )
     }
 
   def toOperationsWithPath[T](

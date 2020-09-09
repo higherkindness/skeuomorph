@@ -69,8 +69,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
         p: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
       }
 
-      val streamCtor: (Type, Type) => Type.Apply = {
-        case (f: Type, a: Type) => t"Stream[$f, $a]"
+      val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
+        t"Stream[$f, $a]"
       }
 
       val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
@@ -188,8 +188,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
           .fromProtobufProto(CompressionType.Identity, useIdiomaticEndpoints = true)(p)
     }
 
-    val streamCtor: (Type, Type) => Type.Apply = {
-      case (f: Type, a: Type) => t"Stream[$f, $a]"
+    val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
+      t"Stream[$f, $a]"
     }
 
     val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {

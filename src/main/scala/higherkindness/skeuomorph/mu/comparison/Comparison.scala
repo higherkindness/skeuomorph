@@ -140,11 +140,10 @@ object Comparison extends ComparisonInstances {
     case AlignUnionMembers(res, rep) =>
       rep(
         res
-          .map {
-            case (p, results) =>
-              results
-                .find(Result.isMatch)
-                .getOrElse(Result.mismatch(UnionMemberRemoved(p)))
+          .map { case (p, results) =>
+            results
+              .find(Result.isMatch)
+              .getOrElse(Result.mismatch(UnionMemberRemoved(p)))
           }
           .toList
           .combineAll
@@ -186,11 +185,10 @@ object Comparison extends ComparisonInstances {
         case (TCoproduct(i), TCoproduct(i2)) =>
           AlignUnionMembers(
             i.zipWithIndex
-              .map {
-                case (item, idx) =>
-                  path / Alternative(idx) -> (List(item.some), i2.toList.map(_.some)).tupled.map(p =>
-                    (path / Alternative(idx), p._1, p._2)
-                  )
+              .map { case (item, idx) =>
+                path / Alternative(idx) -> (List(item.some), i2.toList.map(_.some)).tupled.map(p =>
+                  (path / Alternative(idx), p._1, p._2)
+                )
               }
               .toList
               .toMap
@@ -260,8 +258,8 @@ object Comparison extends ComparisonInstances {
   private def zipLists[T](path: Path, l1: List[T], l2: List[T], pathElem: Int => PathElement): List[Context[T]] = {
     val l1s = l1.toStream.map(_.some) ++ Stream.continually(None)
     val l2s = l2.toStream.map(_.some) ++ Stream.continually(None)
-    l1s.zip(l2s).takeWhile((None, None) != _).toList.zipWithIndex.map {
-      case (p, i) => (path / pathElem(i), p._1, p._2)
+    l1s.zip(l2s).takeWhile((None, None) != _).toList.zipWithIndex.map { case (p, i) =>
+      (path / pathElem(i), p._1, p._2)
     }
   }
 
