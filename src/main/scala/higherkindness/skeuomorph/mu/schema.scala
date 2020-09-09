@@ -72,12 +72,12 @@ object MuF {
   ) extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] =
-    Eq.instance {
-      case (Field(n, t, is), Field(n2, t2, is2)) => n === n2 && t === t2 && is === is2
+    Eq.instance { case (Field(n, t, is), Field(n2, t2, is2)) =>
+      n === n2 && t === t2 && is === is2
     }
 
-  implicit val sumFieldEq: Eq[SumField] = Eq.instance {
-    case (SumField(n, v), SumField(n2, v2)) => n === n2 && v === v2
+  implicit val sumFieldEq: Eq[SumField] = Eq.instance { case (SumField(n, v), SumField(n2, v2)) =>
+    n === n2 && v === v2
   }
 
   implicit val numberSizeEq: Eq[NumberSize] = Eq.fromUniversalEquals

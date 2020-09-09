@@ -71,9 +71,8 @@ object instances {
       Gen.nonEmptyContainerOf[Set, String](nonEmptyString).map(_.toList) flatMap { l: List[String] =>
         l.traverse(field)
       }
-    ).mapN {
-      case (name, doc, namespace, fields) =>
-        Schema.createRecord(name, doc, namespace, false, fields.asJava)
+    ).mapN { case (name, doc, namespace, fields) =>
+      Schema.createRecord(name, doc, namespace, false, fields.asJava)
     }
 
     Gen.oneOf(primitives, arrayOrMap, union, record)

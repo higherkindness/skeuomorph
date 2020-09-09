@@ -103,8 +103,8 @@ object ParseProto {
 
     for {
       _ <- Sync[F].ensure[Int](protoCompilation)(ProtobufCompilationException())((exitCode: Int) => exitCode == 0)
-      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
-        case ex: Exception => ProtobufParsingException(ex)
+      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) { case ex: Exception =>
+        ProtobufParsingException(ex)
       }
       nativeDescriptors <- getTFiles[F, T](input.filename, fileDescriptor)
     } yield nativeDescriptors
@@ -352,20 +352,19 @@ object ParseProto {
   )(implicit
       A: Embed[ProtobufF, A]
   ): List[(FieldF[A], List[Int])] =
-    oneOfFields.zipWithIndex.map {
-      case (oneof, index) =>
-        val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
-          .fromList(
-            fields
-              .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
-              .map(fromFieldDescriptorProto(_, source, files))
-              .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
-          )
-          .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
+    oneOfFields.zipWithIndex.map { case (oneof, index) =>
+      val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
+        .fromList(
+          fields
+            .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
+            .map(fromFieldDescriptorProto(_, source, files))
+            .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
+        )
+        .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-        val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
-        val indices = oneOfFields.map(_.position).toList
-        (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
+      val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
+      val indices = oneOfFields.map(_.position).toList
+      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
     }
 
   def fromFieldTypeCoalgebra(

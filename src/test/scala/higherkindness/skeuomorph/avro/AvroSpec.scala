@@ -85,8 +85,8 @@ class AvroSpec extends Specification with ScalaCheck {
 
     val muProto = MuProtocol.fromAvroProtocol(CompressionType.Identity, useIdiomaticEndpoints = true)(skeuoAvroProto)
 
-    val streamCtor: (Type, Type) => Type.Apply = {
-      case (f: Type, a: Type) => t"Stream[$f, $a]"
+    val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
+      t"Stream[$f, $a]"
     }
 
     val actual = codegen.protocol(muProto, streamCtor).right.get

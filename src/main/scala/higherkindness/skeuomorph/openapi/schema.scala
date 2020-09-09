@@ -117,9 +117,8 @@ object schema {
         components: Components[T]
     ): NestedTypesState[T, Components[T]] =
       components.schemas.toList
-        .traverse {
-          case (name, tpe) =>
-            nestedTypes.apply(tpe).map(t => name -> t)
+        .traverse { case (name, tpe) =>
+          nestedTypes.apply(tpe).map(t => name -> t)
         }
         .map(cc => components.copy(schemas = cc.toMap))
 

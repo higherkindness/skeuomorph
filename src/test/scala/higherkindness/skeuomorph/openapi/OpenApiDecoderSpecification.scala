@@ -557,14 +557,13 @@ class OpenApiDecoderSpecification extends org.specs2.mutable.Specification {
       val expectedOperation =
         operation[JsonSchemaF.Fixed](
           request(
-            content =
-              "application/x-www-form-urlencoded" ->
-                mediaType(
-                  obj(
-                    "name"   -> Fixed.string(),
-                    "status" -> Fixed.string()
-                  )("status")
-                )
+            content = "application/x-www-form-urlencoded" ->
+              mediaType(
+                obj(
+                  "name"   -> Fixed.string(),
+                  "status" -> Fixed.string()
+                )("status")
+              )
           ).optional,
           "200" -> response("Pet updated.", expectedResponseContent: _*),
           "405" -> response("Method Not Allowed", expectedResponseContent: _*)
