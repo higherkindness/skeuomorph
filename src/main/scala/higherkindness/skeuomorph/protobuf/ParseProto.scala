@@ -138,7 +138,7 @@ object ParseProto {
 
   }
 
-  private def getTypeNameFromQualifiedName(fullName: String): String =
+  private def getTypeNameFromQualifiedName(fullName: String): String = {
     // When comparing the types, we only need to know the name of the type, not the
     // fully-qualified name (since we use the value of the package passed into the protoc to create
     // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
@@ -148,6 +148,23 @@ object ParseProto {
     // qualified name if necessary, which provides consistent behavior when comparing the name of a message
     // to the name of a type
     fullName.substring(fullName.lastIndexOf(".") + 1)
+  }
+
+  private def getEnumTypeNameFromQualifiedName(fullName: String): String = {
+    // When comparing the types, we only need to know the name of the type, not the
+    // fully-qualified name (since we use the value of the package passed into the protoc to create
+    // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
+    // different behavior depending on whether we access a type name from a file with a `package` header
+    // (which will return the fully-qualified name) vs accessing a type name from a file with a `java_package`
+    // header (which will just return the name of the type).  This method trims the type name from a fully-
+    // qualified name if necessary, which provides consistent behavior when comparing the name of a message
+    // to the name of a type
+    println(s"fullName is $fullName")
+    println(s"typeName is ${fullName.substring(fullName.lastIndexOf(".") + 1)}")
+    fullName.substring(fullName.lastIndexOf(".") + 1)
+  }
+
+
 
   def fromProto[A](
       descriptorFileName: String,
@@ -473,7 +490,8 @@ object ParseProto {
     }
 
     (allTopLevel ++ allNestedInsideMessages)
-      .find(_.fullName === name)
+//      .find(_.fullName === name)
+      .find(_.fullName.contains(getEnumTypeNameFromQualifiedName(name)))
   }
 
   implicit class LabelOps(self: Label) {

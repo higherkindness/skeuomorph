@@ -457,4 +457,46 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |}
     |""".stripMargin
 
+    private def codeGenProtobufEnumPackage = {
+    val enumWithPackage: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/packages"
+      val source = ProtoSource(s"test_java_package.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(enumWithPackage, protobufEnumExpectation)
+  }
+
+  val protobufEnumExpectation =
+    s"""
+    |package my_package
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object test_java_package {
+    |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse] }
+    |}
+    |""".stripMargin
+
+    private def codeGenProtobufEnumNoPackage = {
+    val enumWithNoPackage: Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/packages"
+      val source = ProtoSource(s"test_java_package.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(enumWithNoPackage, protobufEnumNoPackageExpectation)
+  }
+
+  val protobufEnumNoPackageExpectation =
+    s"""
+    |package my_package
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object test_java_package {
+    |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
+    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse] }
+    |}
+    |""".stripMargin
+
 }
