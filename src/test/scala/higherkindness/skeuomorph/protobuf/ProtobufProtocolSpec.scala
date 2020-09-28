@@ -61,6 +61,9 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufJavaPackage
 
   The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
+
+  The generated Scala code should handle enums when `package` is present in a file. $codeGenProtobufEnumWithPackage
+
   """
 
   private def codegenProtobufProtocol =
@@ -457,45 +460,36 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |}
     |""".stripMargin
 
-    private def codeGenProtobufEnumPackage = {
+  private def codeGenProtobufEnumWithPackage = {
     val enumWithPackage: Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_java_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_enum_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
     check(enumWithPackage, protobufEnumExpectation)
   }
 
-  val protobufEnumExpectation =
-    s"""
-    |package my_package
-    |import _root_.higherkindness.mu.rpc.protocol._
-    |object test_java_package {
-    |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse] }
-    |}
-    |""".stripMargin
-
-    private def codeGenProtobufEnumNoPackage = {
+  private def codeGenProtobufEnumWithNoPackage = {
     val enumWithNoPackage: Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_java_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_enum_no_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
-    check(enumWithNoPackage, protobufEnumNoPackageExpectation)
+    check(enumWithNoPackage, protobufEnumExpectation)
   }
 
-  val protobufEnumNoPackageExpectation =
+  val protobufEnumExpectation =
     s"""
-    |package my_package
-    |import _root_.higherkindness.mu.rpc.protocol._
-    |object test_java_package {
-    |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse] }
+    |object example {
+    |  final case class Example(@_root_.pbdirect.pbIndex(1) enum: _root_.scala.Option[_root_.example.example.ExampleEnum])
+    |  sealed abstract class ExampleEnum(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+    |  object ExampleEnum extends _root_.enumeratum.values.IntEnum[ExampleEnum] {
+    |    case object Option1 extends ExampleEnum(0)
+    |    case object Option2 extends ExampleEnum(1)
+    |    val values = findValues
+    |  }
     |}
     |""".stripMargin
 

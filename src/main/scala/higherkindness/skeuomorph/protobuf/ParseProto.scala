@@ -138,7 +138,7 @@ object ParseProto {
 
   }
 
-  private def getTypeNameFromQualifiedName(fullName: String): String = {
+  private def getTypeNameFromQualifiedName(fullName: String): String =
     // When comparing the types, we only need to know the name of the type, not the
     // fully-qualified name (since we use the value of the package passed into the protoc to create
     // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
@@ -148,7 +148,6 @@ object ParseProto {
     // qualified name if necessary, which provides consistent behavior when comparing the name of a message
     // to the name of a type
     fullName.substring(fullName.lastIndexOf(".") + 1)
-  }
 
   private def getEnumTypeNameFromQualifiedName(fullName: String): String = {
     // When comparing the types, we only need to know the name of the type, not the
@@ -163,8 +162,6 @@ object ParseProto {
     println(s"typeName is ${fullName.substring(fullName.lastIndexOf(".") + 1)}")
     fullName.substring(fullName.lastIndexOf(".") + 1)
   }
-
-
 
   def fromProto[A](
       descriptorFileName: String,
