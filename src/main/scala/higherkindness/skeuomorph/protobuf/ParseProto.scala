@@ -138,7 +138,7 @@ object ParseProto {
 
   }
 
-  private def getTypeNameFromQualifiedName(fullName: String): String =
+  private def getTypeNameFromQualifiedName(fullName: String): String = {
     // When comparing the types, we only need to know the name of the type, not the
     // fully-qualified name (since we use the value of the package passed into the protoc to create
     // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
@@ -147,7 +147,15 @@ object ParseProto {
     // header (which will just return the name of the type).  This method trims the type name from a fully-
     // qualified name if necessary, which provides consistent behavior when comparing the name of a message
     // to the name of a type.
+    //
+    // In addition, the reason we count '.' characters is because the value of the FQN will be different
+    // depending on whether the fullName was generated from a protobuf file that used the `package` option,
+    // vs a protobuf file that used the `java_package`, or simply had an empty option.  Therefore, we need
+    // to parse exactly as many dots as the FQN so that we extract exactly as much FQN as we need to use
+    // the type name appropriately.  A more involved example explaining why we do this can be found here:
+    // https://github.com/higherkindness/skeuomorph/pull/339#discussion_r496969857
     fullName.substring(fullName.indexOf(".", fullName.count(_ == '.')) + 1)
+  }
 
   def fromProto[A](
       descriptorFileName: String,
