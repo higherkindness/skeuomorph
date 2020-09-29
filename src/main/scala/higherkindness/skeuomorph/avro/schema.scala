@@ -25,11 +25,11 @@ import cats.instances.int._
 import cats.syntax.eq._
 import higherkindness.droste.macros.deriveTraverse
 import io.circe.Json
-import org.apache.avro.Schema
+import org.apache.avro.{LogicalType, LogicalTypes, Schema}
 import org.apache.avro.Schema.Type
 import higherkindness.droste.{Algebra, Coalgebra}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 @deriveTraverse sealed trait AvroF[A]
 object AvroF {
@@ -116,6 +116,10 @@ object AvroF {
   )                                                                                                     extends AvroF[A]
   final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
   final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
+  final case class TDate[A]() extends AvroF[A]
+  final case class TTimestampMillis[A]() extends AvroF[A]
+  final case class TUUID[A]() extends AvroF[A]
+  final case class TDecimal[A]() extends AvroF[A]
 
   implicit def eqAvroF[T: Eq]: Eq[AvroF[T]] =
     Eq.instance {
@@ -177,48 +181,60 @@ object AvroF {
    */
   def fromAvro: Coalgebra[AvroF, Schema] =
     Coalgebra { sch =>
-      sch.getType match {
-        case Type.STRING  => AvroF.TString()
-        case Type.BOOLEAN => AvroF.TBoolean()
-        case Type.BYTES   => AvroF.TBytes()
-        case Type.DOUBLE  => AvroF.TDouble()
-        case Type.FLOAT   => AvroF.TFloat()
-        case Type.INT     => AvroF.TInt()
-        case Type.LONG    => AvroF.TLong()
-        case Type.NULL    => AvroF.TNull()
-        case Type.MAP     => AvroF.TMap(sch.getValueType)
-        case Type.ARRAY   => AvroF.TArray(sch.getElementType)
-        case Type.RECORD =>
-          AvroF.TRecord(
-            sch.getName,
-            Option(sch.getNamespace),
-            sch.getAliases.asScala.toList,
-            Option(sch.getDoc),
-            sch.getFields.asScala.toList.map(field2Field)
-          )
-        case Type.ENUM =>
-          val symbols = sch.getEnumSymbols.asScala.toList
-          AvroF.TEnum(
-            sch.getName,
-            Option(sch.getNamespace),
-            sch.getAliases.asScala.toList,
-            Option(sch.getDoc),
-            symbols
-          )
-        case Type.UNION =>
-          val types = sch.getTypes.asScala.toList
-          AvroF.TUnion(
-            NonEmptyList.fromListUnsafe(types)
-          )
-        case Type.FIXED =>
-          AvroF.TFixed(
-            sch.getName,
-            Option(sch.getNamespace),
-            sch.getAliases.asScala.toList,
-            sch.getFixedSize
-          )
+      Option(sch.getLogicalType) match {
+        case Some(lt) => logicalType(sch, lt)
+        case None => primitiveType(sch)
       }
     }
+
+  private def logicalType(sch: Schema, logicalType: LogicalType): AvroF[Schema] = sch.getLogicalType match {
+    case _: LogicalTypes.Date => AvroF.TDate()
+    case _: LogicalTypes.TimeMillis => AvroF.TTimestampMillis()
+    case uuid if uuid == LogicalTypes.uuid => AvroF.TUUID()
+    case _: LogicalTypes.Decimal => AvroF.TDecimal()
+  }
+
+  private def primitiveType(sch: Schema): AvroF[Schema] = sch.getType match {
+    case Type.STRING  => AvroF.TString()
+    case Type.BOOLEAN => AvroF.TBoolean()
+    case Type.BYTES   => AvroF.TBytes()
+    case Type.DOUBLE  => AvroF.TDouble()
+    case Type.FLOAT   => AvroF.TFloat()
+    case Type.INT     => AvroF.TInt()
+    case Type.LONG    => AvroF.TLong()
+    case Type.NULL    => AvroF.TNull()
+    case Type.MAP     => AvroF.TMap(sch.getValueType)
+    case Type.ARRAY   => AvroF.TArray(sch.getElementType)
+    case Type.RECORD =>
+      AvroF.TRecord(
+        sch.getName,
+        Option(sch.getNamespace),
+        sch.getAliases.asScala.toList,
+        Option(sch.getDoc),
+        sch.getFields.asScala.toList.map(field2Field)
+      )
+    case Type.ENUM =>
+      val symbols = sch.getEnumSymbols.asScala.toList
+      AvroF.TEnum(
+        sch.getName,
+        Option(sch.getNamespace),
+        sch.getAliases.asScala.toList,
+        Option(sch.getDoc),
+        symbols
+      )
+    case Type.UNION =>
+      val types = sch.getTypes.asScala.toList
+      AvroF.TUnion(
+        NonEmptyList.fromListUnsafe(types)
+      )
+    case Type.FIXED =>
+      AvroF.TFixed(
+        sch.getName,
+        Option(sch.getNamespace),
+        sch.getAliases.asScala.toList,
+        sch.getFixedSize
+      )
+  }
 
   def toJson: Algebra[AvroF, Json] =
     Algebra {
@@ -263,5 +279,9 @@ object AvroF {
           "name" -> Json.fromString(name),
           "size" -> Json.fromInt(size)
         )
+      case TDate() => ???
+      case TTimestampMillis() => ???
+      case TUUID() => ???
+      case TDecimal() => ???
     }
 }
