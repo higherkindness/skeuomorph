@@ -138,7 +138,7 @@ object ParseProto {
 
   }
 
-  private def getTypeNameFromQualifiedName(fullName: String): String = {
+  private def getTypeNameFromQualifiedName(fullName: String): String =
     // When comparing the types, we only need to know the name of the type, not the
     // fully-qualified name (since we use the value of the package passed into the protoc to create
     // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
@@ -155,7 +155,6 @@ object ParseProto {
     // the type name appropriately.  A more involved example explaining why we do this can be found here:
     // https://github.com/higherkindness/skeuomorph/pull/339#discussion_r496969857
     fullName.substring(fullName.indexOf(".", fullName.count(_ == '.')) + 1)
-  }
 
   def fromProto[A](
       descriptorFileName: String,
