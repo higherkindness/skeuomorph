@@ -76,7 +76,12 @@ class AvroSpec extends Specification with ScalaCheck {
       case AvroF.TFixed(_, _, _, _)   => true
     }
 
-  def checkAllGenerated = List("GreeterService", "LogicalTypes").map(checkGenerated)
+  def checkAllGenerated =
+    List(
+      "GreeterService",
+      "LogicalTypes",
+//      "Fixed"
+    ).map(checkGenerated)
 
   def checkGenerated(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"

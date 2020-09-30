@@ -14,4 +14,5 @@ protocol LogicalTypes {
     uuid id;
     */
   }
+  foo.bar.LogicalTypes identity(foo.bar.LogicalTypes arg);
 }
