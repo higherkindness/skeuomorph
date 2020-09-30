@@ -189,7 +189,7 @@ object AvroF {
 
   private def logicalType(sch: Schema, logicalType: LogicalType): AvroF[Schema] = sch.getLogicalType match {
     case _: LogicalTypes.Date => AvroF.TDate()
-    case _: LogicalTypes.TimeMillis => AvroF.TTimestampMillis()
+    case _: LogicalTypes.TimestampMillis => AvroF.TTimestampMillis()
     case uuid if uuid == LogicalTypes.uuid => AvroF.TUUID()
     case _: LogicalTypes.Decimal => AvroF.TDecimal()
   }

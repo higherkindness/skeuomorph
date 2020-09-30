@@ -119,7 +119,7 @@ class AvroSpec extends Specification with ScalaCheck {
     s"""package foo.bar
       |
       |import _root_.higherkindness.mu.rpc.protocol._
-      |
+      |final case class LogicalIdl(dec: _root_.scala.math.BigDecimal, maybeDec: _root_.scala.Option[_root_.scala.math.BigDecimal], ts: _root_.java.time.Instant, dt: _root_.java.time.LocalDate)
       |final case class HelloRequest(
       |  arg1: _root_.java.lang.String,
       |  arg2: _root_.scala.Option[_root_.java.lang.String],

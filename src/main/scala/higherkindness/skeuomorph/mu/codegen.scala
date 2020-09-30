@@ -24,6 +24,7 @@ import higherkindness.skeuomorph.mu.MuF._
 import higherkindness.skeuomorph.mu.Optimize._
 import higherkindness.skeuomorph.{protobuf => pb}
 import higherkindness.skeuomorph.Printer.toValidIdentifier
+
 import scala.reflect.ClassTag
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -223,6 +224,10 @@ object codegen {
           } else
             caseClass
         }
+      case TDate() => t"_root_.java.time.LocalDate".asRight
+      case TInstant() => t"_root_.java.time.Instant".asRight
+      case TUUID() => t"_root_.java.util.UUID".asRight
+      case TDecimal() => t"_root_.scala.math.BigDecimal".asRight
     }
 
     scheme.cataM(algebra).apply(optimize(t))
