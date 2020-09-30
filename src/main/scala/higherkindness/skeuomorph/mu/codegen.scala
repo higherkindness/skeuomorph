@@ -228,8 +228,8 @@ object codegen {
       case TInstant() => t"_root_.java.time.Instant".asRight
       case TUUID()    => t"_root_.java.util.UUID".asRight
       case TDecimal(precision, scale) =>
-        t"_root_.shapeless.tag.@@[_root_.shapeless.tag.@@[_root_.scala.math.BigDecimal, (${Lit.String("precision")}, ${Lit
-          .Int(precision)}) ], (${Lit.String("scale")}, ${Lit.Int(scale)})]".asRight
+        t"_root_.shapeless.tag.@@[_root_.scala.math.BigDecimal, ((${Lit.String("precision")}, ${Lit
+          .Int(precision)}), (${Lit.String("scale")}, ${Lit.Int(scale)}))]".asRight
     }
 
     scheme.cataM(algebra).apply(optimize(t))

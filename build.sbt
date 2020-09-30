@@ -52,6 +52,7 @@ lazy val documentation = project
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
+    "com.chuusai" %% "shapeless" % "2.3.3",
     "org.typelevel"          %% "cats-core"               % "2.2.0",
     "org.typelevel"          %% "cats-effect"             % "2.2.0",
     "io.higherkindness"      %% "droste-core"             % "0.8.0",
