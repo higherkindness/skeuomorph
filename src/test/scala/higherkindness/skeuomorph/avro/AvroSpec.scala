@@ -39,7 +39,9 @@ class AvroSpec extends Specification with ScalaCheck {
 
   It should be possible to create a Schema from org.apache.avro.Schema. $convertSchema
 
-  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. ${convertAndPrintProtocol("GreeterService")}
+  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. ${convertAndPrintProtocol(
+    "GreeterService"
+  )}
   """
 
   def convertSchema =
@@ -79,8 +81,8 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def convertAndPrintProtocol(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"
-    val idl       = new Idl(getClass.getClassLoader.getResourceAsStream(idlResourceName))
-    val avroProto = idl.CompilationUnit()
+    val idl             = new Idl(getClass.getClassLoader.getResourceAsStream(idlResourceName))
+    val avroProto       = idl.CompilationUnit()
 
     val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
 
@@ -111,16 +113,19 @@ class AvroSpec extends Specification with ScalaCheck {
 
   // TODO test for more complex schemas, importing other files, etc.
 
-  def codegenExpectation(idlName: String, compressionType: Option[CompressionType] = None, useIdiomaticEndpoints: Boolean = false): String = {
+  def codegenExpectation(
+      idlName: String,
+      compressionType: Option[CompressionType] = None,
+      useIdiomaticEndpoints: Boolean = false
+  ): String = {
     val compressionName = compressionType match {
       case Some(CompressionType.Identity) => "Identity"
-      case Some(CompressionType.Gzip) => "Gzip"
-      case None => ""
+      case Some(CompressionType.Gzip)     => "Gzip"
+      case None                           => ""
     }
-    val idiomaticName = if(useIdiomaticEndpoints) "Idiomatic" else ""
-    val resourceName = s"avro/${idlName}${compressionName}${idiomaticName}.scala"
+    val idiomaticName = if (useIdiomaticEndpoints) "Idiomatic" else ""
+    val resourceName  = s"avro/${idlName}${compressionName}${idiomaticName}.scala"
     scala.io.Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(resourceName)).getLines.mkString("\n")
   }
-
 
 }
