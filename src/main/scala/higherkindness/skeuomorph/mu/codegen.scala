@@ -224,10 +224,12 @@ object codegen {
           } else
             caseClass
         }
-      case TDate()        => t"_root_.java.time.LocalDate".asRight
-      case TInstant()     => t"_root_.java.time.Instant".asRight
-      case TUUID()        => t"_root_.java.util.UUID".asRight
-      case TDecimal(_, _) => t"_root_.scala.math.BigDecimal".asRight
+      case TDate()    => t"_root_.java.time.LocalDate".asRight
+      case TInstant() => t"_root_.java.time.Instant".asRight
+      case TUUID()    => t"_root_.java.util.UUID".asRight
+      case TDecimal(precision, scale) =>
+        t"_root_.shapeless.tag.@@[_root_.shapeless.tag.@@[_root_.scala.math.BigDecimal, (${Lit.String("precision")}, ${Lit
+          .Int(precision)}) ], (${Lit.String("scale")}, ${Lit.Int(scale)})]".asRight
     }
 
     scheme.cataM(algebra).apply(optimize(t))
