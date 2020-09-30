@@ -39,7 +39,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
   It should be possible to create a Schema from org.apache.avro.Schema. $convertSchema
 
-  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. $convertAndPrintProtocol
+  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. ${convertAndPrintProtocol("GreeterService")}
   """
 
   def convertSchema =
@@ -77,8 +77,9 @@ class AvroSpec extends Specification with ScalaCheck {
       case AvroF.TFixed(_, _, _, _)   => true
     }
 
-  def convertAndPrintProtocol = {
-    val idl       = new Idl(getClass.getClassLoader.getResourceAsStream("avro/GreeterService.avdl"))
+  def convertAndPrintProtocol(idlName: String) = {
+    val idlResourceName = s"avro/${idlName}.avdl"
+    val idl       = new Idl(getClass.getClassLoader.getResourceAsStream(idlResourceName))
     val avroProto = idl.CompilationUnit()
 
     val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
@@ -91,7 +92,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
     val actual = codegen.protocol(muProto, streamCtor).right.get
 
-    val expected = codegenExpectation(CompressionType.Identity, useIdiomaticEndpoints = true)
+    val expected = codegenExpectation(idlName, Some(CompressionType.Identity), true)
       .parse[Source]
       .get
       .children
@@ -110,32 +111,16 @@ class AvroSpec extends Specification with ScalaCheck {
 
   // TODO test for more complex schemas, importing other files, etc.
 
-  def codegenExpectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
-
-    val serviceParams: String = "Avro" +
-      (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
-      (if (useIdiomaticEndpoints) ", namespace = Some(\"foo.bar\"), methodNameStyle = Capitalize" else "")
-
-    s"""package foo.bar
-      |
-      |import _root_.higherkindness.mu.rpc.protocol._
-      |final case class LogicalIdl(dec: _root_.shapeless.tag.@@[_root_.scala.math.BigDecimal, (("precision", 20), ("scale", 8))], maybeDec: _root_.scala.Option[_root_.shapeless.tag.@@[_root_.scala.math.BigDecimal, (("precision", 20), ("scale", 8))]], ts: _root_.java.time.Instant, dt: _root_.java.time.LocalDate)
-      |final case class HelloRequest(
-      |  arg1: _root_.java.lang.String,
-      |  arg2: _root_.scala.Option[_root_.java.lang.String],
-      |  arg3: _root_.scala.List[_root_.java.lang.String]
-      |)
-      |final case class HelloResponse(
-      |  arg1: _root_.java.lang.String,
-      |  arg2: _root_.scala.Option[_root_.java.lang.String],
-      |  arg3: _root_.scala.List[_root_.java.lang.String]
-      |)
-      |
-      |@service($serviceParams) trait MyGreeterService[F[_]] {
-      |  def sayHelloAvro(req: _root_.foo.bar.HelloRequest): F[_root_.foo.bar.HelloResponse]
-      |  def sayNothingAvro(req: _root_.higherkindness.mu.rpc.protocol.Empty.type): F[_root_.higherkindness.mu.rpc.protocol.Empty.type]
-      |}
-      """.stripMargin
+  def codegenExpectation(idlName: String, compressionType: Option[CompressionType] = None, useIdiomaticEndpoints: Boolean = false): String = {
+    val compressionName = compressionType match {
+      case Some(CompressionType.Identity) => "Identity"
+      case Some(CompressionType.Gzip) => "Gzip"
+      case None => ""
+    }
+    val idiomaticName = if(useIdiomaticEndpoints) "Idiomatic" else ""
+    val resourceName = s"avro/${idlName}${compressionName}${idiomaticName}.scala"
+    scala.io.Source.fromInputStream(getClass.getClassLoader.getResourceAsStream(resourceName)).getLines.mkString("\n")
   }
+
 
 }
