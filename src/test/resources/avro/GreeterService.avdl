@@ -1,17 +1,5 @@
 @namespace("foo.bar")
 protocol MyGreeterService {
-
-  record LogicalIdl {
-    /*
-      taken from:
-      https://github.com/julianpeeters/sbt-avrohugger/blob/d094ea24d75b5bf38d8878573f2afefe73ae0735/src/sbt-test/avrohugger/GenericSerializationTests/src/main/avro/logical.avdl
-    */
-    decimal(20, 8) dec;
-    union {decimal(20, 8), null} maybeDec;
-    timestamp_ms ts; //ms from the unix epoch
-    date dt; //days from the unix epock, no time precission
-  }
-
   record HelloRequest {
     string arg1;
     union { null, string } arg2;

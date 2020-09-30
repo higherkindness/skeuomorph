@@ -17,7 +17,6 @@
 package higherkindness.skeuomorph.avro
 
 import higherkindness.skeuomorph.instances._
-
 import org.apache.avro.Schema
 import org.apache.avro.compiler.idl._
 import org.scalacheck._
@@ -27,9 +26,9 @@ import higherkindness.skeuomorph.mu.CompressionType
 import higherkindness.skeuomorph.mu.codegen
 import higherkindness.droste._
 import higherkindness.droste.data.Mu
+
 import scala.meta._
 import scala.meta.contrib._
-
 import scala.jdk.CollectionConverters._
 
 class AvroSpec extends Specification with ScalaCheck {
@@ -39,9 +38,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
   It should be possible to create a Schema from org.apache.avro.Schema. $convertSchema
 
-  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. ${convertAndPrintProtocol(
-    "GreeterService"
-  )}
+  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. ${checkAllGenerated}
   """
 
   def convertSchema =
@@ -79,7 +76,9 @@ class AvroSpec extends Specification with ScalaCheck {
       case AvroF.TFixed(_, _, _, _)   => true
     }
 
-  def convertAndPrintProtocol(idlName: String) = {
+  def checkAllGenerated = List("GreeterService", "LogicalTypes").map(checkGenerated)
+
+  def checkGenerated(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"
     val idl             = new Idl(getClass.getClassLoader.getResourceAsStream(idlResourceName))
     val avroProto       = idl.CompilationUnit()
@@ -100,15 +99,16 @@ class AvroSpec extends Specification with ScalaCheck {
       .children
       .head
       .asInstanceOf[Pkg]
-
-    actual.isEqual(expected) :| s"""
+    actual.isEqual(expected) must beTrue setMessage (
+      s"""
       |Actual output:
       |$actual
       |
       |
       |Expected output:
-      |$expected"
+      |$expected
       """.stripMargin
+    )
   }
 
   // TODO test for more complex schemas, importing other files, etc.
