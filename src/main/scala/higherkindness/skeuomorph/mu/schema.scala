@@ -69,10 +69,10 @@ object MuF {
       fields: List[Field[A]],
       nestedProducts: List[A],
       nestedCoproducts: List[A]
-  ) extends MuF[A]
-  final case class TDate[A]() extends MuF[A]
+  )                              extends MuF[A]
+  final case class TDate[A]()    extends MuF[A]
   final case class TInstant[A]() extends MuF[A]
-  final case class TUUID[A]() extends MuF[A]
+  final case class TUUID[A]()    extends MuF[A]
   final case class TDecimal[A]() extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] =

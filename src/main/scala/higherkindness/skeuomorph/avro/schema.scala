@@ -116,10 +116,10 @@ object AvroF {
   )                                                                                                     extends AvroF[A]
   final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
   final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
-  final case class TDate[A]() extends AvroF[A]
-  final case class TTimestampMillis[A]() extends AvroF[A]
-  final case class TUUID[A]() extends AvroF[A]
-  final case class TDecimal[A]() extends AvroF[A]
+  final case class TDate[A]()                                                                           extends AvroF[A]
+  final case class TTimestampMillis[A]()                                                                extends AvroF[A]
+  final case class TUUID[A]()                                                                           extends AvroF[A]
+  final case class TDecimal[A]()                                                                        extends AvroF[A]
 
   implicit def eqAvroF[T: Eq]: Eq[AvroF[T]] =
     Eq.instance {
@@ -183,15 +183,15 @@ object AvroF {
     Coalgebra { sch =>
       Option(sch.getLogicalType) match {
         case Some(lt) => logicalType(sch, lt)
-        case None => primitiveType(sch)
+        case None     => primitiveType(sch)
       }
     }
 
   private def logicalType(sch: Schema, logicalType: LogicalType): AvroF[Schema] = sch.getLogicalType match {
-    case _: LogicalTypes.Date => AvroF.TDate()
-    case _: LogicalTypes.TimestampMillis => AvroF.TTimestampMillis()
+    case _: LogicalTypes.Date              => AvroF.TDate()
+    case _: LogicalTypes.TimestampMillis   => AvroF.TTimestampMillis()
     case uuid if uuid == LogicalTypes.uuid => AvroF.TUUID()
-    case _: LogicalTypes.Decimal => AvroF.TDecimal()
+    case _: LogicalTypes.Decimal           => AvroF.TDecimal()
   }
 
   private def primitiveType(sch: Schema): AvroF[Schema] = sch.getType match {
@@ -279,9 +279,9 @@ object AvroF {
           "name" -> Json.fromString(name),
           "size" -> Json.fromInt(size)
         )
-      case TDate() => ???
+      case TDate()            => ???
       case TTimestampMillis() => ???
-      case TUUID() => ???
-      case TDecimal() => ???
+      case TUUID()            => ???
+      case TDecimal()         => ???
     }
 }

@@ -6,10 +6,10 @@ protocol MyGreeterService {
       taken from:
       https://github.com/julianpeeters/sbt-avrohugger/blob/d094ea24d75b5bf38d8878573f2afefe73ae0735/src/sbt-test/avrohugger/GenericSerializationTests/src/main/avro/logical.avdl
     */
-    decimal(20, 8) dec = "\u000C\u006C";
-    union {decimal(20, 8), null} maybeDec = "\u000C\u006C";
-    timestamp_ms ts = 1526573732000; //ms from the unix epoch
-    date dt = 600; //days from the unix epock, no time precission
+    decimal(20, 8) dec;
+    union {decimal(20, 8), null} maybeDec;
+    timestamp_ms ts; //ms from the unix epoch
+    date dt; //days from the unix epock, no time precission
   }
 
   record HelloRequest {
