@@ -119,7 +119,7 @@ object AvroF {
   final case class TDate[A]()                                                                           extends AvroF[A]
   final case class TTimestampMillis[A]()                                                                extends AvroF[A]
   final case class TUUID[A]()                                                                           extends AvroF[A]
-  final case class TDecimal[A]()                                                                        extends AvroF[A]
+  final case class TDecimal[A](precision: Int, scale: Int)                                              extends AvroF[A]
 
   implicit def eqAvroF[T: Eq]: Eq[AvroF[T]] =
     Eq.instance {
@@ -182,16 +182,16 @@ object AvroF {
   def fromAvro: Coalgebra[AvroF, Schema] =
     Coalgebra { sch =>
       Option(sch.getLogicalType) match {
-        case Some(lt) => logicalType(sch, lt)
+        case Some(lt) => logicalType(lt)
         case None     => primitiveType(sch)
       }
     }
 
-  private def logicalType(sch: Schema, logicalType: LogicalType): AvroF[Schema] = sch.getLogicalType match {
+  private def logicalType(logicalType: LogicalType): AvroF[Schema] = logicalType match {
     case _: LogicalTypes.Date              => AvroF.TDate()
     case _: LogicalTypes.TimestampMillis   => AvroF.TTimestampMillis()
     case uuid if uuid == LogicalTypes.uuid => AvroF.TUUID()
-    case _: LogicalTypes.Decimal           => AvroF.TDecimal()
+    case dec: LogicalTypes.Decimal         => AvroF.TDecimal(dec.getPrecision, dec.getScale)
   }
 
   private def primitiveType(sch: Schema): AvroF[Schema] = sch.getType match {
@@ -279,9 +279,27 @@ object AvroF {
           "name" -> Json.fromString(name),
           "size" -> Json.fromInt(size)
         )
-      case TDate()            => ???
-      case TTimestampMillis() => ???
-      case TUUID()            => ???
-      case TDecimal()         => ???
+      case TDate() =>
+        Json.obj(
+          "type"        -> Json.fromString("int"),
+          "logicalType" -> Json.fromString("date")
+        )
+      case TTimestampMillis() =>
+        Json.obj(
+          "type"        -> Json.fromString("long"),
+          "logicalType" -> Json.fromString("timestamp-millis")
+        )
+      case TUUID() =>
+        Json.obj(
+          "type"        -> Json.fromString("string"),
+          "logicalType" -> Json.fromString("uuid")
+        )
+      case TDecimal(precision, scale) =>
+        Json.obj(
+          "type"        -> Json.fromString("bytes"),
+          "logicalType" -> Json.fromString("decimal"),
+          "precision"   -> Json.fromInt(precision),
+          "scale"       -> Json.fromInt(scale)
+        )
     }
 }

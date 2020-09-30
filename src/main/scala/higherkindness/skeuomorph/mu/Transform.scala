@@ -76,10 +76,10 @@ object Transform {
       case AvroF.TUnion(options)               => TCoproduct(options)
       case AvroF.TFixed(_, _, _, _) =>
         ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
-      case AvroF.TDate()            => TDate()
-      case AvroF.TTimestampMillis() => TInstant()
-      case AvroF.TUUID()            => TUUID()
-      case AvroF.TDecimal()         => TDecimal()
+      case AvroF.TDate()                    => TDate()
+      case AvroF.TTimestampMillis()         => TInstant()
+      case AvroF.TUUID()                    => TUUID()
+      case AvroF.TDecimal(precision, scale) => TDecimal(precision, scale)
     }
 
 }
