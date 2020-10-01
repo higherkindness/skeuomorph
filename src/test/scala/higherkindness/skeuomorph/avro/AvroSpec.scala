@@ -80,7 +80,8 @@ class AvroSpec extends Specification with ScalaCheck {
     List(
       "GreeterService",
       "LogicalTypes",
-//      "Fixed"
+//    "NestedRecords",
+//    "Fixed"
     ).map(checkGenerated)
 
   def checkGenerated(idlName: String) = {
@@ -96,7 +97,11 @@ class AvroSpec extends Specification with ScalaCheck {
       t"Stream[$f, $a]"
     }
 
-    val actual = codegen.protocol(muProto, streamCtor).right.get
+    val actual = {
+      val t = codegen.protocol(muProto, streamCtor)
+       println(t)
+        t.right.get
+    }
 
     val expected = codegenExpectation(idlName, Some(CompressionType.Identity), true)
       .parse[Source]

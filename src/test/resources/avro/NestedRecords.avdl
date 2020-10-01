@@ -1,0 +1,13 @@
+@namespace("foo.bar")
+protocol NestedRecords {
+  record UserName {
+    string value;
+  }
+  record Password {
+    string value;
+  }
+  record Credentials {
+    UserName username;
+    Password password;
+  }
+}
