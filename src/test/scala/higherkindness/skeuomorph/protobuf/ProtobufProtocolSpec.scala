@@ -19,6 +19,7 @@ package higherkindness.skeuomorph.protobuf
 import cats.effect.IO
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
+import higherkindness.skeuomorph._
 import higherkindness.skeuomorph.mu._
 import higherkindness.skeuomorph.protobuf.ParseProto._
 import higherkindness.skeuomorph.protobuf.ProtobufF._
@@ -33,7 +34,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   val testDirectory              = "/src/test/resources/protobuf"
   val importRoot: Option[String] = Some(workingDirectory + testDirectory)
 
-  val bookProtocol: Protocol[Mu[ProtobufF]] = {
+  val bookProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
     val path   = workingDirectory + s"$testDirectory/service"
     val source = ProtoSource(s"book.proto", path, importRoot)
     parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -63,20 +64,16 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   def codegenProtobufProtocol =
     prop { (compressionType: CompressionType, useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean) =>
-      val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-        p: Protocol[Mu[ProtobufF]] =>
-          higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(compressionType, useIdiomaticGrpc, useIdiomaticScala)(
-            p
-          )
+      val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
+        mu.Protocol.fromProtobufProto(compressionType, useIdiomaticGrpc, useIdiomaticScala)(p)
       }
 
       val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
         t"Stream[$f, $a]"
       }
 
-      val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
-        p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-          higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+      val codegen: mu.Protocol[Mu[MuF]] => Pkg = { p =>
+        mu.codegen.protocol(p, streamCtor).right.get
       }
 
       val actual = (toMuProtocol andThen codegen)(bookProtocol)
@@ -197,20 +194,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |}""".stripMargin
   }
 
-  private def check(protobufProtocol: Protocol[Mu[ProtobufF]], expectedOutput: String) = {
-    val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-      p: Protocol[Mu[ProtobufF]] =>
-        higherkindness.skeuomorph.mu.Protocol
-          .fromProtobufProto(CompressionType.Identity, useIdiomaticGrpc = true, useIdiomaticScala = false)(p)
+  private def check(protobufProtocol: protobuf.Protocol[Mu[ProtobufF]], expectedOutput: String) = {
+    val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
+      mu.Protocol.fromProtobufProto(CompressionType.Identity, useIdiomaticGrpc = true, useIdiomaticScala = false)(p)
     }
 
     val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
       t"Stream[$f, $a]"
     }
 
-    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
-      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+    val codegen: mu.Protocol[Mu[MuF]] => Pkg = { p =>
+      mu.codegen.protocol(p, streamCtor).right.get
     }
 
     val actual = (toMuProtocol andThen codegen)(protobufProtocol)
@@ -228,7 +222,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   }
 
   private def codegenOpencensus = {
-    val opencensusProtocol: Protocol[Mu[ProtobufF]] = {
+    val opencensusProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models/opencensus"
       val source = ProtoSource(s"trace.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -364,7 +358,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |}""".stripMargin
 
   def codegenTaggedIntegers = {
-    val integerTypesProtocol: Protocol[Mu[ProtobufF]] = {
+    val integerTypesProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models"
       val source = ProtoSource(s"integer_types.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -395,7 +389,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |""".stripMargin
 
   private def codegenGoogleApi = {
-    val googleApiProtocol: Protocol[Mu[ProtobufF]] = {
+    val googleApiProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models/type"
       val source = ProtoSource(s"date.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -411,7 +405,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |""".stripMargin
 
   private def codeGenProtobufOnlyJavaPackage = {
-    val optionalPackage: Protocol[Mu[ProtobufF]] = {
+    val optionalPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_only_java_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -434,7 +428,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
        |""".stripMargin
 
   private def codegenProtobufNoPackage = {
-    val optionalPackage: Protocol[Mu[ProtobufF]] = {
+    val optionalPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_no_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -457,7 +451,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |""".stripMargin
 
   private def codeGenProtobufJavaPackage = {
-    val javaPackageAndRegularPackage: Protocol[Mu[ProtobufF]] = {
+    val javaPackageAndRegularPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_java_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
