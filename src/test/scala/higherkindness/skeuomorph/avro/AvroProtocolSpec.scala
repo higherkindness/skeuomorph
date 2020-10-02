@@ -38,7 +38,6 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
 
   def codegenAvroProtocol =
     prop { (compressionType: CompressionType, useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean) =>
-
       val idl       = new Idl(getClass.getClassLoader.getResourceAsStream("avro/GreeterService.avdl"))
       val avroProto = idl.CompilationUnit()
 
@@ -71,13 +70,18 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
 
   // TODO test for more complex schemas, importing other files, etc.
 
-  private def codegenExpectation(compressionType: CompressionType, namespace: Option[String],
-      useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean): String = {
+  private def codegenExpectation(
+      compressionType: CompressionType,
+      namespace: Option[String],
+      useIdiomaticGrpc: Boolean,
+      useIdiomaticScala: Boolean
+  ): String = {
 
-    val serviceParams: String = Seq(SerializationType.Avro,
+    val serviceParams: String = Seq(
+      SerializationType.Avro,
       s"compressionType = $compressionType",
       s"methodNameStyle = Unchanged", // IDL services are not capitalized
-      s"namespace = ${if (useIdiomaticGrpc) namespace.map("\"" + _ + "\"") else None}",
+      s"namespace = ${if (useIdiomaticGrpc) namespace.map("\"" + _ + "\"") else None}"
     ).mkString(", ")
 
     s"""package com.acme

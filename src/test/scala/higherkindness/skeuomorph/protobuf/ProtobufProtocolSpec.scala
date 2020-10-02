@@ -17,14 +17,13 @@
 package higherkindness.skeuomorph.protobuf
 
 import cats.effect.IO
-import higherkindness.skeuomorph.mu.{CompressionType, MuF, SerializationType}
-import higherkindness.skeuomorph.protobuf.ProtobufF._
-import higherkindness.skeuomorph.protobuf.ParseProto._
-import org.scalacheck.{Arbitrary, Gen}
-import org.specs2.{ScalaCheck, Specification}
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
-
+import higherkindness.skeuomorph.mu._
+import higherkindness.skeuomorph.protobuf.ParseProto._
+import higherkindness.skeuomorph.protobuf.ProtobufF._
+import org.scalacheck._
+import org.specs2._
 import scala.meta._
 import scala.meta.contrib._
 
@@ -64,11 +63,11 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   def codegenProtobufProtocol =
     prop { (compressionType: CompressionType, useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean) =>
-
       val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
         p: Protocol[Mu[ProtobufF]] =>
-          higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(
-            compressionType, useIdiomaticGrpc, useIdiomaticScala)(p)
+          higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(compressionType, useIdiomaticGrpc, useIdiomaticScala)(
+            p
+          )
       }
 
       val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
@@ -83,7 +82,11 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       val actual = (toMuProtocol andThen codegen)(bookProtocol)
 
       val expected = codegenExpectation(compressionType, Some("com.acme"), useIdiomaticGrpc, useIdiomaticScala)
-        .parse[Source].get.children.head.asInstanceOf[Pkg]
+        .parse[Source]
+        .get
+        .children
+        .head
+        .asInstanceOf[Pkg]
 
       actual.isEqual(expected) :| s"""
       |Actual output:
@@ -95,13 +98,18 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       """.stripMargin
     }
 
-  def codegenExpectation(compressionType: CompressionType, namespace: Option[String],
-      useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean): String = {
+  def codegenExpectation(
+      compressionType: CompressionType,
+      namespace: Option[String],
+      useIdiomaticGrpc: Boolean,
+      useIdiomaticScala: Boolean
+  ): String = {
 
-    val serviceParams: String = Seq(SerializationType.Protobuf,
+    val serviceParams: String = Seq(
+      SerializationType.Protobuf,
       s"compressionType = $compressionType",
       s"methodNameStyle = ${if (useIdiomaticScala) "Capitalize" else "Unchanged"}",
-      s"namespace = ${if (useIdiomaticGrpc) namespace.map("\"" + _ + "\"") else None}",
+      s"namespace = ${if (useIdiomaticGrpc) namespace.map("\"" + _ + "\"") else None}"
     ).mkString(", ")
 
     val get = if (useIdiomaticScala) "get" else "Get"
@@ -192,8 +200,8 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def check(protobufProtocol: Protocol[Mu[ProtobufF]], expectedOutput: String) = {
     val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
       p: Protocol[Mu[ProtobufF]] =>
-        higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(
-          CompressionType.Identity, useIdiomaticGrpc = true, useIdiomaticScala = false)(p)
+        higherkindness.skeuomorph.mu.Protocol
+          .fromProtobufProto(CompressionType.Identity, useIdiomaticGrpc = true, useIdiomaticScala = false)(p)
     }
 
     val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>

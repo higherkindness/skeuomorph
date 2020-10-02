@@ -16,14 +16,12 @@
 
 package higherkindness.skeuomorph.mu
 
-import higherkindness.skeuomorph.protobuf
-import higherkindness.skeuomorph.protobuf.ProtobufF
-import higherkindness.skeuomorph.avro
+import higherkindness.droste._
 import higherkindness.skeuomorph.avro.AvroF
 import higherkindness.skeuomorph.mu.Service.OperationType
-import higherkindness.skeuomorph.mu.Transform.transformAvro
-import higherkindness.skeuomorph.mu.Transform.transformProto
-import higherkindness.droste._
+import higherkindness.skeuomorph.mu.Transform._
+import higherkindness.skeuomorph._
+import higherkindness.skeuomorph.protobuf.ProtobufF
 
 private[skeuomorph] sealed trait SerializationType extends Product with Serializable
 private[skeuomorph] object SerializationType {
@@ -51,9 +49,11 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Protocol]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](compressionType: CompressionType,
-      useIdiomaticGrpc: Boolean = true, useIdiomaticScala: Boolean = false)(proto: avro.Protocol[T]
-  )(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
+  def fromAvroProtocol[T, U](
+      compressionType: CompressionType,
+      useIdiomaticGrpc: Boolean = true,
+      useIdiomaticScala: Boolean = false
+  )(proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
 
     val toMu: T => U = scheme.cata(transformAvro[U].algebra)
     val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
@@ -84,9 +84,11 @@ object Protocol {
     )
   }
 
-  def fromProtobufProto[T, U](compressionType: CompressionType,
-      useIdiomaticGrpc: Boolean = true, useIdiomaticScala: Boolean = false)(protocol: protobuf.Protocol[T]
-  )(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
+  def fromProtobufProto[T, U](
+      compressionType: CompressionType,
+      useIdiomaticGrpc: Boolean = true,
+      useIdiomaticScala: Boolean = false
+  )(protocol: protobuf.Protocol[T])(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
       msg =>
