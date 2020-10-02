@@ -18,6 +18,7 @@ package higherkindness.skeuomorph.openapi.client
 
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer.{konst => κ, _}
+import higherkindness.skeuomorph.StringUtils.decapitalize
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi

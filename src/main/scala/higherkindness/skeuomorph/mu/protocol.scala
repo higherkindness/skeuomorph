@@ -25,8 +25,8 @@ import higherkindness.skeuomorph.mu.Transform.transformAvro
 import higherkindness.skeuomorph.mu.Transform.transformProto
 import higherkindness.droste._
 
-sealed trait SerializationType extends Product with Serializable
-object SerializationType {
+private[skeuomorph] sealed trait SerializationType extends Product with Serializable
+private[skeuomorph] object SerializationType {
   case object Protobuf       extends SerializationType
   case object Avro           extends SerializationType
   case object AvroWithSchema extends SerializationType
@@ -37,8 +37,6 @@ object CompressionType {
   case object Gzip     extends CompressionType
   case object Identity extends CompressionType
 }
-
-final case class IdiomaticEndpoints(pkg: Option[String], value: Boolean)
 
 final case class Protocol[T](
     name: Option[String],
@@ -53,8 +51,8 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Protocol]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
-      proto: avro.Protocol[T]
+  def fromAvroProtocol[T, U](compressionType: CompressionType,
+      useIdiomaticGrpc: Boolean = true, useIdiomaticScala: Boolean = false)(proto: avro.Protocol[T]
   )(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
 
     val toMu: T => U = scheme.cata(transformAvro[U].algebra)
@@ -76,7 +74,9 @@ object Protocol {
           proto.name,
           SerializationType.Avro,
           compressionType,
-          IdiomaticEndpoints(proto.namespace, useIdiomaticEndpoints),
+          proto.namespace,
+          useIdiomaticGrpc,
+          useIdiomaticScala,
           proto.messages.map(toOperation)
         )
       ),
@@ -84,8 +84,8 @@ object Protocol {
     )
   }
 
-  def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean)(
-      protocol: protobuf.Protocol[T]
+  def fromProtobufProto[T, U](compressionType: CompressionType,
+      useIdiomaticGrpc: Boolean = true, useIdiomaticScala: Boolean = false)(protocol: protobuf.Protocol[T]
   )(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
@@ -99,18 +99,20 @@ object Protocol {
     val toImports: DependentImport[T] => DependentImport[U] =
       imp => DependentImport(imp.pkg, imp.protocol, toMu(imp.tpe))
 
-    new Protocol[U](
+    Protocol[U](
       name = Some(protocol.name),
       pkg = Option(protocol.pkg),
       options = protocol.options,
       declarations = protocol.declarations.map(toMu),
       services = protocol.services
         .map(s =>
-          new Service[U](
+          Service[U](
             s.name,
             SerializationType.Protobuf,
             compressionType,
-            IdiomaticEndpoints(Option(protocol.pkg), useIdiomaticEndpoints),
+            Option(protocol.pkg),
+            useIdiomaticGrpc,
+            useIdiomaticScala,
             s.operations.map(toOperation)
           )
         ),
@@ -125,7 +127,9 @@ final case class Service[T](
     name: String,
     serializationType: SerializationType,
     compressionType: CompressionType,
-    idiomaticEndpoints: IdiomaticEndpoints,
+    namespace: Option[String],
+    useIdiomaticGrpc: Boolean,
+    useIdiomaticScala: Boolean,
     operations: List[Service.Operation[T]]
 )
 object Service {

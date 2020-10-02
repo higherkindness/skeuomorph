@@ -24,6 +24,7 @@ import higherkindness.skeuomorph.mu.MuF._
 import higherkindness.skeuomorph.mu.Optimize._
 import higherkindness.skeuomorph.{protobuf => pb}
 import higherkindness.skeuomorph.Printer.toValidIdentifier
+import higherkindness.skeuomorph.StringUtils.decapitalize
 import scala.reflect.ClassTag
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -231,19 +232,19 @@ object codegen {
   def service[T](srv: Service[T], streamCtor: (Type, Type) => Type.Apply)(implicit
       T: Basis[MuF, T]
   ): Either[String, Stat] = {
+    val deCapitalize      = srv.useIdiomaticScala && srv.operations.forall(_.name.head.isUpper)
     val serializationType = Term.Name(srv.serializationType.toString)
     val compressionType   = Term.Name(srv.compressionType.toString)
+    val methodNameStyle   = Term.Name(if (deCapitalize) "Capitalize" else "Unchanged")
 
-    val serviceAnnotation = srv.idiomaticEndpoints match {
-      case IdiomaticEndpoints(Some(pkg), true) =>
-        mod"@service($serializationType, $compressionType, namespace = Some($pkg), methodNameStyle = Capitalize)"
-      case IdiomaticEndpoints(None, true) =>
-        mod"@service($serializationType, $compressionType, methodNameStyle = Capitalize)"
+    val serviceAnnotation = srv.namespace match {
+      case Some(namespace) if srv.useIdiomaticGrpc =>
+        mod"@service($serializationType, compressionType = $compressionType, methodNameStyle = $methodNameStyle, namespace = Some($namespace))"
       case _ =>
-        mod"@service($serializationType, $compressionType)"
+        mod"@service($serializationType, compressionType = $compressionType, methodNameStyle = $methodNameStyle, namespace = None)"
     }
 
-    srv.operations.traverse(op => operation(op, streamCtor)).map { ops =>
+    srv.operations.traverse(op => operation(op, streamCtor, deCapitalize)).map { ops =>
       q"""
       @$serviceAnnotation trait ${Type.Name(srv.name)}[F[_]] {
         ..$ops
@@ -252,13 +253,15 @@ object codegen {
     }
   }
 
-  def operation[T](op: Service.Operation[T], streamCtor: (Type, Type) => Type.Apply)(implicit
+  def operation[T](op: Service.Operation[T], streamCtor: (Type, Type) => Type.Apply, deCapitalize: Boolean)(implicit
       T: Basis[MuF, T]
-  ): Either[String, Decl.Def] =
+  ): Either[String, Decl.Def] = {
+    val name = if (deCapitalize) decapitalize(op.name) else op.name
     for {
       reqType  <- requestType(op.request, streamCtor)
       respType <- responseType(op.response, streamCtor)
-    } yield q"def ${Term.Name(op.name)}(req: $reqType): $respType"
+    } yield q"def ${Term.Name(name)}(req: $reqType): $respType"
+  }
 
   def requestType[T](opType: Service.OperationType[T], streamCtor: (Type, Type) => Type.Apply)(implicit
       T: Basis[MuF, T]
