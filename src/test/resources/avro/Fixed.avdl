@@ -4,5 +4,5 @@ protocol Fixed {
   record Fixed {
     TestFixed fix;
   }
-  foo.bar.Fixed identity(foo.bar.Fixed arg);
+//  foo.bar.Fixed identity(foo.bar.Fixed arg);
 }

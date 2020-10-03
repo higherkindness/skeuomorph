@@ -80,7 +80,7 @@ class AvroSpec extends Specification with ScalaCheck {
     List(
       "GreeterService",
       "LogicalTypes",
-//    "NestedRecords",
+      "NestedRecords",
 //    "Fixed"
     ).map(checkGenerated)
 

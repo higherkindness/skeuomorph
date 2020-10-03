@@ -4,10 +4,11 @@ protocol NestedRecords {
     string value;
   }
   record Password {
-    string value;
+    string hash;
+    string salt;
   }
-  record Credentials {
-    UserName username;
+  record LoginCredentials {
+    UserName userName;
     Password password;
   }
 }

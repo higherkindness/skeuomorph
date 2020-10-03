@@ -201,11 +201,23 @@ object codegen {
         }
         """.asRight
       case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
-        def arg(f: Field[Tree]): Either[String, Term.Param] =
-          f.tpe.as[Type].map { tpe =>
-            val annotation = f.indices.map(indices => mod"@_root_.pbdirect.pbIndex(..${indices.map(Lit.Int(_))})")
+        def arg(f: Field[Tree]): Either[String, Term.Param] = {
+          val annotation = f.indices.map(indices => mod"@_root_.pbdirect.pbIndex(..${indices.map(Lit.Int(_))})")
+
+          val param: Type => Term.Param = { tpe =>
             param"..$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
           }
+          f.tpe match {
+            case tpe: Type =>
+              param(tpe).asRight
+            case cls: Defn.Class =>
+              param(cls.name).asRight
+            case _ => {
+              s"Encountered unhandled Tree type: ${f.tpe} in Field: ${f}".asLeft
+            }
+          }
+        }
+
         (
           fields.traverse(arg),
           nestedProducts.traverse(_.as[Stat]),
