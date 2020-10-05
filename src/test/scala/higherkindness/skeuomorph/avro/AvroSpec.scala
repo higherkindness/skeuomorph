@@ -16,6 +16,8 @@
 
 package higherkindness.skeuomorph.avro
 
+import java.io.File
+
 import higherkindness.skeuomorph.instances._
 import org.apache.avro.Schema
 import org.apache.avro.compiler.idl._
@@ -78,15 +80,22 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def checkAllGenerated =
     List(
-      "GreeterService",
-      "LogicalTypes",
-      "NestedRecords",
+//      "GreeterService",
+//      "LogicalTypes",
+//      "NestedRecords",
+      "ImportedService",
 //    "Fixed"
     ).map(checkGenerated)
 
   def checkGenerated(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"
-    val idl             = new Idl(getClass.getClassLoader.getResourceAsStream(idlResourceName))
+    println(s"idlResourceName $idlResourceName")
+//    val stream = getClass.getResourceAsStream(idlResourceName)
+    val idlUrl = getClass.getClassLoader.getResource(idlResourceName)
+    println(s"idlUrl $idlUrl")
+    val idlFile = new File(idlUrl.toURI)
+    println(s"idlFile($idlFile)")
+    val idl             = new Idl(idlFile)
     val avroProto       = idl.CompilationUnit()
 
     val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)

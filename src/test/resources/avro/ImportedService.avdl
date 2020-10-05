@@ -1,0 +1,11 @@
+@namespace("baz.qux")
+protocol ImportedService {
+  import idl "NestedRecords.avdl";
+
+  record Response {
+    string arg1;
+    foo.bar.UserName arg2;
+  }
+
+  baz.qux.Response login(foo.bar.LoginCredentials arg);
+}

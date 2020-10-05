@@ -84,17 +84,21 @@ object Protocol {
     }
 
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] = {
-      Message[T](
+      println(s"${kv}")
+      val m = Message[T](
         kv._2.getName,
         requestToAvroF(kv._2.getRequest).embed,
         responseToAvroF(kv._2.getResponse).embed
       )
+      println(s"toMessage ${m}")
+      m
     }
-
+    val types = proto.getTypes.asScala.toList
+    println(s"types ${types}")
     Protocol(
       proto.getName,
       Option(proto.getNamespace),
-      proto.getTypes.asScala.toList.map(toAvroF),
+      types.map(toAvroF),
       proto.getMessages.asScala.toList.map(toMessage)
     )
   }
