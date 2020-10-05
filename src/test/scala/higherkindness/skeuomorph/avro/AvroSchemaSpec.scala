@@ -21,7 +21,8 @@ import higherkindness.skeuomorph.instances._
 import org.apache.avro.Schema
 import org.scalacheck._
 import org.specs2._
-import scala.jdk.CollectionConverters._
+
+import scala.collection.JavaConverters._
 
 class AvroSchemaSpec extends Specification with ScalaCheck {
 
