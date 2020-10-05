@@ -138,7 +138,7 @@ object ParseProto {
 
   }
 
-  private def getTypeNameFromQualifiedName(fullName: String): String =
+  private def getUniqueSuffixFromTypeName(typeName: String): String =
     // When comparing the types, we only need to know the name of the type, not the
     // fully-qualified name (since we use the value of the package passed into the protoc to create
     // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
@@ -154,7 +154,7 @@ object ParseProto {
     // to parse exactly as many dots as the FQN so that we extract exactly as much FQN as we need to use
     // the type name appropriately.  A more involved example explaining why we do this can be found here:
     // https://github.com/higherkindness/skeuomorph/pull/339#discussion_r496969857
-    fullName.substring(fullName.indexOf(".", fullName.count(_ == '.')) + 1)
+    typeName.substring(typeName.indexOf(".", typeName.count(_ == '.')) + 1)
 
   def fromProto[A](
       descriptorFileName: String,
@@ -459,9 +459,9 @@ object ParseProto {
 
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
     // Note that this method checks that the name of the message matches against the type name that is
-    // extracted from the fully-qualified type name via `getTypeNameFromQualifiedName`.  More context
-    // on why that happens is in the method signature for `getTypeNameFromQualifiedName`.
-    allMessages(files).find(_.fullName.contains(getTypeNameFromQualifiedName(name)))
+    // extracted from the fully-qualified type name via `getUniqueSuffixFromTypeName`.  More context
+    // on why that happens is in the method signature for `getUniqueSuffixFromTypeName`.
+    allMessages(files).find(_.fullName.contains(getUniqueSuffixFromTypeName(name)))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
@@ -480,7 +480,7 @@ object ParseProto {
     }
 
     (allTopLevel ++ allNestedInsideMessages)
-      .find(_.fullName.contains(getTypeNameFromQualifiedName(name)))
+      .find(_.fullName.contains(getUniqueSuffixFromTypeName(name)))
   }
 
   implicit class LabelOps(self: Label) {
