@@ -77,7 +77,6 @@ object Transform {
       case AvroF.TFixed(n, ns, _, l) => TByteArray(Length.Fixed(n, ns,l))
       case AvroF.TDate()                    => TDate()
       case AvroF.TTimestampMillis()         => TInstant()
-      case AvroF.TUUID()                    => TUUID()
       case AvroF.TDecimal(precision, scale) => TDecimal(precision, scale)
     }
 
