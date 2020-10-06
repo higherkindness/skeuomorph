@@ -71,10 +71,10 @@ object Optimize {
 
   def namedTypesTrans[T]: Trans[MuF, MuF, T] =
     Trans {
-      case TProduct(name, ns, _, _, _) => TNamedType[T](ns.map(n => n.split('.').toList).getOrElse(Nil), name)
-      case TSum(name, _)           => TNamedType[T](Nil, name)
+      case TProduct(name, ns, _, _, _)        => TNamedType[T](ns.map(n => n.split('.').toList).getOrElse(Nil), name)
+      case TSum(name, _)                      => TNamedType[T](Nil, name)
       case TByteArray(Length.Fixed(n, ns, _)) => TNamedType(ns.map(_.split('.').toList).getOrElse(Nil) :+ n, n)
-      case other                   => other
+      case other                              => other
     }
 
   def namedTypes[T: Basis[MuF, ?]]: T => T              = scheme.cata(namedTypesTrans.algebra)

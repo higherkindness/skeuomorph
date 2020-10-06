@@ -38,10 +38,8 @@ object MuF {
   sealed trait Length
   case object Length {
     case class Fixed(name: String, namespace: Option[String], length: Int) extends Length
-    case object Arbitrary extends Length
+    case object Arbitrary                                                  extends Length
   }
-
-
 
   sealed trait NumberSize extends Product with Serializable
   case object _32         extends NumberSize
@@ -73,11 +71,11 @@ object MuF {
   final case class TCoproduct[A](invariants: NonEmptyList[A])        extends MuF[A]
   final case class TSum[A](name: String, fields: List[SumField])     extends MuF[A]
   final case class TProduct[A](
-                                name: String,
-                                namespace: Option[String],
-                                fields: List[Field[A]],
-                                nestedProducts: List[A],
-                                nestedCoproducts: List[A]
+      name: String,
+      namespace: Option[String],
+      fields: List[Field[A]],
+      nestedProducts: List[A],
+      nestedCoproducts: List[A]
   )                                                        extends MuF[A]
   final case class TDate[A]()                              extends MuF[A]
   final case class TInstant[A]()                           extends MuF[A]
@@ -93,9 +91,9 @@ object MuF {
   }
 
   implicit val lengthEq: Eq[Length] = Eq.instance {
-    case (Length.Arbitrary, Length.Arbitrary) => true
+    case (Length.Arbitrary, Length.Arbitrary)                => true
     case (Length.Fixed(n, ns, l), Length.Fixed(n2, ns2, l2)) => n === n2 && ns === ns2 && l === l2
-    case _ => false
+    case _                                                   => false
   }
 
   implicit val numberSizeEq: Eq[NumberSize] = Eq.fromUniversalEquals
@@ -110,8 +108,8 @@ object MuF {
       case (TSimpleInt(size1), TSimpleInt(size2)) => size1 === size2
       case (TProtobufInt(size1, mods1), TProtobufInt(size2, mods2)) =>
         size1 === size2 && mods1.sortBy(_.toString) === mods2.sortBy(_.toString)
-      case (TBoolean(), TBoolean())     => true
-      case (TString(), TString())       => true
+      case (TBoolean(), TBoolean())        => true
+      case (TString(), TString())          => true
       case (TByteArray(l), TByteArray(l2)) => l === l2
 
       case (TNamedType(p1, a), TNamedType(p2, b)) => p1 === p2 && a === b
@@ -120,12 +118,13 @@ object MuF {
       case (TMap(k1, a), TMap(k2, b))             => k1 === k2 && a === b
       case (TRequired(a), TRequired(b))           => a === b
 
-      case (TContaining(a), TContaining(b))                     => a === b
-      case (TEither(l, r), TEither(l2, r2))                     => l === l2 && r === r2
-      case (TGeneric(g, p), TGeneric(g2, p2))                   => g === g2 && p === p2
-      case (TCoproduct(i), TCoproduct(i2))                      => i === i2
-      case (TSum(n, f), TSum(n2, f2))                           => n === n2 && f === f2
-      case (TProduct(n, ns, f, np, nc), TProduct(n2, ns2, f2, np2, nc2)) => n === n2 && ns === ns2 && f === f2 && np === np2 && nc === nc2
+      case (TContaining(a), TContaining(b))   => a === b
+      case (TEither(l, r), TEither(l2, r2))   => l === l2 && r === r2
+      case (TGeneric(g, p), TGeneric(g2, p2)) => g === g2 && p === p2
+      case (TCoproduct(i), TCoproduct(i2))    => i === i2
+      case (TSum(n, f), TSum(n2, f2))         => n === n2 && f === f2
+      case (TProduct(n, ns, f, np, nc), TProduct(n2, ns2, f2, np2, nc2)) =>
+        n === n2 && ns === ns2 && f === f2 && np === np2 && nc === nc2
 
       case _ => false
     }
@@ -133,17 +132,18 @@ object MuF {
   implicit def muShow[T](implicit T: Project[MuF, T]): Show[T] =
     Show.show {
       cata(Algebra[MuF, String] {
-        case TNull()          => "null"
-        case TDouble()        => "double"
-        case TFloat()         => "float"
-        case TInt(`_32`)      => "int"
-        case TInt(`_64`)      => "long"
-        case TBoolean()       => "boolean"
-        case TString()        => "string"
-        case TByteArray(length)     => length match {
-          case Length.Fixed(n, ns, _) => (ns.toList :+ n).mkString(".")
-          case Length.Arbitrary => "bytes"
-        }
+        case TNull()     => "null"
+        case TDouble()   => "double"
+        case TFloat()    => "float"
+        case TInt(`_32`) => "int"
+        case TInt(`_64`) => "long"
+        case TBoolean()  => "boolean"
+        case TString()   => "string"
+        case TByteArray(length) =>
+          length match {
+            case Length.Fixed(n, ns, _) => (ns.toList :+ n).mkString(".")
+            case Length.Arbitrary       => "bytes"
+          }
         case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"
         case TOption(v)       => s"?$v"
         case TList(e)         => s"[$e]"
@@ -180,6 +180,12 @@ object MuF {
   def required[A](value: A): MuF[A]                            = TRequired(value)
   def coproduct[A](invariants: NonEmptyList[A]): MuF[A]        = TCoproduct(invariants)
   def sum[A](name: String, fields: List[SumField]): MuF[A]     = TSum(name, fields)
-  def product[A](name: String, nameSpace: Option[String], fields: List[Field[A]], nestedProducts: List[A], nestedCoproducts: List[A]): MuF[A] =
+  def product[A](
+      name: String,
+      nameSpace: Option[String],
+      fields: List[Field[A]],
+      nestedProducts: List[A],
+      nestedCoproducts: List[A]
+  ): MuF[A] =
     TProduct(name, nameSpace, fields, nestedProducts, nestedCoproducts)
 }

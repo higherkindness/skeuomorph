@@ -187,9 +187,9 @@ object AvroF {
     }
 
   private def logicalType(logicalType: LogicalType): AvroF[Schema] = logicalType match {
-    case _: LogicalTypes.Date              => AvroF.TDate()
-    case _: LogicalTypes.TimestampMillis   => AvroF.TTimestampMillis()
-    case dec: LogicalTypes.Decimal         => AvroF.TDecimal(dec.getPrecision, dec.getScale)
+    case _: LogicalTypes.Date            => AvroF.TDate()
+    case _: LogicalTypes.TimestampMillis => AvroF.TTimestampMillis()
+    case dec: LogicalTypes.Decimal       => AvroF.TDecimal(dec.getPrecision, dec.getScale)
   }
 
   private def primitiveType(sch: Schema): AvroF[Schema] = sch.getType match {

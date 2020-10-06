@@ -155,25 +155,24 @@ object codegen {
       }
 
     val algebra: AlgebraM[Either[String, ?], MuF, Tree] = AlgebraM {
-      case TNull()                  => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
-      case TDouble()                => t"_root_.scala.Double".asRight
-      case TFloat()                 => t"_root_.scala.Float".asRight
-      case x @ TInt(_)              => intType(x).asRight
-      case TBoolean()               => t"_root_.scala.Boolean".asRight
-      case TString()                => t"_root_.java.lang.String".asRight
-      case TByteArray(Length.Arbitrary)    => t"_root_.scala.Array[Byte]".asRight
-      case TByteArray(Length.Fixed(n, _, l))    => {
+      case TNull()                      => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
+      case TDouble()                    => t"_root_.scala.Double".asRight
+      case TFloat()                     => t"_root_.scala.Float".asRight
+      case x @ TInt(_)                  => intType(x).asRight
+      case TBoolean()                   => t"_root_.scala.Boolean".asRight
+      case TString()                    => t"_root_.java.lang.String".asRight
+      case TByteArray(Length.Arbitrary) => t"_root_.scala.Array[Byte]".asRight
+      case TByteArray(Length.Fixed(n, _, l)) =>
         val aliasedType = t"_root_.scala.Array[Byte]"
-        val lengthLit = Lit.Int(l)
+        val lengthLit   = Lit.Int(l)
         q"""object ${Term.Name(n)} {
              type ${Type.Name(n)} = ${aliasedType}
              val length: ${lengthLit} = ${lengthLit}
            }
          """.asRight
-      }
       case TNamedType(prefix, name) =>
         identifier(prefix, name)
-      case TOption(value)           => value.as[Type].map(tpe => t"_root_.scala.Option[$tpe]")
+      case TOption(value) => value.as[Type].map(tpe => t"_root_.scala.Option[$tpe]")
       case TEither(a, b) =>
         (a.as[Type], b.as[Type]).mapN { case (aType, bType) => t"_root_.scala.Either[$aType, $bType]" }
       case TMap(Some(key), value) =>
@@ -222,9 +221,8 @@ object codegen {
               param(tpe).asRight
             case cls: Defn.Class =>
               param(cls.name).asRight
-            case _ => {
+            case _ =>
               s"Encountered unhandled Tree type: ${f.tpe} in Field: ${f}".asLeft
-            }
           }
         }
 

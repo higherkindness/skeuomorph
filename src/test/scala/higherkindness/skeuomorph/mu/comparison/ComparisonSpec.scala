@@ -90,7 +90,9 @@ class ComparisonSpec extends Specification {
 
   def eitherToCoproduct = {
     val original = either(int[T].embed, string[T].embed).embed
-    val extended = coproduct(NonEmptyList.of(byteArray[T](Length.Arbitrary).embed, boolean[T].embed, long[T].embed)).embed
+    val extended = coproduct(
+      NonEmptyList.of(byteArray[T](Length.Arbitrary).embed, boolean[T].embed, long[T].embed)
+    ).embed
 
     Comparison(original, extended) must_== Match(
       Path.empty               -> List(PromotionToCoproduct(extended)),
@@ -101,7 +103,9 @@ class ComparisonSpec extends Specification {
 
   def coproductWidening = {
     val original = coproduct(NonEmptyList.of(string[T].embed, long[T].embed)).embed
-    val extended = coproduct(NonEmptyList.of(float[T].embed,byteArray[T](Length.Arbitrary).embed, boolean[T].embed)).embed
+    val extended = coproduct(
+      NonEmptyList.of(float[T].embed, byteArray[T](Length.Arbitrary).embed, boolean[T].embed)
+    ).embed
 
     Comparison(original, extended) must_== Match(
       Path.empty / Alternative(0) -> List(StringConversion(string[T].embed, byteArray[T](Length.Arbitrary).embed)),

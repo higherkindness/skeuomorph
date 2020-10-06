@@ -169,11 +169,13 @@ object Comparison extends ComparisonInstances {
         case (TProtobufInt(_, _), TProtobufInt(_, _))                                                       => End(Result.mismatch(Different(path)))
         case (TBoolean(), TBoolean())                                                                       => same
         case (TString(), TString())                                                                         => same
-        case (TByteArray(Length.Arbitrary), TByteArray(Length.Arbitrary))                                                                   => same
-        case (TByteArray(Length.Fixed(n, ns, l)), TByteArray(Length.Fixed(n2, ns2, l2))) if n === n2 && ns === ns2 && l === l2 => same
-        case (TNamedType(p1, a), TNamedType(p2, b)) if p1 === p2 && a === b                                 => same
-        case (TOption(a), TOption(b))                                                                       => Compare((path, a.some, b.some))
-        case (TList(a), TList(b))                                                                           => Compare((path / Items, a.some, b.some))
+        case (TByteArray(Length.Arbitrary), TByteArray(Length.Arbitrary))                                   => same
+        case (TByteArray(Length.Fixed(n, ns, l)), TByteArray(Length.Fixed(n2, ns2, l2)))
+            if n === n2 && ns === ns2 && l === l2 =>
+          same
+        case (TNamedType(p1, a), TNamedType(p2, b)) if p1 === p2 && a === b => same
+        case (TOption(a), TOption(b))                                       => Compare((path, a.some, b.some))
+        case (TList(a), TList(b))                                           => Compare((path / Items, a.some, b.some))
         // According to the spec, Avro ignores the keys' schemas when resolving map schemas
         case (TMap(_, a), TMap(_, b))     => Compare((path / Values, a.some, b.some))
         case (TRequired(a), TRequired(b)) => Compare((path, a.some, b.some))

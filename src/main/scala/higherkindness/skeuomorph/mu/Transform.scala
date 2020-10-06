@@ -74,10 +74,10 @@ object Transform {
         TProduct(name, namespace, muFields, Nil, Nil)
       case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols.zipWithIndex.map(SumField.tupled))
       case AvroF.TUnion(options)               => TCoproduct(options)
-      case AvroF.TFixed(n, ns, _, l) => TByteArray(Length.Fixed(n, ns,l))
-      case AvroF.TDate()                    => TDate()
-      case AvroF.TTimestampMillis()         => TInstant()
-      case AvroF.TDecimal(precision, scale) => TDecimal(precision, scale)
+      case AvroF.TFixed(n, ns, _, l)           => TByteArray(Length.Fixed(n, ns, l))
+      case AvroF.TDate()                       => TDate()
+      case AvroF.TTimestampMillis()            => TInstant()
+      case AvroF.TDecimal(precision, scale)    => TDecimal(precision, scale)
     }
 
 }

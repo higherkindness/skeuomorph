@@ -114,8 +114,8 @@ object instances {
       ).mapN(MuF.Field.apply)
     def lengthGen: Gen[MuF.Length] = {
       val fixedGen = for {
-        posInt <- Gen.posNum[Int]
-        name <- Gen.alphaStr
+        posInt    <- Gen.posNum[Int]
+        name      <- Gen.alphaStr
         namespace <- Gen.option(Gen.alphaStr)
       } yield MuF.Length.Fixed(name, namespace, posInt)
 

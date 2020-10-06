@@ -65,7 +65,7 @@ object Protocol {
           request = OperationType(toMu(msg.request), false),
           response = OperationType(toMu(msg.response), false)
         )
-    val services = if(proto.messages.isEmpty) {
+    val services = if (proto.messages.isEmpty) {
       Nil
     } else {
       List(

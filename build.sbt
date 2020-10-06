@@ -64,15 +64,15 @@ lazy val commonSettings = Seq(
     "io.circe"               %% "circe-yaml"              % "0.13.1",
     "org.scalameta"          %% "scalameta"               % "4.3.22",
     "org.scala-lang.modules" %% "scala-collection-compat" % "2.2.0",
-    "com.julianpeeters"          %% "avrohugger-core"     % "1.0.0-RC22" % Test,
+    "com.julianpeeters"      %% "avrohugger-core"         % "1.0.0-RC22" % Test,
 //    "org.apache.avro"         % "avro-compiler"           % "1.10.0" % Test,
-    "org.typelevel"          %% "cats-laws"               % "2.2.0"  % Test,
-    "io.circe"               %% "circe-testing"           % "0.13.0" % Test,
-    "org.typelevel"          %% "discipline-specs2"       % "1.1.0"  % Test,
-    "org.specs2"             %% "specs2-core"             % "4.10.3" % Test,
-    "org.specs2"             %% "specs2-scalacheck"       % "4.10.3" % Test,
-    "org.scalacheck"         %% "scalacheck"              % "1.14.3" % Test,
-    "io.chrisdavenport"      %% "cats-scalacheck"         % "0.3.0"  % Test
+    "org.typelevel"     %% "cats-laws"         % "2.2.0"  % Test,
+    "io.circe"          %% "circe-testing"     % "0.13.0" % Test,
+    "org.typelevel"     %% "discipline-specs2" % "1.1.0"  % Test,
+    "org.specs2"        %% "specs2-core"       % "4.10.3" % Test,
+    "org.specs2"        %% "specs2-scalacheck" % "4.10.3" % Test,
+    "org.scalacheck"    %% "scalacheck"        % "1.14.3" % Test,
+    "io.chrisdavenport" %% "cats-scalacheck"   % "0.3.0"  % Test
   )
 ) ++ compilerPlugins ++ macroSettings
 

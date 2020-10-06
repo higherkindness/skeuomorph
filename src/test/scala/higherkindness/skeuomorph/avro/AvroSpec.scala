@@ -93,12 +93,16 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def checkGenerated(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"
-    val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI).getOrElse(throw new Exception(s"No avdl found for name: ${idlName}"))
+    val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI)
+      .getOrElse(throw new Exception(s"No avdl found for name: ${idlName}"))
     val idlFile = new File(idlUri)
-    val avroProtos       = (new FileInputParser).getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader).collect {
-      case Right(protocol) => protocol
-    }
-    val avroProto = avroProtos.find(p => p.getName == idlName).getOrElse(throw new Exception(s"No protocol found for name ${idlName} in ${avroProtos.map(_.getName)}"))
+    val avroProtos =
+      (new FileInputParser).getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader).collect {
+        case Right(protocol) => protocol
+      }
+    val avroProto = avroProtos
+      .find(p => p.getName == idlName)
+      .getOrElse(throw new Exception(s"No protocol found for name ${idlName} in ${avroProtos.map(_.getName)}"))
 
     val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
 
@@ -109,7 +113,6 @@ class AvroSpec extends Specification with ScalaCheck {
     }
 
     val actual = codegen.protocol(muProto, streamCtor).fold(s => throw new Exception(s), identity)
-
 
     val expected = codegenExpectation(idlName, Some(CompressionType.Identity), true)
       .parse[Source]
