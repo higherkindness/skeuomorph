@@ -170,7 +170,7 @@ object Comparison extends ComparisonInstances {
         case (TBoolean(), TBoolean())                                                                       => same
         case (TString(), TString())                                                                         => same
         case (TByteArray(Length.Arbitrary), TByteArray(Length.Arbitrary))                                                                   => same
-        case (TByteArray(Length.Fixed(l)), TByteArray(Length.Fixed(l2))) if l === l2 => same
+        case (TByteArray(Length.Fixed(n, ns, l)), TByteArray(Length.Fixed(n2, ns2, l2))) if n === n2 && ns === ns2 && l === l2 => same
         case (TNamedType(p1, a), TNamedType(p2, b)) if p1 === p2 && a === b                                 => same
         case (TOption(a), TOption(b))                                                                       => Compare((path, a.some, b.some))
         case (TList(a), TList(b))                                                                           => Compare((path / Items, a.some, b.some))

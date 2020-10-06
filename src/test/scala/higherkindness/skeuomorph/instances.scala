@@ -112,6 +112,15 @@ object instances {
         Gen.lzy(T.arbitrary),
         Gen.posNum[Int].map(i => Some(List(i)))
       ).mapN(MuF.Field.apply)
+    def lengthGen: Gen[MuF.Length] = {
+      val fixedGen = for {
+        posInt <- Gen.posNum[Int]
+        name <- Gen.alphaStr
+        namespace <- Gen.option(Gen.alphaStr)
+      } yield MuF.Length.Fixed(name, namespace, posInt)
+
+      Gen.oneOf(MuF.Length.Arbitrary.pure[Gen], fixedGen)
+    }
 
     Arbitrary(
       Gen.oneOf(
@@ -122,7 +131,7 @@ object instances {
         MuF.long[T]().pure[Gen],
         MuF.boolean[T]().pure[Gen],
         MuF.string[T]().pure[Gen],
-        Gen.oneOf(MuF.Length.Arbitrary.pure[Gen], Gen.posNum[Int].map(pi => MuF.Length.Fixed(pi))).map(l => MuF.byteArray[T](l)),
+        lengthGen.map(l => MuF.byteArray[T](l)),
         (Gen.listOf(nonEmptyString), nonEmptyString) mapN MuF.namedType[T],
         T.arbitrary map MuF.option[T],
         (T.arbitrary, T.arbitrary) mapN { (a, b) => MuF.either(a, b) },

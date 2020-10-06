@@ -162,16 +162,16 @@ object codegen {
       case TBoolean()               => t"_root_.scala.Boolean".asRight
       case TString()                => t"_root_.java.lang.String".asRight
       case TByteArray(Length.Arbitrary)    => t"_root_.scala.Array[Byte]".asRight
-      case TByteArray(Length.Fixed(l))    => {
-        val typeName = Type.Name(s"FixedLengthByteArray${l}")
-        val taggedType = t"_root_.shapeless.tag.@@[_root_.scala.Array[Byte], ${Lit.Int(l)}]"
-        q"""object ${Term.Name(typeName.value)} {
-             type $typeName = ${taggedType}
+      case TByteArray(Length.Fixed(n, _, l))    => {
+        val aliasedType = t"_root_.scala.Array[Byte]"
+        val lengthLit = Lit.Int(l)
+        q"""object ${Term.Name(n)} {
+             type ${Type.Name(n)} = ${aliasedType}
+             val length: ${lengthLit} = ${lengthLit}
            }
          """.asRight
       }
       case TNamedType(prefix, name) =>
-        println(s"TNamedType($prefix, $name)")
         identifier(prefix, name)
       case TOption(value)           => value.as[Type].map(tpe => t"_root_.scala.Option[$tpe]")
       case TEither(a, b) =>

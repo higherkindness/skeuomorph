@@ -88,7 +88,7 @@ class AvroSpec extends Specification with ScalaCheck {
       "LogicalTypes",
       "NestedRecords",
       "ImportedService",
-//      "Fixed"
+      "Fixed"
     ).map(checkGenerated)
 
   def checkGenerated(idlName: String) = {

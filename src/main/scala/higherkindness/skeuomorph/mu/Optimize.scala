@@ -46,15 +46,13 @@ object Optimize {
     Trans {
       case TProduct(name, namespace, fields, nestedProducts, nestedCoproducts) =>
         def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
-        val t =TProduct[T](
+        TProduct[T](
           name,
           namespace,
           fields.map(nameTypes),
           nestedProducts,
           nestedCoproducts
         )
-        println(s"Optimized product: $t")
-        t
       case other =>
         other
     }
@@ -75,7 +73,7 @@ object Optimize {
     Trans {
       case TProduct(name, ns, _, _, _) => TNamedType[T](ns.map(n => n.split('.').toList).getOrElse(Nil), name)
       case TSum(name, _)           => TNamedType[T](Nil, name)
-      case TByteArray(Length.Fixed(length)) => TNamedType(List(s"FixedLengthByteArray${length}"), s"FixedLengthByteArray${length}")
+      case TByteArray(Length.Fixed(n, ns, _)) => TNamedType(ns.map(_.split('.').toList).getOrElse(Nil) :+ n, n)
       case other                   => other
     }
 

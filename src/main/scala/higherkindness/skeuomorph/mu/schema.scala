@@ -37,7 +37,7 @@ object MuF {
 
   sealed trait Length
   case object Length {
-    case class Fixed(length: Int) extends Length
+    case class Fixed(name: String, namespace: Option[String], length: Int) extends Length
     case object Arbitrary extends Length
   }
 
@@ -95,7 +95,7 @@ object MuF {
 
   implicit val lengthEq: Eq[Length] = Eq.instance {
     case (Length.Arbitrary, Length.Arbitrary) => true
-    case (Length.Fixed(l), Length.Fixed(l2)) => l === l2
+    case (Length.Fixed(n, ns, l), Length.Fixed(n2, ns2, l2)) => n === n2 && ns === ns2 && l === l2
     case _ => false
   }
 
@@ -142,7 +142,7 @@ object MuF {
         case TBoolean()       => "boolean"
         case TString()        => "string"
         case TByteArray(length)     => length match {
-          case Length.Fixed(n) => s"bytes[${n}]"
+          case Length.Fixed(n, ns, _) => (ns.toList :+ n).mkString(".")
           case Length.Arbitrary => "bytes"
         }
         case TNamedType(p, n) => if (p.isEmpty) n else s"${p.mkString(".")}.$n"

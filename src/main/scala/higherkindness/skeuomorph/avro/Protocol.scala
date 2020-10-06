@@ -120,7 +120,7 @@ object Protocol {
       case MuF.TBoolean()               => AvroF.boolean()
       case MuF.TString()                => AvroF.string()
       case MuF.TByteArray(MuF.Length.Arbitrary) => AvroF.bytes()
-      case MuF.TByteArray(MuF.Length.Fixed(l)) => AvroF.fixed("", none[String], Nil, l)
+      case MuF.TByteArray(MuF.Length.Fixed(n, ns, l)) => AvroF.fixed(n, ns, Nil, l)
       case MuF.TNamedType(prefix, name) => AvroF.namedType(prefix.mkString("."), name)
       case MuF.TOption(value)           => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
       case MuF.TEither(left, right)     => AvroF.union(NonEmptyList(left, List(right)))
