@@ -84,21 +84,16 @@ object Protocol {
     }
 
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] = {
-      println(s"${kv}")
-      val m = Message[T](
+      Message[T](
         kv._2.getName,
         requestToAvroF(kv._2.getRequest).embed,
         responseToAvroF(kv._2.getResponse).embed
       )
-      println(s"toMessage ${m}")
-      m
     }
-    val types = proto.getTypes.asScala.toList
-    println(s"types ${types}")
     Protocol(
       proto.getName,
       Option(proto.getNamespace),
-      types.map(toAvroF),
+      proto.getTypes.asScala.toList.map(toAvroF),
       proto.getMessages.asScala.toList.map(toMessage)
     )
   }
@@ -124,7 +119,8 @@ object Protocol {
       case MuF.TInt(MuF._64)            => AvroF.long()
       case MuF.TBoolean()               => AvroF.boolean()
       case MuF.TString()                => AvroF.string()
-      case MuF.TByteArray()             => AvroF.bytes()
+      case MuF.TByteArray(MuF.Length.Arbitrary) => AvroF.bytes()
+      case MuF.TByteArray(MuF.Length.Fixed(l)) => AvroF.fixed("", none[String], Nil, l)
       case MuF.TNamedType(prefix, name) => AvroF.namedType(prefix.mkString("."), name)
       case MuF.TOption(value)           => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
       case MuF.TEither(left, right)     => AvroF.union(NonEmptyList(left, List(right)))
@@ -135,10 +131,10 @@ object Protocol {
       case MuF.TRequired(t)             => T.coalgebra(t)
       case MuF.TCoproduct(invariants)   => AvroF.union(invariants)
       case MuF.TSum(name, fields)       => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
-      case MuF.TProduct(name, fields, _, _) =>
+      case MuF.TProduct(name, namespace, fields, _, _) =>
         TRecord(
           name,
-          none[String],
+          namespace,
           Nil,
           none[String],
           fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe))

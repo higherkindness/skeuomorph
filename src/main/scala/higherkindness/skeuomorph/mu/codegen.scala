@@ -103,7 +103,7 @@ object codegen {
   private def optimize[T](t: T)(implicit T: Basis[MuF, T]): T =
     // Apply optimizations to normalise the protocol
     // before converting it to Scala code
-    (nestedOptionInCoproduct[T] andThen knownCoproductTypes[T]).apply(t)
+    (nestedNamedTypes[T] andThen nestedOptionInCoproduct[T] andThen knownCoproductTypes[T]).apply(t)
 
   // A class and its companion object will be wrapped inside a Block (i.e. curly braces).
   // We need to extract them from there and lift them to the same level as other statements.
@@ -161,8 +161,18 @@ object codegen {
       case x @ TInt(_)              => intType(x).asRight
       case TBoolean()               => t"_root_.scala.Boolean".asRight
       case TString()                => t"_root_.java.lang.String".asRight
-      case TByteArray()             => t"_root_.scala.Array[Byte]".asRight
-      case TNamedType(prefix, name) => identifier(prefix, name)
+      case TByteArray(Length.Arbitrary)    => t"_root_.scala.Array[Byte]".asRight
+      case TByteArray(Length.Fixed(l))    => {
+        val typeName = Type.Name(s"FixedLengthByteArray${l}")
+        val taggedType = t"_root_.shapeless.tag.@@[_root_.scala.Array[Byte], ${Lit.Int(l)}]"
+        q"""object ${Term.Name(typeName.value)} {
+             type $typeName = ${taggedType}
+           }
+         """.asRight
+      }
+      case TNamedType(prefix, name) =>
+        println(s"TNamedType($prefix, $name)")
+        identifier(prefix, name)
       case TOption(value)           => value.as[Type].map(tpe => t"_root_.scala.Option[$tpe]")
       case TEither(a, b) =>
         (a.as[Type], b.as[Type]).mapN { case (aType, bType) => t"_root_.scala.Either[$aType, $bType]" }
@@ -200,7 +210,7 @@ object codegen {
           val values = findValues
         }
         """.asRight
-      case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
+      case TProduct(name, _, fields, nestedProducts, nestedCoproducts) =>
         def arg(f: Field[Tree]): Either[String, Term.Param] = {
           val annotation = f.indices.map(indices => mod"@_root_.pbdirect.pbIndex(..${indices.map(Lit.Int(_))})")
 

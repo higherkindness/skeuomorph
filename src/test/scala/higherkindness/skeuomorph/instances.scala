@@ -84,7 +84,7 @@ object instances {
         List(
           MuF.TString[T](),
           MuF.TBoolean[T](),
-          MuF.TByteArray[T](),
+          MuF.TByteArray[T](MuF.Length.Arbitrary),
           MuF.TDouble[T](),
           MuF.TFloat[T](),
           MuF.int[T](),
@@ -122,7 +122,7 @@ object instances {
         MuF.long[T]().pure[Gen],
         MuF.boolean[T]().pure[Gen],
         MuF.string[T]().pure[Gen],
-        MuF.byteArray[T]().pure[Gen],
+        Gen.oneOf(MuF.Length.Arbitrary.pure[Gen], Gen.posNum[Int].map(pi => MuF.Length.Fixed(pi))).map(l => MuF.byteArray[T](l)),
         (Gen.listOf(nonEmptyString), nonEmptyString) mapN MuF.namedType[T],
         T.arbitrary map MuF.option[T],
         (T.arbitrary, T.arbitrary) mapN { (a, b) => MuF.either(a, b) },
@@ -134,10 +134,11 @@ object instances {
         Gen.nonEmptyListOf(T.arbitrary) map { l => MuF.coproduct[T](NonEmptyList.fromListUnsafe(l)) },
         (
           nonEmptyString,
+          Gen.option(nonEmptyString),
           Gen.nonEmptyListOf(Gen.lzy(fieldGen)),
           Gen.listOfN(1, T.arbitrary),
           Gen.listOfN(1, T.arbitrary)
-        ).mapN((n, f, p, c) => MuF.product(n, f, p, c))
+        ).mapN((n, ns, f, p, c) => MuF.product(n, ns, f, p, c))
       )
     )
   }

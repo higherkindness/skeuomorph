@@ -90,30 +90,31 @@ class ComparisonSpec extends Specification {
 
   def eitherToCoproduct = {
     val original = either(int[T].embed, string[T].embed).embed
-    val extended = coproduct(NonEmptyList.of(byteArray[T].embed, boolean[T].embed, long[T].embed)).embed
+    val extended = coproduct(NonEmptyList.of(byteArray[T](Length.Arbitrary).embed, boolean[T].embed, long[T].embed)).embed
 
     Comparison(original, extended) must_== Match(
       Path.empty               -> List(PromotionToCoproduct(extended)),
       Path.empty / LeftBranch  -> List(NumericWidening(int[T].embed, long[T].embed)),
-      Path.empty / RightBranch -> List(StringConversion(string[T].embed, byteArray[T].embed))
+      Path.empty / RightBranch -> List(StringConversion(string[T].embed, byteArray[T](Length.Arbitrary).embed))
     )
   }
 
   def coproductWidening = {
     val original = coproduct(NonEmptyList.of(string[T].embed, long[T].embed)).embed
-    val extended = coproduct(NonEmptyList.of(float[T].embed, byteArray[T].embed, boolean[T].embed)).embed
+    val extended = coproduct(NonEmptyList.of(float[T].embed,byteArray[T](Length.Arbitrary).embed, boolean[T].embed)).embed
 
     Comparison(original, extended) must_== Match(
-      Path.empty / Alternative(0) -> List(StringConversion(string[T].embed, byteArray[T].embed)),
+      Path.empty / Alternative(0) -> List(StringConversion(string[T].embed, byteArray[T](Length.Arbitrary).embed)),
       Path.empty / Alternative(1) -> List(NumericWidening(long[T].embed, float[T].embed))
     )
   }
 
   def fieldAddition = {
-    val original = product("foo", List(Field("name", string[T].embed, Some(List(1)))), Nil, Nil).embed
+    val original = product("foo", Some("bar"), List(Field("name", string[T].embed, Some(List(1)))), Nil, Nil).embed
     val extended =
       product(
         "foo",
+        Some("bar"),
         List(Field("name", string[T].embed, Some(List(1))), Field("age", int[T].embed, Some(List(2)))),
         Nil,
         Nil
@@ -126,11 +127,12 @@ class ComparisonSpec extends Specification {
     val original =
       product(
         "foo",
+        Some("bar"),
         List(Field("name", string[T].embed, Some(List(1))), Field("age", int[T].embed, Some(List(2)))),
         Nil,
         Nil
       ).embed
-    val reduced = product("foo", List(Field("name", string[T].embed, Some(List(1)))), Nil, Nil).embed
+    val reduced = product("foo", Some("bar"), List(Field("name", string[T].embed, Some(List(1)))), Nil, Nil).embed
 
     Comparison(original, reduced) must_== Match(Path.empty / Name("foo") / FieldName("age"), Removal(int[T].embed))
   }
@@ -140,12 +142,14 @@ class ComparisonSpec extends Specification {
     val original =
       product(
         "foo",
+        Some("bar"),
         List(Field("name", string[T].embed, Some(List(1))), Field("age", int[T].embed, Some(List(2)))),
         Nil,
         Nil
       ).embed
     val promoted = product(
       "foo",
+      Some("bar"),
       List(Field("name", string[T].embed, Some(List(1))), Field("age", option(int[T].embed).embed, Some(List(2)))),
       Nil,
       Nil
@@ -159,12 +163,14 @@ class ComparisonSpec extends Specification {
     val original =
       product(
         "foo",
+        Some("bar"),
         List(Field("name", string[T].embed, Some(List(1))), Field("age", int[T].embed, Some(List(2)))),
         Nil,
         Nil
       ).embed
     val promotedL = product(
       "foo",
+      Some("bar"),
       List(
         Field("name", string[T].embed, Some(List(1))),
         Field("age", either(int[T].embed, boolean[T].embed).embed, Some(List(2)))
@@ -174,6 +180,7 @@ class ComparisonSpec extends Specification {
     ).embed
     val promotedR = product(
       "foo",
+      Some("bar"),
       List(
         Field("name", either(long[T].embed, string[T].embed).embed, Some(List(1))),
         Field("age", int[T].embed, Some(List(2)))
@@ -196,16 +203,19 @@ class ComparisonSpec extends Specification {
   def fieldAdditionNestedProduct = {
     val original = product(
       "foo",
+      Some("bar"),
       List(Field("name", string[T].embed, Some(List(1)))),
-      List(product("bar", List(Field("first", string[T].embed, Some(List(1)))), Nil, Nil).embed),
+      List(product("bar", Some("foo"), List(Field("first", string[T].embed, Some(List(1)))), Nil, Nil).embed),
       Nil
     ).embed
     val extended = product(
       "foo",
+      Some("bar"),
       List(Field("name", string[T].embed, Some(List(1)))),
       List(
         product(
           "bar",
+          Some("foo"),
           List(Field("first", string[T].embed, Some(List(1))), Field("second", int[T].embed, Some(List(1)))),
           Nil,
           Nil

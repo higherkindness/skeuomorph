@@ -35,6 +35,7 @@ import higherkindness.droste.data.Mu
 import scala.meta._
 import scala.meta.contrib._
 import scala.jdk.CollectionConverters._
+import scala.util.Try
 
 class AvroSpec extends Specification with ScalaCheck {
 
@@ -83,17 +84,17 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def checkAllGenerated =
     List(
-//      "GreeterService",
-//      "LogicalTypes",
-//      "NestedRecords",
+      "MyGreeterService",
+      "LogicalTypes",
+      "NestedRecords",
       "ImportedService",
-//    "Fixed"
+//      "Fixed"
     ).map(checkGenerated)
 
   def checkGenerated(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"
-    val idlUrl = getClass.getClassLoader.getResource(idlResourceName)
-    val idlFile = new File(idlUrl.toURI)
+    val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI).getOrElse(throw new Exception(s"No avdl found for name: ${idlName}"))
+    val idlFile = new File(idlUri)
     val avroProtos       = (new FileInputParser).getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader).collect {
       case Right(protocol) => protocol
     }
@@ -107,11 +108,8 @@ class AvroSpec extends Specification with ScalaCheck {
       t"Stream[$f, $a]"
     }
 
-    val actual = {
-      val t = codegen.protocol(muProto, streamCtor)
-       println(t)
-        t.right.get
-    }
+    val actual = codegen.protocol(muProto, streamCtor).fold(s => throw new Exception(s), identity)
+
 
     val expected = codegenExpectation(idlName, Some(CompressionType.Identity), true)
       .parse[Source]
