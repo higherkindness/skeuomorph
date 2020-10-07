@@ -45,26 +45,26 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     Gen.oneOf(CompressionType.Identity, CompressionType.Gzip)
   }
 
+//  It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
+//
+//  It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
+//
+//  The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
+//
+//  The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
+//
+//  The generated Scala code should use the `java_package` option when `package` isn't present in the file but the `java_package` is. $codeGenProtobufOnlyJavaPackage
+//
+//  The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
+//
+//  The generated Scala code should handle enums when `package` is present in a file. $codeGenProtobufEnumWithPackage
+//
+//  The generated Scala code should handle enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumWithNoPackage
+
   def is = s2"""
   Protobuf Protocol
 
-  It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
-
-  It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
-
-  The generated Scala code should include appropriately tagged integer types. $codegenTaggedIntegers
-
-  The generated Scala code should escape 'type' keyword in package (directory) names. $codegenGoogleApi
-
-  The generated Scala code should use the `java_package` option when `package` isn't present in the file but the `java_package` is. $codeGenProtobufOnlyJavaPackage
-
   The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufJavaPackage
-
-  The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
-
-  The generated Scala code should handle enums when `package` is present in a file. $codeGenProtobufEnumWithPackage
-
-  The generated Scala code should handle enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumWithNoPackage
 
   """
 
