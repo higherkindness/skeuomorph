@@ -164,10 +164,8 @@ object codegen {
       case TByteArray(Length.Arbitrary) => t"_root_.scala.Array[Byte]".asRight
       case TByteArray(Length.Fixed(n, _, l)) =>
         val aliasedType = t"_root_.scala.Array[Byte]"
-        val lengthLit   = Lit.Int(l)
         q"""object ${Term.Name(n)} {
              type ${Type.Name(n)} = ${aliasedType}
-             val length: ${lengthLit} = ${lengthLit}
            }
          """.asRight
       case TNamedType(prefix, name) =>
@@ -247,8 +245,7 @@ object codegen {
       case TDate()    => t"_root_.java.time.LocalDate".asRight
       case TInstant() => t"_root_.java.time.Instant".asRight
       case TDecimal(precision, scale) =>
-        t"_root_.shapeless.tag.@@[_root_.scala.math.BigDecimal, ((${Lit.String("precision")}, ${Lit
-          .Int(precision)}), (${Lit.String("scale")}, ${Lit.Int(scale)}))]".asRight
+        t"_root_.scala.math.BigDecimal".asRight
     }
 
     scheme.cataM(algebra).apply(optimize(t))
