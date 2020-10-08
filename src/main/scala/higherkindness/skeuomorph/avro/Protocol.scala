@@ -72,8 +72,11 @@ object Protocol {
           // We don't support primitive types for RPC requests/responses.
           val fieldSchema = fields.get(0).schema
           fieldSchema.getType match {
-            case Type.RECORD => namedType[T] (fieldSchema.getNamespace, fieldSchema.getName)
-            case nonRecord => throw new UnsupportedOperationException(s"Skeuomorph only supports Record types for Avro requests. Encountered request schema with type $nonRecord")
+            case Type.RECORD => namedType[T](fieldSchema.getNamespace, fieldSchema.getName)
+            case nonRecord =>
+              throw new UnsupportedOperationException(
+                s"Skeuomorph only supports Record types for Avro requests. Encountered request schema with type $nonRecord"
+              )
           }
         }
       }
@@ -87,7 +90,10 @@ object Protocol {
         // We don't support primitive types for RPC requests/responses.
         resp.getType match {
           case Type.RECORD => namedType[T](resp.getNamespace, resp.getName)
-          case nonRecord => throw new UnsupportedOperationException(s"Skeuomorph only supports Record types for Avro responses. Encountered response schema with type $nonRecord")
+          case nonRecord =>
+            throw new UnsupportedOperationException(
+              s"Skeuomorph only supports Record types for Avro responses. Encountered response schema with type $nonRecord"
+            )
         }
     }
 
