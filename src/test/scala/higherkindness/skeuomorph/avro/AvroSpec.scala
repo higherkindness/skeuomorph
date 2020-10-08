@@ -85,11 +85,11 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def checkAllValid =
     List(
-//      "MyGreeterService",
-//      "LogicalTypes",
-//      "NestedRecords",
-//      "ImportedService",
-//      "Fixed"
+      "MyGreeterService",
+      "LogicalTypes",
+      "NestedRecords",
+      "ImportedService",
+      "Fixed"
     ).map(checkValid)
 
   def checkValid(idlName: String) = {
