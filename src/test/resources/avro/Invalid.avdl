@@ -1,0 +1,19 @@
+@namespace("foo.bar")
+protocol Invalid {
+
+  record HelloRequest {
+    string arg1;
+    union { null, string } arg2;
+    array<string> arg3;
+  }
+
+  record HelloResponse {
+    string arg1;
+    union { null, string } arg2;
+    array<string>  arg3;
+  }
+
+  string sayHelloAvro(foo.bar.HelloRequest arg);
+
+  void sayNothingAvro();
+}

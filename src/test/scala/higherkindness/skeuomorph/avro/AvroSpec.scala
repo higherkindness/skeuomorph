@@ -26,9 +26,7 @@ import org.apache.avro.Schema
 import org.apache.avro.compiler.idl._
 import org.scalacheck._
 import org.specs2._
-import higherkindness.skeuomorph.mu.{Protocol => MuProtocol}
-import higherkindness.skeuomorph.mu.CompressionType
-import higherkindness.skeuomorph.mu.codegen
+import higherkindness.skeuomorph.mu.{CompressionType, MuF, codegen, Protocol => MuProtocol}
 import higherkindness.droste._
 import higherkindness.droste.data.Mu
 
@@ -44,7 +42,9 @@ class AvroSpec extends Specification with ScalaCheck {
 
   It should be possible to create a Schema from org.apache.avro.Schema. $convertSchema
 
-  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. ${checkAllGenerated}
+  It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. $checkAllValid
+
+  It should generate an error message when encountering invalid avro definition. $checkInvalid
   """
 
   def convertSchema =
@@ -82,38 +82,18 @@ class AvroSpec extends Specification with ScalaCheck {
       case AvroF.TFixed(_, _, _, _)   => true
     }
 
-  def checkAllGenerated =
+
+  def checkAllValid =
     List(
-      "MyGreeterService",
-      "LogicalTypes",
-      "NestedRecords",
-      "ImportedService",
-      "Fixed"
-    ).map(checkGenerated)
+//      "MyGreeterService",
+//      "LogicalTypes",
+//      "NestedRecords",
+//      "ImportedService",
+//      "Fixed"
+    ).map(checkValid)
 
-  def checkGenerated(idlName: String) = {
-    val idlResourceName = s"avro/${idlName}.avdl"
-    val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI)
-      .getOrElse(throw new Exception(s"No avdl found for name: ${idlName}"))
-    val idlFile = new File(idlUri)
-    val avroProtos =
-      (new FileInputParser).getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader).collect {
-        case Right(protocol) => protocol
-      }
-    val avroProto = avroProtos
-      .find(p => p.getName == idlName)
-      .getOrElse(throw new Exception(s"No protocol found for name ${idlName} in ${avroProtos.map(_.getName)}"))
-
-    val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
-
-    val muProto = MuProtocol.fromAvroProtocol(CompressionType.Identity, useIdiomaticEndpoints = true)(skeuoAvroProto)
-
-    val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
-      t"Stream[$f, $a]"
-    }
-
-    val actual = codegen.protocol(muProto, streamCtor).fold(s => throw new Exception(s), identity)
-
+  def checkValid(idlName: String) = {
+    val actual = gen(idlName).fold(sys.error, identity)
     val expected = codegenExpectation(idlName, Some(CompressionType.Identity), true)
       .parse[Source]
       .get
@@ -130,6 +110,38 @@ class AvroSpec extends Specification with ScalaCheck {
       |$expected
       """.stripMargin
     )
+  }
+
+  def checkInvalid = {
+    val invalidIdlResourceName = "Invalid"
+
+    gen(invalidIdlResourceName) must beLeft
+  }
+  private def gen(idlName: String) = {
+    val idlResourceName = s"avro/${idlName}.avdl"
+    val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI)
+      .fold(t => sys.error(s"Unable to get resource $idlResourceName due to ${t.getMessage}"), identity)
+    val idlFile = new File(idlUri)
+
+    def avroProtos =
+      (new FileInputParser).getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader).collect {
+        case Right(protocol) => protocol
+      }
+    val avroProto = avroProtos
+      .find(p => p.getName == idlName)
+      .getOrElse(sys.error(s"No protocol found for name ${idlName} in ${avroProtos.map(_.getName)}"))
+
+    val skeuoAvroProto = Try(Protocol.fromProto[Mu[AvroF]](avroProto)).toEither.left.map(_.getMessage)
+
+    val muProto = skeuoAvroProto.map { p =>
+      MuProtocol.fromAvroProtocol(CompressionType.Identity, useIdiomaticEndpoints = true)(p)
+    }
+
+    val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
+      t"Stream[$f, $a]"
+    }
+
+    muProto.flatMap(p => codegen.protocol(p, streamCtor))
   }
 
   // TODO test for more complex schemas, importing other files, etc.
