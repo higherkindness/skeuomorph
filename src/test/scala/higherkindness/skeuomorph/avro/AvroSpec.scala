@@ -44,7 +44,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
   It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. $checkAllValid
 
-  It should generate an error message when encountering invalid avro definition. $checkInvalid
+  It should generate an error message when encountering invalid avro definition. $checkAllInvalid
   """
 
   def convertSchema =
@@ -112,10 +112,13 @@ class AvroSpec extends Specification with ScalaCheck {
     )
   }
 
-  def checkInvalid = {
-    val invalidIdlResourceName = "Invalid"
+  def checkAllInvalid =
+    List(
+      "InvalidRequest",
+      "InvalidResponse").map(checkInvalid)
 
-    gen(invalidIdlResourceName) must beLeft
+  def checkInvalid (idlName: String)= {
+    gen(idlName) must beLeft
   }
   private def gen(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"

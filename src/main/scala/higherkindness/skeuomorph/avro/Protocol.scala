@@ -21,11 +21,13 @@ import cats.syntax.option._
 import higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.mu.{MuF, SerializationType}
 import io.circe.Json
-import org.apache.avro.{Schema, Protocol => AvroProtocol}
+import org.apache.avro.{AvroRuntimeException, Schema, Protocol => AvroProtocol}
 import higherkindness.droste._
 import higherkindness.droste.syntax.all._
+import org.apache.avro.Schema.Type
 
 import scala.collection.JavaConverters._
+import scala.util.Try
 
 final case class Protocol[A](
     name: String,
@@ -62,14 +64,17 @@ object Protocol {
       if (req.getType == Schema.Type.NULL)
         `null`[T]
       else {
-        // Assume it's a record type.
-        // We don't support primitive types for RPC requests/responses.
         val fields = req.getFields
         if (fields.size == 0)
           `null`[T]
         else {
+          // Assume it's a record type.
+          // We don't support primitive types for RPC requests/responses.
           val fieldSchema = fields.get(0).schema
-          namedType[T](fieldSchema.getNamespace, fieldSchema.getName)
+          fieldSchema.getType match {
+            case Type.RECORD => namedType[T] (fieldSchema.getNamespace, fieldSchema.getName)
+            case nonRecord => throw new UnsupportedOperationException(s"Skeuomorph only supports Record types for Avro requests. Encountered request schema with type $nonRecord")
+          }
         }
       }
     }
@@ -80,7 +85,10 @@ object Protocol {
       else
         // Assume it's a record type.
         // We don't support primitive types for RPC requests/responses.
-        namedType[T](resp.getNamespace, resp.getName)
+        resp.getType match {
+          case Type.RECORD => namedType[T](resp.getNamespace, resp.getName)
+          case nonRecord => throw new UnsupportedOperationException(s"Skeuomorph only supports Record types for Avro responses. Encountered response schema with type $nonRecord")
+        }
     }
 
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] = {
