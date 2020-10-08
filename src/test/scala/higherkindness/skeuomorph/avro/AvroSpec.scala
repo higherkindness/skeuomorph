@@ -116,6 +116,7 @@ class AvroSpec extends Specification with ScalaCheck {
 
   def checkInvalid(idlName: String) =
     gen(idlName) must beLeft
+
   private def gen(idlName: String) = {
     val idlResourceName = s"avro/${idlName}.avdl"
     val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI)

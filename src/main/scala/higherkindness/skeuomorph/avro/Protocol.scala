@@ -18,7 +18,7 @@ package higherkindness.skeuomorph.avro
 
 import cats.data.NonEmptyList
 import cats.syntax.option._
-import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.{mu, UnsupportedRequestTypeException, UnsupportedResponseTypeException}
 import higherkindness.skeuomorph.mu.{MuF, SerializationType}
 import io.circe.Json
 import org.apache.avro.{AvroRuntimeException, Schema, Protocol => AvroProtocol}
@@ -74,7 +74,7 @@ object Protocol {
           fieldSchema.getType match {
             case Type.RECORD => namedType[T](fieldSchema.getNamespace, fieldSchema.getName)
             case nonRecord =>
-              throw new UnsupportedOperationException(
+              throw UnsupportedRequestTypeException(
                 s"Skeuomorph only supports Record types for Avro requests. Encountered request schema with type $nonRecord"
               )
           }
@@ -91,7 +91,7 @@ object Protocol {
         resp.getType match {
           case Type.RECORD => namedType[T](resp.getNamespace, resp.getName)
           case nonRecord =>
-            throw new UnsupportedOperationException(
+            throw UnsupportedResponseTypeException(
               s"Skeuomorph only supports Record types for Avro responses. Encountered response schema with type $nonRecord"
             )
         }
