@@ -17,25 +17,24 @@
 package higherkindness.skeuomorph.protobuf
 
 import cats.effect.IO
-import higherkindness.skeuomorph.mu.MuF
-import higherkindness.skeuomorph.protobuf.ProtobufF._
-import higherkindness.skeuomorph.protobuf.ParseProto._
-import higherkindness.skeuomorph.mu.CompressionType
-import org.scalacheck.{Arbitrary, Gen}
-import org.specs2.{ScalaCheck, Specification}
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
-
+import higherkindness.skeuomorph._
+import higherkindness.skeuomorph.mu._
+import higherkindness.skeuomorph.protobuf.ParseProto._
+import higherkindness.skeuomorph.protobuf.ProtobufF._
+import org.scalacheck._
+import org.specs2._
 import scala.meta._
 import scala.meta.contrib._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   val workingDirectory: String   = new java.io.File(".").getCanonicalPath
-  val testDirectory              = "/src/test/scala/higherkindness/skeuomorph/protobuf"
+  val testDirectory              = "/src/test/resources/protobuf"
   val importRoot: Option[String] = Some(workingDirectory + testDirectory)
 
-  val bookProtocol: Protocol[Mu[ProtobufF]] = {
+  val bookProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
     val path   = workingDirectory + s"$testDirectory/service"
     val source = ProtoSource(s"book.proto", path, importRoot)
     parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -63,24 +62,28 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
   """
 
-  private def codegenProtobufProtocol =
-    prop { (ct: CompressionType, useIdiom: Boolean) =>
-      val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-        p: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol.fromProtobufProto(ct, useIdiom)(p)
+  def codegenProtobufProtocol =
+    prop { (compressionType: CompressionType, useIdiomaticEndpoints: Boolean) =>
+      val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
+        mu.Protocol.fromProtobufProto(compressionType, useIdiomaticEndpoints)(p)
       }
 
       val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
         t"Stream[$f, $a]"
       }
 
-      val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
-        p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-          higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+      val codegen: mu.Protocol[Mu[MuF]] => Pkg = { p =>
+        mu.codegen.protocol(p, streamCtor).right.get
       }
 
       val actual = (toMuProtocol andThen codegen)(bookProtocol)
 
-      val expected = bookExpectation(ct, useIdiom).parse[Source].get.children.head.asInstanceOf[Pkg]
+      val expected = codegenExpectation(compressionType, Some("com.acme"), useIdiomaticEndpoints)
+        .parse[Source]
+        .get
+        .children
+        .head
+        .asInstanceOf[Pkg]
 
       actual.isEqual(expected) :| s"""
       |Actual output:
@@ -92,11 +95,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       """.stripMargin
     }
 
-  private def bookExpectation(compressionType: CompressionType, useIdiomaticEndpoints: Boolean): String = {
+  def codegenExpectation(
+      compressionType: CompressionType,
+      namespace: Option[String],
+      useIdiomaticEndpoints: Boolean
+  ): String = {
 
-    val serviceParams: String = "Protobuf" +
-      (if (compressionType == CompressionType.Gzip) ", Gzip" else ", Identity") +
-      (if (useIdiomaticEndpoints) ", namespace = Some(\"com.acme\"), methodNameStyle = Capitalize" else "")
+    val serviceParams: String = Seq(
+      SerializationType.Protobuf,
+      s"compressionType = $compressionType",
+      s"namespace = ${if (useIdiomaticEndpoints) namespace.map("\"" + _ + "\"") else None}"
+    ).mkString(", ")
 
     s"""package com.acme
       |
@@ -181,20 +190,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |}""".stripMargin
   }
 
-  private def check(protobufProtocol: Protocol[Mu[ProtobufF]], expectedOutput: String) = {
-    val toMuProtocol: Protocol[Mu[ProtobufF]] => higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] = {
-      p: Protocol[Mu[ProtobufF]] =>
-        higherkindness.skeuomorph.mu.Protocol
-          .fromProtobufProto(CompressionType.Identity, useIdiomaticEndpoints = true)(p)
+  private def check(protobufProtocol: protobuf.Protocol[Mu[ProtobufF]], expectedOutput: String) = {
+    val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
+      mu.Protocol.fromProtobufProto(CompressionType.Identity)(p)
     }
 
     val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
       t"Stream[$f, $a]"
     }
 
-    val codegen: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] => Pkg = {
-      p: higherkindness.skeuomorph.mu.Protocol[Mu[MuF]] =>
-        higherkindness.skeuomorph.mu.codegen.protocol(p, streamCtor).right.get
+    val codegen: mu.Protocol[Mu[MuF]] => Pkg = { p =>
+      mu.codegen.protocol(p, streamCtor).right.get
     }
 
     val actual = (toMuProtocol andThen codegen)(protobufProtocol)
@@ -212,7 +218,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   }
 
   private def codegenOpencensus = {
-    val opencensusProtocol: Protocol[Mu[ProtobufF]] = {
+    val opencensusProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models/opencensus"
       val source = ProtoSource(s"trace.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -348,7 +354,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |}""".stripMargin
 
   def codegenTaggedIntegers = {
-    val integerTypesProtocol: Protocol[Mu[ProtobufF]] = {
+    val integerTypesProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models"
       val source = ProtoSource(s"integer_types.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -379,7 +385,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |""".stripMargin
 
   private def codegenGoogleApi = {
-    val googleApiProtocol: Protocol[Mu[ProtobufF]] = {
+    val googleApiProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models/type"
       val source = ProtoSource(s"date.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -395,7 +401,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |""".stripMargin
 
   private def codeGenProtobufOnlyJavaPackage = {
-    val optionalPackage: Protocol[Mu[ProtobufF]] = {
+    val optionalPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_only_java_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -411,12 +417,14 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
        |object test_only_java_package {
        |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
        |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-       |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.my_package.test_only_java_package.MyRequest): F[_root_.my_package.test_only_java_package.MyResponse] }
+       |  @service(Protobuf, compressionType = Identity, namespace = Some("my_package")) trait MyService[F[_]] {
+       |    def Check(req: _root_.my_package.test_only_java_package.MyRequest): F[_root_.my_package.test_only_java_package.MyResponse]
+       |  }
        |}
        |""".stripMargin
 
   private def codegenProtobufNoPackage = {
-    val optionalPackage: Protocol[Mu[ProtobufF]] = {
+    val optionalPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_no_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -432,12 +440,14 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |object test_no_package {
     |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
     |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  @service(Protobuf, Identity, namespace = Some("test_no_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.test_no_package.test_no_package.MyRequest): F[_root_.test_no_package.test_no_package.MyResponse] }
+    |  @service(Protobuf, compressionType = Identity, namespace = Some("test_no_package")) trait MyService[F[_]] {
+    |    def Check(req: _root_.test_no_package.test_no_package.MyRequest): F[_root_.test_no_package.test_no_package.MyResponse]
+    |  }
     |}
     |""".stripMargin
 
   private def codeGenProtobufJavaPackage = {
-    val javaPackageAndRegularPackage: Protocol[Mu[ProtobufF]] = {
+    val javaPackageAndRegularPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_java_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
@@ -453,7 +463,9 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |object test_java_package {
     |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
     |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  @service(Protobuf, Identity, namespace = Some("my_package"), methodNameStyle = Capitalize) trait MyService[F[_]] { def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse] }
+    |  @service(Protobuf, compressionType = Identity, namespace = Some("my_package")) trait MyService[F[_]] {
+    |    def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse]
+    |  }
     |}
     |""".stripMargin
 
