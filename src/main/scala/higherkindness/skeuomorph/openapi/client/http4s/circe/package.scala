@@ -122,7 +122,7 @@ package object circe {
     encoderDef(κ("Encoder.encodeString.contramap(_.show)")).contramap(x => (x, Tpe[T](x), ()))
 
   def enumCirceDecoder[T: Basis[JsonSchemaF, ?], B]: Printer[(String, List[String])] =
-    decoderDef[T, (String, List[(String)])](
+    decoderDef[T, (String, List[String])](
       (
         κ("Decoder.decodeString.emap {") *< newLine *<
           sepBy[(String, String)](
