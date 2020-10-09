@@ -18,7 +18,6 @@ package higherkindness.skeuomorph.openapi
 
 import higherkindness.skeuomorph.Printer
 import higherkindness.skeuomorph.Printer.{konst => κ, _}
-import higherkindness.skeuomorph.StringUtils.decapitalize
 import higherkindness.skeuomorph.catz.contrib.ContravariantMonoidalSyntax._
 import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi.JsonSchemaF.{string => _, _}
@@ -283,4 +282,6 @@ object print {
   def duplicate[A, B](pair: (A, B)): ((A, A), (B, B))      = (pair._1 -> pair._1, pair._2 -> pair._2)
   def second[A, B, C](pair: (A, B))(f: B => C): (A, C)     = (pair._1, f(pair._2))
   def flip[A, B](pair: (A, B)): (B, A)                     = (pair._2, pair._1)
+  def decapitalize(s: String): String                      = if (s.isEmpty) s else s"${s(0).toLower}${s.substring(1)}"
+
 }

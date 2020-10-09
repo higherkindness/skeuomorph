@@ -29,7 +29,6 @@ import protobuf._
 import openapi._
 import openapi.schema.OpenApi
 import higherkindness.droste._
-
 import scala.collection.JavaConverters._
 
 object instances {

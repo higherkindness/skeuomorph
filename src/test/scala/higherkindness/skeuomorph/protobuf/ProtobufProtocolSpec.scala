@@ -63,9 +63,9 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   """
 
   def codegenProtobufProtocol =
-    prop { (compressionType: CompressionType, useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean) =>
+    prop { (compressionType: CompressionType, useIdiomaticEndpoints: Boolean) =>
       val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
-        mu.Protocol.fromProtobufProto(compressionType, useIdiomaticGrpc, useIdiomaticScala)(p)
+        mu.Protocol.fromProtobufProto(compressionType, useIdiomaticEndpoints)(p)
       }
 
       val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
@@ -78,7 +78,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
       val actual = (toMuProtocol andThen codegen)(bookProtocol)
 
-      val expected = codegenExpectation(compressionType, Some("com.acme"), useIdiomaticGrpc, useIdiomaticScala)
+      val expected = codegenExpectation(compressionType, Some("com.acme"), useIdiomaticEndpoints)
         .parse[Source]
         .get
         .children
@@ -98,18 +98,14 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   def codegenExpectation(
       compressionType: CompressionType,
       namespace: Option[String],
-      useIdiomaticGrpc: Boolean,
-      useIdiomaticScala: Boolean
+      useIdiomaticEndpoints: Boolean
   ): String = {
 
     val serviceParams: String = Seq(
       SerializationType.Protobuf,
       s"compressionType = $compressionType",
-      s"methodNameStyle = ${if (useIdiomaticScala) "Capitalize" else "Unchanged"}",
-      s"namespace = ${if (useIdiomaticGrpc) namespace.map("\"" + _ + "\"") else None}"
+      s"namespace = ${if (useIdiomaticEndpoints) namespace.map("\"" + _ + "\"") else None}"
     ).mkString(", ")
-
-    val get = if (useIdiomaticScala) "get" else "Get"
 
     s"""package com.acme
       |
@@ -184,11 +180,11 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       |}
       |
       |@service($serviceParams) trait BookService[F[_]] {
-      |  def ${get}Book(req: _root_.com.acme.book.GetBookRequest): F[_root_.com.acme.book.Book]
-      |  def ${get}BooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): F[Stream[F, _root_.com.acme.book.Book]]
-      |  def ${get}GreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]
-      |  def ${get}Books(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[Stream[F, _root_.com.acme.book.Book]]
-      |  def ${get}RatingOfAuthor(req: _root_.com.acme.author.Author): F[_root_.com.acme.rating.Rating]
+      |  def GetBook(req: _root_.com.acme.book.GetBookRequest): F[_root_.com.acme.book.Book]
+      |  def GetBooksViaAuthor(req: _root_.com.acme.book.GetBookViaAuthor): F[Stream[F, _root_.com.acme.book.Book]]
+      |  def GetGreatestBook(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[_root_.com.acme.book.Book]
+      |  def GetBooks(req: Stream[F, _root_.com.acme.book.GetBookRequest]): F[Stream[F, _root_.com.acme.book.Book]]
+      |  def GetRatingOfAuthor(req: _root_.com.acme.author.Author): F[_root_.com.acme.rating.Rating]
       |}
       |
       |}""".stripMargin
@@ -196,7 +192,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   private def check(protobufProtocol: protobuf.Protocol[Mu[ProtobufF]], expectedOutput: String) = {
     val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
-      mu.Protocol.fromProtobufProto(CompressionType.Identity, useIdiomaticGrpc = true, useIdiomaticScala = false)(p)
+      mu.Protocol.fromProtobufProto(CompressionType.Identity)(p)
     }
 
     val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
@@ -421,7 +417,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
        |object test_only_java_package {
        |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
        |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-       |  @service(Protobuf, compressionType = Identity, methodNameStyle = Unchanged, namespace = Some("my_package")) trait MyService[F[_]] {
+       |  @service(Protobuf, compressionType = Identity, namespace = Some("my_package")) trait MyService[F[_]] {
        |    def Check(req: _root_.my_package.test_only_java_package.MyRequest): F[_root_.my_package.test_only_java_package.MyResponse]
        |  }
        |}
@@ -444,7 +440,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |object test_no_package {
     |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
     |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  @service(Protobuf, compressionType = Identity, methodNameStyle = Unchanged, namespace = Some("test_no_package")) trait MyService[F[_]] {
+    |  @service(Protobuf, compressionType = Identity, namespace = Some("test_no_package")) trait MyService[F[_]] {
     |    def Check(req: _root_.test_no_package.test_no_package.MyRequest): F[_root_.test_no_package.test_no_package.MyResponse]
     |  }
     |}
@@ -467,7 +463,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |object test_java_package {
     |  final case class MyRequest(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
     |  final case class MyResponse(@_root_.pbdirect.pbIndex(1) value: _root_.java.lang.String)
-    |  @service(Protobuf, compressionType = Identity, methodNameStyle = Unchanged, namespace = Some("my_package")) trait MyService[F[_]] {
+    |  @service(Protobuf, compressionType = Identity, namespace = Some("my_package")) trait MyService[F[_]] {
     |    def Check(req: _root_.my_package.test_java_package.MyRequest): F[_root_.my_package.test_java_package.MyResponse]
     |  }
     |}

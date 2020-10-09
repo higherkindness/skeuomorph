@@ -37,13 +37,13 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
   """
 
   def codegenAvroProtocol =
-    prop { (compressionType: CompressionType, useIdiomaticGrpc: Boolean, useIdiomaticScala: Boolean) =>
+    prop { (compressionType: CompressionType, useIdiomaticEndpoints: Boolean) =>
       val idl       = new Idl(getClass.getClassLoader.getResourceAsStream("avro/GreeterService.avdl"))
       val avroProto = idl.CompilationUnit()
 
       val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
 
-      val muProto = MuProtocol.fromAvroProtocol(compressionType, useIdiomaticGrpc, useIdiomaticScala)(skeuoAvroProto)
+      val muProto = MuProtocol.fromAvroProtocol(compressionType, useIdiomaticEndpoints)(skeuoAvroProto)
 
       val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
         t"Stream[$f, $a]"
@@ -51,7 +51,7 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
 
       val actual = codegen.protocol(muProto, streamCtor).right.get
 
-      val expected = codegenExpectation(compressionType, muProto.pkg, useIdiomaticGrpc, useIdiomaticScala)
+      val expected = codegenExpectation(compressionType, muProto.pkg, useIdiomaticEndpoints)
         .parse[Source]
         .get
         .children
@@ -73,15 +73,13 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
   private def codegenExpectation(
       compressionType: CompressionType,
       namespace: Option[String],
-      useIdiomaticGrpc: Boolean,
-      useIdiomaticScala: Boolean
+      useIdiomaticEndpoints: Boolean
   ): String = {
 
     val serviceParams: String = Seq(
       SerializationType.Avro,
       s"compressionType = $compressionType",
-      s"methodNameStyle = Unchanged", // IDL services are not capitalized
-      s"namespace = ${if (useIdiomaticGrpc) namespace.map("\"" + _ + "\"") else None}"
+      s"namespace = ${if (useIdiomaticEndpoints) namespace.map("\"" + _ + "\"") else None}"
     ).mkString(", ")
 
     s"""package com.acme

@@ -52,7 +52,7 @@ object hello {
   final case class SayHelloRequest(name: _root_.java.lang.String)
   final case class SayHelloResponse(message: _root_.java.lang.String)
 
-  @service(Protobuf, compressionType = Identity, methodNameStyle = Unchanged, namespace = Some("src.main"))
+  @service(Protobuf, compressionType = Identity, namespace = Some("src.main"))
   trait HelloWorldService[F[_]] { 
     def SayHello(req: _root_.src.main.hello.SayHelloRequest): F[_root_.src.main.hello.SayHelloResponse] 
   }

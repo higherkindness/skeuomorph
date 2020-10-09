@@ -49,11 +49,9 @@ object Protocol {
   /**
    * create a [[higherkindness.skeuomorph.mu.Protocol]] from a [[higherkindness.skeuomorph.avro.Protocol]]
    */
-  def fromAvroProtocol[T, U](
-      compressionType: CompressionType,
-      useIdiomaticGrpc: Boolean = true,
-      useIdiomaticScala: Boolean = false
-  )(proto: avro.Protocol[T])(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
+  def fromAvroProtocol[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean = true)(
+      proto: avro.Protocol[T]
+  )(implicit T: Basis[AvroF, T], U: Basis[MuF, U]): Protocol[U] = {
 
     val toMu: T => U = scheme.cata(transformAvro[U].algebra)
     val toOperation: avro.Protocol.Message[T] => Service.Operation[U] =
@@ -75,8 +73,7 @@ object Protocol {
           SerializationType.Avro,
           compressionType,
           proto.namespace,
-          useIdiomaticGrpc,
-          useIdiomaticScala,
+          useIdiomaticEndpoints,
           proto.messages.map(toOperation)
         )
       ),
@@ -84,11 +81,9 @@ object Protocol {
     )
   }
 
-  def fromProtobufProto[T, U](
-      compressionType: CompressionType,
-      useIdiomaticGrpc: Boolean = true,
-      useIdiomaticScala: Boolean = false
-  )(protocol: protobuf.Protocol[T])(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
+  def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEnpoints: Boolean = true)(
+      protocol: protobuf.Protocol[T]
+  )(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
     val toOperation: protobuf.Protocol.Operation[T] => Service.Operation[U] =
       msg =>
@@ -108,13 +103,12 @@ object Protocol {
       declarations = protocol.declarations.map(toMu),
       services = protocol.services
         .map(s =>
-          Service[U](
+          Service(
             s.name,
             SerializationType.Protobuf,
             compressionType,
             Option(protocol.pkg),
-            useIdiomaticGrpc,
-            useIdiomaticScala,
+            useIdiomaticEnpoints,
             s.operations.map(toOperation)
           )
         ),
@@ -130,8 +124,7 @@ final case class Service[T](
     serializationType: SerializationType,
     compressionType: CompressionType,
     namespace: Option[String],
-    useIdiomaticGrpc: Boolean,
-    useIdiomaticScala: Boolean,
+    useIdiomaticEndpoints: Boolean,
     operations: List[Service.Operation[T]]
 )
 object Service {

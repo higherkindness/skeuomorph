@@ -28,7 +28,7 @@ import com.google.protobuf.DescriptorProtos.FileDescriptorSet
 import com.google.protobuf.DescriptorProtos.UninterpretedOption.NamePart
 import com.google.protobuf.DescriptorProtos._
 import higherkindness.skeuomorph.FileUtils._
-import higherkindness.skeuomorph._
+import higherkindness.skeuomorph.{Parser, _}
 
 import higherkindness.droste._
 import higherkindness.droste.syntax.embed._
