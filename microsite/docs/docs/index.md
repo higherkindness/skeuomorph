@@ -4,7 +4,6 @@ title: Intro
 permalink: docs/
 ---
 
-
 # Skeuomorph
 
 Skeuomorph is a library for transforming different schemas in Scala.
@@ -32,7 +31,7 @@ example.  Or to a mu service description.
 
 You can install skeuomorph as follows:
 
-```scala
+```sbt
 libraryDependencies += "io.higherkindness" %% "skeuomorph" % "@VERSION@"
 ```
 
@@ -102,11 +101,9 @@ println("=====")
 It would generate the following output:
 
 ```scala mdoc:passthrough
-println("```scala")
 (toMuSchema >>> println)(avroSchema)
 println("=====")
 (toMuSchema >>> printSchemaAsScala >>> println)(avroSchema)
-println("```")
 ```
 
 ## Protobuf
@@ -117,8 +114,9 @@ Given the proto file below:
 
 _user.proto_
 
-```protobuf
+```proto
 syntax = "proto3";
+
 package example.proto;
 
 message User {
@@ -145,7 +143,7 @@ val source = ParseProto.ProtoSource("user.proto", new java.io.File(".").getAbsol
 val protobufProtocol: Protocol[Mu[ProtobufF]] = ParseProto.parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
 
 val toMuProtocol: Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p: Protocol[Mu[ProtobufF]] =>
-  mu.Protocol.fromProtobufProto(CompressionType.Identity, true)(p)
+  mu.Protocol.fromProtobufProto(CompressionType.Identity)(p)
 }
 
 val printProtocolAsScala: mu.Protocol[Mu[MuF]] => Either[String, String] = { p =>
@@ -162,13 +160,10 @@ println("=====")
 
 It would generate the following output:
 
-
 ```scala mdoc:passthrough
-println("```scala")
 (toMuProtocol >>> println)(protobufProtocol)
 println("=====")
 (toMuProtocol >>> printProtocolAsScala >>> println)(protobufProtocol)
-println("```")
 ```
 
 #### Proto2 Incompatibility

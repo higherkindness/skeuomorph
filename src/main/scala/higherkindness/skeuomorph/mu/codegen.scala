@@ -234,13 +234,11 @@ object codegen {
     val serializationType = Term.Name(srv.serializationType.toString)
     val compressionType   = Term.Name(srv.compressionType.toString)
 
-    val serviceAnnotation = srv.idiomaticEndpoints match {
-      case IdiomaticEndpoints(Some(pkg), true) =>
-        mod"@service($serializationType, $compressionType, namespace = Some($pkg), methodNameStyle = Capitalize)"
-      case IdiomaticEndpoints(None, true) =>
-        mod"@service($serializationType, $compressionType, methodNameStyle = Capitalize)"
+    val serviceAnnotation = srv.namespace match {
+      case Some(namespace) if srv.useIdiomaticEndpoints =>
+        mod"@service($serializationType, compressionType = $compressionType, namespace = Some($namespace))"
       case _ =>
-        mod"@service($serializationType, $compressionType)"
+        mod"@service($serializationType, compressionType = $compressionType, namespace = None)"
     }
 
     srv.operations.traverse(op => operation(op, streamCtor)).map { ops =>

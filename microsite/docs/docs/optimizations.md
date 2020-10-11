@@ -49,33 +49,25 @@ they're inside a product themselves.  And we do this with the
 def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] = Trans {
   case TProduct(name, fields, np, nc) =>
     def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
-    TProduct[T](
-      name,
-      fields.map(nameTypes),
-      np,
-      nc
-    )
+    TProduct[T](name, fields.map(nameTypes), np, nc)
   case other => other
 }
 
 def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
   case TProduct(name, _, _, _) => TNamedType[T](Nil, name)
-  case TSum(name, _)     => TNamedType[T](Nil, name)
-  case other             => other
+  case TSum(name, _)           => TNamedType[T](Nil, name)
+  case other                   => other
 }
 
 def namedTypes[T: Basis[MuF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
 def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
-
 ```
 
 and then apply the `namedTypes` combinator to the AST:
 
-```scala mdoc:invisible
-def ast = Mu(TNull[Mu[MuF]]())
-```
-
 ```scala mdoc
+def ast = Mu(TNull[Mu[MuF]]())
+
 val optimization = Optimize.namedTypes[Mu[MuF]]
 
 optimization(ast)

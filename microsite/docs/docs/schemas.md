@@ -25,12 +25,12 @@ Currently in skeuomorph there are schemas defined for different cases:
 
 Currently, Skeuomorph only supports proto3 compliance, and the recommended approach when using skeuomorph with [mu][]
 is to use proto3 for all gRPC communications.  While it is still possible to generate valid Scala code from a proto2 spec,
-Skeuomorph will _not_ generate case classes for optional fields.  For example, given a schema that looks like this:
+Skeuomorph will _not_ generate case classes for optional fields.  For example, given a `hello.proto` schema that looks like this:
 
-```protobuf mdoc:silent
+```proto
 syntax = "proto2";
 
-package src.main.hello;
+package src.main;
 
 message SayHelloRequest {
   optional string name = 1;
@@ -44,15 +44,17 @@ service HelloWorldService {
 }
 ```
 
-Skeuomorph (with mu) will generate the following Scala code:
+Skeuomorph (with mu and default plugin options) will generate the following Scala code:
 
 ```scala
 object hello {
-  final case class SayHelloRequest(name: String)
-  final case class SayHelloResponse(message: String)
-  @service(Protobuf, Identity, namespace = Some("src.main.hello"), methodNameStyle = Capitalize) 
+
+  final case class SayHelloRequest(name: _root_.java.lang.String)
+  final case class SayHelloResponse(message: _root_.java.lang.String)
+
+  @service(Protobuf, compressionType = Identity, namespace = Some("src.main"))
   trait HelloWorldService[F[_]] { 
-    def SayHello(req: src.main.hello.hello.SayHelloRequest): F[src.main.hello.hello.SayHelloResponse] 
+    def SayHello(req: _root_.src.main.hello.SayHelloRequest): F[_root_.src.main.hello.SayHelloResponse] 
   }
 }  
 ```
