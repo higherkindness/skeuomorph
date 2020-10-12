@@ -4,4 +4,4 @@ object TestFixed {
   type TestFixed = _root_.scala.Array[Byte]
 }
 final case class Fixed(fix: _root_.foo.bar.TestFixed.TestFixed)
-@service(Avro, Identity, namespace = Some("foo.bar"), methodNameStyle = Capitalize) trait Fixed[F[_]] { def identity(req: _root_.foo.bar.Fixed): F[_root_.foo.bar.Fixed] }
+@service({{{serviceParams}}}) trait Fixed[F[_]] { def identity(req: _root_.foo.bar.Fixed): F[_root_.foo.bar.Fixed] }
