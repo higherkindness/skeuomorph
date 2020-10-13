@@ -90,18 +90,18 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
       compressionType: CompressionType,
       useIdiomaticEndpoints: Boolean
   ): Either[String, (Option[String], Pkg)] = {
-    val idlResourceName = s"avro/${name}.avdl"
+    val idlResourceName = s"avro/$name.avdl"
     val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI)
       .fold(t => sys.error(s"Unable to get resource $idlResourceName due to ${t.getMessage}"), identity)
     val idlFile = new File(idlUri)
 
-    def avroProtos =
-      (new FileInputParser).getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader).collect {
-        case Right(protocol) => protocol
-      }
-    val avroProto = avroProtos
-      .find(p => p.getName == name)
-      .getOrElse(sys.error(s"No protocol found for name ${name} in ${avroProtos.map(_.getName)}"))
+    def avroProto =
+      (new FileInputParser)
+        .getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader)
+        .collectFirst {
+          case Right(protocol) if protocol.getName == name => protocol
+        }
+        .getOrElse(sys.error(s"No protocol found for name $name in $idlResourceName"))
 
     val skeuoAvroProto = Try(Protocol.fromProto[Mu[AvroF]](avroProto)).toEither.left.map(_.getMessage)
 
