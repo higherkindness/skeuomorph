@@ -21,13 +21,12 @@ import cats.syntax.option._
 import higherkindness.skeuomorph.{mu, UnsupportedRequestTypeException, UnsupportedResponseTypeException}
 import higherkindness.skeuomorph.mu.{MuF, SerializationType}
 import io.circe.Json
-import org.apache.avro.{AvroRuntimeException, Schema, Protocol => AvroProtocol}
+import org.apache.avro.{Schema, Protocol => AvroProtocol}
 import higherkindness.droste._
 import higherkindness.droste.syntax.all._
 import org.apache.avro.Schema.Type
 
 import scala.collection.JavaConverters._
-import scala.util.Try
 
 final case class Protocol[A](
     name: String,

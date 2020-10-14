@@ -34,7 +34,7 @@ class ComparisonSpec extends Specification {
 
   Should accept numeric widening $numericWidening
   Should accept coproduct creation $coproductCreation
-  Should accept coproduct widenning $coproductWidening
+  Should accept coproduct widening $coproductWidening
   Should accept field addition in records $fieldAddition
   Should accept field addition in nested records $fieldAdditionNestedProduct
   Should accept field removal in records $fieldRemoval
