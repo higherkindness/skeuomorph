@@ -46,7 +46,9 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
         "LogicalTypes",
         "NestedRecords",
         "ImportedService",
-        "Fixed"
+        "Fixed",
+        "Primitives",
+        "Complex"
       )
       .map(ValidAvdlName)
   }
