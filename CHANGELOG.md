@@ -1,5 +1,17 @@
 # Changelog
 
+## [v0.0.27](https://github.com/higherkindness/skeuomorph/tree/v0.0.27) (2020-10-15)
+
+[Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.26...v0.0.27)
+
+🚀 **Features**
+
+- Adds logical and fixed types to code generation [\#340](https://github.com/higherkindness/skeuomorph/pull/340) ([dzanot](https://github.com/dzanot))
+
+📈 **Dependency updates**
+
+- Update specs2-core, specs2-scalacheck to 4.10.4 [\#348](https://github.com/higherkindness/skeuomorph/pull/348) ([47erbot](https://github.com/47erbot))
+
 ## [v0.0.26](https://github.com/higherkindness/skeuomorph/tree/v0.0.26) (2020-10-09)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.25...v0.0.26)
@@ -183,6 +195,7 @@
 - Update ammonite to 2.0.3 [\#210](https://github.com/higherkindness/skeuomorph/pull/210) ([scala-steward](https://github.com/scala-steward))
 - Update ammonite to 2.0.2 [\#209](https://github.com/higherkindness/skeuomorph/pull/209) ([scala-steward](https://github.com/scala-steward))
 - Update specs2-core, specs2-scalacheck to 4.8.3 [\#208](https://github.com/higherkindness/skeuomorph/pull/208) ([scala-steward](https://github.com/scala-steward))
+- Update specs2-core, specs2-scalacheck to 4.8.2 [\#207](https://github.com/higherkindness/skeuomorph/pull/207) ([scala-steward](https://github.com/scala-steward))
 - Support protobuf nested messages and enums [\#206](https://github.com/higherkindness/skeuomorph/pull/206) ([cb372](https://github.com/cb372))
 - Use scalameta for codegen [\#205](https://github.com/higherkindness/skeuomorph/pull/205) ([cb372](https://github.com/cb372))
 
@@ -192,7 +205,6 @@
 
 **Merged pull requests:**
 
-- Update specs2-core, specs2-scalacheck to 4.8.2 [\#207](https://github.com/higherkindness/skeuomorph/pull/207) ([scala-steward](https://github.com/scala-steward))
 - Release 0.0.19 [\#204](https://github.com/higherkindness/skeuomorph/pull/204) ([cb372](https://github.com/cb372))
 - Fix a couple of compilation issues in the generated code [\#203](https://github.com/higherkindness/skeuomorph/pull/203) ([cb372](https://github.com/cb372))
 - Fix broken docs [\#201](https://github.com/higherkindness/skeuomorph/pull/201) ([cb372](https://github.com/cb372))
