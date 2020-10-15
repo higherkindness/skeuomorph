@@ -44,13 +44,13 @@ object Transform {
       case ProtobufF.TSfixed64()                      => pbLong(FixedWidth, Signed)
       case ProtobufF.TBool()                          => TBoolean()
       case ProtobufF.TString()                        => TString()
-      case ProtobufF.TBytes()                         => TByteArray()
+      case ProtobufF.TBytes()                         => TByteArray(Length.Arbitrary)
       case ProtobufF.TNamedType(prefix, name)         => TNamedType(prefix, name)
       case ProtobufF.TOptionalNamedType(prefix, name) => TOption(A.algebra(TNamedType(prefix, name)))
       case ProtobufF.TRepeated(value)                 => TList(value)
       case ProtobufF.TEnum(name, symbols, _, _)       => TSum(name, symbols.map(SumField.tupled))
       case ProtobufF.TMessage(name, fields, _, nestedMessages, nestedEnums) =>
-        TProduct(name, fields.map(f => Field(f.name, f.tpe, Some(f.indices))), nestedMessages, nestedEnums)
+        TProduct(name, None, fields.map(f => Field(f.name, f.tpe, Some(f.indices))), nestedMessages, nestedEnums)
       case ProtobufF.TFileDescriptor(values, _, _) => TContaining(values)
       case ProtobufF.TOneOf(_, fields)             => TOption(A.algebra(TCoproduct(fields.map(_.tpe))))
       case ProtobufF.TMap(key, values)             => TMap(Some(key), values)
@@ -64,18 +64,20 @@ object Transform {
       case AvroF.TLong()                     => long()
       case AvroF.TFloat()                    => TFloat()
       case AvroF.TDouble()                   => TDouble()
-      case AvroF.TBytes()                    => TByteArray()
+      case AvroF.TBytes()                    => TByteArray(Length.Arbitrary)
       case AvroF.TString()                   => TString()
       case AvroF.TNamedType(namespace, name) => TNamedType(namespace.split('.').toList, name)
       case AvroF.TArray(item)                => TList(item)
       case AvroF.TMap(values)                => TMap(None, values)
-      case AvroF.TRecord(name, _, _, _, fields) =>
+      case AvroF.TRecord(name, namespace, _, _, fields) =>
         val muFields = fields.map(f => Field(f.name, f.tpe, indices = None))
-        TProduct(name, muFields, Nil, Nil)
+        TProduct(name, namespace, muFields, Nil, Nil)
       case AvroF.TEnum(name, _, _, _, symbols) => TSum(name, symbols.zipWithIndex.map(SumField.tupled))
       case AvroF.TUnion(options)               => TCoproduct(options)
-      case AvroF.TFixed(_, _, _, _) =>
-        ??? // I don't really know what to do with Fixed... https://avro.apache.org/docs/current/spec.html#Fixed
+      case AvroF.TFixed(n, ns, _, l)           => TByteArray(Length.Fixed(n, ns, l))
+      case AvroF.TDate()                       => TDate()
+      case AvroF.TTimestampMillis()            => TInstant()
+      case AvroF.TDecimal(precision, scale)    => TDecimal(precision, scale)
     }
 
 }

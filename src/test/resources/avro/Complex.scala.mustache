@@ -1,0 +1,9 @@
+package foo.bar
+import _root_.higherkindness.mu.rpc.protocol._
+sealed abstract class Enum(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+object Enum extends _root_.enumeratum.values.IntEnum[Enum] {
+    case object ONE extends Enum(0)
+    case object TWO extends Enum(1)
+    val values = findValues
+}
+final case class Complex(e: Enum, as: _root_.scala.List[_root_.java.lang.String], ms: _root_.scala.Predef.Map[_root_.java.lang.String, _root_.java.lang.String], sil: _root_.shapeless.:+:[_root_.java.lang.String, _root_.shapeless.:+:[_root_.scala.Int, _root_.shapeless.:+:[_root_.scala.Long, _root_.shapeless.CNil]]])

@@ -16,13 +16,21 @@
 
 package higherkindness.skeuomorph.avro
 
+import java.io.File
+
+import avrohugger.format.Standard
+import avrohugger.input.parsers.FileInputParser
+import avrohugger.stores.ClassStore
 import higherkindness.droste.data.Mu
 import higherkindness.skeuomorph.mu.{CompressionType, SerializationType, codegen, Protocol => MuProtocol}
 import org.apache.avro.compiler.idl._
+import org.fusesource.scalate.{RenderContext, TemplateEngine, TemplateSource}
 import org.scalacheck._
 import org.specs2._
+
 import scala.meta._
 import scala.meta.contrib._
+import scala.util.Try
 
 class AvroProtocolSpec extends Specification with ScalaCheck {
 
@@ -30,28 +38,39 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
     Gen.oneOf(CompressionType.Identity, CompressionType.Gzip)
   }
 
+  case class ValidAvdlName(name: String)
+  implicit val validAvdl: Arbitrary[ValidAvdlName] = Arbitrary {
+    Gen
+      .oneOf(
+        "MyGreeterService",
+        "LogicalTypes",
+        "NestedRecords",
+        "ImportedService",
+        "Fixed",
+        "Primitives",
+        "Complex"
+      )
+      .map(ValidAvdlName)
+  }
+
+  case class InvalidAvdlName(name: String)
+  implicit val invalidAvdl: Arbitrary[InvalidAvdlName] = Arbitrary {
+    Gen.oneOf("InvalidRequest", "InvalidResponse").map(InvalidAvdlName)
+  }
+
   def is = s2"""
   Avro Protocol
 
   It should be possible to create a Protocol from org.apache.avro.Protocol and then generate Scala code from it. $codegenAvroProtocol
+
+  It should generate an error message when encountering invalid avro definition. $checkAllInvalid
   """
 
   def codegenAvroProtocol =
-    prop { (compressionType: CompressionType, useIdiomaticEndpoints: Boolean) =>
-      val idl       = new Idl(getClass.getClassLoader.getResourceAsStream("avro/GreeterService.avdl"))
-      val avroProto = idl.CompilationUnit()
+    prop { (avdlName: ValidAvdlName, compressionType: CompressionType, useIdiomaticEndpoints: Boolean) =>
+      val (pkg, actual) = gen(avdlName.name, compressionType, useIdiomaticEndpoints).right.get
 
-      val skeuoAvroProto = Protocol.fromProto[Mu[AvroF]](avroProto)
-
-      val muProto = MuProtocol.fromAvroProtocol(compressionType, useIdiomaticEndpoints)(skeuoAvroProto)
-
-      val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
-        t"Stream[$f, $a]"
-      }
-
-      val actual = codegen.protocol(muProto, streamCtor).right.get
-
-      val expected = codegenExpectation(compressionType, muProto.pkg, useIdiomaticEndpoints)
+      val expected = codegenExpectation(avdlName.name, compressionType, pkg, useIdiomaticEndpoints)
         .parse[Source]
         .get
         .children
@@ -68,9 +87,42 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
         """.stripMargin
     }
 
-  // TODO test for more complex schemas, importing other files, etc.
+  def gen(
+      name: String,
+      compressionType: CompressionType,
+      useIdiomaticEndpoints: Boolean
+  ): Either[String, (Option[String], Pkg)] = {
+    val idlResourceName = s"avro/$name.avdl"
+    val idlUri = Try(getClass.getClassLoader.getResource(idlResourceName).toURI)
+      .fold(t => sys.error(s"Unable to get resource $idlResourceName due to ${t.getMessage}"), identity)
+    val idlFile = new File(idlUri)
 
-  private def codegenExpectation(
+    def avroProto =
+      (new FileInputParser)
+        .getSchemaOrProtocols(idlFile, Standard, new ClassStore, getClass.getClassLoader)
+        .collectFirst {
+          case Right(protocol) if protocol.getName == name => protocol
+        }
+        .getOrElse(sys.error(s"No protocol found for name $name in $idlResourceName"))
+
+    val skeuoAvroProto = Try(Protocol.fromProto[Mu[AvroF]](avroProto)).toEither.left.map(_.getMessage)
+
+    val muProto = skeuoAvroProto.map { p =>
+      MuProtocol.fromAvroProtocol(compressionType, useIdiomaticEndpoints)(p)
+    }
+
+    val streamCtor: (Type, Type) => Type.Apply = { case (f: Type, a: Type) =>
+      t"Stream[$f, $a]"
+    }
+
+    muProto.flatMap { mProto =>
+      codegen.protocol(mProto, streamCtor).map(p => (mProto.pkg, p))
+    }
+  }
+  val templateEngine: TemplateEngine = new TemplateEngine()
+
+  def codegenExpectation(
+      idlName: String,
       compressionType: CompressionType,
       namespace: Option[String],
       useIdiomaticEndpoints: Boolean
@@ -81,27 +133,16 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
       s"compressionType = $compressionType",
       s"namespace = ${if (useIdiomaticEndpoints) namespace.map("\"" + _ + "\"") else None}"
     ).mkString(", ")
+    val resourceName = s"/avro/$idlName.scala.mustache"
 
-    s"""package com.acme
-      |
-      |import _root_.higherkindness.mu.rpc.protocol._
-      |
-      |final case class HelloRequest(
-      |  arg1: _root_.java.lang.String,
-      |  arg2: _root_.scala.Option[_root_.java.lang.String],
-      |  arg3: _root_.scala.List[_root_.java.lang.String]
-      |)
-      |final case class HelloResponse(
-      |  arg1: _root_.java.lang.String,
-      |  arg2: _root_.scala.Option[_root_.java.lang.String],
-      |  arg3: _root_.scala.List[_root_.java.lang.String]
-      |)
-      |
-      |@service($serviceParams) trait MyGreeterService[F[_]] {
-      |  def sayHelloAvro(req: _root_.com.acme.HelloRequest): F[_root_.com.acme.HelloResponse]
-      |  def sayNothingAvro(req: _root_.higherkindness.mu.rpc.protocol.Empty.type): F[_root_.higherkindness.mu.rpc.protocol.Empty.type]
-      |}
-      """.stripMargin
+    val file =
+      new File(getClass.getResource(resourceName).toURI)
+    val template = TemplateSource.fromFile(file)
+    templateEngine.layout(template, Map("serviceParams" -> serviceParams))
+  }
+
+  def checkAllInvalid = prop { (invalid: InvalidAvdlName) =>
+    gen(invalid.name, CompressionType.Identity, true) must beLeft
   }
 
 }

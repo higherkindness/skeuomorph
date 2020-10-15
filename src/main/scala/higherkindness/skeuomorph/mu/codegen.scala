@@ -24,6 +24,7 @@ import higherkindness.skeuomorph.mu.MuF._
 import higherkindness.skeuomorph.mu.Optimize._
 import higherkindness.skeuomorph.{protobuf => pb}
 import higherkindness.skeuomorph.Printer.toValidIdentifier
+
 import scala.reflect.ClassTag
 import cats.syntax.either._
 import cats.syntax.traverse._
@@ -102,7 +103,7 @@ object codegen {
   private def optimize[T](t: T)(implicit T: Basis[MuF, T]): T =
     // Apply optimizations to normalise the protocol
     // before converting it to Scala code
-    (nestedOptionInCoproduct[T] andThen knownCoproductTypes[T]).apply(t)
+    (nestedNamedTypes[T] andThen nestedOptionInCoproduct[T] andThen knownCoproductTypes[T]).apply(t)
 
   // A class and its companion object will be wrapped inside a Block (i.e. curly braces).
   // We need to extract them from there and lift them to the same level as other statements.
@@ -154,15 +155,22 @@ object codegen {
       }
 
     val algebra: AlgebraM[Either[String, ?], MuF, Tree] = AlgebraM {
-      case TNull()                  => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
-      case TDouble()                => t"_root_.scala.Double".asRight
-      case TFloat()                 => t"_root_.scala.Float".asRight
-      case x @ TInt(_)              => intType(x).asRight
-      case TBoolean()               => t"_root_.scala.Boolean".asRight
-      case TString()                => t"_root_.java.lang.String".asRight
-      case TByteArray()             => t"_root_.scala.Array[Byte]".asRight
-      case TNamedType(prefix, name) => identifier(prefix, name)
-      case TOption(value)           => value.as[Type].map(tpe => t"_root_.scala.Option[$tpe]")
+      case TNull()                      => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
+      case TDouble()                    => t"_root_.scala.Double".asRight
+      case TFloat()                     => t"_root_.scala.Float".asRight
+      case x @ TInt(_)                  => intType(x).asRight
+      case TBoolean()                   => t"_root_.scala.Boolean".asRight
+      case TString()                    => t"_root_.java.lang.String".asRight
+      case TByteArray(Length.Arbitrary) => t"_root_.scala.Array[Byte]".asRight
+      case TByteArray(Length.Fixed(n, _, l)) =>
+        val aliasedType = t"_root_.scala.Array[Byte]"
+        q"""object ${Term.Name(n)} {
+             type ${Type.Name(n)} = ${aliasedType}
+           }
+         """.asRight
+      case TNamedType(prefix, name) =>
+        identifier(prefix, name)
+      case TOption(value) => value.as[Type].map(tpe => t"_root_.scala.Option[$tpe]")
       case TEither(a, b) =>
         (a.as[Type], b.as[Type]).mapN { case (aType, bType) => t"_root_.scala.Either[$aType, $bType]" }
       case TMap(Some(key), value) =>
@@ -199,12 +207,23 @@ object codegen {
           val values = findValues
         }
         """.asRight
-      case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
-        def arg(f: Field[Tree]): Either[String, Term.Param] =
-          f.tpe.as[Type].map { tpe =>
-            val annotation = f.indices.map(indices => mod"@_root_.pbdirect.pbIndex(..${indices.map(Lit.Int(_))})")
+      case TProduct(name, _, fields, nestedProducts, nestedCoproducts) =>
+        def arg(f: Field[Tree]): Either[String, Term.Param] = {
+          val annotation = f.indices.map(indices => mod"@_root_.pbdirect.pbIndex(..${indices.map(Lit.Int(_))})")
+
+          val param: Type => Term.Param = { tpe =>
             param"..$annotation ${Term.Name(f.name)}: ${Some(tpe)}"
           }
+          f.tpe match {
+            case tpe: Type =>
+              param(tpe).asRight
+            case cls: Defn.Class =>
+              param(cls.name).asRight
+            case _ =>
+              s"Encountered unhandled Tree type: ${f.tpe} in Field: ${f}".asLeft
+          }
+        }
+
         (
           fields.traverse(arg),
           nestedProducts.traverse(_.as[Stat]),
@@ -223,6 +242,10 @@ object codegen {
           } else
             caseClass
         }
+      case TDate()    => t"_root_.java.time.LocalDate".asRight
+      case TInstant() => t"_root_.java.time.Instant".asRight
+      case TDecimal(precision, scale) =>
+        t"_root_.scala.math.BigDecimal".asRight
     }
 
     scheme.cataM(algebra).apply(optimize(t))
