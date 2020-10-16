@@ -1,4 +1,4 @@
-@namespace("foo.bar")
+@namespace("com.acme")
 protocol MyGreeterService {
 
   record HelloRequest {
@@ -13,7 +13,7 @@ protocol MyGreeterService {
     array<string>  arg3;
   }
 
-  foo.bar.HelloResponse sayHelloAvro(foo.bar.HelloRequest arg);
+  com.acme.HelloResponse sayHelloAvro(com.acme.HelloRequest arg);
 
   void sayNothingAvro();
 }

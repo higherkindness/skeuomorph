@@ -96,8 +96,7 @@ object Printer {
    * but it's quite wrong/misleading). So we let scalameta take care of it for us.
    */
   def toValidIdentifier(string: String): String =
-    if (string.isEmpty) string
-    else scala.meta.Term.Name(string).syntax
+    if (string.isEmpty) string else scala.meta.Term.Name(string).syntax
 
   implicit val divisiblePrinter: Decidable[Printer] = new Decidable[Printer] {
     def unit: Printer[Unit] = Printer.unit

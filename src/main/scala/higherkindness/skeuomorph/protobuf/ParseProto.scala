@@ -103,8 +103,8 @@ object ParseProto {
 
     for {
       _ <- Sync[F].ensure[Int](protoCompilation)(ProtobufCompilationException())((exitCode: Int) => exitCode == 0)
-      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) {
-        case ex: Exception => ProtobufParsingException(ex)
+      fileDescriptor <- Sync[F].adaptError(makeFileDescriptor[F](descriptorFileName)) { case ex: Exception =>
+        ProtobufParsingException(ex)
       }
       nativeDescriptors <- getTFiles[F, T](input.filename, fileDescriptor)
     } yield nativeDescriptors
@@ -121,6 +121,34 @@ object ParseProto {
     }
   }
 
+  private def getPackageOrJavaPackage(file: FileDescriptorProto): String = {
+
+    val javaPackage: String = file.getOptions.getJavaPackage
+
+    val filePackage: String = file.getPackage
+
+    val fileName: String = formatName(file.getName)
+    // This package naming behavior is consistent with ScalaPB, see
+    // https://scalapb.github.io/docs/generated-code/#default-package-structure
+    if (javaPackage.isEmpty) {
+      if (filePackage.isEmpty)
+        fileName
+      else filePackage
+    } else javaPackage
+
+  }
+
+  private def getTypeNameFromQualifiedName(fullName: String): String =
+    // When comparing the types, we only need to know the name of the type, not the
+    // fully-qualified name (since we use the value of the package passed into the protoc to create
+    // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
+    // different behavior depending on whether we access a type name from a file with a `package` header
+    // (which will return the fully-qualified name) vs accessing a type name from a file with a `java_package`
+    // header (which will just return the name of the type).  This method trims the type name from a fully-
+    // qualified name if necessary, which provides consistent behavior when comparing the name of a message
+    // to the name of a type
+    fullName.substring(fullName.lastIndexOf(".") + 1)
+
   def fromProto[A](
       descriptorFileName: String,
       files: List[FileDescriptorProto]
@@ -131,9 +159,11 @@ object ParseProto {
 
         val enums: List[A] = file.getEnumTypeList.asScala.toList.map(toEnum[A])
 
+        val fileName: String = formatName(file.getName)
+
         Protocol[A](
-          formatName(file.getName),
-          file.getPackage,
+          fileName,
+          getPackageOrJavaPackage(file),
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
@@ -312,7 +342,7 @@ object ParseProto {
     normalizeName(source.getName) == normalizeName(s"${name}Entry")
 
   def normalizeName(name: String): String =
-    name.toLowerCase.replaceAllLiterally("_", "")
+    name.toLowerCase.replace("_", "")
 
   def fromOneofDescriptorsProto[A](
       oneOfFields: List[OneofDescriptorProto],
@@ -322,20 +352,19 @@ object ParseProto {
   )(implicit
       A: Embed[ProtobufF, A]
   ): List[(FieldF[A], List[Int])] =
-    oneOfFields.zipWithIndex.map {
-      case (oneof, index) =>
-        val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
-          .fromList(
-            fields
-              .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
-              .map(fromFieldDescriptorProto(_, source, files))
-              .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
-          )
-          .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
+    oneOfFields.zipWithIndex.map { case (oneof, index) =>
+      val oneOfFields: NonEmptyList[FieldF.Field[A]] = NonEmptyList
+        .fromList(
+          fields
+            .filter(t => t.hasOneofIndex && t.getOneofIndex == index)
+            .map(fromFieldDescriptorProto(_, source, files))
+            .collect { case b @ FieldF.Field(_, _, _, _, _, _) => b }
+        )
+        .getOrElse(throw ProtobufNativeException(s"Empty set of fields in OneOf: ${oneof.getName}"))
 
-        val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
-        val indices = oneOfFields.map(_.position).toList
-        (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
+      val fOneOf  = oneOf(name = oneof.getName, fields = oneOfFields)
+      val indices = oneOfFields.map(_.position).toList
+      (FieldF.OneOfField(name = oneof.getName, tpe = fOneOf.embed, indices), indices)
     }
 
   def fromFieldTypeCoalgebra(
@@ -408,7 +437,7 @@ object ParseProto {
 
       def rec(m: DescriptorProto, parents: List[String]): List[NamedDescriptor[DescriptorProto]] =
         NamedDescriptor(
-          f.getPackage,
+          getPackageOrJavaPackage(f),
           enclosingProto,
           parents,
           m.getName,
@@ -422,12 +451,17 @@ object ParseProto {
   }
 
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    allMessages(files).find(_.fullName == name)
+    // Note that this method checks that the name of the message matches against the type name that is
+    // extracted from the fully-qualified type name via `getTypeNameFromQualifiedName`.  More context
+    // on why that happens is in the method signature for `getTypeNameFromQualifiedName`.
+    allMessages(files).find(_.fullName.contains(getTypeNameFromQualifiedName(name)))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
       val enclosingProto = formatName(f.getName)
-      f.getEnumTypeList.asScala.toList.map(e => NamedDescriptor(f.getPackage, enclosingProto, Nil, e.getName, e))
+      f.getEnumTypeList.asScala.toList.map(e =>
+        NamedDescriptor(getPackageOrJavaPackage(f), enclosingProto, Nil, e.getName, e)
+      )
     }
 
     val allNestedInsideMessages = for {

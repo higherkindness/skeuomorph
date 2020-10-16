@@ -64,8 +64,8 @@ object ProtobufF {
 
   final case class OptionValue(name: String, value: String)
   object OptionValue {
-    implicit val optionEq: Eq[OptionValue] = Eq.instance {
-      case (OptionValue(n, v), OptionValue(n2, v2)) => n === n2 && v === v2
+    implicit val optionEq: Eq[OptionValue] = Eq.instance { case (OptionValue(n, v), OptionValue(n2, v2)) =>
+      n === n2 && v === v2
     }
   }
 
@@ -190,8 +190,8 @@ object ProtobufF {
           traverseFieldF(m.fields),
           m.nestedMessages.traverse(f),
           m.nestedEnums.traverse(f)
-        ).mapN {
-          case (bFields, bMsgs, bEnums) => TMessage[B](m.name, bFields, m.reserved, bMsgs, bEnums)
+        ).mapN { case (bFields, bMsgs, bEnums) =>
+          TMessage[B](m.name, bFields, m.reserved, bMsgs, bEnums)
         }
 
       fa match {

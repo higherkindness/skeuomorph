@@ -1,0 +1,8 @@
+@namespace("foo.bar")
+protocol Fixed {
+  fixed TestFixed(16);
+  record Fixed {
+    TestFixed fix;
+  }
+  foo.bar.Fixed identity(foo.bar.Fixed arg);
+}

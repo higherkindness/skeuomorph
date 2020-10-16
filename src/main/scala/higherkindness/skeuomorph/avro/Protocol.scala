@@ -18,12 +18,13 @@ package higherkindness.skeuomorph.avro
 
 import cats.data.NonEmptyList
 import cats.syntax.option._
-import higherkindness.skeuomorph.mu
+import higherkindness.skeuomorph.{mu, UnsupportedRequestTypeException, UnsupportedResponseTypeException}
 import higherkindness.skeuomorph.mu.{MuF, SerializationType}
 import io.circe.Json
 import org.apache.avro.{Schema, Protocol => AvroProtocol}
 import higherkindness.droste._
 import higherkindness.droste.syntax.all._
+import org.apache.avro.Schema.Type
 
 import scala.collection.JavaConverters._
 
@@ -62,14 +63,20 @@ object Protocol {
       if (req.getType == Schema.Type.NULL)
         `null`[T]
       else {
-        // Assume it's a record type.
-        // We don't support primitive types for RPC requests/responses.
         val fields = req.getFields
         if (fields.size == 0)
           `null`[T]
         else {
+          // Assume it's a record type.
+          // We don't support primitive types for RPC requests/responses.
           val fieldSchema = fields.get(0).schema
-          namedType[T](fieldSchema.getNamespace, fieldSchema.getName)
+          fieldSchema.getType match {
+            case Type.RECORD => namedType[T](fieldSchema.getNamespace, fieldSchema.getName)
+            case nonRecord =>
+              throw UnsupportedRequestTypeException(
+                s"Skeuomorph only supports Record types for Avro requests. Encountered request schema with type $nonRecord"
+              )
+          }
         }
       }
     }
@@ -80,7 +87,13 @@ object Protocol {
       else
         // Assume it's a record type.
         // We don't support primitive types for RPC requests/responses.
-        namedType[T](resp.getNamespace, resp.getName)
+        resp.getType match {
+          case Type.RECORD => namedType[T](resp.getNamespace, resp.getName)
+          case nonRecord =>
+            throw UnsupportedResponseTypeException(
+              s"Skeuomorph only supports Record types for Avro responses. Encountered response schema with type $nonRecord"
+            )
+        }
     }
 
     def toMessage(kv: (String, AvroProtocol#Message)): Message[T] = {
@@ -90,7 +103,6 @@ object Protocol {
         responseToAvroF(kv._2.getResponse).embed
       )
     }
-
     Protocol(
       proto.getName,
       Option(proto.getNamespace),
@@ -113,28 +125,29 @@ object Protocol {
 
   def fromMuSchema[T](implicit T: Basis[AvroF, T]): Trans[MuF, AvroF, T] =
     Trans {
-      case MuF.TNull()                  => AvroF.`null`()
-      case MuF.TDouble()                => AvroF.double()
-      case MuF.TFloat()                 => AvroF.float()
-      case MuF.TInt(MuF._32)            => AvroF.int()
-      case MuF.TInt(MuF._64)            => AvroF.long()
-      case MuF.TBoolean()               => AvroF.boolean()
-      case MuF.TString()                => AvroF.string()
-      case MuF.TByteArray()             => AvroF.bytes()
-      case MuF.TNamedType(prefix, name) => AvroF.namedType(prefix.mkString("."), name)
-      case MuF.TOption(value)           => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
-      case MuF.TEither(left, right)     => AvroF.union(NonEmptyList(left, List(right)))
-      case MuF.TList(value)             => AvroF.array(value)
-      case MuF.TMap(_, value)           => AvroF.map(value)
-      case MuF.TGeneric(_, _)           => ??? // WAT
-      case MuF.TContaining(_)           => ??? // TBD
-      case MuF.TRequired(t)             => T.coalgebra(t)
-      case MuF.TCoproduct(invariants)   => AvroF.union(invariants)
-      case MuF.TSum(name, fields)       => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
-      case MuF.TProduct(name, fields, _, _) =>
+      case MuF.TNull()                                => AvroF.`null`()
+      case MuF.TDouble()                              => AvroF.double()
+      case MuF.TFloat()                               => AvroF.float()
+      case MuF.TInt(MuF._32)                          => AvroF.int()
+      case MuF.TInt(MuF._64)                          => AvroF.long()
+      case MuF.TBoolean()                             => AvroF.boolean()
+      case MuF.TString()                              => AvroF.string()
+      case MuF.TByteArray(MuF.Length.Arbitrary)       => AvroF.bytes()
+      case MuF.TByteArray(MuF.Length.Fixed(n, ns, l)) => AvroF.fixed(n, ns, Nil, l)
+      case MuF.TNamedType(prefix, name)               => AvroF.namedType(prefix.mkString("."), name)
+      case MuF.TOption(value)                         => AvroF.union(NonEmptyList(AvroF.`null`[T]().embed, List(value)))
+      case MuF.TEither(left, right)                   => AvroF.union(NonEmptyList(left, List(right)))
+      case MuF.TList(value)                           => AvroF.array(value)
+      case MuF.TMap(_, value)                         => AvroF.map(value)
+      case MuF.TGeneric(_, _)                         => ??? // WAT
+      case MuF.TContaining(_)                         => ??? // TBD
+      case MuF.TRequired(t)                           => T.coalgebra(t)
+      case MuF.TCoproduct(invariants)                 => AvroF.union(invariants)
+      case MuF.TSum(name, fields)                     => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
+      case MuF.TProduct(name, namespace, fields, _, _) =>
         TRecord(
           name,
-          none[String],
+          namespace,
           Nil,
           none[String],
           fields.map(f => Field(f.name, Nil, none[String], none[Order], f.tpe))

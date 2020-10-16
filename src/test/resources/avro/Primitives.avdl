@@ -1,0 +1,12 @@
+@namespace("foo.bar")
+protocol Primitives {
+  record Primitives {
+    bytes byte;
+    boolean bool;
+    int i;
+    long l;
+    float f;
+    double d;
+    string s;
+  }
+}

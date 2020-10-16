@@ -122,7 +122,7 @@ package object circe {
     encoderDef(κ("Encoder.encodeString.contramap(_.show)")).contramap(x => (x, Tpe[T](x), ()))
 
   def enumCirceDecoder[T: Basis[JsonSchemaF, ?], B]: Printer[(String, List[String])] =
-    decoderDef[T, (String, List[(String)])](
+    decoderDef[T, (String, List[String])](
       (
         κ("Decoder.decodeString.emap {") *< newLine *<
           sepBy[(String, String)](
@@ -132,8 +132,8 @@ package object circe {
           ) >* newLine,
         κ("""  case x => s"$x is not valid """) *< string >* κ("""".asLeft""") *< newLine *< κ("}") *< newLine
       ).contramapN(x => flip(second(x)(_.map(x => x -> ident(x)))))
-    ).contramap {
-      case (x, xs) => (x, Tpe[T](x), x -> xs)
+    ).contramap { case (x, xs) =>
+      (x, Tpe[T](x), x -> xs)
     }
 
   def sumCirceEncoder[T: Basis[JsonSchemaF, ?], B]: Printer[(String, List[String])] = {
@@ -151,8 +151,8 @@ package object circe {
       κ("Encoder.instance { x =>") *< newLine *< κ("import shapeless.Poly1") *< newLine *< polyObject >* newLine >* κ(
         "x.fold(json)"
       ) >* newLine >* κ("}")
-    ).contramap {
-      case (x, xs) => (x, Tpe[T](x), (("json", "Poly1".some), List.empty, xs.map(x => (x.toLowerCase(), x, x))))
+    ).contramap { case (x, xs) =>
+      (x, Tpe[T](x), (("json", "Poly1".some), List.empty, xs.map(x => (x.toLowerCase(), x, x))))
     }
   }
 

@@ -35,15 +35,14 @@ object print {
       http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]
   ): Printer[(PackageName, OpenApi[T])] =
-    optional(divBy(sepBy(importDef, "\n"), newLine, implDefinition[T])).contramap {
-      case (packageName, openApi) =>
-        openApi.paths.toList.headOption.map(_ =>
-          packages ++ (List(
-            s"${packageName.show}.${TraitName(openApi).show}",
-            s"${packageName.show}.models._"
-          ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply) ->
-            openApi
-        )
+    optional(divBy(sepBy(importDef, "\n"), newLine, implDefinition[T])).contramap { case (packageName, openApi) =>
+      openApi.paths.toList.headOption.map(_ =>
+        packages ++ (List(
+          s"${packageName.show}.${TraitName(openApi).show}",
+          s"${packageName.show}.models._"
+        ) ++ sumTypes(openApi).map(x => s"$x._")).map(PackageName.apply) ->
+          openApi
+      )
     }
 
   val listEncoderPrinter: Printer[Unit] = κ(
@@ -126,21 +125,20 @@ object print {
       κ("case response if response.status.code == ") *< string >* κ(" => "),
       κ("response.as[") *< string >* κ("]"),
       κ(".map(x => ") *< coproductIf(string >* κ("(x)") >|< κ("x")) >* κ(".asLeft)")
-    ).contramapN {
-      case (operationId, status, (r, n)) =>
-        val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
-        val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
+    ).contramapN { case (operationId, status, (r, n)) =>
+      val (tpe, anonymousType, _) = statusTypesAndSchemas[T](operationId, r)
+      val responseTpe             = anonymousType.getOrElse(responseOrType.print(r))
+      (
+        status,
+        responseTpe,
         (
-          status,
-          responseTpe,
-          (
-            TypeAliasErrorResponse(operationId).show,
-            anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
-              ().asRight
-            ),
-            n
-          )
+          TypeAliasErrorResponse(operationId).show,
+          anonymousType.fold[Either[String, Unit]](if (tpe === responseTpe) ().asRight else tpe.asLeft)(_ =>
+            ().asRight
+          ),
+          n
         )
+      )
     }
 
   def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](implicit
@@ -149,10 +147,9 @@ object print {
     (
       κ("case default => default.as[") *< string >* κ("]"),
       κ(".map(x => ") *< coproductIf(string >* κ("(default.status.code, x)")) >* κ(".asLeft)")
-    ).contramapN {
-      case (operationId, (x, n)) =>
-        val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
-        (innerTpe, (TypeAliasErrorResponse(operationId).show, tpe, n))
+    ).contramapN { case (operationId, (x, n)) =>
+      val (tpe, innerTpe, _) = defaultTypesAndSchemas(operationId, x)
+      (innerTpe, (TypeAliasErrorResponse(operationId).show, tpe, n))
     }
 
   def responseImpl[T: Basis[JsonSchemaF, ?]](implicit
@@ -165,12 +162,12 @@ object print {
     }
 
   private def queryParametersFrom[T]: Http.Operation[T] => List[Parameter.Query[T]] =
-    _.parameters.collect {
-      case x: Parameter.Query[T] => x
+    _.parameters.collect { case x: Parameter.Query[T] =>
+      x
     }
   private def headerParametersFrom[T]: Http.Operation[T] => List[Parameter.Header[T]] =
-    _.parameters.collect {
-      case x: Parameter.Header[T] => x
+    _.parameters.collect { case x: Parameter.Header[T] =>
+      x
     }
 
   def requestImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =

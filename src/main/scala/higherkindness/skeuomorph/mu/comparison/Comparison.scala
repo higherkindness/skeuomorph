@@ -140,11 +140,10 @@ object Comparison extends ComparisonInstances {
     case AlignUnionMembers(res, rep) =>
       rep(
         res
-          .map {
-            case (p, results) =>
-              results
-                .find(Result.isMatch)
-                .getOrElse(Result.mismatch(UnionMemberRemoved(p)))
+          .map { case (p, results) =>
+            results
+              .find(Result.isMatch)
+              .getOrElse(Result.mismatch(UnionMemberRemoved(p)))
           }
           .toList
           .combineAll
@@ -170,10 +169,13 @@ object Comparison extends ComparisonInstances {
         case (TProtobufInt(_, _), TProtobufInt(_, _))                                                       => End(Result.mismatch(Different(path)))
         case (TBoolean(), TBoolean())                                                                       => same
         case (TString(), TString())                                                                         => same
-        case (TByteArray(), TByteArray())                                                                   => same
-        case (TNamedType(p1, a), TNamedType(p2, b)) if p1 === p2 && a === b                                 => same
-        case (TOption(a), TOption(b))                                                                       => Compare((path, a.some, b.some))
-        case (TList(a), TList(b))                                                                           => Compare((path / Items, a.some, b.some))
+        case (TByteArray(Length.Arbitrary), TByteArray(Length.Arbitrary))                                   => same
+        case (TByteArray(Length.Fixed(n, ns, l)), TByteArray(Length.Fixed(n2, ns2, l2)))
+            if n === n2 && ns === ns2 && l === l2 =>
+          same
+        case (TNamedType(p1, a), TNamedType(p2, b)) if p1 === p2 && a === b => same
+        case (TOption(a), TOption(b))                                       => Compare((path, a.some, b.some))
+        case (TList(a), TList(b))                                           => Compare((path / Items, a.some, b.some))
         // According to the spec, Avro ignores the keys' schemas when resolving map schemas
         case (TMap(_, a), TMap(_, b))     => Compare((path / Values, a.some, b.some))
         case (TRequired(a), TRequired(b)) => Compare((path, a.some, b.some))
@@ -186,17 +188,16 @@ object Comparison extends ComparisonInstances {
         case (TCoproduct(i), TCoproduct(i2)) =>
           AlignUnionMembers(
             i.zipWithIndex
-              .map {
-                case (item, idx) =>
-                  path / Alternative(idx) -> (List(item.some), i2.toList.map(_.some)).tupled.map(p =>
-                    (path / Alternative(idx), p._1, p._2)
-                  )
+              .map { case (item, idx) =>
+                path / Alternative(idx) -> (List(item.some), i2.toList.map(_.some)).tupled.map(p =>
+                  (path / Alternative(idx), p._1, p._2)
+                )
               }
               .toList
               .toMap
           )
         case (TSum(n, f), TSum(n2, f2)) if n === n2 && f.forall(f2.toSet) => same
-        case (TProduct(n, f, np, nc), TProduct(n2, f2, np2, nc2)) if n === n2 =>
+        case (TProduct(n, ns, f, np, nc), TProduct(n2, ns2, f2, np2, nc2)) if n === n2 && ns === ns2 =>
           val fields           = zipFields(path / Name(n), f, f2)
           val nestedProducts   = zipLists(path, np, np2, _ => Name(n))
           val nestedCoproducts = zipLists(path, nc, nc2, _ => Name(n))
@@ -209,8 +210,8 @@ object Comparison extends ComparisonInstances {
         case (_: TInt[_], TFloat() | TDouble()) | (TFloat(), TDouble()) =>
           End(Match(path, NumericWidening(writer, reader)))
 
-        // String and Byte arrays are considered compatible
-        case (TByteArray(), TString()) | (TString(), TByteArray()) =>
+        // String and arbitrary Byte arrays are considered compatible
+        case (TByteArray(Length.Arbitrary), TString()) | (TString(), TByteArray(Length.Arbitrary)) =>
           End(Match(path, StringConversion(writer, reader)))
 
         // Promotions
@@ -260,8 +261,8 @@ object Comparison extends ComparisonInstances {
   private def zipLists[T](path: Path, l1: List[T], l2: List[T], pathElem: Int => PathElement): List[Context[T]] = {
     val l1s = l1.toStream.map(_.some) ++ Stream.continually(None)
     val l2s = l2.toStream.map(_.some) ++ Stream.continually(None)
-    l1s.zip(l2s).takeWhile((None, None) != _).toList.zipWithIndex.map {
-      case (p, i) => (path / pathElem(i), p._1, p._2)
+    l1s.zip(l2s).takeWhile((None, None) != _).toList.zipWithIndex.map { case (p, i) =>
+      (path / pathElem(i), p._1, p._2)
     }
   }
 

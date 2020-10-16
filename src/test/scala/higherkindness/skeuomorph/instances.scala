@@ -29,7 +29,6 @@ import protobuf._
 import openapi._
 import openapi.schema.OpenApi
 import higherkindness.droste._
-
 import scala.collection.JavaConverters._
 
 object instances {
@@ -72,9 +71,8 @@ object instances {
       Gen.nonEmptyContainerOf[Set, String](nonEmptyString).map(_.toList) flatMap { l: List[String] =>
         l.traverse(field)
       }
-    ).mapN {
-      case (name, doc, namespace, fields) =>
-        Schema.createRecord(name, doc, namespace, false, fields.asJava)
+    ).mapN { case (name, doc, namespace, fields) =>
+      Schema.createRecord(name, doc, namespace, false, fields.asJava)
     }
 
     Gen.oneOf(primitives, arrayOrMap, union, record)
@@ -86,7 +84,7 @@ object instances {
         List(
           MuF.TString[T](),
           MuF.TBoolean[T](),
-          MuF.TByteArray[T](),
+          MuF.TByteArray[T](MuF.Length.Arbitrary),
           MuF.TDouble[T](),
           MuF.TFloat[T](),
           MuF.int[T](),
@@ -114,6 +112,15 @@ object instances {
         Gen.lzy(T.arbitrary),
         Gen.posNum[Int].map(i => Some(List(i)))
       ).mapN(MuF.Field.apply)
+    def lengthGen: Gen[MuF.Length] = {
+      val fixedGen = for {
+        posInt    <- Gen.posNum[Int]
+        name      <- Gen.alphaStr
+        namespace <- Gen.option(Gen.alphaStr)
+      } yield MuF.Length.Fixed(name, namespace, posInt)
+
+      Gen.oneOf(MuF.Length.Arbitrary.pure[Gen], fixedGen)
+    }
 
     Arbitrary(
       Gen.oneOf(
@@ -124,7 +131,7 @@ object instances {
         MuF.long[T]().pure[Gen],
         MuF.boolean[T]().pure[Gen],
         MuF.string[T]().pure[Gen],
-        MuF.byteArray[T]().pure[Gen],
+        lengthGen.map(l => MuF.byteArray[T](l)),
         (Gen.listOf(nonEmptyString), nonEmptyString) mapN MuF.namedType[T],
         T.arbitrary map MuF.option[T],
         (T.arbitrary, T.arbitrary) mapN { (a, b) => MuF.either(a, b) },
@@ -136,10 +143,11 @@ object instances {
         Gen.nonEmptyListOf(T.arbitrary) map { l => MuF.coproduct[T](NonEmptyList.fromListUnsafe(l)) },
         (
           nonEmptyString,
+          Gen.option(nonEmptyString),
           Gen.nonEmptyListOf(Gen.lzy(fieldGen)),
           Gen.listOfN(1, T.arbitrary),
           Gen.listOfN(1, T.arbitrary)
-        ).mapN((n, f, p, c) => MuF.product(n, f, p, c))
+        ).mapN((n, ns, f, p, c) => MuF.product(n, ns, f, p, c))
       )
     )
   }

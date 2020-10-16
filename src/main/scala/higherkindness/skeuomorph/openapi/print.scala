@@ -66,12 +66,11 @@ object print {
               name,
               properties
                 .map(x => x.name -> Tpe[T](x.tpe))
-                .map {
-                  case (name, tpe) =>
-                    if (required.contains(name))
-                      name -> tpe
-                    else
-                      name -> tpe.copy(required = false)
+                .map { case (name, tpe) =>
+                  if (required.contains(name))
+                    name -> tpe
+                  else
+                    name -> tpe.copy(required = false)
                 }
             )
           )
@@ -215,14 +214,13 @@ object print {
 
   private def sealedTraitDef(implicit codecs: Printer[Codecs]): Printer[(String, List[String])] =
     divBy(κ("sealed trait ") *< string, newLine, objectDef(sealedTraitCompanionObjectDef))
-      .contramap {
-        case (name, fields) =>
-          (name, ((name, none), List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
+      .contramap { case (name, fields) =>
+        (name, ((name, none), List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
       }
 
   def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
-    (κ("final case class ") *< string, κ("(") *< sepBy(argumentDef[T], ", ") >* κ(")")).contramapN {
-      case (x, y) => x -> y.map { case (x, y) => VarWithType(Var(x), y) }
+    (κ("final case class ") *< string, κ("(") *< sepBy(argumentDef[T], ", ") >* κ(")")).contramapN { case (x, y) =>
+      x -> y.map { case (x, y) => VarWithType(Var(x), y) }
     }
 
   def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](implicit
@@ -284,6 +282,6 @@ object print {
   def duplicate[A, B](pair: (A, B)): ((A, A), (B, B))      = (pair._1 -> pair._1, pair._2 -> pair._2)
   def second[A, B, C](pair: (A, B))(f: B => C): (A, C)     = (pair._1, f(pair._2))
   def flip[A, B](pair: (A, B)): (B, A)                     = (pair._2, pair._1)
-  def decapitalize(s: String)                              = if (s.isEmpty) s else s(0).toLower + s.substring(1)
+  def decapitalize(s: String): String                      = if (s.isEmpty) s else s"${s(0).toLower}${s.substring(1)}"
 
 }

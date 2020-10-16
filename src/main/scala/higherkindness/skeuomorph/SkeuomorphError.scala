@@ -34,3 +34,13 @@ case class ProtobufNativeException(originalError: String) extends SkeuomorphErro
   override val message            = s"Failed to transform into Native descriptors with error: $originalError"
   override def getMessage: String = message
 }
+
+case class UnsupportedResponseTypeException(originalError: String) extends SkeuomorphError {
+  override val message            = s"Encountered an unsupported response type: ${originalError}"
+  override def getMessage: String = message
+}
+
+case class UnsupportedRequestTypeException(originalError: String) extends SkeuomorphError {
+  override val message            = s"Encountered an unsupported request type: ${originalError}"
+  override def getMessage: String = message
+}
