@@ -58,7 +58,7 @@ lazy val commonSettings = Seq(
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
     "org.apache.avro"       % "avro"              % "1.10.0",
     "com.github.os72"       % "protoc-jar"        % "3.11.4",
-    "com.google.protobuf"   % "protobuf-java"     % "3.12.2",
+    "com.google.protobuf"   % "protobuf-java"     % "3.12.4",
     "io.circe"             %% "circe-core"        % "0.13.0",
     "io.circe"             %% "circe-parser"      % "0.13.0",
     "io.circe"             %% "circe-yaml"        % "0.13.1",
