@@ -461,7 +461,7 @@ object ParseProto {
     // Note that this method checks that the name of the message matches against the type name that is
     // extracted from the fully-qualified type name via `getUniqueSuffixFromTypeName`.  More context
     // on why that happens is in the method signature for `getUniqueSuffixFromTypeName`.
-    allMessages(files).find(_.fullName.contains(getUniqueSuffixFromTypeName(name)))
+    allMessages(files).find(_.fullName.endsWith(getUniqueSuffixFromTypeName(name)))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
@@ -478,8 +478,10 @@ object ParseProto {
       val parentMessageNames = m.parentMessageNames :+ m.name
       NamedDescriptor(m.pkg, m.enclosingProto, parentMessageNames, e.getName, e)
     }
-
-    (allTopLevel ++ allNestedInsideMessages).find(_.fullName.contains(getUniqueSuffixFromTypeName(name)))
+    // Note that this method, along with the `findMessage`, checks that the name of the message matches against the type name that is
+    // extracted from the fully-qualified type name via `getUniqueSuffixFromTypeName`.  More context
+    // on why that happens is in the method signature for `getUniqueSuffixFromTypeName`.
+    (allTopLevel ++ allNestedInsideMessages).find(_.fullName.endsWith(getUniqueSuffixFromTypeName(name)))
   }
 
   implicit class LabelOps(self: Label) {
