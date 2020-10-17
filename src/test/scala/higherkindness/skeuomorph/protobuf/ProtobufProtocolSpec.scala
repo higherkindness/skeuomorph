@@ -47,7 +47,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   def is = s2"""
   Protobuf Protocol
 
-   It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
+  It should be possible to generate Scala code for a Mu protocol from a Proto file. $codegenProtobufProtocol
 
   It should generate correct Scala code for a subset of the opencensus Protobuf protocol's models. $codegenOpencensus
 
