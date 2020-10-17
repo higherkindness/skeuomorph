@@ -61,13 +61,10 @@ object Protocol {
           request = OperationType(toMu(msg.request), false),
           response = OperationType(toMu(msg.response), false)
         )
-
-    Protocol(
-      name = None,
-      pkg = proto.namespace,
-      options = Nil,
-      declarations = proto.types.map(toMu),
-      services = List(
+    val services = if (proto.messages.isEmpty) {
+      Nil
+    } else {
+      List(
         Service(
           proto.name,
           SerializationType.Avro,
@@ -76,7 +73,15 @@ object Protocol {
           useIdiomaticEndpoints,
           proto.messages.map(toOperation)
         )
-      ),
+      )
+    }
+
+    Protocol(
+      name = None,
+      pkg = proto.namespace,
+      options = Nil,
+      declarations = proto.types.map(toMu),
+      services = services,
       imports = Nil
     )
   }

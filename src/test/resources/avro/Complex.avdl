@@ -1,0 +1,10 @@
+@namespace("foo.bar")
+protocol Complex {
+  enum Enum { ONE, TWO }
+  record Complex {
+    Enum e;
+    array<string> as;
+    map<string> ms;
+    union { string, int, long } sil;
+  }
+}

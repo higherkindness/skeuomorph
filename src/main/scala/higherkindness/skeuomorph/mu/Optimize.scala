@@ -44,15 +44,17 @@ object Optimize {
    */
   def nestedNamedTypesTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] =
     Trans {
-      case TProduct(name, fields, nestedProducts, nestedCoproducts) =>
+      case TProduct(name, namespace, fields, nestedProducts, nestedCoproducts) =>
         def nameTypes(f: Field[T]): Field[T] = f.copy(tpe = namedTypes(T)(f.tpe))
         TProduct[T](
           name,
+          namespace,
           fields.map(nameTypes),
           nestedProducts,
           nestedCoproducts
         )
-      case other => other
+      case other =>
+        other
     }
 
   def nestedOptionInCoproductsTrans[T](implicit T: Basis[MuF, T]): Trans[MuF, MuF, T] =
@@ -69,9 +71,10 @@ object Optimize {
 
   def namedTypesTrans[T]: Trans[MuF, MuF, T] =
     Trans {
-      case TProduct(name, _, _, _) => TNamedType[T](Nil, name)
-      case TSum(name, _)           => TNamedType[T](Nil, name)
-      case other                   => other
+      case TProduct(name, ns, _, _, _)        => TNamedType[T](ns.map(n => n.split('.').toList).getOrElse(Nil), name)
+      case TSum(name, _)                      => TNamedType[T](Nil, name)
+      case TByteArray(Length.Fixed(n, ns, _)) => TNamedType(ns.map(_.split('.').toList).getOrElse(Nil) :+ n, n)
+      case other                              => other
     }
 
   def namedTypes[T: Basis[MuF, ?]]: T => T              = scheme.cata(namedTypesTrans.algebra)

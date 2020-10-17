@@ -1,0 +1,8 @@
+package com.acme
+import _root_.higherkindness.mu.rpc.protocol._
+final case class HelloRequest(arg1: _root_.java.lang.String, arg2: _root_.scala.Option[_root_.java.lang.String], arg3: _root_.scala.List[_root_.java.lang.String])
+final case class HelloResponse(arg1: _root_.java.lang.String, arg2: _root_.scala.Option[_root_.java.lang.String], arg3: _root_.scala.List[_root_.java.lang.String])
+@service({{{serviceParams}}}) trait MyGreeterService[F[_]] {
+  def sayHelloAvro(req: _root_.com.acme.HelloRequest): F[_root_.com.acme.HelloResponse]
+  def sayNothingAvro(req: _root_.higherkindness.mu.rpc.protocol.Empty.type): F[_root_.higherkindness.mu.rpc.protocol.Empty.type]
+}
