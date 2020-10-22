@@ -57,16 +57,18 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   The generated Scala code should use the `java_package` option when `package` isn't present in the file but the `java_package` is. $codeGenProtobufOnlyJavaPackage
 
-  The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufJavaPackage
+  The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufBothPackages
+
+  The generated Scala code should handle enums when and use the `java_package` when both `package` and `java_package` are present in a file. $codeGenProtobufEnumBothPackages
 
   The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
 
   The generated Scala code should handle enums when `package` is present in a file. $codeGenProtobufEnumWithPackage
 
-  The generated Scala code should handle enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumWithNoPackage
+  The generated Scala code should handle enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumNoPackage
   """
 
-  def codegenProtobufProtocol =
+  private def codegenProtobufProtocol =
     prop { (compressionType: CompressionType, useIdiomaticEndpoints: Boolean) =>
       val toMuProtocol: protobuf.Protocol[Mu[ProtobufF]] => mu.Protocol[Mu[MuF]] = { p =>
         mu.Protocol.fromProtobufProto(compressionType, useIdiomaticEndpoints)(p)
@@ -99,7 +101,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
       """.stripMargin
     }
 
-  def codegenExpectation(
+  private def codegenExpectation(
       compressionType: CompressionType,
       namespace: Option[String],
       useIdiomaticEndpoints: Boolean
@@ -231,7 +233,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     check(opencensusProtocol, opencensusExpectation)
   }
 
-  val opencensusExpectation = s"""
+  private val opencensusExpectation = s"""
     |package opencensus.proto.trace.v1
     |
     |import _root_.higherkindness.mu.rpc.protocol._
@@ -357,7 +359,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |  )
     |}""".stripMargin
 
-  def codegenTaggedIntegers = {
+  private def codegenTaggedIntegers = {
     val integerTypesProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models"
       val source = ProtoSource(s"integer_types.proto", path, importRoot)
@@ -367,7 +369,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     check(integerTypesProtocol, taggedIntegersExpectation)
   }
 
-  val taggedIntegersExpectation = s"""
+  private val taggedIntegersExpectation = s"""
     |package com.acme
     |
     |import _root_.higherkindness.mu.rpc.protocol._
@@ -398,7 +400,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     check(googleApiProtocol, googleApiExpectation)
   }
 
-  val googleApiExpectation = s"""
+  private val googleApiExpectation = s"""
     |package com.google.`type`
     |import _root_.higherkindness.mu.rpc.protocol._
     |object date { final case class Date(@_root_.pbdirect.pbIndex(1) year: _root_.scala.Int, @_root_.pbdirect.pbIndex(2) month: _root_.scala.Int, @_root_.pbdirect.pbIndex(3) day: _root_.scala.Int) }
@@ -414,7 +416,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     check(optionalPackage, protobufOnlyJavaPackage)
   }
 
-  val protobufOnlyJavaPackage =
+  private val protobufOnlyJavaPackage =
     s"""
        |package my_package
        |import _root_.higherkindness.mu.rpc.protocol._
@@ -437,7 +439,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     check(optionalPackage, protobufNoJavaPackage)
   }
 
-  val protobufNoJavaPackage =
+  private val protobufNoJavaPackage =
     s"""
     |package test_no_package
     |import _root_.higherkindness.mu.rpc.protocol._
@@ -450,17 +452,17 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |}
     |""".stripMargin
 
-  private def codeGenProtobufJavaPackage = {
+  private def codeGenProtobufBothPackages = {
     val javaPackageAndRegularPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_java_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
-    check(javaPackageAndRegularPackage, protobufJavaPackageExpectation)
+    check(javaPackageAndRegularPackage, protobufJavaPackageAndRegularPackageExpectation)
   }
 
-  val protobufJavaPackageExpectation =
+  private val protobufJavaPackageAndRegularPackageExpectation =
     s"""
     |package my_package
     |import _root_.higherkindness.mu.rpc.protocol._
@@ -483,7 +485,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     check(enumWithPackage, protobufEnumWithPackageExpectation)
   }
 
-  val protobufEnumWithPackageExpectation =
+  private val protobufEnumWithPackageExpectation =
     s"""
     |package example
     |import _root_.higherkindness.mu.rpc.protocol._
@@ -498,22 +500,47 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |}
     |""".stripMargin
 
-  private def codeGenProtobufEnumWithNoPackage = {
+  private def codeGenProtobufEnumNoPackage = {
     val enumWithNoPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
       val source = ProtoSource(s"test_enum_no_package.proto", path, importRoot)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
-    check(enumWithNoPackage, protobufEnumWithoutPackageExpectation)
+    check(enumWithNoPackage, protobufEnumNoPackageExpectation)
   }
 
-  val protobufEnumWithoutPackageExpectation =
+  private val protobufEnumNoPackageExpectation =
     s"""
     |package test_enum_no_package
     |import _root_.higherkindness.mu.rpc.protocol._
     |object test_enum_no_package {
     |  final case class Example(@_root_.pbdirect.pbIndex(1) enum: _root_.scala.Option[_root_.test_enum_no_package.test_enum_no_package.ExampleEnum])
+    |  sealed abstract class ExampleEnum(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+    |  object ExampleEnum extends _root_.enumeratum.values.IntEnum[ExampleEnum] {
+    |    case object Option1 extends ExampleEnum(0)
+    |    case object Option2 extends ExampleEnum(1)
+    |    val values = findValues
+    |  }
+    |}
+    |""".stripMargin
+
+  private def codeGenProtobufEnumBothPackages = {
+    val enumWithJavaPackageAndRegularPackage: protobuf.Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/packages"
+      val source = ProtoSource(s"test_enum_java_package.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(enumWithJavaPackageAndRegularPackage, protobufEnumBothPackagesExpectation)
+  }
+
+  private val protobufEnumBothPackagesExpectation =
+    s"""
+    |package better_example
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object test_enum_java_package {
+    |  final case class Example(@_root_.pbdirect.pbIndex(1) enum: _root_.scala.Option[_root_.better_example.test_enum_java_package.ExampleEnum])
     |  sealed abstract class ExampleEnum(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
     |  object ExampleEnum extends _root_.enumeratum.values.IntEnum[ExampleEnum] {
     |    case object Option1 extends ExampleEnum(0)

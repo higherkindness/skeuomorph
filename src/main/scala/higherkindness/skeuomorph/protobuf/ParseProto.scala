@@ -47,14 +47,16 @@ object ParseProto {
   )
 
   final case class NamedDescriptor[A](
-      pkg: String,
+      fqn: String,
+      packageName: String,
+      javaPackage: String,
       enclosingProto: String,
       parentMessageNames: List[String],
       name: String,
       desc: A
   ) {
 
-    val pkgParts = pkg.split('.').toList
+    private val fqnParts = fqn.split('.').toList
 
     /*
      * This is the full name that other protobuf messages will
@@ -67,14 +69,14 @@ object ParseProto {
      * e.g. com.acme.book.Book
      */
     def fullName: String =
-      List(pkgParts, parentMessageNames, List(name)).flatten.mkString(".", ".", "")
+      List(fqnParts, parentMessageNames, List(name)).flatten.mkString(".", ".", "")
 
     /*
      * The path to the Scala class that corresponds to this type.
      * e.g. com.acme.book
      */
     def scalaPrefix: List[String] =
-      List(pkgParts, List(enclosingProto), parentMessageNames).flatten
+      List(fqnParts, List(enclosingProto), parentMessageNames).flatten
 
   }
 
@@ -121,7 +123,7 @@ object ParseProto {
     }
   }
 
-  private def getPackageOrJavaPackage(file: FileDescriptorProto): String = {
+  private def namePackage(file: FileDescriptorProto): String = {
 
     val javaPackage: String = file.getOptions.getJavaPackage
 
@@ -138,24 +140,6 @@ object ParseProto {
 
   }
 
-  private def getUniqueSuffixFromTypeName(typeName: String): String =
-    // When comparing the types, we only need to know the name of the type, not the
-    // fully-qualified name (since we use the value of the package passed into the protoc to create
-    // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
-    // different behavior depending on whether we access a type name from a file with a `package` header
-    // (which will return the fully-qualified name) vs accessing a type name from a file with a `java_package`
-    // header (which will just return the name of the type).  This method trims the type name from a fully-
-    // qualified name if necessary, which provides consistent behavior when comparing the name of a message
-    // to the name of a type.
-    //
-    // In addition, the reason we count '.' characters is because the value of the FQN will be different
-    // depending on whether the fullName was generated from a protobuf file that used the `package` option,
-    // vs a protobuf file that used the `java_package`, or simply had an empty option.  Therefore, we need
-    // to parse exactly as many dots as the FQN so that we extract exactly as much FQN as we need to use
-    // the type name appropriately.  A more involved example explaining why we do this can be found here:
-    // https://github.com/higherkindness/skeuomorph/pull/339#discussion_r496969857
-    typeName.substring(typeName.indexOf(".", typeName.count(_ == '.')) + 1)
-
   def fromProto[A](
       descriptorFileName: String,
       files: List[FileDescriptorProto]
@@ -170,7 +154,7 @@ object ParseProto {
 
         Protocol[A](
           fileName,
-          getPackageOrJavaPackage(file),
+          namePackage(file),
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
@@ -214,7 +198,7 @@ object ParseProto {
    * `value`. A better explanation is available in the protobuf docs:
    * https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility
    *
-   * The protoc tool generates types for these 'psuedo-message' pairs, but we
+   * The protoc tool generates types for these 'pseudo-message' pairs, but we
    * don't care about them (we don't want to generate code for them) so we want
    * to filter them out when collecting message types.
    */
@@ -444,7 +428,9 @@ object ParseProto {
 
       def rec(m: DescriptorProto, parents: List[String]): List[NamedDescriptor[DescriptorProto]] =
         NamedDescriptor(
-          getPackageOrJavaPackage(f),
+          namePackage(f),
+          f.getPackage,
+          f.getOptions.getJavaPackage,
           enclosingProto,
           parents,
           m.getName,
@@ -457,17 +443,22 @@ object ParseProto {
     }
   }
 
+  private def matchOnPackageParameters[A](name: String, file: NamedDescriptor[A]) = {
+    if (file.javaPackage.isEmpty) {
+      file.fullName.endsWith(name)
+    } else if (file.fullName.contains(file.javaPackage)) {
+      file.fullName.replace(file.javaPackage, file.packageName).endsWith(name)
+    } else false
+  }
+
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    // Note that this method checks that the name of the message matches against the type name that is
-    // extracted from the fully-qualified type name via `getUniqueSuffixFromTypeName`.  More context
-    // on why that happens is in the method signature for `getUniqueSuffixFromTypeName`.
-    allMessages(files).find(_.fullName.endsWith(getUniqueSuffixFromTypeName(name)))
+    allMessages(files).find(file => matchOnPackageParameters(name, file))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
       val enclosingProto = formatName(f.getName)
       f.getEnumTypeList.asScala.toList.map(e =>
-        NamedDescriptor(getPackageOrJavaPackage(f), enclosingProto, Nil, e.getName, e)
+        NamedDescriptor(namePackage(f), f.getPackage, f.getOptions.getJavaPackage, enclosingProto, Nil, e.getName, e)
       )
     }
 
@@ -476,12 +467,9 @@ object ParseProto {
       e <- m.desc.getEnumTypeList.asScala
     } yield {
       val parentMessageNames = m.parentMessageNames :+ m.name
-      NamedDescriptor(m.pkg, m.enclosingProto, parentMessageNames, e.getName, e)
+      NamedDescriptor(m.fqn, m.packageName, m.javaPackage, m.enclosingProto, parentMessageNames, e.getName, e)
     }
-    // Note that this method, along with the `findMessage`, checks that the name of the message matches against the type name that is
-    // extracted from the fully-qualified type name via `getUniqueSuffixFromTypeName`.  More context
-    // on why that happens is in the method signature for `getUniqueSuffixFromTypeName`.
-    (allTopLevel ++ allNestedInsideMessages).find(_.fullName.endsWith(getUniqueSuffixFromTypeName(name)))
+    (allTopLevel ++ allNestedInsideMessages).find(file => matchOnPackageParameters(name, file))
   }
 
   implicit class LabelOps(self: Label) {
