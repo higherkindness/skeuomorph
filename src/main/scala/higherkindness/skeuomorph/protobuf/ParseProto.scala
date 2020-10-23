@@ -467,7 +467,7 @@ object ParseProto {
       e <- m.desc.getEnumTypeList.asScala
     } yield {
       val parentMessageNames = m.parentMessageNames :+ m.name
-      NamedDescriptor(m.fqn, m.packageName, m.javaPackage, m.enclosingProto, parentMessageNames, e.getName, e)
+      m.copy(parentMessageNames = parentMessageNames, name = e.getName, desc = e)
     }
     (allTopLevel ++ allNestedInsideMessages).find(file => matchOnPackageParameters(name, file))
   }
