@@ -59,11 +59,13 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufBothPackages
 
-  The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
+  The generated Scala code should use the filename as the package name when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
 
-  The generated Scala code should handle enums when `package` is present in a file. $codeGenProtobufEnumWithPackage
+  The generated Scala code should handle enums when `package` is not present in a file. $codeGenProtobufEnumWithPackage
 
-  The generated Scala code should handle enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumNoPackage
+  The generated Scala code should use the `java_package` option for enums when `package` is present in a file. $codeGenProtobufEnumOnlyJavaPackage
+
+  The generated Scala code should use the filename for enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumNoPackage
 
   The generated Scala code should handle enums when and use the `java_package` when both `package` and `java_package` are present in a file. $codeGenProtobufEnumBothPackages
   """
@@ -491,6 +493,31 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
     |import _root_.higherkindness.mu.rpc.protocol._
     |object test_enum_package {
     |  final case class Example(@_root_.pbdirect.pbIndex(1) enum: _root_.scala.Option[_root_.example.test_enum_package.ExampleEnum])
+    |  sealed abstract class ExampleEnum(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
+    |  object ExampleEnum extends _root_.enumeratum.values.IntEnum[ExampleEnum] {
+    |    case object Option1 extends ExampleEnum(0)
+    |    case object Option2 extends ExampleEnum(1)
+    |    val values = findValues
+    |  }
+    |}
+    |""".stripMargin
+
+  private def codeGenProtobufEnumOnlyJavaPackage = {
+    val enumOnlyJavaPackage: protobuf.Protocol[Mu[ProtobufF]] = {
+      val path   = workingDirectory + s"$testDirectory/packages"
+      val source = ProtoSource(s"test_enum_only_java_package.proto", path, importRoot)
+      parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
+    }
+
+    check(enumOnlyJavaPackage, protobufEnumOnlyJavaPackageExpectation)
+  }
+
+  private val protobufEnumOnlyJavaPackageExpectation =
+    s"""
+    |package better_example
+    |import _root_.higherkindness.mu.rpc.protocol._
+    |object test_enum_only_java_package {
+    |  final case class Example(@_root_.pbdirect.pbIndex(1) enum: _root_.scala.Option[_root_.better_example.test_enum_only_java_package.ExampleEnum])
     |  sealed abstract class ExampleEnum(val value: _root_.scala.Int) extends _root_.enumeratum.values.IntEnumEntry
     |  object ExampleEnum extends _root_.enumeratum.values.IntEnum[ExampleEnum] {
     |    case object Option1 extends ExampleEnum(0)

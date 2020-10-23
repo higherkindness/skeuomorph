@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+option java_package="better_example";
+
+message Example {
+    ExampleEnum enum = 1;
+}
+
+enum ExampleEnum {
+    Option1 = 0;
+    Option2 = 1;
+}
