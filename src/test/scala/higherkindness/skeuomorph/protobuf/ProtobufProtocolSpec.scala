@@ -59,13 +59,13 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
   The generated Scala code should use the `java_package` option when both `package` and `java_package` are present in a file. $codeGenProtobufBothPackages
 
-  The generated Scala code should handle enums when and use the `java_package` when both `package` and `java_package` are present in a file. $codeGenProtobufEnumBothPackages
-
   The generated Scala code should use the filename as a package option when neither `package` nor `java_package` are present in a file. $codegenProtobufNoPackage
 
   The generated Scala code should handle enums when `package` is present in a file. $codeGenProtobufEnumWithPackage
 
   The generated Scala code should handle enums when neither `package` nor `java_package` in a file. $codeGenProtobufEnumNoPackage
+
+  The generated Scala code should handle enums when and use the `java_package` when both `package` and `java_package` are present in a file. $codeGenProtobufEnumBothPackages
   """
 
   private def codegenProtobufProtocol =

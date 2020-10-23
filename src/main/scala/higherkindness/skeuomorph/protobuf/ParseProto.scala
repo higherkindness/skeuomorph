@@ -47,8 +47,8 @@ object ParseProto {
   )
 
   final case class NamedDescriptor[A](
-      fqn: String,
-      packageName: String,
+      scalaPackage: String,
+      filePackage: String,
       javaPackage: String,
       enclosingProto: String,
       parentMessageNames: List[String],
@@ -56,10 +56,8 @@ object ParseProto {
       desc: A
   ) {
 
-    private val fqnParts = fqn.split('.').toList
-
     /*
-     * This is the full name that other protobuf messages will
+     * This is the full protobuf name that other protobuf messages will
      * use to reference this type.
      * e.g. .com.acme.Book
      *
@@ -68,15 +66,26 @@ object ParseProto {
      * with the name of the .proto file,
      * e.g. com.acme.book.Book
      */
-    def fullName: String =
-      List(fqnParts, parentMessageNames, List(name)).flatten.mkString(".", ".", "")
+    val fullProtoName: String =
+      (List(".", filePackage) ++ parentMessageNames :+ name).mkString(".")
 
     /*
      * The path to the Scala class that corresponds to this type.
      * e.g. com.acme.book
      */
-    def scalaPrefix: List[String] =
-      List(fqnParts, List(enclosingProto), parentMessageNames).flatten
+    val scalaPrefix: List[String] =
+      (scalaPackage.split('.').toList :+ enclosingProto) ++ parentMessageNames
+
+    /*
+     * This is the name of the file that we use when parsing types from the actual protobuf file.
+     * Depending on whether the file has a `java_package` or not, this name will either use the
+     * `package` or the `java_package` in order to match the types correctly (`field.getTypeName`
+     * returns inconsistent values for the package name when called on a protobuf file that has both
+     * a `java_package` and a `package`, so this approach makes sure that we always match with the correct
+     * value).
+     */
+    val fullName: String =
+      if (javaPackage.isEmpty) fullProtoName else fullProtoName.replace(javaPackage, filePackage)
 
   }
 
@@ -123,7 +132,7 @@ object ParseProto {
     }
   }
 
-  private def namePackage(file: FileDescriptorProto): String = {
+  private def scalaPackage(file: FileDescriptorProto): String = {
 
     val javaPackage: String = file.getOptions.getJavaPackage
 
@@ -154,7 +163,7 @@ object ParseProto {
 
         Protocol[A](
           fileName,
-          namePackage(file),
+          scalaPackage(file),
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
@@ -428,7 +437,7 @@ object ParseProto {
 
       def rec(m: DescriptorProto, parents: List[String]): List[NamedDescriptor[DescriptorProto]] =
         NamedDescriptor(
-          namePackage(f),
+          scalaPackage(f),
           f.getPackage,
           f.getOptions.getJavaPackage,
           enclosingProto,
@@ -443,22 +452,14 @@ object ParseProto {
     }
   }
 
-  private def matchOnPackageParameters[A](name: String, file: NamedDescriptor[A]) = {
-    if (file.javaPackage.isEmpty) {
-      file.fullName.endsWith(name)
-    } else if (file.fullName.contains(file.javaPackage)) {
-      file.fullName.replace(file.javaPackage, file.packageName).endsWith(name)
-    } else false
-  }
-
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    allMessages(files).find(file => matchOnPackageParameters(name, file))
+    allMessages(files).find(_.fullName.endsWith(name))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
       val enclosingProto = formatName(f.getName)
       f.getEnumTypeList.asScala.toList.map(e =>
-        NamedDescriptor(namePackage(f), f.getPackage, f.getOptions.getJavaPackage, enclosingProto, Nil, e.getName, e)
+        NamedDescriptor(scalaPackage(f), f.getPackage, f.getOptions.getJavaPackage, enclosingProto, Nil, e.getName, e)
       )
     }
 
@@ -469,7 +470,7 @@ object ParseProto {
       val parentMessageNames = m.parentMessageNames :+ m.name
       m.copy(parentMessageNames = parentMessageNames, name = e.getName, desc = e)
     }
-    (allTopLevel ++ allNestedInsideMessages).find(file => matchOnPackageParameters(name, file))
+    (allTopLevel ++ allNestedInsideMessages).find(_.fullName.endsWith(name))
   }
 
   implicit class LabelOps(self: Label) {
