@@ -49,7 +49,6 @@ object ParseProto {
   final case class NamedDescriptor[A](
       scalaPackage: String,
       filePackage: String,
-      javaPackage: String,
       enclosingProto: String,
       parentMessageNames: List[String],
       name: String,
@@ -75,17 +74,6 @@ object ParseProto {
      */
     val scalaPrefix: List[String] =
       (scalaPackage.split('.').toList :+ enclosingProto) ++ parentMessageNames
-
-    /*
-     * This is the name of the file that we use when parsing types from the actual protobuf file.
-     * Depending on whether the file has a `java_package` or not, this name will either use the
-     * `package` or the `java_package` in order to match the types correctly (`field.getTypeName`
-     * returns inconsistent values for the package name when called on a protobuf file that has both
-     * a `java_package` and a `package`, so this approach makes sure that we always match with the correct
-     * value).
-     */
-    val fullName: String =
-      if (javaPackage.isEmpty) fullProtoName else fullProtoName.replace(javaPackage, filePackage)
 
   }
 
@@ -439,7 +427,6 @@ object ParseProto {
         NamedDescriptor(
           scalaPackage(f),
           f.getPackage,
-          f.getOptions.getJavaPackage,
           enclosingProto,
           parents,
           m.getName,
@@ -453,13 +440,13 @@ object ParseProto {
   }
 
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    allMessages(files).find(_.fullName.endsWith(name))
+    allMessages(files).find(_.fullProtoName.endsWith(name))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
       val enclosingProto = formatName(f.getName)
       f.getEnumTypeList.asScala.toList.map(e =>
-        NamedDescriptor(scalaPackage(f), f.getPackage, f.getOptions.getJavaPackage, enclosingProto, Nil, e.getName, e)
+        NamedDescriptor(scalaPackage(f), f.getPackage, enclosingProto, Nil, e.getName, e)
       )
     }
 
@@ -470,7 +457,7 @@ object ParseProto {
       val parentMessageNames = m.parentMessageNames :+ m.name
       m.copy(parentMessageNames = parentMessageNames, name = e.getName, desc = e)
     }
-    (allTopLevel ++ allNestedInsideMessages).find(_.fullName.endsWith(name))
+    (allTopLevel ++ allNestedInsideMessages).find(_.fullProtoName.endsWith(name))
   }
 
   implicit class LabelOps(self: Label) {
