@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package example;
+
+message Example {
+    ExampleEnum enum = 1;
+}
+
+enum ExampleEnum {
+    Option1 = 0;
+    Option2 = 1;
+}

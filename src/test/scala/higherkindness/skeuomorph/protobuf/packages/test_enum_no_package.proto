@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+message Example {
+    ExampleEnum enum = 1;
+}
+
+enum ExampleEnum {
+    Option1 = 0;
+    Option2 = 1;
+}

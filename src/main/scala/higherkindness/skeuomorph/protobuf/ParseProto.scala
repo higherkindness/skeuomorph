@@ -47,17 +47,16 @@ object ParseProto {
   )
 
   final case class NamedDescriptor[A](
-      pkg: String,
+      scalaPackage: String,
+      filePackage: String,
       enclosingProto: String,
       parentMessageNames: List[String],
       name: String,
       desc: A
   ) {
 
-    val pkgParts = pkg.split('.').toList
-
     /*
-     * This is the full name that other protobuf messages will
+     * This is the full protobuf name that other protobuf messages will
      * use to reference this type.
      * e.g. .com.acme.Book
      *
@@ -66,15 +65,15 @@ object ParseProto {
      * with the name of the .proto file,
      * e.g. com.acme.book.Book
      */
-    def fullName: String =
-      List(pkgParts, parentMessageNames, List(name)).flatten.mkString(".", ".", "")
+    val fullProtoName: String =
+      (List(".", filePackage) ++ parentMessageNames :+ name).mkString(".")
 
     /*
      * The path to the Scala class that corresponds to this type.
      * e.g. com.acme.book
      */
-    def scalaPrefix: List[String] =
-      List(pkgParts, List(enclosingProto), parentMessageNames).flatten
+    val scalaPrefix: List[String] =
+      (scalaPackage.split('.').toList :+ enclosingProto) ++ parentMessageNames
 
   }
 
@@ -121,7 +120,7 @@ object ParseProto {
     }
   }
 
-  private def getPackageOrJavaPackage(file: FileDescriptorProto): String = {
+  private def scalaPackage(file: FileDescriptorProto): String = {
 
     val javaPackage: String = file.getOptions.getJavaPackage
 
@@ -138,17 +137,6 @@ object ParseProto {
 
   }
 
-  private def getTypeNameFromQualifiedName(fullName: String): String =
-    // When comparing the types, we only need to know the name of the type, not the
-    // fully-qualified name (since we use the value of the package passed into the protoc to create
-    // the TNamedType.  However, depending on how we access the type name via `getTypeName`, there is
-    // different behavior depending on whether we access a type name from a file with a `package` header
-    // (which will return the fully-qualified name) vs accessing a type name from a file with a `java_package`
-    // header (which will just return the name of the type).  This method trims the type name from a fully-
-    // qualified name if necessary, which provides consistent behavior when comparing the name of a message
-    // to the name of a type
-    fullName.substring(fullName.lastIndexOf(".") + 1)
-
   def fromProto[A](
       descriptorFileName: String,
       files: List[FileDescriptorProto]
@@ -163,7 +151,7 @@ object ParseProto {
 
         Protocol[A](
           fileName,
-          getPackageOrJavaPackage(file),
+          scalaPackage(file),
           Nil,
           messages ++ enums,
           file.getServiceList.asScala.toList.map(s => toService[A](s, files)),
@@ -207,7 +195,7 @@ object ParseProto {
    * `value`. A better explanation is available in the protobuf docs:
    * https://developers.google.com/protocol-buffers/docs/proto3#backwards-compatibility
    *
-   * The protoc tool generates types for these 'psuedo-message' pairs, but we
+   * The protoc tool generates types for these 'pseudo-message' pairs, but we
    * don't care about them (we don't want to generate code for them) so we want
    * to filter them out when collecting message types.
    */
@@ -437,7 +425,8 @@ object ParseProto {
 
       def rec(m: DescriptorProto, parents: List[String]): List[NamedDescriptor[DescriptorProto]] =
         NamedDescriptor(
-          getPackageOrJavaPackage(f),
+          scalaPackage(f),
+          f.getPackage,
           enclosingProto,
           parents,
           m.getName,
@@ -451,16 +440,13 @@ object ParseProto {
   }
 
   def findMessage(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[DescriptorProto]] =
-    // Note that this method checks that the name of the message matches against the type name that is
-    // extracted from the fully-qualified type name via `getTypeNameFromQualifiedName`.  More context
-    // on why that happens is in the method signature for `getTypeNameFromQualifiedName`.
-    allMessages(files).find(_.fullName.contains(getTypeNameFromQualifiedName(name)))
+    allMessages(files).find(_.fullProtoName.endsWith(name))
 
   def findEnum(name: String, files: List[FileDescriptorProto]): Option[NamedDescriptor[EnumDescriptorProto]] = {
     val allTopLevel: List[NamedDescriptor[EnumDescriptorProto]] = files.flatMap { f =>
       val enclosingProto = formatName(f.getName)
       f.getEnumTypeList.asScala.toList.map(e =>
-        NamedDescriptor(getPackageOrJavaPackage(f), enclosingProto, Nil, e.getName, e)
+        NamedDescriptor(scalaPackage(f), f.getPackage, enclosingProto, Nil, e.getName, e)
       )
     }
 
@@ -469,11 +455,9 @@ object ParseProto {
       e <- m.desc.getEnumTypeList.asScala
     } yield {
       val parentMessageNames = m.parentMessageNames :+ m.name
-      NamedDescriptor(m.pkg, m.enclosingProto, parentMessageNames, e.getName, e)
+      m.copy(parentMessageNames = parentMessageNames, name = e.getName, desc = e)
     }
-
-    (allTopLevel ++ allNestedInsideMessages)
-      .find(_.fullName === name)
+    (allTopLevel ++ allNestedInsideMessages).find(_.fullProtoName.endsWith(name))
   }
 
   implicit class LabelOps(self: Label) {
