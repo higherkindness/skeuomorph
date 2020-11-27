@@ -66,7 +66,7 @@ lazy val commonSettings = Seq(
     "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC22" % Test,
     "org.typelevel"        %% "cats-laws"         % "2.2.0"      % Test,
     "io.circe"             %% "circe-testing"     % "0.13.0"     % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.1"      % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.1.2"      % Test,
     "org.specs2"           %% "specs2-core"       % "4.10.5"     % Test,
     "org.specs2"           %% "specs2-scalacheck" % "4.10.5"     % Test,
     "org.scalacheck"       %% "scalacheck"        % "1.15.1"     % Test,
