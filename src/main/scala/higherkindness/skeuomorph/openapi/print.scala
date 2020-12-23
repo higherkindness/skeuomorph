@@ -33,7 +33,7 @@ object print {
   val schemasRegex    = """#/components/schemas/(.+)""".r
   val parametersRegex = """#/components/parameters/(.+)""".r
 
-  def schemaWithName[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
+  def schemaWithName[T: Basis[JsonSchemaF, *]](implicit codecs: Printer[Codecs]): Printer[(String, T)] =
     Printer {
       case (name, t) if isBasicType(t) => typeAliasDef(schema[T]()).print((ident(name), t, none))
       case (name, t) if isArray(t) =>
@@ -41,7 +41,7 @@ object print {
       case (name, t) => schema[T](ident(name).some).print(t)
     }
 
-  protected[openapi] def schema[T: Basis[JsonSchemaF, ?]](
+  protected[openapi] def schema[T: Basis[JsonSchemaF, *]](
       name: Option[String] = None
   )(implicit codecs: Printer[Codecs]): Printer[T] = {
     val listDef: Printer[String] = κ("List[") *< string >* κ("]")
@@ -87,7 +87,7 @@ object print {
     Printer.print(scheme.cata(algebra))
   }
 
-  def isBasicType[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+  def isBasicType[T: Basis[JsonSchemaF, *]](t: T): Boolean = {
     import JsonSchemaF._
     import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
@@ -100,7 +100,7 @@ object print {
     }
   }
 
-  def isReference[T: Basis[JsonSchemaF, ?]](t: T)(regex: Regex): Boolean = {
+  def isReference[T: Basis[JsonSchemaF, *]](t: T)(regex: Regex): Boolean = {
     import JsonSchemaF._
     import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
@@ -110,7 +110,7 @@ object print {
 
   }
 
-  def isArray[T: Basis[JsonSchemaF, ?]](t: T): Boolean = {
+  def isArray[T: Basis[JsonSchemaF, *]](t: T): Boolean = {
     import JsonSchemaF._
     import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
@@ -118,7 +118,7 @@ object print {
       case _         => false
     }
   }
-  def sumTypes[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): List[String] = {
+  def sumTypes[T: Basis[JsonSchemaF, *]](openApi: OpenApi[T]): List[String] = {
     def isSum(t: T): Boolean = {
       import JsonSchemaF._
       import higherkindness.droste.syntax.project.toProjectSyntaxOps
@@ -146,7 +146,7 @@ object print {
     def apply[T](tpe: T, required: Boolean, description: String, nestedTypes: List[String]): Tpe[T] =
       Tpe(tpe.asRight, required, description, nestedTypes)
 
-    def name[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): String =
+    def name[T: Basis[JsonSchemaF, *]](tpe: Tpe[T]): String =
       tpe.tpe.fold(
         identity,
         x =>
@@ -155,7 +155,7 @@ object print {
               .print(Optimize.namedTypes[T](ident(tpe.description)) >>> schema(none).print)
               .print(x)
       )
-    def option[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): Either[String, String] =
+    def option[T: Basis[JsonSchemaF, *]](tpe: Tpe[T]): Either[String, String] =
       if (tpe.required)
         name(tpe).asRight
       else
@@ -173,7 +173,7 @@ object print {
   }
   final case class VarWithType[T](name: Var, tpe: Tpe[T])
   object VarWithType {
-    def tpe[T: Basis[JsonSchemaF, ?]](tpe: Tpe[T]): VarWithType[T] = VarWithType(Var(Tpe.name(tpe)), tpe)
+    def tpe[T: Basis[JsonSchemaF, *]](tpe: Tpe[T]): VarWithType[T] = VarWithType(Var(Tpe.name(tpe)), tpe)
     def apply[T](
         name: String,
         tpe: T,
@@ -184,7 +184,7 @@ object print {
       VarWithType(Var(name), Tpe(tpe.asRight, required, description, nestedTypes))
   }
 
-  def model[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
+  def model[T: Basis[JsonSchemaF, *]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     optional(objectDef(sepBy(schemaWithName, "\n"))).contramap { x =>
       val models = x.components.toList.flatMap(_.schemas)
       models.headOption.map(_ =>
@@ -218,12 +218,12 @@ object print {
         (name, ((name, none), List.empty, (fields.map(_ -> name), EnumCodecs(name, fields))))
       }
 
-  def caseClassDef[T: Basis[JsonSchemaF, ?]]: Printer[(String, List[(String, Tpe[T])])] =
+  def caseClassDef[T: Basis[JsonSchemaF, *]]: Printer[(String, List[(String, Tpe[T])])] =
     (κ("final case class ") *< string, κ("(") *< sepBy(argumentDef[T], ", ") >* κ(")")).contramapN { case (x, y) =>
       x -> y.map { case (x, y) => VarWithType(Var(x), y) }
     }
 
-  def caseClassWithCodecsDef[T: Basis[JsonSchemaF, ?], A](implicit
+  def caseClassWithCodecsDef[T: Basis[JsonSchemaF, *], A](implicit
       codecs: Printer[Codecs]
   ): Printer[(String, List[(String, Tpe[T])])] =
     (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
@@ -238,7 +238,7 @@ object print {
         (name, tpe, codecInfo.map { case (x, y) => ((name, none), x, y) })
     }
 
-  def implicitVal[T: Basis[JsonSchemaF, ?], A](body: Printer[A]): Printer[(String, String, Tpe[T], A)] =
+  def implicitVal[T: Basis[JsonSchemaF, *], A](body: Printer[A]): Printer[(String, String, Tpe[T], A)] =
     (κ("implicit val ") *< string, string >* κ(": "), divBy(string, κ("["), tpe[T] >* κ("] = ")), body)
       .contramapN { case (a, b, c, d) => (a, b, (b, c), d) }
 
@@ -267,14 +267,14 @@ object print {
   def divBy[A, B](p1: Printer[A], sep: Printer[Unit], p2: Printer[B]): Printer[(A, B)] =
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
 
-  def tpe[T: Basis[JsonSchemaF, ?]]: Printer[Tpe[T]] =
+  def tpe[T: Basis[JsonSchemaF, *]]: Printer[Tpe[T]] =
     ((κ("Option[") *< string >* κ("]")) >|< string)
       .contramap(Tpe.option[T])
 
   def importDef: Printer[PackageName] =
     (κ("import ") *< show[PackageName]).contramap(identity)
 
-  def argumentDef[T: Basis[JsonSchemaF, ?]]: Printer[VarWithType[T]] =
+  def argumentDef[T: Basis[JsonSchemaF, *]]: Printer[VarWithType[T]] =
     divBy(show[Var], κ(": "), tpe).contramap(x => x.name -> x.tpe)
 
   def un[A, B, C, D](pair: ((A, B), (C, D))): (A, B, C, D) = (pair._1._1, pair._1._2, pair._2._1, pair._2._2)

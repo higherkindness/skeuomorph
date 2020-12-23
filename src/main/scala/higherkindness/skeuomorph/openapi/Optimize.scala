@@ -29,18 +29,18 @@ object Optimize {
       case other                     => other
     }
 
-  def namedTypes[T: Basis[JsonSchemaF, ?]](name: String): T => T = scheme.cata(namedTypesTrans(name).algebra)
+  def namedTypes[T: Basis[JsonSchemaF, *]](name: String): T => T = scheme.cata(namedTypesTrans(name).algebra)
 
   type NestedTypesState[T, O] = State[(Map[String, T], Long), O]
 
-  def nestedTypesTrans[T: Basis[JsonSchemaF, ?]]: TransM[NestedTypesState[T, ?], JsonSchemaF, JsonSchemaF, T] =
+  def nestedTypesTrans[T: Basis[JsonSchemaF, *]]: TransM[NestedTypesState[T, *], JsonSchemaF, JsonSchemaF, T] =
     TransM {
       case JsonSchemaF.ArrayF(x) if isNestedType(x) =>
         extractNestedTypes("AnonymousObject", x).map { case (n, t) => JsonSchemaF.ArrayF(namedTypes(n).apply(t)) }
 
       case JsonSchemaF.ObjectF(fields, required) =>
         fields
-          .traverse[NestedTypesState[T, ?], JsonSchemaF.Property[T]] {
+          .traverse[NestedTypesState[T, *], JsonSchemaF.Property[T]] {
             case p if isNestedType(p.tpe) =>
               extractNestedTypes(p.name.capitalize, p.tpe).map { //TODO Maybe we should normalize
                 case (n, t) => p.copy(tpe = namedTypes[T](n).apply(t))
@@ -52,10 +52,10 @@ object Optimize {
       case other => State.pure(other)
     }
 
-  def nestedTypes[T: Basis[JsonSchemaF, ?]]: T => NestedTypesState[T, T] =
+  def nestedTypes[T: Basis[JsonSchemaF, *]]: T => NestedTypesState[T, T] =
     scheme.anaM(nestedTypesTrans.coalgebra)
 
-  private def isNestedType[T: Project[JsonSchemaF, ?]](t: T): Boolean = {
+  private def isNestedType[T: Project[JsonSchemaF, *]](t: T): Boolean = {
     import JsonSchemaF._
     import higherkindness.droste.syntax.project.toProjectSyntaxOps
     t.project match {
@@ -65,7 +65,7 @@ object Optimize {
     }
   }
 
-  private def extractNestedTypes[T: Basis[JsonSchemaF, ?]](name: String, tpe: T): NestedTypesState[T, (String, T)] = {
+  private def extractNestedTypes[T: Basis[JsonSchemaF, *]](name: String, tpe: T): NestedTypesState[T, (String, T)] = {
     def addType(items: (String, T)): NestedTypesState[T, Unit] =
       State.modify { case (x, y) =>
         (x + items) -> y

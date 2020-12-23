@@ -30,7 +30,7 @@ object JsonDecoders {
   implicit def orReferenceDecoder[A: Decoder]: Decoder[Either[A, Reference]] =
     Decoder[Reference].map(_.asRight[A]) orElse Decoder[A].map(_.asLeft[Reference])
 
-  private def basicJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] = {
+  private def basicJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] = {
     import JsonSchemaF._
     Decoder.forProduct2[(String, Option[String]), String, Option[String]]("type", "format")(Tuple2.apply).emap {
       case ("integer", Some("int32"))    => integer[A].embed.asRight
@@ -56,7 +56,7 @@ object JsonDecoders {
       case actual     => DecodingFailure(s"$actual is not expected type $expected", c.history).asLeft
     }
 
-  private def enumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+  private def enumJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
     Decoder.instance(c =>
       for {
         values <- c.downField("enum").as[List[String]]
@@ -64,10 +64,10 @@ object JsonDecoders {
       } yield JsonSchemaF.enum[A](values).embed
     )
 
-  private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+  private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
     Decoder.instance(_.downField("oneOf").as[List[A]].map(JsonSchemaF.sum[A](_).embed))
 
-  private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+  private def objectJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
     Decoder.instance { c =>
       def propertyExists(name: String): Decoder.Result[Unit] =
         c.downField(name)
@@ -92,7 +92,7 @@ object JsonDecoders {
       } yield JsonSchemaF.`object`[A](properties, required.getOrElse(List.empty)).embed
     }
 
-  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]: Decoder]: Decoder[A] =
+  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, *]: Decoder]: Decoder[A] =
     Decoder.instance { c =>
       for {
         items <- c.downField("items").as[A](jsonSchemaDecoder[A])
@@ -100,10 +100,10 @@ object JsonDecoders {
       } yield JsonSchemaF.array(items).embed
     }
 
-  private def referenceJsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+  private def referenceJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
     Decoder[Reference].map(x => JsonSchemaF.reference[A](x.ref).embed)
 
-  implicit def jsonSchemaDecoder[A: Embed[JsonSchemaF, ?]]: Decoder[A] =
+  implicit def jsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
     referenceJsonSchemaDecoder orElse
       sumJsonSchemaDecoder orElse
       objectJsonSchemaDecoder orElse

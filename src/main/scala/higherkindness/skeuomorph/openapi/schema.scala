@@ -58,18 +58,18 @@ object schema {
       )
     }
 
-    private def extractTypesFromMediaType[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromMediaType[T: Basis[JsonSchemaF, *]](
         mediaType: MediaType[T]
     ): NestedTypesState[T, MediaType[T]] =
       mediaType.schema.traverse(nestedTypes.apply).map(x => mediaType.copy(schema = x))
-    private def extractTypesFromContent[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromContent[T: Basis[JsonSchemaF, *]](
         content: Map[String, MediaType[T]]
     ): NestedTypesState[T, Map[String, MediaType[T]]] =
       content.toList
         .traverse { case (x, m) => extractTypesFromMediaType[T](m).map(t => x -> t) }
         .map(_.toMap)
 
-    private def extractTypesFromRequest[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromRequest[T: Basis[JsonSchemaF, *]](
         request: Either[Request[T], Reference]
     ): NestedTypesState[T, Either[Request[T], Reference]] =
       request.fold(
@@ -77,7 +77,7 @@ object schema {
         x => State.pure(x.asRight)
       )
 
-    private def extractTypesFromResponse[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromResponse[T: Basis[JsonSchemaF, *]](
         response: Either[Response[T], Reference]
     ): NestedTypesState[T, Either[Response[T], Reference]] =
       response.fold(
@@ -85,7 +85,7 @@ object schema {
         x => State.pure(x.asRight)
       )
 
-    private def extractTypesFormOperation[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFormOperation[T: Basis[JsonSchemaF, *]](
         operation: Path.Operation[T]
     ): NestedTypesState[T, Path.Operation[T]] =
       for {
@@ -99,7 +99,7 @@ object schema {
         responses = responses
       )
 
-    private def extractTypesFromItemObject[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromItemObject[T: Basis[JsonSchemaF, *]](
         itemObject: ItemObject[T]
     ): NestedTypesState[T, ItemObject[T]] =
       for {
@@ -113,7 +113,7 @@ object schema {
         delete = delete,
         put = put
       )
-    private def extractTypesFromComponents[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromComponents[T: Basis[JsonSchemaF, *]](
         components: Components[T]
     ): NestedTypesState[T, Components[T]] =
       components.schemas.toList
@@ -122,14 +122,14 @@ object schema {
         }
         .map(cc => components.copy(schemas = cc.toMap))
 
-    private def extractTypesFromPath[T: Basis[JsonSchemaF, ?]](
+    private def extractTypesFromPath[T: Basis[JsonSchemaF, *]](
         paths: Map[String, Path.ItemObject[T]]
     ): NestedTypesState[T, Map[String, Path.ItemObject[T]]] =
       paths.toList
         .traverse { case (x, i) => extractTypesFromItemObject(i).map(z => x -> z) }
         .map(_.toMap)
 
-    def extractNestedTypes[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): OpenApi[T] = {
+    def extractNestedTypes[T: Basis[JsonSchemaF, *]](openApi: OpenApi[T]): OpenApi[T] = {
       val state = for {
         components <- openApi.components.traverse(extractTypesFromComponents[T])
         paths      <- extractTypesFromPath(openApi.paths)

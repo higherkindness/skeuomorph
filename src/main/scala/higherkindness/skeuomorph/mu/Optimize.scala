@@ -77,10 +77,10 @@ object Optimize {
       case other                              => other
     }
 
-  def namedTypes[T: Basis[MuF, ?]]: T => T              = scheme.cata(namedTypesTrans.algebra)
-  def nestedNamedTypes[T: Basis[MuF, ?]]: T => T        = scheme.cata(nestedNamedTypesTrans.algebra)
-  def toRequiredTypes[T: Basis[MuF, ?]]: T => T         = scheme.cata(toRequiredTypesTrans.algebra)
-  def nestedOptionInCoproduct[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedOptionInCoproductsTrans.algebra)
+  def namedTypes[T: Basis[MuF, *]]: T => T              = scheme.cata(namedTypesTrans.algebra)
+  def nestedNamedTypes[T: Basis[MuF, *]]: T => T        = scheme.cata(nestedNamedTypesTrans.algebra)
+  def toRequiredTypes[T: Basis[MuF, *]]: T => T         = scheme.cata(toRequiredTypesTrans.algebra)
+  def nestedOptionInCoproduct[T: Basis[MuF, *]]: T => T = scheme.cata(nestedOptionInCoproductsTrans.algebra)
 
   /**
    * micro-optimization to convert known coproducts to named types
@@ -110,5 +110,5 @@ object Optimize {
       case other => other
     }
 
-  def knownCoproductTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
+  def knownCoproductTypes[T: Basis[MuF, *]]: T => T = scheme.cata(knownCoproductTypesTrans.algebra)
 }

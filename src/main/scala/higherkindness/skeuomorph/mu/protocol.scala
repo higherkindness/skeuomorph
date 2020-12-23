@@ -86,7 +86,7 @@ object Protocol {
     )
   }
 
-  def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEnpoints: Boolean = true)(
+  def fromProtobufProto[T, U](compressionType: CompressionType, useIdiomaticEndpoints: Boolean = true)(
       protocol: protobuf.Protocol[T]
   )(implicit T: Basis[ProtobufF, T], U: Basis[MuF, U]): Protocol[U] = {
     val toMu: T => U = scheme.cata(transformProto[U].algebra)
@@ -113,7 +113,7 @@ object Protocol {
             SerializationType.Protobuf,
             compressionType,
             Option(protocol.pkg),
-            useIdiomaticEnpoints,
+            useIdiomaticEndpoints,
             s.operations.map(toOperation)
           )
         ),

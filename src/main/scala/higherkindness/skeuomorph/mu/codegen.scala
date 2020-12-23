@@ -154,7 +154,7 @@ object codegen {
           t"_root_.shapeless.tag.@@[_root_.scala.Long, ${intModsToType(modifiers)}]"
       }
 
-    val algebra: AlgebraM[Either[String, ?], MuF, Tree] = AlgebraM {
+    val algebra: AlgebraM[Either[String, *], MuF, Tree] = AlgebraM {
       case TNull()                      => t"_root_.higherkindness.mu.rpc.protocol.Empty.type".asRight
       case TDouble()                    => t"_root_.scala.Double".asRight
       case TFloat()                     => t"_root_.scala.Float".asRight
@@ -162,7 +162,7 @@ object codegen {
       case TBoolean()                   => t"_root_.scala.Boolean".asRight
       case TString()                    => t"_root_.java.lang.String".asRight
       case TByteArray(Length.Arbitrary) => t"_root_.scala.Array[Byte]".asRight
-      case TByteArray(Length.Fixed(n, _, l)) =>
+      case TByteArray(Length.Fixed(n, _, l @ _)) =>
         val aliasedType = t"_root_.scala.Array[Byte]"
         q"""object ${Term.Name(n)} {
              type ${Type.Name(n)} = ${aliasedType}
@@ -244,7 +244,7 @@ object codegen {
         }
       case TDate()    => t"_root_.java.time.LocalDate".asRight
       case TInstant() => t"_root_.java.time.Instant".asRight
-      case TDecimal(precision, scale) =>
+      case TDecimal(precision @ _, scale @ _) =>
         t"_root_.scala.math.BigDecimal".asRight
     }
 

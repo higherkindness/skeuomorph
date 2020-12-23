@@ -31,7 +31,7 @@ object print {
   import schema._
   final case class EntityCodecs[T](name: String, tpe: T)
 
-  def impl[T: Basis[JsonSchemaF, ?]](implicit
+  def impl[T: Basis[JsonSchemaF, *]](implicit
       http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]
   ): Printer[(PackageName, OpenApi[T])] =
@@ -66,7 +66,7 @@ object print {
       "implicit def showQueryParameter[T: Show]: QueryParamEncoder[T] = QueryParamEncoder.stringQueryParamEncoder.contramap(_.show)"
     )
   type ImplDef[T] = (TraitName, TraitName, List[PackageName], List[Http.Operation[T]], (TraitName, ImplName))
-  def implDefinition[T: Basis[JsonSchemaF, ?]](implicit
+  def implDefinition[T: Basis[JsonSchemaF, *]](implicit
       http4sSpecifics: Http4sSpecifics,
       codecs: Printer[Codecs]
   ): Printer[OpenApi[T]] =
@@ -105,7 +105,7 @@ object print {
       )
     }
 
-  def successResponseImpl[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
+  def successResponseImpl[T: Basis[JsonSchemaF, *]]: Printer[Either[Response[T], Reference]] =
     (κ("case Successful(response) => response.as[") *< responseOrType[T] >* κ("].map(_.asRight)"))
       .contramap(identity)
 
@@ -118,7 +118,7 @@ object print {
       case (_, y, _)                                    => y.asLeft
     }
 
-  def statusResponseImpl[T: Basis[JsonSchemaF, ?]](implicit
+  def statusResponseImpl[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (
@@ -141,7 +141,7 @@ object print {
       )
     }
 
-  def defaultResponseImpl[T: Basis[JsonSchemaF, ?]](implicit
+  def defaultResponseImpl[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, (Either[Response[T], Reference], Int))] =
     (
@@ -152,7 +152,7 @@ object print {
       (innerTpe, (TypeAliasErrorResponse(operationId).show, tpe, n))
     }
 
-  def responseImpl[T: Basis[JsonSchemaF, ?]](implicit
+  def responseImpl[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (successResponseImpl[T] >|< defaultResponseImpl[T] >|< statusResponseImpl[T]).contramap {
@@ -170,7 +170,7 @@ object print {
       x
     }
 
-  def requestImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
+  def requestImpl[T: Basis[JsonSchemaF, *]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (
       κ("Request[F](method = Method.") *< show[Http.Verb],
       κ(", uri = baseUrl ") *< divBy(httpPath[T], unit, sepBy(queryParameter[T], "")) >* κ(")"),
@@ -186,7 +186,7 @@ object print {
       )
     }
 
-  def fetchImpl[T: Basis[JsonSchemaF, ?]](implicit
+  def fetchImpl[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs],
       http4sSpecifics: Http4sSpecifics
   ): Printer[Http.Operation[T]] =
@@ -210,11 +210,11 @@ object print {
       )
     }
 
-  def expectImpl[T: Basis[JsonSchemaF, ?]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
+  def expectImpl[T: Basis[JsonSchemaF, *]](implicit http4sSpecifics: Http4sSpecifics): Printer[Http.Operation[T]] =
     (κ("expect[") *< responsesTypes >* κ("]("), requestImpl[T] >* κ(")"))
       .contramapN(x => (x.operationId -> x.responses, x))
 
-  def methodImpl[T: Basis[JsonSchemaF, ?]](implicit
+  def methodImpl[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs],
       http4sSpecifics: Http4sSpecifics
   ): Printer[Http.Operation[T]] =

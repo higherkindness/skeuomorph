@@ -23,12 +23,12 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
   import higherkindness.droste._
   import helpers._
 
-  def nestedTypesFrom[T: Basis[JsonSchemaF, ?]](t: T, map: Map[String, T] = Map.empty[String, T]) = {
+  def nestedTypesFrom[T: Basis[JsonSchemaF, *]](t: T, map: Map[String, T] = Map.empty[String, T]) = {
     val (x, y) = nestedTypes.apply(t).run(map -> 0).value
     x._1 -> y
   }
 
-  def expectedTypes[T: Basis[JsonSchemaF, ?]](d: (String, T)*)(t: T) =
+  def expectedTypes[T: Basis[JsonSchemaF, *]](d: (String, T)*)(t: T) =
     d.toMap -> t
 
   "basic types should not change" >> {

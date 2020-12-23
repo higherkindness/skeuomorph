@@ -174,7 +174,7 @@ object print {
     implicit val implNameShow: Show[ImplName]   = Show.show(_.value)
   }
 
-  private def requestTuple[T: Basis[JsonSchemaF, ?]](
+  private def requestTuple[T: Basis[JsonSchemaF, *]](
       operationId: Http.OperationId,
       request: Request[T]
   ): Option[VarWithType[T]] =
@@ -186,19 +186,19 @@ object print {
         )
       )
 
-  private def referenceTuple[T: Basis[JsonSchemaF, ?]](reference: Reference): Option[VarWithType[T]] =
+  private def referenceTuple[T: Basis[JsonSchemaF, *]](reference: Reference): Option[VarWithType[T]] =
     reference.ref match {
       case schemasRegex(name) => VarWithType.tpe(Tpe.apply(name)).some
       case _                  => none
     }
 
-  def requestOrTuple[T: Basis[JsonSchemaF, ?]](
+  def requestOrTuple[T: Basis[JsonSchemaF, *]](
       operationId: Http.OperationId,
       requestOr: Either[Request[T], Reference]
   ): Option[VarWithType[T]] =
     requestOr.fold[Option[VarWithType[T]]](requestTuple(operationId, _), referenceTuple)
 
-  private def parameterTuple[T: Basis[JsonSchemaF, ?]](x: Parameter[T]): VarWithType[T] =
+  private def parameterTuple[T: Basis[JsonSchemaF, *]](x: Parameter[T]): VarWithType[T] =
     VarWithType(
       x.name,
       x.schema,
@@ -207,7 +207,7 @@ object print {
       if (isBasicType(x.schema) || isReference(x.schema)(schemasRegex)) Nil else List(parametersPackage)
     )
 
-  private def operationTuple[T: Basis[JsonSchemaF, ?]](
+  private def operationTuple[T: Basis[JsonSchemaF, *]](
       operation: Http.Operation[T]
   ): (Http.OperationId, (List[VarWithType[T]]), Http.Responses[T]) =
     (
@@ -228,26 +228,26 @@ object print {
       Show.show(x => show"${x.operationId}ErrorResponse".capitalize)
   }
 
-  private def typeFromResponse[T: Basis[JsonSchemaF, ?]](response: Response[T]): Option[T] =
+  private def typeFromResponse[T: Basis[JsonSchemaF, *]](response: Response[T]): Option[T] =
     jsonFrom(response.content).flatMap(_.schema)
 
-  private def responseType[T: Basis[JsonSchemaF, ?]]: Printer[Response[T]] =
+  private def responseType[T: Basis[JsonSchemaF, *]]: Printer[Response[T]] =
     tpe.contramap { response =>
       typeFromResponse(response)
         .map(Tpe(_, true, normalize(response.description), Nil))
         .getOrElse(Tpe.unit)
     }
 
-  private def referenceTpe[T: Basis[JsonSchemaF, ?]](x: Reference): Tpe[T] =
+  private def referenceTpe[T: Basis[JsonSchemaF, *]](x: Reference): Tpe[T] =
     referenceTuple(x).map(_.tpe).getOrElse(Tpe.unit)
 
-  def responseOrType[T: Basis[JsonSchemaF, ?]]: Printer[Either[Response[T], Reference]] =
+  def responseOrType[T: Basis[JsonSchemaF, *]]: Printer[Either[Response[T], Reference]] =
     responseType >|< tpe.contramap(referenceTpe[T])
 
   def successType[T](responses: Map[String, Either[Response[T], Reference]]): Option[Either[Response[T], Reference]] =
     responses.find(x => successStatusCode(x._1)).map(_._2)
 
-  def responsesTypes[T: Basis[JsonSchemaF, ?]]: Printer[Http.Responses[T]] =
+  def responsesTypes[T: Basis[JsonSchemaF, *]]: Printer[Http.Responses[T]] =
     Printer { case (x, y) =>
       val defaultName = TypeAliasErrorResponse(x)
       y.size match {
@@ -259,7 +259,7 @@ object print {
       }
     }
 
-  def method[T: Basis[JsonSchemaF, ?]]: Printer[Http.Operation[T]] =
+  def method[T: Basis[JsonSchemaF, *]]: Printer[Http.Operation[T]] =
     (
       κ("  def ") *< show[Http.OperationId],
       κ("(") *< sepBy(argumentDef, ", "),
@@ -284,7 +284,7 @@ object print {
     ).flatten
   }
 
-  def typeAndSchemaFor[T: Basis[JsonSchemaF, ?], X](
+  def typeAndSchemaFor[T: Basis[JsonSchemaF, *], X](
       operationId: Option[Http.OperationId],
       response: Response[T],
       tpe: String
@@ -300,7 +300,7 @@ object print {
     }
   }
 
-  def defaultTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
+  def defaultTypesAndSchemas[T: Basis[JsonSchemaF, *]](
       operationId: Http.OperationId,
       responseOr: Either[Response[T], Reference]
   )(implicit codecs: Printer[Codecs]): (String, String, List[String]) = {
@@ -321,7 +321,7 @@ object print {
     )
   }
 
-  def statusTypesAndSchemas[T: Basis[JsonSchemaF, ?]](
+  def statusTypesAndSchemas[T: Basis[JsonSchemaF, *]](
       operationId: Http.OperationId,
       responseOr: Either[Response[T], Reference]
   )(implicit codecs: Printer[Codecs]): (String, Option[String], List[String]) = {
@@ -341,7 +341,7 @@ object print {
       )
   }
 
-  def typesAndSchemas[T: Basis[JsonSchemaF, ?]](operationId: Http.OperationId)(
+  def typesAndSchemas[T: Basis[JsonSchemaF, *]](operationId: Http.OperationId)(
       status: String,
       responseOr: Either[Response[T], Reference]
   )(implicit codecs: Printer[Codecs]): (String, List[String]) = {
@@ -368,7 +368,7 @@ object print {
     }
   }
 
-  private def responsesSchemaTuple[T: Basis[JsonSchemaF, ?]](
+  private def responsesSchemaTuple[T: Basis[JsonSchemaF, *]](
       operationId: Http.OperationId,
       responses: Map[String, Either[Response[T], Reference]]
   )(implicit codecs: Printer[Codecs]): Either[(List[String], TypeAliasErrorResponse, List[String]), List[String]] =
@@ -406,12 +406,12 @@ object print {
     }
   }
 
-  private def responsesSchema[T: Basis[JsonSchemaF, ?]](implicit
+  private def responsesSchema[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, Map[String, Either[Response[T], Reference]])] =
     (multipleResponsesSchema >|< sepBy((space >* space) *< string, "\n")).contramap((responsesSchemaTuple[T] _).tupled)
 
-  private def requestSchemaTuple[T: Basis[JsonSchemaF, ?]](
+  private def requestSchemaTuple[T: Basis[JsonSchemaF, *]](
       operationId: Http.OperationId,
       request: Option[Either[Request[T], Reference]]
   ): Option[(String, T)] =
@@ -425,15 +425,15 @@ object print {
       if name === newType
     } yield (newType -> requestTpe)
 
-  private def requestSchema[T: Basis[JsonSchemaF, ?]](implicit
+  private def requestSchema[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, Option[Either[Request[T], Reference]])] =
     (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
 
-  private def parameterSchema[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
+  private def parameterSchema[T: Basis[JsonSchemaF, *]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
     schemaWithName[T].contramap(x => x.name -> x.schema)
 
-  private def clientTypes[T: Basis[JsonSchemaF, ?]](implicit
+  private def clientTypes[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(List[Http.Operation[T]], List[Parameter[T]])] =
     (
@@ -455,7 +455,7 @@ object print {
   ): (TraitName, List[Http.Operation[T]]) =
     traitName -> itemObjects.toList.flatMap { case (n, i) => itemObjectTuple[T](n, i, components) }
 
-  private def operationsTuple[T: Basis[JsonSchemaF, ?]](openApi: OpenApi[T]): (
+  private def operationsTuple[T: Basis[JsonSchemaF, *]](openApi: OpenApi[T]): (
       List[PackageName],
       TraitName,
       TraitName,
@@ -478,7 +478,7 @@ object print {
     )
   }
 
-  def interfaceDefinition[T: Basis[JsonSchemaF, ?]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
+  def interfaceDefinition[T: Basis[JsonSchemaF, *]](implicit codecs: Printer[Codecs]): Printer[OpenApi[T]] =
     optional(
       (
         sepBy(importDef, "\n") >* newLine,
