@@ -112,7 +112,7 @@ object Comparison extends ComparisonInstances {
    * Performs the comparison of two schemas
    *
    * Compares two schemas to verify that messages written using the writer schema are compatible with the reader schema.
-   * Both schemas' roots are shallowly compared to unfold a `Comparison[T, ?]`, to compare their children or to signal a result.
+   * Both schemas' roots are shallowly compared to unfold a `Comparison[T, *]`, to compare their children or to signal a result.
    * Comparison branches are then folded back by combining their results.
    *
    * WARNING: The current implementation does a lot of "useless" comparisons when it comes to compare coproducts. This is due to
@@ -123,7 +123,7 @@ object Comparison extends ComparisonInstances {
    * @param writer
    * @param reader
    */
-  def apply[T](writer: T, reader: T)(implicit ev: Basis[MuF, T], F: Functor[Comparison[T, ?]]): Result[T] =
+  def apply[T](writer: T, reader: T)(implicit ev: Basis[MuF, T], F: Functor[Comparison[T, *]]): Result[T] =
     scheme
       .hylo(Algebra(combineResults[T]), Coalgebra(unfoldComparison[T]))
       .apply((Path.empty, writer.some, reader.some))
@@ -282,7 +282,7 @@ object Comparison extends ComparisonInstances {
 trait ComparisonInstances {
 
   implicit def comparisonCatsFunctor[T] =
-    new Functor[Comparison[T, ?]] {
+    new Functor[Comparison[T, *]] {
       def map[A, B](fa: Comparison[T, A])(f: (A) => B): Comparison[T, B] =
         fa match {
           case Comparison.End(res)            => Comparison.End(res)

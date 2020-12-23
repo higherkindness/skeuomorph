@@ -59,8 +59,8 @@ def namedTypesTrans[T]: Trans[MuF, MuF, T] = Trans {
   case other                       => other
 }
 
-def namedTypes[T: Basis[MuF, ?]]: T => T       = scheme.cata(namedTypesTrans.algebra)
-def nestedNamedTypes[T: Basis[MuF, ?]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
+def namedTypes[T: Basis[MuF, *]]: T => T       = scheme.cata(namedTypesTrans.algebra)
+def nestedNamedTypes[T: Basis[MuF, *]]: T => T = scheme.cata(nestedNamedTypesTrans.algebra)
 ```
 
 and then apply the `namedTypes` combinator to the AST:

@@ -20,8 +20,6 @@ import cats.data.NonEmptyList
 import cats.effect.Sync
 import cats.syntax.flatMap._
 import cats.syntax.functor._
-import cats.syntax.eq._
-import cats.instances.string._
 import com.github.os72.protocjar.Protoc
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto.{Label, Type}
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet

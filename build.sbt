@@ -1,7 +1,7 @@
 ThisBuild / organization := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion := "2.13.2"
-ThisBuild / crossScalaVersions := Seq("2.12.11", "2.13.2")
+ThisBuild / scalaVersion := "2.13.4"
+ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.2")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
@@ -62,7 +62,7 @@ lazy val commonSettings = Seq(
     "io.circe"             %% "circe-core"        % "0.13.0",
     "io.circe"             %% "circe-parser"      % "0.13.0",
     "io.circe"             %% "circe-yaml"        % "0.13.1",
-    "org.scalameta"        %% "scalameta"         % "4.4.1",
+    "org.scalameta"        %% "scalameta"         % "4.4.3",
     "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC22" % Test,
     "org.typelevel"        %% "cats-laws"         % "2.3.1"      % Test,
     "io.circe"             %% "circe-testing"     % "0.13.0"     % Test,

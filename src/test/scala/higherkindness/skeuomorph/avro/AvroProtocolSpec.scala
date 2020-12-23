@@ -23,8 +23,7 @@ import avrohugger.input.parsers.FileInputParser
 import avrohugger.stores.ClassStore
 import higherkindness.droste.data.Mu
 import higherkindness.skeuomorph.mu.{CompressionType, SerializationType, codegen, Protocol => MuProtocol}
-import org.apache.avro.compiler.idl._
-import org.fusesource.scalate.{RenderContext, TemplateEngine, TemplateSource}
+import org.fusesource.scalate.{TemplateEngine, TemplateSource}
 import org.scalacheck._
 import org.specs2._
 
