@@ -1,5 +1,50 @@
 # Changelog
 
+## [v0.0.28](https://github.com/higherkindness/skeuomorph/tree/v0.0.28) (2020-12-23)
+
+[Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.27...v0.0.28)
+
+🐛 **Bug Fixes**
+
+- Invalid enums generated if `package` option is not supplied [\#337](https://github.com/higherkindness/skeuomorph/issues/337)
+
+📈 **Dependency updates**
+
+- Update scalameta to 4.4.3 [\#381](https://github.com/higherkindness/skeuomorph/pull/381) ([47erbot](https://github.com/47erbot))
+- Update discipline-specs2 to 1.1.3 [\#380](https://github.com/higherkindness/skeuomorph/pull/380) ([47erbot](https://github.com/47erbot))
+- Update cats-core, cats-effect, cats-laws to 2.3.1 [\#379](https://github.com/higherkindness/skeuomorph/pull/379) ([47erbot](https://github.com/47erbot))
+- Update sbt-mdoc to 2.2.14 [\#378](https://github.com/higherkindness/skeuomorph/pull/378) ([47erbot](https://github.com/47erbot))
+- Update scalacheck to 1.15.2 [\#377](https://github.com/higherkindness/skeuomorph/pull/377) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.5 [\#376](https://github.com/higherkindness/skeuomorph/pull/376) ([47erbot](https://github.com/47erbot))
+- Update sbt-github, sbt-github-header, ... to 0.9.0 [\#375](https://github.com/higherkindness/skeuomorph/pull/375) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.1 [\#373](https://github.com/higherkindness/skeuomorph/pull/373) ([47erbot](https://github.com/47erbot))
+- Update sbt-tpolecat to 0.1.16 [\#372](https://github.com/higherkindness/skeuomorph/pull/372) ([47erbot](https://github.com/47erbot))
+- Update sbt-ci-release to 1.5.5 [\#371](https://github.com/higherkindness/skeuomorph/pull/371) ([47erbot](https://github.com/47erbot))
+- Update avro to 1.10.1 [\#370](https://github.com/higherkindness/skeuomorph/pull/370) ([47erbot](https://github.com/47erbot))
+- Update kind-projector to 0.11.2 [\#369](https://github.com/higherkindness/skeuomorph/pull/369) ([47erbot](https://github.com/47erbot))
+- Update discipline-specs2 to 1.1.2 [\#368](https://github.com/higherkindness/skeuomorph/pull/368) ([47erbot](https://github.com/47erbot))
+- Update sbt-mdoc to 2.2.13 [\#366](https://github.com/higherkindness/skeuomorph/pull/366) ([47erbot](https://github.com/47erbot))
+- Update kind-projector to 0.11.1 [\#365](https://github.com/higherkindness/skeuomorph/pull/365) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.4 [\#364](https://github.com/higherkindness/skeuomorph/pull/364) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.0 [\#363](https://github.com/higherkindness/skeuomorph/pull/363) ([47erbot](https://github.com/47erbot))
+- Update discipline-specs2 to 1.1.1 [\#362](https://github.com/higherkindness/skeuomorph/pull/362) ([47erbot](https://github.com/47erbot))
+- Update sbt-mdoc to 2.2.12 [\#361](https://github.com/higherkindness/skeuomorph/pull/361) ([47erbot](https://github.com/47erbot))
+- Update scalacheck to 1.15.1 [\#360](https://github.com/higherkindness/skeuomorph/pull/360) ([47erbot](https://github.com/47erbot))
+- Update sbt-tpolecat to 0.1.15 [\#359](https://github.com/higherkindness/skeuomorph/pull/359) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.14.0 [\#358](https://github.com/higherkindness/skeuomorph/pull/358) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.3 [\#356](https://github.com/higherkindness/skeuomorph/pull/356) ([47erbot](https://github.com/47erbot))
+- Update scalacheck to 1.15.0 [\#355](https://github.com/higherkindness/skeuomorph/pull/355) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.2 [\#354](https://github.com/higherkindness/skeuomorph/pull/354) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.1 [\#353](https://github.com/higherkindness/skeuomorph/pull/353) ([47erbot](https://github.com/47erbot))
+- Update scalafmt-core to 2.7.5 [\#352](https://github.com/higherkindness/skeuomorph/pull/352) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.13.0 [\#350](https://github.com/higherkindness/skeuomorph/pull/350) ([47erbot](https://github.com/47erbot))
+- Update specs2-core, specs2-scalacheck to 4.10.5 [\#349](https://github.com/higherkindness/skeuomorph/pull/349) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.12.4 [\#313](https://github.com/higherkindness/skeuomorph/pull/313) ([47erbot](https://github.com/47erbot))
+
+**Merged pull requests:**
+
+- Extend package choosing behavior to protobuf files with `Enum` types [\#339](https://github.com/higherkindness/skeuomorph/pull/339) ([dmarticus](https://github.com/dmarticus))
+
 ## [v0.0.27](https://github.com/higherkindness/skeuomorph/tree/v0.0.27) (2020-10-15)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.26...v0.0.27)
