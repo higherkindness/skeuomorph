@@ -22,7 +22,6 @@ lazy val microsite = project
     micrositeDescription := "Skeuomorph is a library for transforming different schemas in Scala",
     micrositeBaseUrl := "/skeuomorph",
     micrositeHighlightTheme := "tomorrow",
-    micrositeCompilingDocsTool := WithMdoc,
     micrositeDocumentationUrl := "docs",
     includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
     micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
