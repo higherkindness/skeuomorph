@@ -81,7 +81,7 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"     % "0.11.2" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" % "kind-projector"     % "0.11.3" cross CrossVersion.full),
     compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
   )
 )
