@@ -51,7 +51,7 @@ lazy val documentation = project
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    "org.typelevel"        %% "cats-core"         % "2.3.1",
+    "org.typelevel"        %% "cats-core"         % "2.4.1",
     "org.typelevel"        %% "cats-effect"       % "2.3.1",
     "io.higherkindness"    %% "droste-core"       % "0.8.0",
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
@@ -61,14 +61,14 @@ lazy val commonSettings = Seq(
     "io.circe"             %% "circe-core"        % "0.13.0",
     "io.circe"             %% "circe-parser"      % "0.13.0",
     "io.circe"             %% "circe-yaml"        % "0.13.1",
-    "org.scalameta"        %% "scalameta"         % "4.4.5",
-    "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC22" % Test,
-    "org.typelevel"        %% "cats-laws"         % "2.3.1"      % Test,
+    "org.scalameta"        %% "scalameta"         % "4.4.8",
+    "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24" % Test,
+    "org.typelevel"        %% "cats-laws"         % "2.4.1"      % Test,
     "io.circe"             %% "circe-testing"     % "0.13.0"     % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.3"      % Test,
-    "org.specs2"           %% "specs2-core"       % "4.10.6"     % Test,
-    "org.specs2"           %% "specs2-scalacheck" % "4.10.6"     % Test,
-    "org.scalacheck"       %% "scalacheck"        % "1.15.2"     % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.1.4"      % Test,
+    "org.specs2"           %% "specs2-core"       % "4.10.5"     % Test,
+    "org.specs2"           %% "specs2-scalacheck" % "4.10.5"     % Test,
+    "org.scalacheck"       %% "scalacheck"        % "1.15.3"     % Test,
     "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.0"      % Test,
     "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"      % Test
   )
