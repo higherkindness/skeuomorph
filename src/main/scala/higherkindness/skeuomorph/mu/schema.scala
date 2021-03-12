@@ -79,6 +79,7 @@ object MuF {
   )                                                        extends MuF[A]
   final case class TDate[A]()                              extends MuF[A]
   final case class TInstant[A]()                           extends MuF[A]
+  final case class TTime[A]()                              extends MuF[A]
   final case class TDecimal[A](precision: Int, scale: Int) extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] =
