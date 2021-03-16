@@ -244,6 +244,7 @@ object codegen {
         }
       case TDate()    => t"_root_.java.time.LocalDate".asRight
       case TInstant() => t"_root_.java.time.Instant".asRight
+      case TTime()    => t"_root_.java.time.LocalTime".asRight
       case TDecimal(precision @ _, scale @ _) =>
         t"_root_.scala.math.BigDecimal".asRight
     }
