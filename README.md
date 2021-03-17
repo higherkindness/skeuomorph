@@ -27,7 +27,7 @@ More information can be found at the [microsite][].
 For installing this library, add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.28"
+libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.0.29"
 ```
 
 The full documentation is available at the [skeuomorph](https://higherkindness.io/skeuomorph/) site.
@@ -58,4 +58,4 @@ it in the list below.
 
 skeuomorph is designed and developed by 47 Degrees Open Source
 
-Copyright (C)  2018-2020 47 Degrees Open Source <https://www.47deg.com>
+Copyright (C)  2018-2021 47 Degrees Open Source <https://www.47deg.com>

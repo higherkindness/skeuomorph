@@ -1,5 +1,48 @@
 # Changelog
 
+## [v0.0.29](https://github.com/higherkindness/skeuomorph/tree/v0.0.29) (2021-03-17)
+
+[Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.28...v0.0.29)
+
+⚠️ **Breaking changes**
+
+- Adding the Logical Type Time millisecond to Avro [\#417](https://github.com/higherkindness/skeuomorph/pull/417) ([IsabelDuran](https://github.com/IsabelDuran))
+
+📈 **Dependency updates**
+
+- Update sbt-tpolecat to 0.1.17 [\#419](https://github.com/higherkindness/skeuomorph/pull/419) ([47erbot](https://github.com/47erbot))
+- Update sbt-github, sbt-github-header, ... to 0.9.2 [\#418](https://github.com/higherkindness/skeuomorph/pull/418) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.15.6 [\#416](https://github.com/higherkindness/skeuomorph/pull/416) ([47erbot](https://github.com/47erbot))
+- Update sbt-ci-release to 1.5.6 [\#415](https://github.com/higherkindness/skeuomorph/pull/415) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.8 [\#413](https://github.com/higherkindness/skeuomorph/pull/413) ([47erbot](https://github.com/47erbot))
+- Update sbt-github, sbt-github-header, ... to 0.9.1 [\#412](https://github.com/higherkindness/skeuomorph/pull/412) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.15.5 [\#411](https://github.com/higherkindness/skeuomorph/pull/411) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.15.3 [\#410](https://github.com/higherkindness/skeuomorph/pull/410) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.10 [\#409](https://github.com/higherkindness/skeuomorph/pull/409) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.15.2 [\#408](https://github.com/higherkindness/skeuomorph/pull/408) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.9 [\#407](https://github.com/higherkindness/skeuomorph/pull/407) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.15.1 [\#406](https://github.com/higherkindness/skeuomorph/pull/406) ([47erbot](https://github.com/47erbot))
+- Update cats-effect to 2.3.3 [\#405](https://github.com/higherkindness/skeuomorph/pull/405) ([47erbot](https://github.com/47erbot))
+- Update cats-core, cats-laws to 2.4.2 [\#404](https://github.com/higherkindness/skeuomorph/pull/404) ([47erbot](https://github.com/47erbot))
+- Update sbt-mdoc to 2.2.18 [\#403](https://github.com/higherkindness/skeuomorph/pull/403) ([47erbot](https://github.com/47erbot))
+- Update protobuf-java to 3.15.0 [\#402](https://github.com/higherkindness/skeuomorph/pull/402) ([47erbot](https://github.com/47erbot))
+- Update discipline-specs2 to 1.1.4 [\#401](https://github.com/higherkindness/skeuomorph/pull/401) ([47erbot](https://github.com/47erbot))
+- Update scalacheck to 1.15.3 [\#400](https://github.com/higherkindness/skeuomorph/pull/400) ([47erbot](https://github.com/47erbot))
+- Update avrohugger-core to 1.0.0-RC24 [\#399](https://github.com/higherkindness/skeuomorph/pull/399) ([47erbot](https://github.com/47erbot))
+- Update avrohugger-core to 1.0.0-RC23 [\#398](https://github.com/higherkindness/skeuomorph/pull/398) ([47erbot](https://github.com/47erbot))
+- Update cats-core, cats-laws to 2.4.1 [\#397](https://github.com/higherkindness/skeuomorph/pull/397) ([47erbot](https://github.com/47erbot))
+- Update cats-core, cats-laws to 2.4.0 [\#396](https://github.com/higherkindness/skeuomorph/pull/396) ([47erbot](https://github.com/47erbot))
+- Update sbt-mdoc to 2.2.17 [\#395](https://github.com/higherkindness/skeuomorph/pull/395) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.8 [\#394](https://github.com/higherkindness/skeuomorph/pull/394) ([47erbot](https://github.com/47erbot))
+- Update sbt-microsites to 1.3.2 [\#393](https://github.com/higherkindness/skeuomorph/pull/393) ([47erbot](https://github.com/47erbot))
+- Update sbt-microsites to 1.3.1 [\#391](https://github.com/higherkindness/skeuomorph/pull/391) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.7 [\#390](https://github.com/higherkindness/skeuomorph/pull/390) ([47erbot](https://github.com/47erbot))
+- Update sbt-mdoc to 2.2.16 [\#387](https://github.com/higherkindness/skeuomorph/pull/387) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.5 [\#385](https://github.com/higherkindness/skeuomorph/pull/385) ([47erbot](https://github.com/47erbot))
+- Update scalameta to 4.4.4 [\#384](https://github.com/higherkindness/skeuomorph/pull/384) ([47erbot](https://github.com/47erbot))
+- Update sbt to 1.4.6 [\#383](https://github.com/higherkindness/skeuomorph/pull/383) ([47erbot](https://github.com/47erbot))
+- Update sbt-microsites to 1.3.0 [\#382](https://github.com/higherkindness/skeuomorph/pull/382) ([47erbot](https://github.com/47erbot))
+
 ## [v0.0.28](https://github.com/higherkindness/skeuomorph/tree/v0.0.28) (2020-12-23)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.27...v0.0.28)
@@ -340,6 +383,7 @@
 
 - Upgrades to droste 0.7.0 [\#146](https://github.com/higherkindness/skeuomorph/pull/146) ([juanpedromoreno](https://github.com/juanpedromoreno))
 - Use import root to compile Protobuf files [\#115](https://github.com/higherkindness/skeuomorph/pull/115) ([bilki](https://github.com/bilki))
+- Ff/print multiple responses [\#102](https://github.com/higherkindness/skeuomorph/pull/102) ([BeniVF](https://github.com/BeniVF))
 
 ## [v0.0.14](https://github.com/higherkindness/skeuomorph/tree/v0.0.14) (2019-09-23)
 
@@ -390,7 +434,6 @@
 - Nested object [\#116](https://github.com/higherkindness/skeuomorph/pull/116) ([BeniVF](https://github.com/BeniVF))
 - Handle imports from nested folders [\#112](https://github.com/higherkindness/skeuomorph/pull/112) ([bilki](https://github.com/bilki))
 - Print encoders [\#109](https://github.com/higherkindness/skeuomorph/pull/109) ([BeniVF](https://github.com/BeniVF))
-- Ff/print multiple responses [\#102](https://github.com/higherkindness/skeuomorph/pull/102) ([BeniVF](https://github.com/BeniVF))
 
 ## [v0.0.11](https://github.com/higherkindness/skeuomorph/tree/v0.0.11) (2019-07-05)
 
@@ -534,7 +577,6 @@
 
 - Build Fixes and Release 0.0.3 [\#52](https://github.com/higherkindness/skeuomorph/pull/52) ([juanpedromoreno](https://github.com/juanpedromoreno))
 - Move code under higherkindness/skeuomorph dirs [\#50](https://github.com/higherkindness/skeuomorph/pull/50) ([JesusMtnez](https://github.com/JesusMtnez))
-- Update droste to 0.6.0 [\#49](https://github.com/higherkindness/skeuomorph/pull/49) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update cats to 1.5.0 [\#48](https://github.com/higherkindness/skeuomorph/pull/48) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update Scala to 2.12.8 [\#47](https://github.com/higherkindness/skeuomorph/pull/47) ([JesusMtnez](https://github.com/JesusMtnez))
 - Move under higherkindness package [\#46](https://github.com/higherkindness/skeuomorph/pull/46) ([JesusMtnez](https://github.com/JesusMtnez))
