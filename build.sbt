@@ -51,8 +51,8 @@ lazy val documentation = project
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    "org.typelevel"        %% "cats-core"         % "2.4.2",
-    "org.typelevel"        %% "cats-effect"       % "2.4.1",
+    "org.typelevel"        %% "cats-core"         % "2.5.0",
+    "org.typelevel"        %% "cats-effect"       % "2.4.0",
     "io.higherkindness"    %% "droste-core"       % "0.8.0",
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
     "org.apache.avro"       % "avro"              % "1.10.2",
@@ -63,7 +63,7 @@ lazy val commonSettings = Seq(
     "io.circe"             %% "circe-yaml"        % "0.13.1",
     "org.scalameta"        %% "scalameta"         % "4.4.10",
     "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24" % Test,
-    "org.typelevel"        %% "cats-laws"         % "2.4.2"      % Test,
+    "org.typelevel"        %% "cats-laws"         % "2.5.0"      % Test,
     "io.circe"             %% "circe-testing"     % "0.13.0"     % Test,
     "org.typelevel"        %% "discipline-specs2" % "1.1.4"      % Test,
     "org.specs2"           %% "specs2-core"       % "4.10.5"     % Test,
