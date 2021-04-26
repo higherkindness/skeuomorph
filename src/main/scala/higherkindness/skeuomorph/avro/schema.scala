@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 47 Degrees Open Source <https://www.47deg.com>
+ * Copyright 2018-2021 47 Degrees Open Source <https://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,6 +118,7 @@ object AvroF {
   final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
   final case class TDate[A]()                                                                           extends AvroF[A]
   final case class TTimestampMillis[A]()                                                                extends AvroF[A]
+  final case class TTimeMillis[A]()                                                                     extends AvroF[A]
   final case class TDecimal[A](precision: Int, scale: Int)                                              extends AvroF[A]
 
   implicit def eqAvroF[T: Eq]: Eq[AvroF[T]] =
@@ -189,6 +190,7 @@ object AvroF {
   private def logicalType(logicalType: LogicalType): AvroF[Schema] = logicalType match {
     case _: LogicalTypes.Date            => AvroF.TDate()
     case _: LogicalTypes.TimestampMillis => AvroF.TTimestampMillis()
+    case _: LogicalTypes.TimeMillis      => AvroF.TTimeMillis()
     case dec: LogicalTypes.Decimal       => AvroF.TDecimal(dec.getPrecision, dec.getScale)
   }
 
@@ -286,6 +288,11 @@ object AvroF {
         Json.obj(
           "type"        -> Json.fromString("long"),
           "logicalType" -> Json.fromString("timestamp-millis")
+        )
+      case TTimeMillis() =>
+        Json.obj(
+          "type"        -> Json.fromString("int"),
+          "logicalType" -> Json.fromString("time-millis")
         )
       case TDecimal(precision, scale) =>
         Json.obj(

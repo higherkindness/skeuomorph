@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 47 Degrees Open Source <https://www.47deg.com>
+ * Copyright 2018-2021 47 Degrees Open Source <https://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ object MuF {
   )                                                        extends MuF[A]
   final case class TDate[A]()                              extends MuF[A]
   final case class TInstant[A]()                           extends MuF[A]
+  final case class TTime[A]()                              extends MuF[A]
   final case class TDecimal[A](precision: Int, scale: Int) extends MuF[A]
 
   implicit def fieldEq[T](implicit T: Eq[T]): Eq[Field[T]] =

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2020 47 Degrees Open Source <https://www.47deg.com>
+ * Copyright 2018-2021 47 Degrees Open Source <https://www.47deg.com>
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -244,6 +244,7 @@ object codegen {
         }
       case TDate()    => t"_root_.java.time.LocalDate".asRight
       case TInstant() => t"_root_.java.time.Instant".asRight
+      case TTime()    => t"_root_.java.time.LocalTime".asRight
       case TDecimal(precision @ _, scale @ _) =>
         t"_root_.scala.math.BigDecimal".asRight
     }

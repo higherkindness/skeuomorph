@@ -9,6 +9,7 @@ protocol LogicalTypes {
     union {decimal(20, 8), null} maybeDec;
     timestamp_ms ts; //ms from the unix epoch
     date dt; //days from the unix epock, no time precission
+    time_ms tm; //time with no reference to a date, precision of one millisecond
     /*
     UUID currenlty unsupported in avro compiler https://issues.apache.org/jira/browse/AVRO-2925
     uuid id;
