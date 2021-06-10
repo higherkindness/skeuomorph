@@ -1,7 +1,7 @@
 ThisBuild / organization := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
 ThisBuild / scalaVersion := "2.13.6"
-ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.2")
+ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
@@ -52,7 +52,7 @@ lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     "org.typelevel"        %% "cats-core"         % "2.6.1",
-    "org.typelevel"        %% "cats-effect"       % "2.5.1",
+    "org.typelevel"        %% "cats-effect"       % "3.1.1",
     "io.higherkindness"    %% "droste-core"       % "0.8.0",
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
     "org.apache.avro"       % "avro"              % "1.10.2",
