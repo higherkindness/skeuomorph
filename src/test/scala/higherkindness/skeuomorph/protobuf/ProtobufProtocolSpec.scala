@@ -17,6 +17,7 @@
 package higherkindness.skeuomorph.protobuf
 
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import higherkindness.droste.data.Mu
 import higherkindness.droste.data.Mu._
 import higherkindness.skeuomorph._
