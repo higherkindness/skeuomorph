@@ -19,6 +19,7 @@ The maintainers of the project are:
 - [![dmarticus](https://avatars.githubusercontent.com/u/4853149?v=4&s=20) **Dylan Martin (dmarticus)**](https://github.com/dmarticus)
 - [![fedefernandez](https://avatars.githubusercontent.com/u/720923?v=4&s=20) **Fede Fernández (fedefernandez)**](https://github.com/fedefernandez)
 - [![franciscodr](https://avatars.githubusercontent.com/u/1200151?v=4&s=20) **Francisco Diaz (franciscodr)**](https://github.com/franciscodr)
+- [![Daenyth](https://avatars.githubusercontent.com/u/14644?v=4&s=20) **Gavin Bisesi (Daenyth)**](https://github.com/Daenyth)
 - [![IsabelDuran](https://avatars.githubusercontent.com/u/37183993?v=4&s=20) **Isabel Durán (IsabelDuran)**](https://github.com/IsabelDuran)
 - [![JesusMtnez](https://avatars.githubusercontent.com/u/8639179?v=4&s=20) **Jesús Martínez (JesusMtnez)**](https://github.com/JesusMtnez)
 - [![juanpedromoreno](https://avatars.githubusercontent.com/u/4879373?v=4&s=20) **Juan Pedro Moreno (juanpedromoreno)**](https://github.com/juanpedromoreno)
@@ -31,7 +32,6 @@ The maintainers of the project are:
 - [![rlmark](https://avatars.githubusercontent.com/u/7613551?v=4&s=20) **Rebecca (rlmark)**](https://github.com/rlmark)
 - [![bilki](https://avatars.githubusercontent.com/u/1669748?v=4&s=20) **Roberto Serrano (bilki)**](https://github.com/bilki)
 - [![vil1](https://avatars.githubusercontent.com/u/389356?v=4&s=20) **Valentin Kasas (vil1)**](https://github.com/vil1)
-- [![AlvaroCaste](https://avatars.githubusercontent.com/u/1271375?v=4&s=20) **Álvaro Castellanos López (AlvaroCaste)**](https://github.com/AlvaroCaste)
 
 ## Contributors
 
@@ -55,6 +55,7 @@ These are the people that have contributed to the _skeuomorph_ project:
 - [![dmarticus](https://avatars.githubusercontent.com/u/4853149?v=4&s=20) **dmarticus**](https://github.com/dmarticus)
 - [![franciscodr](https://avatars.githubusercontent.com/u/1200151?v=4&s=20) **franciscodr**](https://github.com/franciscodr)
 - [![BenFradet](https://avatars.githubusercontent.com/u/1737211?v=4&s=20) **BenFradet**](https://github.com/BenFradet)
+- [![Daenyth](https://avatars.githubusercontent.com/u/14644?v=4&s=20) **Daenyth**](https://github.com/Daenyth)
 - [![47degfreestyle](https://avatars.githubusercontent.com/u/28294047?v=4&s=20) **47degfreestyle**](https://github.com/47degfreestyle)
 - [![AntonioMateoGomez](https://avatars.githubusercontent.com/u/25897490?v=4&s=20) **AntonioMateoGomez**](https://github.com/AntonioMateoGomez)
 - [![alejandrohdezma](https://avatars.githubusercontent.com/u/9027541?v=4&s=20) **alejandrohdezma**](https://github.com/alejandrohdezma)
