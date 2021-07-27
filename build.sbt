@@ -1,7 +1,7 @@
 ThisBuild / organization := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion := "2.13.4"
-ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.2")
+ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
@@ -51,24 +51,24 @@ lazy val documentation = project
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    "org.typelevel"        %% "cats-core"         % "2.5.0",
-    "org.typelevel"        %% "cats-effect"       % "2.4.1",
+    "org.typelevel"        %% "cats-core"         % "2.6.1",
+    "org.typelevel"        %% "cats-effect"       % "3.1.1",
     "io.higherkindness"    %% "droste-core"       % "0.8.0",
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
     "org.apache.avro"       % "avro"              % "1.10.2",
     "com.github.os72"       % "protoc-jar"        % "3.11.4",
-    "com.google.protobuf"   % "protobuf-java"     % "3.15.8",
-    "io.circe"             %% "circe-core"        % "0.13.0",
-    "io.circe"             %% "circe-parser"      % "0.13.0",
+    "com.google.protobuf"   % "protobuf-java"     % "3.17.3",
+    "io.circe"             %% "circe-core"        % "0.14.1",
+    "io.circe"             %% "circe-parser"      % "0.14.1",
     "io.circe"             %% "circe-yaml"        % "0.13.1",
-    "org.scalameta"        %% "scalameta"         % "4.4.14",
+    "org.scalameta"        %% "scalameta"         % "4.4.24",
     "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24" % Test,
-    "org.typelevel"        %% "cats-laws"         % "2.5.0"      % Test,
-    "io.circe"             %% "circe-testing"     % "0.13.0"     % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.5"      % Test,
-    "org.specs2"           %% "specs2-core"       % "4.10.6"     % Test,
-    "org.specs2"           %% "specs2-scalacheck" % "4.10.6"     % Test,
-    "org.scalacheck"       %% "scalacheck"        % "1.15.3"     % Test,
+    "org.typelevel"        %% "cats-laws"         % "2.6.1"      % Test,
+    "io.circe"             %% "circe-testing"     % "0.14.1"     % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.1.6"      % Test,
+    "org.specs2"           %% "specs2-core"       % "4.12.3"     % Test,
+    "org.specs2"           %% "specs2-scalacheck" % "4.12.3"     % Test,
+    "org.scalacheck"       %% "scalacheck"        % "1.15.4"     % Test,
     "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.0"      % Test,
     "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"      % Test
   )
@@ -81,7 +81,7 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"     % "0.11.2" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" % "kind-projector"     % "0.13.0" cross CrossVersion.full),
     compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
   )
 )

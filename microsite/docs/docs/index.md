@@ -130,6 +130,7 @@ We can parse it, transform it into a Mu protocol and then convert it into Scala 
 
 ```scala mdoc:silent
 import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import higherkindness.skeuomorph.mu
 import higherkindness.skeuomorph.mu.{CompressionType, MuF}
 import higherkindness.skeuomorph.protobuf._
