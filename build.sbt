@@ -61,16 +61,16 @@ lazy val commonSettings = Seq(
     "io.circe"             %% "circe-core"        % "0.14.1",
     "io.circe"             %% "circe-parser"      % "0.14.1",
     "io.circe"             %% "circe-yaml"        % "0.13.1",
-    "org.scalameta"        %% "scalameta"         % "4.4.20",
-    "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24" % Test,
-    "org.typelevel"        %% "cats-laws"         % "2.6.1"      % Test,
-    "io.circe"             %% "circe-testing"     % "0.14.1"     % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.6"      % Test,
-    "org.specs2"           %% "specs2-core"       % "4.12.1"     % Test,
-    "org.specs2"           %% "specs2-scalacheck" % "4.12.1"     % Test,
-    "org.scalacheck"       %% "scalacheck"        % "1.15.4"     % Test,
-    "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.0"      % Test,
-    "org.scalatra.scalate" %% "scalate-core"      % "1.9.7"      % Test
+    "org.scalameta"        %% "scalameta"         % "4.4.25",
+    "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24"   % Test,
+    "org.typelevel"        %% "cats-laws"         % "2.6.1"        % Test,
+    "io.circe"             %% "circe-testing"     % "0.14.1"       % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.1.6"        % Test,
+    "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
+    "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
+    "org.scalacheck"       %% "scalacheck"        % "1.15.4"       % Test,
+    "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.0"        % Test,
+    "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"        % Test
   )
 ) ++ compilerPlugins ++ macroSettings
 
