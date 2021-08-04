@@ -69,7 +69,7 @@ lazy val commonSettings = Seq(
     "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
     "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
     "org.scalacheck"       %% "scalacheck"        % "1.15.4"       % Test,
-    "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.0"        % Test,
+    "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.1"        % Test,
     "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"        % Test
   )
 ) ++ compilerPlugins ++ macroSettings
