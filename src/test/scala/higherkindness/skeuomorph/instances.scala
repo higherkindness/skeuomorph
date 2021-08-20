@@ -161,7 +161,7 @@ object instances {
     //def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = Gen.mapOfN(2, Gen.zip(nonEmptyString.map(_.take(4)), gen))
     def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = gen.map(a => Map(UUID.randomUUID.toString.take(4) -> a))
     val optionStringGen                                     = Gen.option(nonEmptyString)
-    val infoGen: Gen[Info]                                  = (nonEmptyString, optionStringGen, nonEmptyString).mapN(Info)
+    val infoGen: Gen[Info] = (nonEmptyString, optionStringGen, nonEmptyString).mapN(Info)
     val serverVariableGen: Gen[Server.Variable] =
       (Gen.listOfN(2, nonEmptyString), nonEmptyString, optionStringGen).mapN(Server.Variable)
     val serverGen: Gen[Server] =

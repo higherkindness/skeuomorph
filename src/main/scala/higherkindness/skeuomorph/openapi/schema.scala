@@ -19,7 +19,8 @@ import cats.kernel.Eq
 import higherkindness.skeuomorph.openapi.schema.Path.ItemObject
 
 /**
- * @see https://swagger.io/specification/
+ * @see
+ *   https://swagger.io/specification/
  */
 object schema {
   final case class Reference(ref: String)

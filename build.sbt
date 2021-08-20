@@ -1,6 +1,6 @@
-ThisBuild / organization := "io.higherkindness"
+ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / scalaVersion       := "2.13.6"
 ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
@@ -18,15 +18,15 @@ lazy val microsite = project
   .settings(publish / skip := true)
   .settings(mdocSettings)
   .settings(
-    micrositeName := "Skeuomorph",
-    micrositeDescription := "Skeuomorph is a library for transforming different schemas in Scala",
-    micrositeBaseUrl := "/skeuomorph",
-    micrositeHighlightTheme := "tomorrow",
+    micrositeName             := "Skeuomorph",
+    micrositeDescription      := "Skeuomorph is a library for transforming different schemas in Scala",
+    micrositeBaseUrl          := "/skeuomorph",
+    micrositeHighlightTheme   := "tomorrow",
     micrositeDocumentationUrl := "docs",
-    includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
-    micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
-    micrositePushSiteWith := GitHub4s,
-    micrositeFavicons := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
+    includeFilter in Jekyll   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
+    micrositeGithubToken      := Option(System.getenv().get("GITHUB_TOKEN")),
+    micrositePushSiteWith     := GitHub4s,
+    micrositeFavicons         := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
       "brand-primary"   -> "#4A00D8",
       "brand-secondary" -> "#FC00CD",
