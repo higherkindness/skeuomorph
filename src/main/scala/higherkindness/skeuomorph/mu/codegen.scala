@@ -149,7 +149,7 @@ object codegen {
       x match {
         case TSimpleInt(`_32`) | TProtobufInt(`_32`, Nil) => t"_root_.scala.Int"
         case TSimpleInt(`_64`) | TProtobufInt(`_64`, Nil) => t"_root_.scala.Long"
-        case TProtobufInt(`_32`, modifiers)               => t"_root_.shapeless.tag.@@[_root_.scala.Int, ${intModsToType(modifiers)}]"
+        case TProtobufInt(`_32`, modifiers) => t"_root_.shapeless.tag.@@[_root_.scala.Int, ${intModsToType(modifiers)}]"
         case TProtobufInt(`_64`, modifiers) =>
           t"_root_.shapeless.tag.@@[_root_.scala.Long, ${intModsToType(modifiers)}]"
       }
@@ -165,7 +165,7 @@ object codegen {
       case TByteArray(Length.Fixed(n, _, l @ _)) =>
         val aliasedType = t"_root_.scala.Array[Byte]"
         q"""object ${Term.Name(n)} {
-             type ${Type.Name(n)} = ${aliasedType}
+             type ${Type.Name(n)} = $aliasedType
            }
          """.asRight
       case TNamedType(prefix, name) =>
@@ -220,7 +220,7 @@ object codegen {
             case cls: Defn.Class =>
               param(cls.name).asRight
             case _ =>
-              s"Encountered unhandled Tree type: ${f.tpe} in Field: ${f}".asLeft
+              s"Encountered unhandled Tree type: ${f.tpe} in Field: $f".asLeft
           }
         }
 

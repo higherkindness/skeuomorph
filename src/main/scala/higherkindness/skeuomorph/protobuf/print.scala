@@ -30,8 +30,8 @@ object print {
 
     def enumToString(e: TEnum[String]): String = {
       val printOptions = e.options.map(o => s"\toption ${o.name} = ${o.value};").mkString("\n")
-      val printSymbols = e.symbols.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
-      val printAliases = e.aliases.map({ case (s, i) => s"\t$s = $i;" }).mkString("\n")
+      val printSymbols = e.symbols.map { case (s, i) => s"\t$s = $i;" }.mkString("\n")
+      val printAliases = e.aliases.map { case (s, i) => s"\t$s = $i;" }.mkString("\n")
 
       s"""
       |enum ${e.name} {
