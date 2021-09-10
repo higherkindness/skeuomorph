@@ -1,7 +1,7 @@
 ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
 ThisBuild / scalaVersion       := "2.13.6"
-ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
@@ -70,7 +70,7 @@ lazy val commonSettings = Seq(
     "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
     "org.scalacheck"       %% "scalacheck"        % "1.15.4"       % Test,
     "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.1"        % Test,
-    "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"        % Test
+    "org.scalatra.scalate" %% "scalate-core"      % "1.9.7"        % Test
   )
 ) ++ compilerPlugins ++ macroSettings
 
