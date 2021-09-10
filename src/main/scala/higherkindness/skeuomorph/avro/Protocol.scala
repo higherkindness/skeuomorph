@@ -21,7 +21,7 @@ import cats.syntax.option._
 import higherkindness.skeuomorph.{mu, UnsupportedRequestTypeException, UnsupportedResponseTypeException}
 import higherkindness.skeuomorph.mu.{MuF, SerializationType}
 import io.circe.Json
-import org.apache.avro.{Schema, Protocol => AvroProtocol}
+import org.apache.avro.{Protocol => AvroProtocol, Schema}
 import higherkindness.droste._
 import higherkindness.droste.syntax.all._
 import org.apache.avro.Schema.Type
@@ -143,7 +143,7 @@ object Protocol {
       case MuF.TContaining(_)                         => ??? // TBD
       case MuF.TRequired(t)                           => T.coalgebra(t)
       case MuF.TCoproduct(invariants)                 => AvroF.union(invariants)
-      case MuF.TSum(name, fields)                     => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
+      case MuF.TSum(name, fields) => AvroF.enum(name, none[String], Nil, none[String], fields.map(_.name))
       case MuF.TProduct(name, namespace, fields, _, _) =>
         TRecord(
           name,

@@ -36,11 +36,11 @@ case class ProtobufNativeException(originalError: String) extends SkeuomorphErro
 }
 
 case class UnsupportedResponseTypeException(originalError: String) extends SkeuomorphError {
-  override val message            = s"Encountered an unsupported response type: ${originalError}"
+  override val message            = s"Encountered an unsupported response type: $originalError"
   override def getMessage: String = message
 }
 
 case class UnsupportedRequestTypeException(originalError: String) extends SkeuomorphError {
-  override val message            = s"Encountered an unsupported request type: ${originalError}"
+  override val message            = s"Encountered an unsupported request type: $originalError"
   override def getMessage: String = message
 }
