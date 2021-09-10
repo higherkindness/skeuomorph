@@ -92,7 +92,7 @@ object JsonDecoders {
       } yield JsonSchemaF.`object`[A](properties, required.getOrElse(List.empty)).embed
     }
 
-  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, *]: Decoder]: Decoder[A] =
+  private def arrayJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
     Decoder.instance { c =>
       for {
         items <- c.downField("items").as[A](jsonSchemaDecoder[A])

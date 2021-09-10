@@ -28,7 +28,7 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
     x._1 -> y
   }
 
-  def expectedTypes[T: Basis[JsonSchemaF, *]](d: (String, T)*)(t: T) =
+  def expectedTypes[T](d: (String, T)*)(t: T) =
     d.toMap -> t
 
   "basic types should not change" >> {

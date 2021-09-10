@@ -228,7 +228,7 @@ object print {
       Show.show(x => show"${x.operationId}ErrorResponse".capitalize)
   }
 
-  private def typeFromResponse[T: Basis[JsonSchemaF, *]](response: Response[T]): Option[T] =
+  private def typeFromResponse[T](response: Response[T]): Option[T] =
     jsonFrom(response.content).flatMap(_.schema)
 
   private def responseType[T: Basis[JsonSchemaF, *]]: Printer[Response[T]] =
