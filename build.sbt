@@ -1,7 +1,7 @@
 ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
 ThisBuild / scalaVersion       := "2.13.6"
-ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
@@ -60,17 +60,17 @@ lazy val commonSettings = Seq(
     "com.google.protobuf"   % "protobuf-java"     % "3.17.3",
     "io.circe"             %% "circe-core"        % "0.14.1",
     "io.circe"             %% "circe-parser"      % "0.14.1",
-    "io.circe"             %% "circe-yaml"        % "0.13.1",
+    "io.circe"             %% "circe-yaml"        % "0.14.1",
     "org.scalameta"        %% "scalameta"         % "4.4.27",
     "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24"   % Test,
     "org.typelevel"        %% "cats-laws"         % "2.6.1"        % Test,
     "io.circe"             %% "circe-testing"     % "0.14.1"       % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.6"        % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.2.1"        % Test,
     "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
     "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
     "org.scalacheck"       %% "scalacheck"        % "1.15.4"       % Test,
     "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.1"        % Test,
-    "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"        % Test
+    "org.scalatra.scalate" %% "scalate-core"      % "1.9.7"        % Test
   )
 ) ++ compilerPlugins ++ macroSettings
 
