@@ -28,12 +28,13 @@ import scala.collection.compat._
 /**
  * An ADT representing the "shape" of the computation of the differences between two schemas.
  *
- * Comparing two schemas involves recursively comparing (various combinations of) their
- * respective sub-schemas; each member of the `Comparison` ADT represents one of such
- * combination of recursive comparisons.
+ * Comparing two schemas involves recursively comparing (various combinations of) their respective sub-schemas; each
+ * member of the `Comparison` ADT represents one of such combination of recursive comparisons.
  *
- * @tparam T the type of schemas under comparison, typically a fix-point of [[higherkindness.skeuomorph.mu.MuF]], like `Mu[MuF]`
- * @tparam A the type acted upon by this pattern-functor
+ * @tparam T
+ *   the type of schemas under comparison, typically a fix-point of [[higherkindness.skeuomorph.mu.MuF]], like `Mu[MuF]`
+ * @tparam A
+ *   the type acted upon by this pattern-functor
  */
 sealed trait Comparison[T, A]
 
@@ -94,9 +95,8 @@ object Comparison extends ComparisonInstances {
       extends Comparison[T, A]
 
   /**
-   * Perform lists of recursive comparisons indexed by paths,
-   * then select the first positive result for each entry (or a mismatch if none)
-   * then combine results of all entries and enrich it.
+   * Perform lists of recursive comparisons indexed by paths, then select the first positive result for each entry (or a
+   * mismatch if none) then combine results of all entries and enrich it.
    */
   final case class AlignUnionMembers[T, A](attempts: Map[Path, List[A]], reporter: Reporter[T] = Reporter.id[T])
       extends Comparison[T, A]
@@ -105,14 +105,15 @@ object Comparison extends ComparisonInstances {
    * Performs the comparison of two schemas
    *
    * Compares two schemas to verify that messages written using the writer schema are compatible with the reader schema.
-   * Both schemas' roots are shallowly compared to unfold a `Comparison[T, *]`, to compare their children or to signal a result.
-   * Comparison branches are then folded back by combining their results.
+   * Both schemas' roots are shallowly compared to unfold a `Comparison[T, *]`, to compare their children or to signal a
+   * result. Comparison branches are then folded back by combining their results.
    *
-   * WARNING: The current implementation does a lot of "useless" comparisons when it comes to compare coproducts. This is due to
-   * the structure of hylo: when we want to align something with a coproduct, we test all the possible combinations algthough
-   * we're only interested in finding the first successful one.
+   * WARNING: The current implementation does a lot of "useless" comparisons when it comes to compare coproducts. This
+   * is due to the structure of hylo: when we want to align something with a coproduct, we test all the possible
+   * combinations algthough we're only interested in finding the first successful one.
    *
-   * @tparam T the concrete schema type, must be a higherkindness.droste.Basis over [[higherkindness.skeuomorph.mu.MuF]]
+   * @tparam T
+   *   the concrete schema type, must be a higherkindness.droste.Basis over [[higherkindness.skeuomorph.mu.MuF]]
    * @param writer
    * @param reader
    */
@@ -159,10 +160,10 @@ object Comparison extends ComparisonInstances {
         case (TFloat(), TFloat())                                                                           => same
         case (TSimpleInt(size1), TSimpleInt(size2)) if size1 === size2                                      => same
         case (TProtobufInt(size1, mods1), TProtobufInt(size2, mods2)) if size1 === size2 && mods1 === mods2 => same
-        case (TProtobufInt(_, _), TProtobufInt(_, _))                                                       => End(Result.mismatch(Different(path)))
-        case (TBoolean(), TBoolean())                                                                       => same
-        case (TString(), TString())                                                                         => same
-        case (TByteArray(Length.Arbitrary), TByteArray(Length.Arbitrary))                                   => same
+        case (TProtobufInt(_, _), TProtobufInt(_, _))                     => End(Result.mismatch(Different(path)))
+        case (TBoolean(), TBoolean())                                     => same
+        case (TString(), TString())                                       => same
+        case (TByteArray(Length.Arbitrary), TByteArray(Length.Arbitrary)) => same
         case (TByteArray(Length.Fixed(n, ns, l)), TByteArray(Length.Fixed(n2, ns2, l2)))
             if n === n2 && ns === ns2 && l === l2 =>
           same

@@ -26,11 +26,9 @@ import higherkindness.droste._
 object Optimize {
 
   /**
-   * micro-optimization to convert types from fields in a product to
-   * NamedTypes.
+   * micro-optimization to convert types from fields in a product to NamedTypes.
    *
-   * Without this optimization, printing a product containing fields
-   * of other products would end up with something like:
+   * Without this optimization, printing a product containing fields of other products would end up with something like:
    *
    * {{{
    * case class bbProduct(field1: String, field2: case class OtherField())
@@ -83,11 +81,10 @@ object Optimize {
   def nestedOptionInCoproduct[T: Basis[MuF, *]]: T => T = scheme.cata(nestedOptionInCoproductsTrans.algebra)
 
   /**
-   * micro-optimization to convert known coproducts to named types
-   * such as Option or Either.
+   * micro-optimization to convert known coproducts to named types such as Option or Either.
    *
-   * Without this optimization, printing a product containing fields
-   * whose type is a coproduct would end up with something like:
+   * Without this optimization, printing a product containing fields whose type is a coproduct would end up with
+   * something like:
    *
    * {{{
    * case class Product(field1: Cop[Int :: String :: TNil], field2: Cop[Int :: Null :: TNil])

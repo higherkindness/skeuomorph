@@ -22,7 +22,7 @@ import avrohugger.format.Standard
 import avrohugger.input.parsers.FileInputParser
 import avrohugger.stores.ClassStore
 import higherkindness.droste.data.Mu
-import higherkindness.skeuomorph.mu.{CompressionType, SerializationType, codegen, Protocol => MuProtocol}
+import higherkindness.skeuomorph.mu.{codegen, CompressionType, Protocol => MuProtocol, SerializationType}
 import org.fusesource.scalate.{TemplateEngine, TemplateSource}
 import org.scalacheck._
 import org.specs2._

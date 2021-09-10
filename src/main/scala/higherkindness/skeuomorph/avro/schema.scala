@@ -144,8 +144,7 @@ object AvroF {
     }
 
   /**
-   * Helper methods to construct AvroF values.  These methods are to
-   * avoid scala infering the case type instead of AvroF.
+   * Helper methods to construct AvroF values. These methods are to avoid scala infering the case type instead of AvroF.
    */
   def `null`[A](): AvroF[A]                                   = TNull[A]()
   def boolean[A](): AvroF[A]                                  = TBoolean[A]()

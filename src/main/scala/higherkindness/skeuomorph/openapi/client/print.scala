@@ -111,7 +111,7 @@ object print {
                 .getOrElse {
                   val printVerb             = Http.Verb.methodFrom(verb)
                   val printParamsIfRequired = if (params.nonEmpty) s"By${params.mkString}" else ""
-                  s"${printVerb}${paths.mkString}${printParamsIfRequired}"
+                  s"$printVerb${paths.mkString}$printParamsIfRequired"
                 }
             )
           )
@@ -329,7 +329,7 @@ object print {
     responseOr.left.toOption
       .map { response =>
         def defaultResponseErrorName(operationId: Http.OperationId, name: String): String =
-          show"${operationId}${normalize(name).capitalize}Error".capitalize
+          show"$operationId${normalize(name).capitalize}Error".capitalize
         val (newTpe, anonymousType, schemas) = typeAndSchemaFor(operationId.some, response, tpe) {
           val newTpe = defaultResponseErrorName(operationId, response.description)
           newTpe -> List(caseClassDef.print(newTpe -> List("value" -> Tpe[T](tpe))))

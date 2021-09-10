@@ -1,6 +1,6 @@
-ThisBuild / organization := "io.higherkindness"
+ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / scalaVersion       := "2.13.6"
 ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; +test")
@@ -18,15 +18,15 @@ lazy val microsite = project
   .settings(publish / skip := true)
   .settings(mdocSettings)
   .settings(
-    micrositeName := "Skeuomorph",
-    micrositeDescription := "Skeuomorph is a library for transforming different schemas in Scala",
-    micrositeBaseUrl := "/skeuomorph",
-    micrositeHighlightTheme := "tomorrow",
+    micrositeName             := "Skeuomorph",
+    micrositeDescription      := "Skeuomorph is a library for transforming different schemas in Scala",
+    micrositeBaseUrl          := "/skeuomorph",
+    micrositeHighlightTheme   := "tomorrow",
     micrositeDocumentationUrl := "docs",
-    Jekyll / includeFilter := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
-    micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
-    micrositePushSiteWith := GitHub4s,
-    micrositeFavicons := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
+    includeFilter in Jekyll   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
+    micrositeGithubToken      := Option(System.getenv().get("GITHUB_TOKEN")),
+    micrositePushSiteWith     := GitHub4s,
+    micrositeFavicons         := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
       "brand-primary"   -> "#4A00D8",
       "brand-secondary" -> "#FC00CD",
@@ -52,7 +52,7 @@ lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     "org.typelevel"        %% "cats-core"         % "2.6.1",
-    "org.typelevel"        %% "cats-effect"       % "3.1.1",
+    "org.typelevel"        %% "cats-effect"       % "3.2.8",
     "io.higherkindness"    %% "droste-core"       % "0.8.0",
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
     "org.apache.avro"       % "avro"              % "1.10.2",
@@ -60,16 +60,16 @@ lazy val commonSettings = Seq(
     "com.google.protobuf"   % "protobuf-java"     % "3.17.3",
     "io.circe"             %% "circe-core"        % "0.14.1",
     "io.circe"             %% "circe-parser"      % "0.14.1",
-    "io.circe"             %% "circe-yaml"        % "0.14.0",
-    "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24" % Test,
-    "org.typelevel"        %% "cats-laws"         % "2.6.1"      % Test,
-    "io.circe"             %% "circe-testing"     % "0.14.1"     % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.6"      % Test,
-    "org.specs2"           %% "specs2-core"       % "4.12.3"     % Test,
-    "org.specs2"           %% "specs2-scalacheck" % "4.12.3"     % Test,
-    "org.scalacheck"       %% "scalacheck"        % "1.15.4"     % Test,
-    "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.0"      % Test,
-    "org.scalatra.scalate" %% "scalate-core"      % "1.9.6"      % Test
+    "io.circe"             %% "circe-yaml"        % "0.14.1",
+    "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24"   % Test,
+    "org.typelevel"        %% "cats-laws"         % "2.6.1"        % Test,
+    "io.circe"             %% "circe-testing"     % "0.14.1"       % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.2.1"        % Test,
+    "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
+    "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
+    "org.scalacheck"       %% "scalacheck"        % "1.15.4"       % Test,
+    "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.1"        % Test,
+    "org.scalatra.scalate" %% "scalate-core"      % "1.9.7"        % Test
   )
 ) ++ compilerPlugins ++ macroSettings ++ Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
@@ -90,7 +90,7 @@ lazy val compilerPlugins = Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) =>
       Seq(
-        compilerPlugin("org.typelevel" % "kind-projector"     % "0.13.0" cross CrossVersion.full),
+        compilerPlugin("org.typelevel" % "kind-projector"     % "0.13.2" cross CrossVersion.full),
         compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
       )
     case _ => Seq.empty
