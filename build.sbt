@@ -1,6 +1,6 @@
-ThisBuild / organization := "io.higherkindness"
+ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion := "2.13.6"
+ThisBuild / scalaVersion       := "2.13.6"
 ThisBuild / crossScalaVersions := Seq("2.12.12", "2.13.6")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; testCovered")
@@ -18,15 +18,15 @@ lazy val microsite = project
   .settings(publish / skip := true)
   .settings(mdocSettings)
   .settings(
-    micrositeName := "Skeuomorph",
-    micrositeDescription := "Skeuomorph is a library for transforming different schemas in Scala",
-    micrositeBaseUrl := "/skeuomorph",
-    micrositeHighlightTheme := "tomorrow",
+    micrositeName             := "Skeuomorph",
+    micrositeDescription      := "Skeuomorph is a library for transforming different schemas in Scala",
+    micrositeBaseUrl          := "/skeuomorph",
+    micrositeHighlightTheme   := "tomorrow",
     micrositeDocumentationUrl := "docs",
-    includeFilter in Jekyll := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
-    micrositeGithubToken := Option(System.getenv().get("GITHUB_TOKEN")),
-    micrositePushSiteWith := GitHub4s,
-    micrositeFavicons := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
+    includeFilter in Jekyll   := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.md" | "*.svg",
+    micrositeGithubToken      := Option(System.getenv().get("GITHUB_TOKEN")),
+    micrositePushSiteWith     := GitHub4s,
+    micrositeFavicons         := Seq(microsites.MicrositeFavicon("favicon.png", "32x32")),
     micrositePalette := Map(
       "brand-primary"   -> "#4A00D8",
       "brand-secondary" -> "#FC00CD",
@@ -60,12 +60,12 @@ lazy val commonSettings = Seq(
     "com.google.protobuf"   % "protobuf-java"     % "3.17.3",
     "io.circe"             %% "circe-core"        % "0.14.1",
     "io.circe"             %% "circe-parser"      % "0.14.1",
-    "io.circe"             %% "circe-yaml"        % "0.13.1",
-    "org.scalameta"        %% "scalameta"         % "4.4.25",
+    "io.circe"             %% "circe-yaml"        % "0.14.1",
+    "org.scalameta"        %% "scalameta"         % "4.4.27",
     "com.julianpeeters"    %% "avrohugger-core"   % "1.0.0-RC24"   % Test,
     "org.typelevel"        %% "cats-laws"         % "2.6.1"        % Test,
     "io.circe"             %% "circe-testing"     % "0.14.1"       % Test,
-    "org.typelevel"        %% "discipline-specs2" % "1.1.6"        % Test,
+    "org.typelevel"        %% "discipline-specs2" % "1.2.1"        % Test,
     "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
     "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
     "org.scalacheck"       %% "scalacheck"        % "1.15.4"       % Test,
@@ -81,7 +81,7 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= Seq(
-    compilerPlugin("org.typelevel" % "kind-projector"     % "0.13.0" cross CrossVersion.full),
+    compilerPlugin("org.typelevel" % "kind-projector"     % "0.13.2" cross CrossVersion.full),
     compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")
   )
 )
