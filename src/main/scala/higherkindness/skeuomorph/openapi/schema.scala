@@ -37,7 +37,7 @@ object schema {
   object OpenApi {
     import higherkindness.droste._
     import Optimize._
-    import cats.implicits._
+    import cats.syntax.all._
     import cats.data.State
 
     implicit def openApiEq[T]: Eq[OpenApi[T]] =
@@ -352,7 +352,7 @@ object schema {
 
   sealed abstract class Location(val value: String) extends Product with Serializable
   object Location {
-    import cats.implicits._
+    import cats.syntax.all._
     case object Path   extends Location("path")
     case object Query  extends Location("query")
     case object Header extends Location("header")

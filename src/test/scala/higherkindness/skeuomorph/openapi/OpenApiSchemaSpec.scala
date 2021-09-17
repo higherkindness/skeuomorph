@@ -17,16 +17,16 @@
 package higherkindness.skeuomorph.openapi
 
 import higherkindness.skeuomorph.instances._
-import org.typelevel.discipline.specs2.Discipline
+import cats.kernel.CommutativeMonoid
 import cats.laws.discipline._
-import _root_.cats.implicits._
-import org.specs2.{ScalaCheck, Specification}
-import schema._
+import cats.laws.discipline.arbitrary._
+import cats.implicits._
+import io.circe._
+import io.circe.testing._
 import org.scalacheck._
-import _root_.io.circe._
-import _root_.io.circe.testing._
-import _root_.cats.kernel.CommutativeMonoid
-import _root_.cats.laws.discipline.arbitrary._
+import org.specs2.{ScalaCheck, Specification}
+import org.typelevel.discipline.specs2.Discipline
+import schema._
 import Spec._
 
 class OpenApiSchemaSpec extends Specification with ScalaCheck with Discipline {
