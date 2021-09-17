@@ -23,9 +23,8 @@ import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi._
 import higherkindness.skeuomorph.openapi.print._
 import client.http4s.print._
-import cats.implicits._
 import higherkindness.droste._
-import cats.implicits._
+import cats.syntax.all._
 
 import higherkindness.skeuomorph.openapi.print.Codecs
 
@@ -39,7 +38,7 @@ package object circe {
     List("io.circe._", "io.circe.generic.semiauto._").map(PackageName.apply) ++ http4sPackages
 
   private val enumPackages = http4sPackages ++
-    List("cats._", "cats.implicits._", "io.circe._").map(PackageName.apply)
+    List("cats._", "cats.syntax.all._", "io.circe._").map(PackageName.apply)
 
   private def codecsTypes[T](name: String): ((String, Tpe[T]), (String, Tpe[T])) = {
     val tpe = Tpe[T](name)

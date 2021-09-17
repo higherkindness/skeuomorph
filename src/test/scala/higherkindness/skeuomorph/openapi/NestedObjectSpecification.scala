@@ -19,7 +19,7 @@ package higherkindness.skeuomorph.openapi
 class NestedObjectSpecification extends org.specs2.mutable.Specification {
   import JsonSchemaF.Fixed
   import Optimize._
-  import cats.implicits._
+  import cats.syntax.all._
   import higherkindness.droste._
   import helpers._
 
@@ -28,7 +28,7 @@ class NestedObjectSpecification extends org.specs2.mutable.Specification {
     x._1 -> y
   }
 
-  def expectedTypes[T: Basis[JsonSchemaF, *]](d: (String, T)*)(t: T) =
+  def expectedTypes[T](d: (String, T)*)(t: T) =
     d.toMap -> t
 
   "basic types should not change" >> {

@@ -23,7 +23,7 @@ import higherkindness.skeuomorph.catz.contrib.Decidable._
 import higherkindness.skeuomorph.openapi
 import higherkindness.skeuomorph.openapi.{schema => _, _}
 import higherkindness.skeuomorph.openapi.print._
-import cats.implicits._
+import cats.syntax.all._
 import cats.Show
 
 import higherkindness.droste._
@@ -228,7 +228,7 @@ object print {
       Show.show(x => show"${x.operationId}ErrorResponse".capitalize)
   }
 
-  private def typeFromResponse[T: Basis[JsonSchemaF, *]](response: Response[T]): Option[T] =
+  private def typeFromResponse[T](response: Response[T]): Option[T] =
     jsonFrom(response.content).flatMap(_.schema)
 
   private def responseType[T: Basis[JsonSchemaF, *]]: Printer[Response[T]] =
