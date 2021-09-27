@@ -76,7 +76,7 @@ object MuF {
       fields: List[Field[A]],
       nestedProducts: List[A],
       nestedCoproducts: List[A]
-  )                                                        extends MuF[A]
+  ) extends MuF[A]
   final case class TDate[A]()                              extends MuF[A]
   final case class TInstant[A]()                           extends MuF[A]
   final case class TTime[A]()                              extends MuF[A]

@@ -102,7 +102,7 @@ object ProtobufF {
       reserved: List[List[String]],
       nestedMessages: List[A],
       nestedEnums: List[A]
-  )                                                                                     extends ProtobufF[A]
+  ) extends ProtobufF[A]
   final case class TFileDescriptor[A](values: List[A], name: String, `package`: String) extends ProtobufF[A]
 
   def `null`[A](): ProtobufF[A]                                                   = TNull()

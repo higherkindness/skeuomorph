@@ -113,7 +113,7 @@ object AvroF {
       aliases: List[String],
       doc: Option[String],
       symbols: List[String]
-  )                                                                                                     extends AvroF[A]
+  ) extends AvroF[A]
   final case class TUnion[A](options: NonEmptyList[A])                                                  extends AvroF[A]
   final case class TFixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int) extends AvroF[A]
   final case class TDate[A]()                                                                           extends AvroF[A]
@@ -170,7 +170,7 @@ object AvroF {
       aliases: List[String],
       doc: Option[String],
       symbols: List[String]
-  ): AvroF[A]                                      = TEnum(name, namespace, aliases, doc, symbols)
+  ): AvroF[A] = TEnum(name, namespace, aliases, doc, symbols)
   def union[A](options: NonEmptyList[A]): AvroF[A] = TUnion(options)
   def fixed[A](name: String, namespace: Option[String], aliases: List[String], size: Int): AvroF[A] =
     TFixed(name, namespace, aliases, size)
