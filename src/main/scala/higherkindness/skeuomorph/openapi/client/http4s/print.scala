@@ -247,7 +247,7 @@ object print {
   private val packages = List(
     "cats._",
     "cats.effect._",
-    "cats.syntax.all._",
+    "cats.implicits._",
     "io.circe._",
     "org.http4s._",
     "org.http4s.client.Client",
