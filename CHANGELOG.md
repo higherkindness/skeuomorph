@@ -1,5 +1,13 @@
 # Changelog
 
+## [v0.1.2](https://github.com/higherkindness/skeuomorph/tree/v0.1.2) (2021-09-28)
+
+[Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.1.1...v0.1.2)
+
+🐛 **Bug Fixes**
+
+- Restores the cats implicits import [\#521](https://github.com/higherkindness/skeuomorph/pull/521) ([fedefernandez](https://github.com/fedefernandez))
+
 ## [v0.1.1](https://github.com/higherkindness/skeuomorph/tree/v0.1.1) (2021-09-28)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.1.0...v0.1.1)
@@ -147,6 +155,10 @@
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.27...v0.0.28)
 
+⚠️ **Breaking changes**
+
+- Stop setting `methodNameStyle = Capitalize` when useIdiomaticEndpoints is true [\#342](https://github.com/higherkindness/skeuomorph/pull/342) ([L-Lavigne](https://github.com/L-Lavigne))
+
 🐛 **Bug Fixes**
 
 - Invalid enums generated if `package` option is not supplied [\#337](https://github.com/higherkindness/skeuomorph/issues/337)
@@ -203,10 +215,6 @@
 ## [v0.0.26](https://github.com/higherkindness/skeuomorph/tree/v0.0.26) (2020-10-09)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.25...v0.0.26)
-
-⚠️ **Breaking changes**
-
-- Stop setting `methodNameStyle = Capitalize` when useIdiomaticEndpoints is true [\#342](https://github.com/higherkindness/skeuomorph/pull/342) ([L-Lavigne](https://github.com/L-Lavigne))
 
 🚀 **Features**
 
@@ -326,7 +334,6 @@
 - Update specs2-core, specs2-scalacheck to 4.9.1 [\#248](https://github.com/higherkindness/skeuomorph/pull/248) ([scala-steward](https://github.com/scala-steward))
 - Update sbt-mima-plugin to 0.7.0 [\#246](https://github.com/higherkindness/skeuomorph/pull/246) ([scala-steward](https://github.com/scala-steward))
 - Improve conversion from Avro protocol to Mu protocol [\#245](https://github.com/higherkindness/skeuomorph/pull/245) ([cb372](https://github.com/cb372))
-- Remove use of sbt-org-policies dependency syntax [\#244](https://github.com/higherkindness/skeuomorph/pull/244) ([cb372](https://github.com/cb372))
 - Update cats-core, cats-laws to 2.1.1 [\#243](https://github.com/higherkindness/skeuomorph/pull/243) ([scala-steward](https://github.com/scala-steward))
 - Update sbt-tpolecat to 0.1.11 [\#242](https://github.com/higherkindness/skeuomorph/pull/242) ([scala-steward](https://github.com/scala-steward))
 - Update sbt-org-policies to 0.13.1 [\#241](https://github.com/higherkindness/skeuomorph/pull/241) ([scala-steward](https://github.com/scala-steward))
@@ -337,6 +344,7 @@
 
 **Merged pull requests:**
 
+- Remove use of sbt-org-policies dependency syntax [\#244](https://github.com/higherkindness/skeuomorph/pull/244) ([cb372](https://github.com/cb372))
 - Releases 0.0.22 [\#240](https://github.com/higherkindness/skeuomorph/pull/240) ([juanpedromoreno](https://github.com/juanpedromoreno))
 - Update scalafmt-core to 2.4.2 [\#239](https://github.com/higherkindness/skeuomorph/pull/239) ([scala-steward](https://github.com/scala-steward))
 - Update sbt-microsites to 1.1.2 [\#237](https://github.com/higherkindness/skeuomorph/pull/237) ([scala-steward](https://github.com/scala-steward))
@@ -385,7 +393,6 @@
 - Update specs2-core, specs2-scalacheck to 4.8.3 [\#208](https://github.com/higherkindness/skeuomorph/pull/208) ([scala-steward](https://github.com/scala-steward))
 - Update specs2-core, specs2-scalacheck to 4.8.2 [\#207](https://github.com/higherkindness/skeuomorph/pull/207) ([scala-steward](https://github.com/scala-steward))
 - Support protobuf nested messages and enums [\#206](https://github.com/higherkindness/skeuomorph/pull/206) ([cb372](https://github.com/cb372))
-- Use scalameta for codegen [\#205](https://github.com/higherkindness/skeuomorph/pull/205) ([cb372](https://github.com/cb372))
 
 ## [v0.0.19](https://github.com/higherkindness/skeuomorph/tree/v0.0.19) (2020-01-02)
 
@@ -393,6 +400,7 @@
 
 **Merged pull requests:**
 
+- Use scalameta for codegen [\#205](https://github.com/higherkindness/skeuomorph/pull/205) ([cb372](https://github.com/cb372))
 - Release 0.0.19 [\#204](https://github.com/higherkindness/skeuomorph/pull/204) ([cb372](https://github.com/cb372))
 - Fix a couple of compilation issues in the generated code [\#203](https://github.com/higherkindness/skeuomorph/pull/203) ([cb372](https://github.com/cb372))
 - Fix broken docs [\#201](https://github.com/higherkindness/skeuomorph/pull/201) ([cb372](https://github.com/cb372))
@@ -499,6 +507,7 @@
 - Update better-monadic-for to 0.3.1 [\#131](https://github.com/higherkindness/skeuomorph/pull/131) ([scala-steward](https://github.com/scala-steward))
 - Update ammonite to 1.6.7 [\#130](https://github.com/higherkindness/skeuomorph/pull/130) ([scala-steward](https://github.com/scala-steward))
 - Update protobuf-java to 3.10.0 [\#129](https://github.com/higherkindness/skeuomorph/pull/129) ([scala-steward](https://github.com/scala-steward))
+- Open api parser [\#123](https://github.com/higherkindness/skeuomorph/pull/123) ([BeniVF](https://github.com/BeniVF))
 
 ## [v0.0.13](https://github.com/higherkindness/skeuomorph/tree/v0.0.13) (2019-09-16)
 
@@ -526,7 +535,6 @@
 **Merged pull requests:**
 
 - Release 0.0.12 [\#124](https://github.com/higherkindness/skeuomorph/pull/124) ([juanpedromoreno](https://github.com/juanpedromoreno))
-- Open api parser [\#123](https://github.com/higherkindness/skeuomorph/pull/123) ([BeniVF](https://github.com/BeniVF))
 - Normalize and more support for open api spec [\#121](https://github.com/higherkindness/skeuomorph/pull/121) ([BeniVF](https://github.com/BeniVF))
 - Removes the optionality in Coproducts [\#119](https://github.com/higherkindness/skeuomorph/pull/119) ([rafaparadela](https://github.com/rafaparadela))
 - Fix readme/microsite [\#118](https://github.com/higherkindness/skeuomorph/pull/118) ([dzanot](https://github.com/dzanot))
@@ -589,11 +597,14 @@
 - Revert "Use the fully qualified name for fs2 Stream" [\#83](https://github.com/higherkindness/skeuomorph/pull/83) ([fedefernandez](https://github.com/fedefernandez))
 - Introduce schema comparison [\#82](https://github.com/higherkindness/skeuomorph/pull/82) ([vil1](https://github.com/vil1))
 - Adds the parameters to an operation [\#81](https://github.com/higherkindness/skeuomorph/pull/81) ([fedefernandez](https://github.com/fedefernandez))
-- Fixes scoverage transitive issues [\#78](https://github.com/higherkindness/skeuomorph/pull/78) ([juanpedromoreno](https://github.com/juanpedromoreno))
 
 ## [v0.0.8](https://github.com/higherkindness/skeuomorph/tree/v0.0.8) (2019-03-19)
 
 [Full Changelog](https://github.com/higherkindness/skeuomorph/compare/v0.0.7...v0.0.8)
+
+**Merged pull requests:**
+
+- Fixes scoverage transitive issues [\#78](https://github.com/higherkindness/skeuomorph/pull/78) ([juanpedromoreno](https://github.com/juanpedromoreno))
 
 ## [v0.0.7](https://github.com/higherkindness/skeuomorph/tree/v0.0.7) (2019-03-18)
 
@@ -673,13 +684,13 @@
 **Merged pull requests:**
 
 - Build Fixes and Release 0.0.3 [\#52](https://github.com/higherkindness/skeuomorph/pull/52) ([juanpedromoreno](https://github.com/juanpedromoreno))
+- Move code under higherkindness/skeuomorph dirs [\#50](https://github.com/higherkindness/skeuomorph/pull/50) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update droste to 0.6.0 [\#49](https://github.com/higherkindness/skeuomorph/pull/49) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update cats to 1.5.0 [\#48](https://github.com/higherkindness/skeuomorph/pull/48) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update Scala to 2.12.8 [\#47](https://github.com/higherkindness/skeuomorph/pull/47) ([JesusMtnez](https://github.com/JesusMtnez))
 - Move under higherkindness package [\#46](https://github.com/higherkindness/skeuomorph/pull/46) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update sbt to 1.2.7 [\#41](https://github.com/higherkindness/skeuomorph/pull/41) ([JesusMtnez](https://github.com/JesusMtnez))
 - Update CHANGELOG.md [\#39](https://github.com/higherkindness/skeuomorph/pull/39) ([juanpedromoreno](https://github.com/juanpedromoreno))
-- change the organization to io.higherkindness [\#32](https://github.com/higherkindness/skeuomorph/pull/32) ([pepegar](https://github.com/pepegar))
 
 ## [v0.0.2](https://github.com/higherkindness/skeuomorph/tree/v0.0.2) (2018-11-22)
 
@@ -703,6 +714,7 @@
 - Revert 0.0.2 release [\#36](https://github.com/higherkindness/skeuomorph/pull/36) ([juanpedromoreno](https://github.com/juanpedromoreno))
 - fix packaging [\#35](https://github.com/higherkindness/skeuomorph/pull/35) ([pepegar](https://github.com/pepegar))
 - release 0.0.2 [\#34](https://github.com/higherkindness/skeuomorph/pull/34) ([pepegar](https://github.com/pepegar))
+- change the organization to io.higherkindness [\#32](https://github.com/higherkindness/skeuomorph/pull/32) ([pepegar](https://github.com/pepegar))
 - Readme compiles with printer instance [\#29](https://github.com/higherkindness/skeuomorph/pull/29) ([rlmark](https://github.com/rlmark))
 - Migrate freestyle to mu [\#26](https://github.com/higherkindness/skeuomorph/pull/26) ([JesusMtnez](https://github.com/JesusMtnez))
 - Add some more tests [\#24](https://github.com/higherkindness/skeuomorph/pull/24) ([pepegar](https://github.com/pepegar))
