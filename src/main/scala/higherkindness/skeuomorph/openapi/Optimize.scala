@@ -42,7 +42,7 @@ object Optimize {
         fields
           .traverse[NestedTypesState[T, *], JsonSchemaF.Property[T]] {
             case p if isNestedType(p.tpe) =>
-              extractNestedTypes(p.name.capitalize, p.tpe).map { //TODO Maybe we should normalize
+              extractNestedTypes(p.name.capitalize, p.tpe).map { // TODO Maybe we should normalize
                 case (n, t) => p.copy(tpe = namedTypes[T](n).apply(t))
               }
             case p => State.pure(p)
