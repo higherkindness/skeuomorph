@@ -158,7 +158,7 @@ object instances {
   implicit def openApiArbitrary[T](implicit T: Arbitrary[T]): Arbitrary[OpenApi[T]] = {
     import openapi.schema._
     // TODO: after Scalacheck 1.14.1 upgrade this generator doesn't work anymore
-    //def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = Gen.mapOfN(2, Gen.zip(nonEmptyString.map(_.take(4)), gen))
+    // def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = Gen.mapOfN(2, Gen.zip(nonEmptyString.map(_.take(4)), gen))
     def mapStringToGen[A](gen: Gen[A]): Gen[Map[String, A]] = gen.map(a => Map(UUID.randomUUID.toString.take(4) -> a))
     val optionStringGen                                     = Gen.option(nonEmptyString)
     val infoGen: Gen[Info] = (nonEmptyString, optionStringGen, nonEmptyString).mapN(Info)
