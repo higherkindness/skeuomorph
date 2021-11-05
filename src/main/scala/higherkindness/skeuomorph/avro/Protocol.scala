@@ -47,7 +47,7 @@ object Protocol {
       Json.obj(
         "request" -> Json.arr(
           Json.obj(
-            "name" -> Json.fromString("arg"), //TODO: is this doable?
+            "name" -> Json.fromString("arg"), // TODO: is this doable?
             "type" -> avroToJson(message.request)
           )
         ),
