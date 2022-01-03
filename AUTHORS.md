@@ -49,3 +49,4 @@ These are the people that have contributed to the _skeuomorph_ project:
 - [![sloshy](https://avatars.githubusercontent.com/u/427237?v=4&s=20) **sloshy**](https://github.com/sloshy)
 - [![AlvaroCaste](https://avatars.githubusercontent.com/u/1271375?v=4&s=20) **AlvaroCaste**](https://github.com/AlvaroCaste)
 - [![IsabelDuran](https://avatars.githubusercontent.com/u/37183993?v=4&s=20) **IsabelDuran**](https://github.com/IsabelDuran)
+- [![ThatScalaGuy](https://avatars.githubusercontent.com/u/7647945?v=4&s=20) **ThatScalaGuy**](https://github.com/ThatScalaGuy)
