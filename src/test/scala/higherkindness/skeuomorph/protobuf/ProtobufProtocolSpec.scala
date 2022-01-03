@@ -31,13 +31,14 @@ import scala.meta.contrib._
 
 class ProtobufProtocolSpec extends Specification with ScalaCheck {
 
-  val workingDirectory: String   = new java.io.File(".").getCanonicalPath
-  val testDirectory              = "/src/test/resources/protobuf"
-  val importRoot: Option[String] = Some(workingDirectory + testDirectory)
+  val workingDirectory: String      = new java.io.File(".").getCanonicalPath
+  val testDirectory                 = "/src/test/resources/protobuf"
+  val importRoot: Option[String]    = Some(workingDirectory + testDirectory)
+  val protocVersion: Option[String] = Some("3.19.1")
 
   val bookProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
     val path   = workingDirectory + s"$testDirectory/service"
-    val source = ProtoSource(s"book.proto", path, importRoot)
+    val source = ProtoSource(s"book.proto", path, importRoot, protocVersion)
     parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
   }
 
@@ -229,7 +230,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codegenOpencensus = {
     val opencensusProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models/opencensus"
-      val source = ProtoSource(s"trace.proto", path, importRoot)
+      val source = ProtoSource(s"trace.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -365,7 +366,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codegenTaggedIntegers = {
     val integerTypesProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models"
-      val source = ProtoSource(s"integer_types.proto", path, importRoot)
+      val source = ProtoSource(s"integer_types.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -396,7 +397,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codegenGoogleApi = {
     val googleApiProtocol: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/models/type"
-      val source = ProtoSource(s"date.proto", path, importRoot)
+      val source = ProtoSource(s"date.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -412,7 +413,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codeGenProtobufOnlyJavaPackage = {
     val optionalPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_only_java_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_only_java_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -435,7 +436,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codegenProtobufNoPackage = {
     val optionalPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_no_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_no_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -458,7 +459,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codeGenProtobufBothPackages = {
     val javaPackageAndRegularPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_java_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_java_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -481,7 +482,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codeGenProtobufEnumWithPackage = {
     val enumWithPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_enum_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_enum_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -506,7 +507,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codeGenProtobufEnumOnlyJavaPackage = {
     val enumOnlyJavaPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_enum_only_java_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_enum_only_java_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -531,7 +532,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codeGenProtobufEnumNoPackage = {
     val enumWithNoPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_enum_no_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_enum_no_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
@@ -556,7 +557,7 @@ class ProtobufProtocolSpec extends Specification with ScalaCheck {
   private def codeGenProtobufEnumBothPackages = {
     val enumWithJavaPackageAndRegularPackage: protobuf.Protocol[Mu[ProtobufF]] = {
       val path   = workingDirectory + s"$testDirectory/packages"
-      val source = ProtoSource(s"test_enum_java_package.proto", path, importRoot)
+      val source = ProtoSource(s"test_enum_java_package.proto", path, importRoot, protocVersion)
       parseProto[IO, Mu[ProtobufF]].parse(source).unsafeRunSync()
     }
 
