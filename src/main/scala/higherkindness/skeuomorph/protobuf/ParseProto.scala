@@ -41,7 +41,8 @@ object ParseProto {
   final case class ProtoSource(
       filename: String,
       path: String,
-      importRoot: Option[String] = None
+      importRoot: Option[String] = None,
+      protocVersion: Option[String] = None
   )
 
   final case class NamedDescriptor[A](
@@ -87,9 +88,11 @@ object ParseProto {
     val protoPaths = input.importRoot
       .foldLeft(Array(s"--proto_path=${input.path}"))((arr, i) => arr :+ s"--proto_path=$i")
 
+    val version = input.protocVersion.map(v => Array(s"-v$v")).getOrElse(Array.empty)
+
     val protoCompilation: F[Int] = Sync[F].delay(
       Protoc.runProtoc(
-        protoPaths ++ Array(
+        protoPaths ++ version ++ Array(
           "--plugin=protoc-gen-proto2_to_proto3",
           "--include_imports",
           s"--descriptor_set_out=${input.filename}.desc",
