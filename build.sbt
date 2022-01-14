@@ -75,7 +75,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) =>
       Seq(
-        "org.scalameta" %% "scalameta" % "4.4.31"
+        "org.scalameta" %% "scalameta" % "4.4.32"
       )
     case _ => Seq.empty
   })
