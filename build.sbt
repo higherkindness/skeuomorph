@@ -47,6 +47,21 @@ lazy val documentation = project
   .settings(publish / skip := true)
   .enablePlugins(MdocPlugin)
 
+lazy val filterConsoleScalacOptions = { options: Seq[String] =>
+  options.filterNot(
+    Set(
+      "-Werror",
+      "-Wdead-code",
+      "-Wunused:imports",
+      "-Ywarn-unused",
+      "-Ywarn-unused:imports",
+      "-Ywarn-unused-import",
+      "-Ywarn-dead-code",
+      "-Xfatal-warnings"
+    )
+  )
+}
+
 // General Settings
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
