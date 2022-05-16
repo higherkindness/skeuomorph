@@ -119,7 +119,7 @@ class AvroProtocolSpec extends Specification with ScalaCheck {
       codegen.protocol(mProto, streamCtor).map(p => (mProto.pkg, p))
     }
   }
-  val templateEngine: TemplateEngine = new TemplateEngine()
+  val templateEngine: TemplateEngine = new TemplateEngine
 
   def codegenExpectation(
       idlName: String,

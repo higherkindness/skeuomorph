@@ -268,7 +268,7 @@ object print {
     (p1, sep, p2).contramapN[(A, B)] { case (x, y) => (x, (), y) }
 
   def tpe[T: Basis[JsonSchemaF, *]]: Printer[Tpe[T]] =
-    ((κ("Option[") *< string >* κ("]")) >|< string)
+    (κ("Option[") *< string >* κ("]") >|< string)
       .contramap(Tpe.option[T])
 
   def importDef: Printer[PackageName] =

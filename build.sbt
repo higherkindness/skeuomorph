@@ -88,7 +88,7 @@ lazy val commonSettings = Seq(
   )
 ) ++ compilerPlugins ++ macroSettings ++ Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) =>
+    case Some(2, _) =>
       Seq(
         "org.scalameta" %% "scalameta" % "4.5.6"
       )
@@ -103,7 +103,7 @@ lazy val mdocSettings = Seq(
 
 lazy val compilerPlugins = Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
-    case Some((2, _)) =>
+    case Some(2, _) =>
       Seq(
         compilerPlugin("org.typelevel" % "kind-projector"     % "0.13.2" cross CrossVersion.full),
         compilerPlugin("com.olegpy"   %% "better-monadic-for" % "0.3.1")

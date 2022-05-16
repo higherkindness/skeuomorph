@@ -68,7 +68,7 @@ object Optimize {
   private def extractNestedTypes[T: Basis[JsonSchemaF, *]](name: String, tpe: T): NestedTypesState[T, (String, T)] = {
     def addType(items: (String, T)): NestedTypesState[T, Unit] =
       State.modify { case (x, y) =>
-        (x + items) -> y
+        x + items -> y
       }
 
     def generateName(originalName: String, previousOccurrences: Long): String =

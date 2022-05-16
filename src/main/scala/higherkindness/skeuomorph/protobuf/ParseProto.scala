@@ -325,7 +325,7 @@ object ParseProto {
     msg.getFieldList.asScala.toList.find(_.getName == name)
 
   def containsOnlyMapEntryFields(fields: List[FieldDescriptorProto]): Boolean =
-    fields.count(f => (f.getNumber == 1 && f.getName == "key") || (f.getNumber == 2 && f.getName == "value")) == 2
+    fields.count(f => f.getNumber == 1 && f.getName == "key" || f.getNumber == 2 && f.getName == "value") == 2
 
   def matchNameEntry(name: String, source: DescriptorProto): Boolean =
     normalizeName(source.getName) == normalizeName(s"${name}Entry")

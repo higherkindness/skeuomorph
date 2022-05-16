@@ -373,7 +373,7 @@ object print {
       responses: Map[String, Either[Response[T], Reference]]
   )(implicit codecs: Printer[Codecs]): Either[(List[String], TypeAliasErrorResponse, List[String]), List[String]] =
     responses.toList match {
-      case (_, response) :: Nil =>
+      case _, response :: Nil =>
         response.left.toOption
           .map(_ -> responseOrType.print(response))
           .toList
@@ -428,7 +428,7 @@ object print {
   private def requestSchema[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, Option[Either[Request[T], Reference]])] =
-    (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
+    optional((space >* space) *< schemaWithName[T]).contramap((requestSchemaTuple[T] _).tupled)
 
   private def parameterSchema[T: Basis[JsonSchemaF, *]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
     schemaWithName[T].contramap(x => x.name -> x.schema)

@@ -42,7 +42,7 @@ package object circe {
 
   private def codecsTypes[T](name: String): ((String, Tpe[T]), (String, Tpe[T])) = {
     val tpe = Tpe[T](name)
-    (name -> tpe) -> (s"Option${normalize(name)}" -> tpe.copy(required = false))
+    name -> tpe -> (s"Option${normalize(name)}" -> tpe.copy(required = false))
   }
   protected def isIdentifier: String => Boolean =
     field => field.headOption.exists(x => x.isLetter && x.isLower) && field.forall(_.isLetterOrDigit)
