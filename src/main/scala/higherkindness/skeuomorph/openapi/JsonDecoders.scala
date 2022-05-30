@@ -265,37 +265,35 @@ object JsonDecoders {
       "parameters"
     )(
       (
-          (
-              ref: Option[String], // $ref
-              summary: Option[String],
-              description: Option[String],
-              get: Option[Path.Operation[A]],
-              put: Option[Path.Operation[A]],
-              post: Option[Path.Operation[A]],
-              delete: Option[Path.Operation[A]],
-              options: Option[Path.Operation[A]],
-              head: Option[Path.Operation[A]],
-              patch: Option[Path.Operation[A]],
-              trace: Option[Path.Operation[A]],
-              servers: Option[List[Server]],
-              parameters: Option[List[Either[Parameter[A], Reference]]]
-          ) =>
-            Path.ItemObject(
-              ref,
-              summary,
-              description,
-              get,
-              put,
-              post,
-              delete,
-              options,
-              head,
-              patch,
-              trace,
-              servers.getOrElse(List.empty),
-              parameters.getOrElse(List.empty)
-            )
-      )
+          ref: Option[String], // $ref
+          summary: Option[String],
+          description: Option[String],
+          get: Option[Path.Operation[A]],
+          put: Option[Path.Operation[A]],
+          post: Option[Path.Operation[A]],
+          delete: Option[Path.Operation[A]],
+          options: Option[Path.Operation[A]],
+          head: Option[Path.Operation[A]],
+          patch: Option[Path.Operation[A]],
+          trace: Option[Path.Operation[A]],
+          servers: Option[List[Server]],
+          parameters: Option[List[Either[Parameter[A], Reference]]]
+      ) =>
+        Path.ItemObject(
+          ref,
+          summary,
+          description,
+          get,
+          put,
+          post,
+          delete,
+          options,
+          head,
+          patch,
+          trace,
+          servers.getOrElse(List.empty),
+          parameters.getOrElse(List.empty)
+        )
     )
 
   implicit def componentsDecoder[A: Decoder]: Decoder[Components[A]] =

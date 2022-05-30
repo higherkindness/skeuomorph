@@ -209,7 +209,7 @@ object print {
 
   private def operationTuple[T: Basis[JsonSchemaF, *]](
       operation: Http.Operation[T]
-  ): (Http.OperationId, (List[VarWithType[T]]), Http.Responses[T]) =
+  ): (Http.OperationId, List[VarWithType[T]], Http.Responses[T]) =
     (
       operation.operationId,
       operation.parameters.map(parameterTuple[T]) ++
@@ -392,7 +392,7 @@ object print {
     }
 
   private def responseErrorsDef: Printer[List[String]] =
-    (sepBy(string, " :+: "), (κ(" :+: CNil") >|< unit)).contramapN(errorTypes =>
+    (sepBy(string, " :+: "), κ(" :+: CNil") >|< unit).contramapN(errorTypes =>
       (errorTypes, if (errorTypes.size > 1) ().asLeft else ().asRight)
     )
 
@@ -423,12 +423,12 @@ object print {
       name    = tpe.print(requestTuple)
       newType = defaultRequestName(operationId)
       if name === newType
-    } yield (newType -> requestTpe)
+    } yield newType -> requestTpe
 
   private def requestSchema[T: Basis[JsonSchemaF, *]](implicit
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, Option[Either[Request[T], Reference]])] =
-    (optional((space >* space) *< schemaWithName[T])).contramap((requestSchemaTuple[T] _).tupled)
+    optional((space >* space) *< schemaWithName[T]).contramap((requestSchemaTuple[T] _).tupled)
 
   private def parameterSchema[T: Basis[JsonSchemaF, *]](implicit codecs: Printer[Codecs]): Printer[Parameter[T]] =
     schemaWithName[T].contramap(x => x.name -> x.schema)

@@ -67,12 +67,12 @@ lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     "org.typelevel"        %% "cats-core"         % "2.7.0",
-    "org.typelevel"        %% "cats-effect"       % "3.3.11",
+    "org.typelevel"        %% "cats-effect"       % "3.3.12",
     "io.higherkindness"    %% "droste-core"       % "0.8.0",
     "io.higherkindness"    %% "droste-macros"     % "0.8.0",
     "org.apache.avro"       % "avro"              % "1.11.0",
     "com.github.os72"       % "protoc-jar"        % "3.11.4",
-    "com.google.protobuf"   % "protobuf-java"     % "3.20.1",
+    "com.google.protobuf"   % "protobuf-java"     % "3.21.1",
     "io.circe"             %% "circe-core"        % "0.14.2",
     "io.circe"             %% "circe-parser"      % "0.14.2",
     "io.circe"             %% "circe-yaml"        % "0.14.1",
@@ -90,7 +90,7 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) =>
       Seq(
-        "org.scalameta" %% "scalameta" % "4.5.6"
+        "org.scalameta" %% "scalameta" % "4.5.8"
       )
     case _ => Seq.empty
   })

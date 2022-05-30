@@ -227,7 +227,7 @@ object print {
       codecs: Printer[Codecs]
   ): Printer[(String, List[(String, Tpe[T])])] =
     (caseClassDef[T], optional(newLine *< objectDef(codecs))).contramapN { x =>
-      ((x._1 -> x._2), ((x._1, none), List.empty[PackageName], CaseClassCodecs(x._1, x._2.map(_._1))).some)
+      (x._1 -> x._2, ((x._1, none), List.empty[PackageName], CaseClassCodecs(x._1, x._2.map(_._1))).some)
     }
 
   def typeAliasDef[T](

@@ -156,7 +156,7 @@ package object circe {
   }
 
   def sumCirceDecoder[T: Basis[JsonSchemaF, *], B]: Printer[(String, List[String])] =
-    decoderDef[T, (List[(String, String)])](
+    decoderDef[T, List[(String, String)]](
       sepBy(
         divBy(κ("Decoder[") *< string >* κ("]"), κ(".map(x => "), κ("Coproduct[") *< string >* κ("](x))")),
         " orElse "
