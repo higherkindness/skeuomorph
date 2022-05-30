@@ -156,7 +156,7 @@ object print {
       codecs: Printer[Codecs]
   ): Printer[(Http.OperationId, String, (Either[Response[T], Reference], Int))] =
     (successResponseImpl[T] >|< defaultResponseImpl[T] >|< statusResponseImpl[T]).contramap {
-      case (_, statusCodePattern(code), (x, _)) if successStatusCode(code) => (x.asLeft).asLeft
+      case (_, statusCodePattern(code), (x, _)) if successStatusCode(code) => x.asLeft.asLeft
       case (operationId, "default", x)                                     => (operationId -> x).asRight.asLeft
       case x                                                               => x.asRight
     }
@@ -197,7 +197,7 @@ object print {
       twoSpaces *< twoSpaces *< κ("}")
     ).contramapN { operation =>
       (
-        (operation.operationId -> operation.responses),
+        operation.operationId -> operation.responses,
         operation,
         operation.responses.toList.map { x =>
           un(
@@ -230,7 +230,7 @@ object print {
     }
 
   def httpPath[T]: Printer[Http.Path] =
-    (κ("/ ") *< sepBy((string >|< (show[Var] >* κ(".show"))), " / ")).contramap {
+    (κ("/ ") *< sepBy(string >|< (show[Var] >* κ(".show")), " / ")).contramap {
       _.show
         .split("/")
         .filter(_.nonEmpty)
