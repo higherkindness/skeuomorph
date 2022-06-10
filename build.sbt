@@ -68,8 +68,8 @@ lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "org.typelevel"        %% "cats-core"         % "2.7.0",
     "org.typelevel"        %% "cats-effect"       % "3.3.12",
-    "io.higherkindness"    %% "droste-core"       % "0.8.0",
-    "io.higherkindness"    %% "droste-macros"     % "0.8.0",
+    "io.higherkindness"    %% "droste-core"       % "0.9.0",
+    "io.higherkindness"    %% "droste-macros"     % "0.9.0",
     "org.apache.avro"       % "avro"              % "1.11.0",
     "com.github.os72"       % "protoc-jar"        % "3.11.4",
     "com.google.protobuf"   % "protobuf-java"     % "3.21.1",
