@@ -78,7 +78,7 @@ object JsonSchemaF {
     def dateTime[A](): JsonSchemaF.Fixed = Fix(JsonSchemaF.dateTime())
     def password[A](): JsonSchemaF.Fixed = Fix(JsonSchemaF.password())
     def `object`(properties: List[(String, JsonSchemaF.Fixed)], required: List[String]): JsonSchemaF.Fixed =
-      Fix(JsonSchemaF.`object`(properties.map(JsonSchemaF.Property.apply[JsonSchemaF.Fixed] _ tupled), required))
+      Fix(JsonSchemaF.`object`(properties.map((JsonSchemaF.Property.apply[JsonSchemaF.Fixed] _).tupled), required))
     def array(value: JsonSchemaF.Fixed): JsonSchemaF.Fixed        = Fix(JsonSchemaF.array(value))
     def enum(value: List[String]): JsonSchemaF.Fixed              = Fix(JsonSchemaF.enum(value))
     def sum[A](value: List[JsonSchemaF.Fixed]): JsonSchemaF.Fixed = Fix(JsonSchemaF.sum(value))
