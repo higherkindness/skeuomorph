@@ -180,7 +180,7 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
     }
     "when it is not valid schema" >> {
       decoder.decodeJson(Json.fromString("string")).leftMap(_.message) must beLeft(
-        "Attempt to decode value on failed cursor"
+        "Missing required field"
       )
     }
 
