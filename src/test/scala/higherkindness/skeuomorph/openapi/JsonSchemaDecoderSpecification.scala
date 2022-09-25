@@ -16,9 +16,8 @@
 
 package higherkindness.skeuomorph.openapi
 
-import io.circe.Decoder
+import io.circe.{Decoder, DecodingFailure, Json}
 import JsonDecoders._
-import io.circe.Json
 import cats.syntax.all._
 import helpers._
 
@@ -174,22 +173,20 @@ class JsonSchemaDecoderSpecification extends org.specs2.mutable.Specification {
 
   "Decoder[JsonSchemaF.Fixed] should not able to decode" >> {
     "when the type is not valid" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("foo"))).leftMap(_.message) must beLeft(
-        "foo is not well formed type"
-      )
+      decoder.decodeJson(Json.obj("type" -> Json.fromString("foo"))) must beLike { case Left(e) =>
+        e must haveSuperclass[DecodingFailure]
+      }
     }
     "when it is not valid schema" >> {
-      decoder.decodeJson(Json.fromString("string")).leftMap(_.message) must beLeft(
-        "Missing required field"
-      )
+      decoder.decodeJson(Json.fromString("string")) must beLike { case Left(e) =>
+        e must haveSuperclass[DecodingFailure]
+      }
     }
-
     "when array does not have values" >> {
-      decoder.decodeJson(Json.obj("type" -> Json.fromString("array"))).leftMap(_.message) must beLeft(
-        "array is not well formed type"
-      )
+      decoder.decodeJson(Json.obj("type" -> Json.fromString("array"))) must beLike { case Left(e) =>
+        e must haveSuperclass[DecodingFailure]
+      }
     }
-
   }
 
   def basicTypeFrom(tpe: String, format: Option[String] = None): Json =

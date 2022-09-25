@@ -58,10 +58,10 @@ object JsonSchemaF {
   def password[T](): JsonSchemaF[T] = PasswordF()
   def `object`[T](properties: List[Property[T]], required: List[String]): JsonSchemaF[T] =
     ObjectF(properties, required)
-  def array[T](values: T): JsonSchemaF[T]          = ArrayF(values)
-  def enum[T](cases: List[String]): JsonSchemaF[T] = EnumF(cases)
-  def sum[T](cases: List[T]): JsonSchemaF[T]       = SumF(cases)
-  def reference[T](ref: String): JsonSchemaF[T]    = ReferenceF[T](ref)
+  def array[T](values: T): JsonSchemaF[T]            = ArrayF(values)
+  def `enum`[T](cases: List[String]): JsonSchemaF[T] = EnumF(cases)
+  def sum[T](cases: List[T]): JsonSchemaF[T]         = SumF(cases)
+  def reference[T](ref: String): JsonSchemaF[T]      = ReferenceF[T](ref)
 
   type Fixed = Fix[JsonSchemaF]
 
@@ -80,7 +80,7 @@ object JsonSchemaF {
     def `object`(properties: List[(String, JsonSchemaF.Fixed)], required: List[String]): JsonSchemaF.Fixed =
       Fix(JsonSchemaF.`object`(properties.map((JsonSchemaF.Property.apply[JsonSchemaF.Fixed] _).tupled), required))
     def array(value: JsonSchemaF.Fixed): JsonSchemaF.Fixed        = Fix(JsonSchemaF.array(value))
-    def enum(value: List[String]): JsonSchemaF.Fixed              = Fix(JsonSchemaF.enum(value))
+    def `enum`(value: List[String]): JsonSchemaF.Fixed            = Fix(JsonSchemaF.`enum`(value))
     def sum[A](value: List[JsonSchemaF.Fixed]): JsonSchemaF.Fixed = Fix(JsonSchemaF.sum(value))
     def reference(value: String): JsonSchemaF.Fixed               = Fix(JsonSchemaF.reference(value))
   }

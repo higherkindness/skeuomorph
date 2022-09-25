@@ -126,7 +126,7 @@ object ProtobufF {
   def repeated[A](value: A): ProtobufF[A]                                         = TRepeated(value)
   def oneOf[A](name: String, fields: NonEmptyList[FieldF.Field[A]]): ProtobufF[A] = TOneOf(name, fields)
   def map[A](keyTpe: A, value: A): ProtobufF[A]                                   = TMap(keyTpe, value)
-  def enum[A](
+  def `enum`[A](
       name: String,
       symbols: List[(String, Int)],
       options: List[OptionValue],

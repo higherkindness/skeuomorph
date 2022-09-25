@@ -385,9 +385,9 @@ object print {
         val (newTypes, schemas) =
           second(responses.map((typesAndSchemas[T](operationId) _).tupled).toList.unzip)(_.flatten)
         (
-          schemas.toList.filter(_.nonEmpty),
+          schemas.filter(_.nonEmpty),
           TypeAliasErrorResponse(operationId),
-          newTypes.toList.filterNot(_.some === successType(responses).map(responseOrType[T].print))
+          newTypes.filterNot(_.some === successType(responses).map(responseOrType[T].print))
         ).asLeft
     }
 

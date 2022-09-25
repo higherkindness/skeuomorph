@@ -233,7 +233,7 @@ object ParseProto {
     ).embed
   }
 
-  def toEnum[A](enum: EnumDescriptorProto)(implicit A: Embed[ProtobufF, A]): A = {
+  def toEnum[A](`enum`: EnumDescriptorProto)(implicit A: Embed[ProtobufF, A]): A = {
     val (values, aliases) = partitionValuesAliases(enum.getValueList.asScala.toList)
 
     ProtobufF

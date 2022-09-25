@@ -164,7 +164,7 @@ object AvroF {
       doc: Option[String],
       fields: List[Field[A]]
   ): AvroF[A] = TRecord(name, namespace, aliases, doc, fields)
-  def enum[A](
+  def `enum`[A](
       name: String,
       namespace: Option[String],
       aliases: List[String],
