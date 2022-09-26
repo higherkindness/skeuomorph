@@ -65,5 +65,6 @@ class AvroSchemaSpec extends Specification with ScalaCheck {
       case AvroF.TEnum(_, _, _, _, _) => true
       case AvroF.TUnion(_)            => true
       case AvroF.TFixed(_, _, _, _)   => true
+      case sch                        => throw new IllegalArgumentException(s"Schema ${sch} not handled")
     }
 }

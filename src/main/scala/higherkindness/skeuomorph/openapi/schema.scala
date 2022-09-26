@@ -148,7 +148,7 @@ object schema {
   final case class Server(url: String, description: Option[String], variables: Map[String, Server.Variable])
 
   object Server {
-    final case class Variable(enum: List[String], default: String, description: Option[String])
+    final case class Variable(`enum`: List[String], default: String, description: Option[String])
   }
 
   object Path {

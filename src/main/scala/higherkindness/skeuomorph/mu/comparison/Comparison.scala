@@ -150,7 +150,7 @@ object Comparison extends ComparisonInstances {
       rep(searchResult)
   }
 
-  private def unfoldComparison[T](implicit basis: Basis[MuF, T]): (Context[T]) => Comparison[T, Context[T]] = {
+  private def unfoldComparison[T](implicit basis: Basis[MuF, T]): Context[T] => Comparison[T, Context[T]] = {
     case (path, w @ Some(writer), Some(reader)) =>
       (writer.project, reader.project) match {
 
