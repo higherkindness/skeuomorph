@@ -27,7 +27,7 @@ More information can be found at the [microsite][].
 For installing this library, add the following line to your `build.sbt` file:
 
 ```sbt
-libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.2.0"
+libraryDependencies += "io.higherkindness" %% "skeuomorph" % "0.2.1"
 ```
 
 The full documentation is available at the [skeuomorph](https://higherkindness.io/skeuomorph/) site.
