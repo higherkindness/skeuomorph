@@ -253,8 +253,8 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             |import shapeless.Poly1
             |object json extends Poly1 {
             |
-            |implicit def `2-dog` = at[`2-Dog`](x => Encoder[`2-Dog`].apply(x))
-            |implicit def `3-cat` = at[`3-Cat`](x => Encoder[`3-Cat`].apply(x))
+            |implicit def `2-dog`: json.Case.Aux[`2-Dog`, Json] = at[`2-Dog`](x => Encoder[`2-Dog`].apply(x))
+            |implicit def `3-cat`: json.Case.Aux[`3-Cat`, Json] = at[`3-Cat`](x => Encoder[`3-Cat`].apply(x))
             |}
             |x.fold(json)
             |}
