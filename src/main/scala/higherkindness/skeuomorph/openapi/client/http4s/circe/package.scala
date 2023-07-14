@@ -136,22 +136,23 @@ package object circe {
     }
 
   def sumCirceEncoder[T: Basis[JsonSchemaF, *], B]: Printer[(String, List[String])] = {
-    val polyObject: Printer[((String, Option[String]), List[PackageName], List[(String, String, String)])] = objectDef(
-      sepBy(
-        (
-          κ("implicit def ") *< string >* κ(" = "),
-          κ("at[") *< string >* κ("]"),
-          κ("(x => Encoder[") *< string >* κ("].apply(x))")
-        ).contramapN(identity),
-        "\n"
+    val polyObject: Printer[((String, Option[String]), List[PackageName], List[((String, String), String, String)])] =
+      objectDef(
+        sepBy(
+          (
+            κ("implicit def ") *< string >* κ(": json.Case.Aux[") >*< string >* κ(", Json] = "),
+            κ("at[") *< string >* κ("]"),
+            κ("(x => Encoder[") *< string >* κ("].apply(x))")
+          ).contramapN(identity),
+          "\n"
+        )
       )
-    )
-    encoderDef[T, ((String, Option[String]), List[PackageName], List[(String, String, String)])](
+    encoderDef[T, ((String, Option[String]), List[PackageName], List[((String, String), String, String)])](
       κ("Encoder.instance { x =>") *< newLine *< κ("import shapeless.Poly1") *< newLine *< polyObject >* newLine >* κ(
         "x.fold(json)"
       ) >* newLine >* κ("}")
     ).contramap { case (x, xs) =>
-      (x, Tpe[T](x), (("json", "Poly1".some), List.empty, xs.map(x => (x.toLowerCase(), x, x))))
+      (x, Tpe[T](x), (("json", "Poly1".some), List.empty, xs.map(x => ((x.toLowerCase(), x), x, x))))
     }
   }
 
