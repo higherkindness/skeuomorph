@@ -47,6 +47,7 @@ These are the people that have contributed to the _skeuomorph_ project:
 - [![bilki](https://avatars.githubusercontent.com/u/1669748?v=4&s=20) **bilki**](https://github.com/bilki)
 - [![sloshy](https://avatars.githubusercontent.com/u/427237?v=4&s=20) **sloshy**](https://github.com/sloshy)
 - [![IsabelDuran](https://avatars.githubusercontent.com/u/37183993?v=4&s=20) **IsabelDuran**](https://github.com/IsabelDuran)
-- [![israelpzglez](https://avatars.githubusercontent.com/u/646886?v=4&s=20) **israelpzglez**](https://github.com/israelpzglez)
+- [![israelperezglez](https://avatars.githubusercontent.com/u/646886?v=4&s=20) **israelperezglez**](https://github.com/israelperezglez)
+- [![JLofgren](https://avatars.githubusercontent.com/u/9041060?v=4&s=20) **JLofgren**](https://github.com/JLofgren)
 - [![ThatScalaGuy](https://avatars.githubusercontent.com/u/7647945?v=4&s=20) **ThatScalaGuy**](https://github.com/ThatScalaGuy)
 - [![davesmith00047](https://avatars.githubusercontent.com/u/119872582?v=4&s=20) **davesmith00047**](https://github.com/davesmith00047)
