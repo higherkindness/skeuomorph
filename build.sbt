@@ -75,7 +75,7 @@ lazy val commonSettings = Seq(
     "com.google.protobuf"   % "protobuf-java"     % "3.25.0",
     "io.circe"             %% "circe-core"        % "0.14.6",
     "io.circe"             %% "circe-parser"      % "0.14.6",
-    "io.circe"             %% "circe-yaml"        % "0.14.2",
+    "io.circe"             %% "circe-yaml"        % "1.15.0",
     "com.julianpeeters"    %% "avrohugger-core"   % "1.7.0"        % Test,
     "org.typelevel"        %% "cats-laws"         % "2.10.0"       % Test,
     "io.circe"             %% "circe-testing"     % "0.14.6"       % Test,
