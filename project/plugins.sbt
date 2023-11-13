@@ -3,7 +3,7 @@ ThisBuild / libraryDependencySchemes ++= Seq(
 )
 addSbtPlugin("org.scoverage"       % "sbt-scoverage"     % "2.0.9")
 addSbtPlugin("com.github.sbt"      % "sbt-ci-release"    % "1.5.12")
-addSbtPlugin("com.47deg"           % "sbt-microsites"    % "1.4.3")
+addSbtPlugin("com.47deg"           % "sbt-microsites"    % "1.4.4")
 addSbtPlugin("org.scalameta"       % "sbt-scalafmt"      % "2.5.2")
 addSbtPlugin("org.scalameta"       % "sbt-mdoc"          % "2.5.0")
 addSbtPlugin("de.heikoseeberger"   % "sbt-header"        % "5.10.0")
