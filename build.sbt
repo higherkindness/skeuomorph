@@ -1,7 +1,7 @@
 ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion       := "2.13.13"
-ThisBuild / crossScalaVersions := Seq("2.12.19", "2.13.13")
+ThisBuild / scalaVersion       := "2.13.14"
+ThisBuild / crossScalaVersions := Seq("2.12.19", "2.13.14")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; +test")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
@@ -73,24 +73,24 @@ lazy val commonSettings = Seq(
     "org.apache.avro"       % "avro"              % "1.11.3",
     "com.github.os72"       % "protoc-jar"        % "3.11.4",
     "com.google.protobuf"   % "protobuf-java"     % "4.26.1",
-    "io.circe"             %% "circe-core"        % "0.14.6",
-    "io.circe"             %% "circe-parser"      % "0.14.6",
+    "io.circe"             %% "circe-core"        % "0.14.7",
+    "io.circe"             %% "circe-parser"      % "0.14.7",
     "io.circe"             %% "circe-yaml"        % "1.15.0",
     "com.julianpeeters"    %% "avrohugger-core"   % "2.8.3"        % Test,
     "org.typelevel"        %% "cats-laws"         % "2.10.0"       % Test,
-    "io.circe"             %% "circe-testing"     % "0.14.6"       % Test,
+    "io.circe"             %% "circe-testing"     % "0.14.7"       % Test,
     "org.typelevel"        %% "discipline-specs2" % "1.4.0"        % Test,
     "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
     "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
-    "org.scalacheck"       %% "scalacheck"        % "1.17.0"       % Test,
+    "org.scalacheck"       %% "scalacheck"        % "1.18.0"       % Test,
     "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.2"        % Test,
-    "org.scalatra.scalate" %% "scalate-core"      % "1.9.8"        % Test
+    "org.scalatra.scalate" %% "scalate-core"      % "1.10.1"       % Test
   )
 ) ++ compilerPlugins ++ macroSettings ++ Seq(
   libraryDependencies ++= (CrossVersion.partialVersion(scalaVersion.value) match {
     case Some((2, _)) =>
       Seq(
-        "org.scalameta" %% "scalameta" % "4.9.2"
+        "org.scalameta" %% "scalameta" % "4.9.4"
       )
     case _ => Seq.empty
   })
