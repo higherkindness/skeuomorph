@@ -745,7 +745,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             "/pets" -> emptyItemObject.withPost(
               operation[JsonSchemaF.Fixed](
                 request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPet"))),
-                responses = "200"          -> response("Null response")
+                responses = "200" -> response("Null response")
               )
             )
           )
@@ -753,7 +753,7 @@ class OpenApiPrintSpecification extends org.specs2.mutable.Specification {
             "/pets/{id}" -> emptyItemObject.withPut(
               operation[JsonSchemaF.Fixed](
                 request("application/json" -> mediaType(Fixed.reference("#/components/schemas/UpdatePet"))),
-                responses = "201"          -> response("Null response")
+                responses = "201" -> response("Null response")
               ).withParameter(path("id", Fixed.string()))
             )
           )
@@ -1155,7 +1155,7 @@ object OpenApiPrintSpecification {
   val mediaTypeReferencePost = "/payloads" -> emptyItemObject.withPost(
     operation[JsonSchemaF.Fixed](
       request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayload"))),
-      responses = "201"          -> response("Null response")
+      responses = "201" -> response("Null response")
     ).withOperationId("createPayload")
   )
 
@@ -1163,7 +1163,7 @@ object OpenApiPrintSpecification {
     .withPost(
       operation[JsonSchemaF.Fixed](
         request("application/json" -> mediaType(Fixed.reference("#/components/schemas/NewPayloads"))),
-        responses = "201"          -> response(""),
+        responses = "201" -> response(""),
         defaultError
       ).withOperationId("createPayloads")
         .withParameter(header("X-Auth", Fixed.string()))
