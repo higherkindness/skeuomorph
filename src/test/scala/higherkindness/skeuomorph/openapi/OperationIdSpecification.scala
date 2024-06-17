@@ -88,6 +88,6 @@ object OperationIdSpecification {
   import JsonSchemaF.Fixed
   val defaultOperation = operation[JsonSchemaF.Fixed](
     request("application/json" -> mediaType(Fixed.reference("#/components/schemas/Foo"))),
-    responses = "201"          -> response("Null response")
+    responses = "201" -> response("Null response")
   )
 }
