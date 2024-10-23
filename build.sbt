@@ -1,7 +1,7 @@
 ThisBuild / organization       := "io.higherkindness"
 ThisBuild / githubOrganization := "47degrees"
-ThisBuild / scalaVersion       := "2.13.14"
-ThisBuild / crossScalaVersions := Seq("2.12.20", "2.13.14")
+ThisBuild / scalaVersion       := "2.13.15"
+ThisBuild / crossScalaVersions := Seq("2.12.20", "2.13.15")
 
 addCommandAlias("ci-test", "scalafmtCheckAll; scalafmtSbtCheck; microsite/mdoc; +test")
 addCommandAlias("ci-docs", "github; documentation/mdoc; headerCreateAll; microsite/publishMicrosite")
