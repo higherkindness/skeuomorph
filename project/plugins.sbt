@@ -2,7 +2,7 @@ ThisBuild / libraryDependencySchemes ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 )
 addSbtPlugin("org.scoverage"       % "sbt-scoverage"     % "2.2.2")
-addSbtPlugin("com.github.sbt"      % "sbt-ci-release"    % "1.9.0")
+addSbtPlugin("com.github.sbt"      % "sbt-ci-release"    % "1.9.2")
 addSbtPlugin("com.47deg"           % "sbt-microsites"    % "1.4.4")
 addSbtPlugin("org.scalameta"       % "sbt-scalafmt"      % "2.5.2")
 addSbtPlugin("org.scalameta"       % "sbt-mdoc"          % "2.6.2")
