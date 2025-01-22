@@ -66,7 +66,7 @@ lazy val filterConsoleScalacOptions = { options: Seq[String] =>
 lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
-    "org.typelevel"        %% "cats-core"         % "2.12.0",
+    "org.typelevel"        %% "cats-core"         % "2.13.0",
     "org.typelevel"        %% "cats-effect"       % "3.5.7",
     "io.higherkindness"    %% "droste-core"       % "0.9.0",
     "io.higherkindness"    %% "droste-macros"     % "0.9.0",
@@ -77,7 +77,7 @@ lazy val commonSettings = Seq(
     "io.circe"             %% "circe-parser"      % "0.14.10",
     "io.circe"             %% "circe-yaml"        % "1.15.0",
     "com.julianpeeters"    %% "avrohugger-core"   % "2.8.3"        % Test,
-    "org.typelevel"        %% "cats-laws"         % "2.12.0"       % Test,
+    "org.typelevel"        %% "cats-laws"         % "2.13.0"       % Test,
     "io.circe"             %% "circe-testing"     % "0.14.10"      % Test,
     "org.typelevel"        %% "discipline-specs2" % "1.5.0"        % Test,
     "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
