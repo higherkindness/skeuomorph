@@ -67,7 +67,7 @@ lazy val commonSettings = Seq(
   scalacOptions ~= (_ filterNot Set("-Xfuture", "-Xfatal-warnings").contains),
   libraryDependencies ++= Seq(
     "org.typelevel"        %% "cats-core"         % "2.13.0",
-    "org.typelevel"        %% "cats-effect"       % "3.6.0",
+    "org.typelevel"        %% "cats-effect"       % "3.6.1",
     "io.higherkindness"    %% "droste-core"       % "0.10.0",
     "io.higherkindness"    %% "droste-macros"     % "0.10.0",
     "org.apache.avro"       % "avro"              % "1.12.0",
