@@ -82,7 +82,7 @@ lazy val commonSettings = Seq(
     "org.typelevel"        %% "discipline-specs2" % "1.5.0"        % Test,
     "org.specs2"           %% "specs2-core"       % "4.12.4-js-ec" % Test,
     "org.specs2"           %% "specs2-scalacheck" % "4.12.4-js-ec" % Test,
-    "org.scalacheck"       %% "scalacheck"        % "1.18.1"       % Test,
+    "org.scalacheck"       %% "scalacheck"        % "1.19.0"       % Test,
     "io.chrisdavenport"    %% "cats-scalacheck"   % "0.3.2"        % Test,
     "org.scalatra.scalate" %% "scalate-core"      % "1.10.1"       % Test
   )
