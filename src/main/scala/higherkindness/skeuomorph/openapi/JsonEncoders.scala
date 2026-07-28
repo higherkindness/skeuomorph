@@ -41,7 +41,7 @@ object JsonEncoders {
       "enum",
       "default",
       "description"
-    )(v => (v.enum, v.default, v.description))
+    )(v => (v.`enum`, v.default, v.description))
 
   implicit val serverEncoder: Encoder[Server] =
     Encoder.forProduct3(
@@ -170,7 +170,23 @@ object JsonEncoders {
       "trace",
       "servers",
       "parameters"
-    )(Path.ItemObject.unapply(_).get)
+    )((io: Path.ItemObject[A]) =>
+      (
+        io.ref,
+        io.summary,
+        io.description,
+        io.get,
+        io.put,
+        io.post,
+        io.delete,
+        io.options,
+        io.head,
+        io.patch,
+        io.trace,
+        io.servers,
+        io.parameters
+      )
+    )
 
   implicit def componentsEncoder[A: Encoder]: Encoder[Components[A]] =
     Encoder.forProduct4(
