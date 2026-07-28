@@ -61,7 +61,7 @@ object JsonDecoders {
       for {
         values <- c.downField("enum").as[List[String]]
         _      <- validateType(c, "string")
-      } yield JsonSchemaF.enum[A](values).embed
+      } yield JsonSchemaF.`enum`[A](values).embed
     )
 
   private def sumJsonSchemaDecoder[A: Embed[JsonSchemaF, *]]: Decoder[A] =
@@ -123,8 +123,8 @@ object JsonDecoders {
       "enum",
       "default",
       "description"
-    )((enum: Option[List[String]], default: String, description: Option[String]) =>
-      Server.Variable(enum.getOrElse(List.empty), default, description)
+    )((enumValues: Option[List[String]], default: String, description: Option[String]) =>
+      Server.Variable(enumValues.getOrElse(List.empty), default, description)
     )
 
   implicit val serverDecoder: Decoder[Server] =
@@ -153,7 +153,7 @@ object JsonDecoders {
     Decoder.forProduct2(
       "description",
       "schema"
-    )(Header.apply)
+    )(Header.apply[A])
 
   implicit def encodingDecoder[A: Decoder]: Decoder[Encoding[A]] =
     Decoder.forProduct5(
@@ -216,7 +216,7 @@ object JsonDecoders {
       "allowEmptyValue",
       "allowReserved",
       "schema"
-    )(Parameter.apply)
+    )(Parameter.apply[A])
 
   // Avoid forProductXX
   implicit def operationDecoder[A: Decoder]: Decoder[Path.Operation[A]] =
